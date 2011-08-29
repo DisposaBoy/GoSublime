@@ -1,0 +1,6 @@
+{
+	"gocode_cmd": "gocode",
+	
+	"gofmt_cmd": "gofmt",
+	"run_gofmt_on_save": false
+}
