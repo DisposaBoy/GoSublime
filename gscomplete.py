@@ -4,11 +4,17 @@ import gscommon as gs
 from os.path import basename
 
 class GoSublime(sublime_plugin.EventListener):
+    gocode_set = False
     def on_query_completions(self, view, prefix, locations):
         pos = locations[0]
         scopes = view.scope_name(pos).split()
         if 'source.go' not in scopes:
             return []
+        
+        if not self.gocode_set:
+            self.gocode_set = True
+            # autostart the daemon
+            gs.runcmd([gs.setting('gocode_cmd', 'gocode'), 'set'])
 
         # gocode is case-sesitive so push the location back to the 'dot' so it gives
         # gives us everything then st2 can pick the matches for us
