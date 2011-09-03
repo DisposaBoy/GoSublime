@@ -29,10 +29,10 @@ class GoSublime(sublime_plugin.EventListener):
         cmd = gs.setting('gocode_cmd', 'gocode')
         args = [cmd, "-f=json", "autocomplete", fn, offset]
         js, err = gs.runcmd(args, src)
-        try:
-            if err:
-                sublime.error_message(err)
-            else:
+        if err:
+            sublime.error_message(err)
+        else:
+            try:    
                 js = json.loads(js)
                 if js and js[1]:
                     for ent in js[1]:
@@ -44,8 +44,10 @@ class GoSublime(sublime_plugin.EventListener):
                             comps.append(self.parse_decl_hack(etype, ename, tname))
                         elif ent['class'] != 'PANIC':
                             comps.append((tname, ename))
-        except KeyError as e:
-            sublime.error_message('Error while running gocode, possibly malformed data returned: %s' % e)
+            except KeyError as e:
+                sublime.error_message('Error while running gocode, possibly malformed data returned: %s' % e)
+            except ValueError as e:
+                sublime.error_message("Error while decoding gocode output: %s" % e)
         return comps
     
     def parse_decl_hack(self, s, name, tname):
