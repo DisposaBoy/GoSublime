@@ -32,7 +32,7 @@ Completion can be accessed by typing the (default) key combination CTRL+[SPACE] 
 Settings
 --------
 
-You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings`. A sample settings file is provided inside the GoSublime package directory. You may simply copy this to your `User` package and edit as desired.
+You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings`. A sample settings file `GoSublime.sublime-settings.sample` is provided inside the GoSublime package directory.
 
 Note: Filenames are case-sensitive on some platforms(e.g. Linux) so the filename should be exactly `GoSublime.sublime-settings` with capitalization preserved.
 
