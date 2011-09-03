@@ -39,7 +39,7 @@ NAME_PREFIXES = {
 
 def runcmd(args, input=None):
     try:
-        p = Popen(args, stdout=PIPE, stderr=PIPE, stdin=PIPE, universal_newlines=True, startupinfo=STARTUP_INFO)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO)
         return p.communicate(input=input)
     except (OSError, ValueError) as e:
         err = 'Error while running %s: %s' % (args[0], e)
