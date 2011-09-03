@@ -18,6 +18,8 @@ class GoFmt(sublime_plugin.EventListener):
             err = err.replace('<standard input>', fn)
             sublime.error_message(err)
         elif src.strip() and src != view_src:
-            edit = view.begin_edit()
+            vr = view.visible_region()
+	    edit = view.begin_edit()
             view.replace(edit, region,  src)
             view.end_edit(edit)
+            view.show_at_center(vr)
