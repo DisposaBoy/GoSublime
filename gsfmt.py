@@ -4,8 +4,9 @@ from os.path import basename
 
 class GoFmt(sublime_plugin.EventListener):
     def on_pre_save(self, view):
-        scopes = view.scope_name(0).split()        
-        if 'source.go' not in scopes or not gs.setting("run_gofmt_on_save", False):
+        scopes = view.scope_name(0).split()
+        should_run = gs.setting("run_gofmt_on_save", False)
+        if 'source.go' not in scopes or should_run is not True:
             return
         
         region = sublime.Region(0, view.size())
