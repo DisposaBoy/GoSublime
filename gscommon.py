@@ -51,3 +51,17 @@ def runcmd(args, input=None):
 def setting(key, default=None):
     s = sublime.load_settings("GoSublime.sublime-settings")
     return s.get(key, default)
+
+# stolen from golang's utf8.RuneStart
+def is_rune_start(b):
+    return b&0xC0 != 0x80
+
+def char_to_byte_offset(s, offsetC):
+    s = s.encode('utf-8')
+    offsetB = 0
+    l = len(s)
+    while offsetC > 0 and offsetB < l:
+        if is_rune_start(ord(s[offsetB])):
+            offsetC -= 1
+        offsetB += 1
+    return offsetB
