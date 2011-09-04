@@ -48,6 +48,12 @@ def runcmd(args, input=None):
         err = u'Error while running %s: %s' % (args[0], e)
         return ("", err)
 
+def runasync(args):
+    try:
+        p = Popen(args, startupinfo=STARTUP_INFO)
+    except (OSError, ValueError) as e:
+        pass
+
 def setting(key, default=None):
     s = sublime.load_settings("GoSublime.sublime-settings")
     return s.get(key, default)
