@@ -2,5 +2,7 @@
 	"gocode_cmd": "gocode",
 	
 	"gofmt_cmd": "gofmt",
-	"run_gofmt_on_save": false
+	"run_gofmt_on_save": false,
+	
+	"gocode_accepts_character_offsets": false
 }
