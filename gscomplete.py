@@ -18,7 +18,7 @@ class GoSublime(sublime_plugin.EventListener):
 
         # gocode is case-sesitive so push the location back to the 'dot' so it gives
         # gives us everything then st2 can pick the matches for us
-        offset = str(pos - len(prefix))
+        offset = pos - len(prefix)
         src = view.substr(sublime.Region(0, view.size()))
         fn = basename(view.file_name())
         cl = self.complete(fn, offset, src)
@@ -33,7 +33,12 @@ class GoSublime(sublime_plugin.EventListener):
     def complete(self, fn, offset, src):
         comps = []
         cmd = gs.setting('gocode_cmd', 'gocode')
-        args = [cmd, "-f=json", "autocomplete", fn, offset]
+        can_pass_char_offset = gs.setting('gocode_accepts_character_offsets', False)
+        if can_pass_char_offset is True:
+            offset = 'c%s' % offset
+        else:
+            offset = gs.char_to_byte_offset(src, offset)
+        args = [cmd, "-f=json", "autocomplete", fn, str(offset)]
         js, err = gs.runcmd(args, src)
         if err:
             sublime.error_message(err)
