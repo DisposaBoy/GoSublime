@@ -14,7 +14,7 @@ class GoSublime(sublime_plugin.EventListener):
         if not self.gocode_set:
             self.gocode_set = True
             # autostart the daemon
-            gs.runcmd([gs.setting('gocode_cmd', 'gocode'), 'set'])
+            gs.runcmd([gs.setting('gocode_cmd', 'gocode')])
 
         # gocode is case-sesitive so push the location back to the 'dot' so it gives
         # gives us everything then st2 can pick the matches for us
