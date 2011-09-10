@@ -43,7 +43,7 @@ def runcmd(args, input=None):
         if isinstance(input, unicode):
             input = input.encode('utf-8')
         out, err = p.communicate(input=input)
-        return (out.decode('utf-8'), err.decode('utf-8'))
+        return (out.decode('utf-8') if out else '', err.decode('utf-8') if err else '')
     except (OSError, ValueError) as e:
         err = u'Error while running %s: %s' % (args[0], e)
         return ("", err)
