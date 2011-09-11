@@ -25,7 +25,7 @@ class GoSublime(sublime_plugin.EventListener):
         # gives us everything then st2 can pick the matches for us
         offset = pos - len(prefix)
         src = view.substr(sublime.Region(0, view.size()))
-        fn = basename(view.file_name())
+        fn = view.file_name()
         cl = self.complete(fn, offset, src)
 
         if scopes[-1] == 'source.go':
