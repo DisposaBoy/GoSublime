@@ -11,6 +11,11 @@ class GoSublime(sublime_plugin.EventListener):
         if 'source.go' not in scopes:
             return []
         
+        # if we complete inside e.g. a map's key we're going to cause subtle bugs so bail
+        if 'string.quoted.double.go' in scopes:
+            # afaik we must return something in order to disable st2's word completion
+            return [(' ', '$0')]
+
         if not self.gocode_set:
             self.gocode_set = True
             # autostart the daemon
@@ -23,9 +28,9 @@ class GoSublime(sublime_plugin.EventListener):
         fn = basename(view.file_name())
         cl = self.complete(fn, offset, src)
 
-        if len(scopes) == 1:
+        if scopes[-1] == 'source.go':
             cl.extend(gs.GLOBAL_SNIPPETS)
-        else:
+        elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
             cl.extend(gs.LOCAL_SNIPPETS)
         
         return cl
@@ -47,6 +52,8 @@ class GoSublime(sublime_plugin.EventListener):
                 js = json.loads(js)
                 if js and js[1]:
                     for ent in js[1]:
+                        if ent['name'] == 'main':
+                            continue
                         etype = ent['type']
                         eclass = ent['class']
                         ename = ent['name']
