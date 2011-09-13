@@ -1,0 +1,20 @@
+[
+	{
+		"command": "insert_best_completion",
+		"args":
+		{
+			"default": ".",
+			"exact": true
+		}
+	},
+	{
+		"command": "insert",
+		"args":
+		{
+			"characters": "."
+		}
+	},
+	{
+		"command": "auto_complete"
+	}
+]

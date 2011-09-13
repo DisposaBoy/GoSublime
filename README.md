@@ -27,7 +27,7 @@ Alternatively (recommended), you can simply clone this repo into your packages d
 Usage
 -----
 
-Completion can be accessed by typing the (default) key combination CTRL+[SPACE] inside a Golang file.
+Please see USAGE.md for general usage and other tips for effective usage of GoSublime
 
 Settings
 --------

@@ -1,0 +1,44 @@
+[
+    {
+        "keys": ["."],
+        "command": "run_macro_file",
+        "args":
+        {
+            "file": "Packages/GoSublime/macros/DotCompletion.sublime-macro"
+        },
+        "context":
+        [
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": true
+            },
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.go"
+            }
+        ]
+    },
+    {
+        "keys": ["."],
+        "command": "run_macro_file",
+        "args":
+        {
+            "file": "Packages/GoSublime/macros/Dot.sublime-macro",
+            "context":
+            [
+                {
+                    "key": "auto_complete_visible",
+                    "operator": "equal",
+                    "operand": false
+                },
+                {
+                    "key": "selector",
+                    "operator": "equal",
+                    "operand": "source.go"
+                }
+            ]
+        }
+    }
+]
