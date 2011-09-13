@@ -49,6 +49,10 @@ The available settings are:
 
 * run_gofmt_on_save - whether or not to run `gofmt` when the current file is saved - default `false`
 
+Build System
+------------
+
+If you want to use the gomake build system you will have to edit the path value in the file Gomake.sublime-build to point to your gomake path. If gomake is in a system path you may also remove the path line completely.
 
 Completion Markers
 ------------------
