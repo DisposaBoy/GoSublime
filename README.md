@@ -52,7 +52,7 @@ The available settings are:
 Build System
 ------------
 
-If you want to use the gomake build system you will have to edit the path value in the file Gomake.sublime-build to point to your gomake path. If gomake is in a system path you may also remove the path line completely.
+If you want to use the gomake build system you will have to rename the file Gomake.sublime-build.sample to Gomake.sublime-build. You will have to edit the path value in the file to point to your gomake path. If gomake is in a system path you may also remove the path line completely.
 
 Completion Markers
 ------------------
