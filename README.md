@@ -32,7 +32,7 @@ Please see USAGE.md for general usage and other tips for effective usage of GoSu
 Settings
 --------
 
-You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings`. A sample settings file `GoSublime/examples/GoSublime.sublime-settings.example` is provided inside the GoSublime package directory.
+You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings`. A sample settings file `Packages/GoSublime/examples/GoSublime.sublime-settings.example` is provided inside the GoSublime package directory.
 
 Note: Filenames are case-sensitive on some platforms(e.g. Linux) so the filename should be exactly `GoSublime.sublime-settings` with capitalization preserved.
 
@@ -48,7 +48,6 @@ The available settings are:
 * gofmt_cmd - the command that shall be called for gofmt, this can be the command name e.g. `gofmt` or full path to a binary e.g. `/go/bin/gofmt` - default `gofmt`
 
 * run_gofmt_on_save - whether or not to run `gofmt` when the current file is saved - default `false`
-
 
 Completion Markers
 ------------------
