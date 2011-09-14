@@ -32,7 +32,7 @@ Please see USAGE.md for general usage and other tips for effective usage of GoSu
 Settings
 --------
 
-You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings`. A sample settings file `GoSublime/examples/GoSublime.sublime-settings.example` is provided inside the GoSublime package directory.
+You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings`. A sample settings file `Packages/GoSublime/examples/GoSublime.sublime-settings.example` is provided inside the GoSublime package directory.
 
 Note: Filenames are case-sensitive on some platforms(e.g. Linux) so the filename should be exactly `GoSublime.sublime-settings` with capitalization preserved.
 
@@ -48,11 +48,6 @@ The available settings are:
 * gofmt_cmd - the command that shall be called for gofmt, this can be the command name e.g. `gofmt` or full path to a binary e.g. `/go/bin/gofmt` - default `gofmt`
 
 * run_gofmt_on_save - whether or not to run `gofmt` when the current file is saved - default `false`
-
-Build System
-------------
-
-If you want to use the gomake build system you will have to rename the file Gomake.sublime-build.sample to Gomake.sublime-build. You will have to edit the path value in the file to point to your gomake path. If gomake is in a system path you may also remove the path line completely.
 
 Completion Markers
 ------------------
