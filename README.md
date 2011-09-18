@@ -47,8 +47,6 @@ The available settings are:
 
 * gofmt_cmd - the command that shall be called for gofmt, this can be the command name e.g. `gofmt` or full path to a binary e.g. `/go/bin/gofmt` - default `gofmt`
 
-* run_gofmt_on_save - whether or not to run `gofmt` when the current file is saved - default `false`
-
 Completion Markers
 ------------------
 

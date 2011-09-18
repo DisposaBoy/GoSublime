@@ -65,3 +65,14 @@ If you want to use the gomake build system you will have to copy the file `Packa
 If gomake is not in your system path you will have to add the following key/value pair to `Packages/GoSublime/Gomake.sublime-build`:
 
 "path": "/path/to/go/bin:$PATH",
+
+Gofmt
+-----
+
+GoSublime provides a text command `gs_fmt` which formats the current file using gofmt.
+
+You can utilize this command by adding a key binding, e.g. by clicking the menu`Preferences > Key Bindings - User` in Sublime Text 2 and adding the following entry:
+
+    { "keys": ["ctrl+shift+e"], "command": "gs_fmt" }
+
+which will call the gs_fmt command whenever you press `Ctrl+Shift+E`. You can set the key binding to anything you prefer, however, it's not recommended to bind it to `Ctrl+S` which also saves the file because the buffer must be edited and in the unlikely event that the patch fails, the changes are undone leaving the file on-disk with the erroneous changes.

@@ -1,4 +1,6 @@
 [
+    { "keys": ["ctrl+shift+e"], "command": "gs_fmt" },
+
     {
         "keys": ["."],
         "command": "run_macro_file",
