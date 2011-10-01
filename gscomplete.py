@@ -12,7 +12,7 @@ class GoSublime(sublime_plugin.EventListener):
             return []
         
         # if we complete inside e.g. a map's key we're going to cause subtle bugs so bail
-        if 'string.quoted.double.go' in scopes or 'string.quoted.single.go' in scopes:
+        if 'string.quoted.double.go' in scopes or 'string.quoted.single.go' in scopes or 'string.quoted.raw.go' in scopes:
             # afaik we must return something in order to disable st2's word completion
             return [(' ', '$0')]
 
