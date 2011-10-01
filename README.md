@@ -47,9 +47,9 @@ The available settings are:
 
 * gofmt_cmd - the command that shall be called for gofmt, this can be the command name e.g. `gofmt` or full path to a binary e.g. `/go/bin/gofmt` - default `gofmt`
 
-* gslint_cmd - the command that will be used by gslint. Set it to an empty string to disable gslint. Any command can be used in place of `gotype` as long as the output is compatible(e.g `govet` provides compatible output) - default gotype
+* gslint_cmd - the command that will be used by gslint. Set it to an empty string to disable gslint. Any command can be used in place of `gotype` as long as the output is compatible and printed to stderr (e.g `govet` provides compatible output) - default `gotype`
 
-* gslint_timeout - how long to wait after the last keystroke before the command is run (in milliseconds) - default `gotype`
+* gslint_timeout - how long to wait after the last keystroke before the command is run (in milliseconds) - default 500
 
 Completion Markers
 ------------------
