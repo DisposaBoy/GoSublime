@@ -2,7 +2,9 @@
 	"gocode_cmd": "gocode",
 	
 	"gofmt_cmd": "gofmt",
-	"run_gofmt_on_save": false,
+	
+	"gslint_cmd": "gotype",
+	"gslint_timeout": 500,
 	
 	"gocode_accepts_character_offsets": false
 }
