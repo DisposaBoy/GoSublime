@@ -76,3 +76,15 @@ You can utilize this command by adding a key binding, e.g. by clicking the menu`
     { "keys": ["ctrl+shift+e"], "command": "gs_fmt" }
 
 which will call the gs_fmt command whenever you press `Ctrl+Shift+E`. You can set the key binding to anything you prefer, however, it's not recommended to bind it to `Ctrl+S` which also saves the file because the buffer must be edited and in the unlikely event that the patch fails, the changes are undone leaving the file on-disk with the erroneous changes.
+
+
+GsLint
+------
+
+GsLint is a front-end to tools like `gotype` and `govet` that highlights their errors in the source as you type. Its behaviour can be customized to best suit your style of coding with the following settings.
+
+* gslint_cmd - sets the command to call and can be any command that prints its output to stderr and in a format compatible with gotype. If you find it distracting or otherwise want to disable it, simply set the value of this setting to an empty string ("")
+
+* gslint_timeout - sets the number of milliseconds to wait after you type a character before calling the command. The default value of 500ms may be too high which causes a noticeable lag from when typing and e.g misspelled(udefined) variables being typed. In that case, set it to something lower like 100 until you feel comfortable with it. Another option is to set it to a value of several seconds, say 3(3000ms) which means it won't activate until you take a rest from typing.
+
+Errors are highlighted as reported by the lint command. In the case of gotype, compile errors reported on line 10 may cause multiple errors on other lines all if which will get highlighted from the point of the error to the end of the line. To see what the error is if it's not immediately clear, move the cursor to the relevant line which will cause the error to be presented in the status bar under the `GsLint: ` marker.
