@@ -16,11 +16,11 @@ class GsLint(sublime_plugin.EventListener):
             view.set_status('GsLint', ('GsLint: ' + msg) if msg else '')
     
     def on_modified(self, view):
-        self.rc += 1
-
         pos = view.sel()[0].begin()
         scopes = view.scope_name(pos).split()
         if 'source.go' in scopes:
+            self.rc += 1
+
             should_run = (
                          'string.quoted.double.go' not in scopes and
                          'string.quoted.single.go' not in scopes and
