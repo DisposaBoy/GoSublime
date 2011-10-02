@@ -4,9 +4,17 @@ GoSublime
 Intro
 -----
 
-GoSublime is a plugin for the text editor [SublimeText 2](http://www.sublimetext.com/2).
+GoSublime is a Golang plugin collection for the text editor [SublimeText 2](http://www.sublimetext.com/2) providing code completion and other IDE-like features.
 
-It provides code completion from [Gocode](https://github.com/nsf/gocode) as well as some context aware snippets to complement the existing SublimeText Go package.
+Features
+--------
+
+* code completion from [Gocode](https://github.com/nsf/gocode)
+* context aware snippets via the code-completion popup to complement the existing SublimeText Go package.
+* a sublime build system(ctrl+b) for gomake including support for cycling errors with F4/Shift+F4
+* gotype and govet support as linters with errors highlighted in the editor view
+* gofmt support for quickly reformatting your source to conform with the Go standards
+* automatic code completion popup when you press dot(.)
 
 Demo
 ----
@@ -49,7 +57,7 @@ The available settings are:
 
 * gslint_cmd - the command that will be used by gslint. Set it to an empty string to disable gslint. Any command can be used in place of `gotype` as long as the output is compatible and printed to stderr (e.g `govet` provides compatible output) - default `gotype`
 
-* gslint_timeout - how long to wait after the last keystroke before the command is run (in milliseconds) - default 500
+* gslint_timeout - how long to wait after the last keystroke before the command is run (in milliseconds) - default `500`
 
 Completion Markers
 ------------------
