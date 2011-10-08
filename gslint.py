@@ -59,11 +59,10 @@ class GsLint(sublime_plugin.EventListener):
                     line, start, err = int(m[0])-1, int(m[1])-1, m[2]
                     self.errors[view_id][line] = err
                     lr = view.line(view.text_point(line, start))
-                    regions.append(sublime.Region(lr.begin() + start, lr.end()))
+                    pos = lr.begin() + start
+                    regions.append(sublime.Region(pos, pos))
             if regions:
-                flags = sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_OUTLINED
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
-                flags = sublime.DRAW_OUTLINED
                 view.add_regions('GsLint-errors', regions, 'invalid.illegal', 'cross', flags)
             else:
                 view.erase_regions('GsLint-errors')
