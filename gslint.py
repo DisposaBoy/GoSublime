@@ -1,8 +1,11 @@
 import sublime, sublime_plugin
 import gscommon as gs
 import re, threading
+from os import unlink, listdir
+from os.path import dirname, basename, join as pathjoin
 
-LINE_PAT = re.compile(r':(\d+):(\d+):\s+(.+)\s*$', re.MULTILINE)
+LEADING_COMMENTS_PAT = re.compile(r'(^(\s*//.*?[\r\n]+|\s*/\*.*?\*/)+)', re.DOTALL)
+PACKAGE_NAME_PAT = re.compile(r'package\s+(\w+)', re.UNICODE)
 
 class GsLint(sublime_plugin.EventListener):
     rc = 0
@@ -37,30 +40,73 @@ class GsLint(sublime_plugin.EventListener):
             else:
                 # we want to cleanup if e.g settings changed or we caused an error entering an excluded scope
                 sublime.set_timeout(cb, 1000)
-    
+
     def on_load(self, view):
         self.on_modified(view)
+
+    def on_activated(self, view):
+        self.on_modified(view)
+
+    def on_close(self, view):
+        try:
+            del self.errors[view.id()]
+        except KeyError:
+            pass
     
     def lint(self, view):
         self.rc -= 1
-
         if self.rc == 0:
+            err = ''
             cmd = gs.setting('gslint_cmd', 'gotype')
-            if cmd:
-                _, err = gs.runcmd([cmd], view.substr(sublime.Region(0, view.size())))
-            else:
-                err = ''
-            lines = LINE_PAT.findall(err)
+            real_path = view.file_name()
+            pat_prefix = ''
+            pwd = dirname(real_path)
+            fn = basename(real_path)
+            # normalize the path so we can compare it below
+            real_path = pathjoin(pwd, fn)
+            tmp_path = pathjoin(pwd, '.GoSublime~tmp~%d~%s~' % (view.id(), fn))
+            try:
+                if cmd:
+                    files = []
+                    if real_path:
+                        for fn in listdir(pwd):
+                            if fn.lower().endswith('.go'):
+                                fn = pathjoin(pwd, fn)
+                                if fn != real_path:
+                                    files.append(fn)
+
+                    src = view.substr(sublime.Region(0, view.size())).encode('utf-8')
+                    if files:
+                        # m = LEADING_COMMENTS_PAT.sub('', src)
+                        m = LEADING_COMMENTS_PAT.match(src)
+                        m = PACKAGE_NAME_PAT.search(src, m.end(1) if m else 0)
+                        if m:
+                            pat_prefix = '^' + re.escape(tmp_path)
+                            with open(tmp_path, 'wb') as f:
+                                f.write(src)
+                            args = [cmd, '-p', m.group(1), tmp_path]
+                            args.extend(files)
+                            _, err = gs.runcmd(args)
+                            unlink(tmp_path)
+                        else:
+                            sublime.status_message('Cannot find PackageName')
+                    else:
+                        _, err = gs.runcmd([cmd], src)
+            except Exception as e:
+                sublime.status_message(str(e))
+
             regions = []
-            view_id = view.id()        
+            view_id = view.id()
             self.errors[view_id] = {}
-            if lines:
-                for m in lines:
-                    line, start, err = int(m[0])-1, int(m[1])-1, m[2]
-                    self.errors[view_id][line] = err
-                    lr = view.line(view.text_point(line, start))
-                    pos = lr.begin() + start
-                    regions.append(sublime.Region(pos, pos))
+
+            for m in re.finditer(r'%s:(\d+):(\d+):\s+(.+)\s*$' % pat_prefix, err, re.MULTILINE):
+                line, start, err = int(m.group(1))-1, int(m.group(2))-1, m.group(3)
+                self.errors[view_id][line] = err
+                pos = view.line(view.text_point(line, 0)).begin() + start
+                if pos >= view.size():
+                    pos = view.size() - 1
+                regions.append(sublime.Region(pos, pos))
+
             if regions:
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
                 view.add_regions('GsLint-errors', regions, 'invalid.illegal', 'cross', flags)
