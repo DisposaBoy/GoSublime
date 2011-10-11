@@ -36,21 +36,21 @@ You may achieve this by adding this to your `Packages/User/Default.sublime-keyma
         "command": "run_macro_file",
         "args":
         {
-            "file": "Packages/GoSublime/macros/Dot.sublime-macro",
-            "context":
-            [
-                {
-                    "key": "auto_complete_visible",
-                    "operator": "equal",
-                    "operand": false
-                },
-                {
-                    "key": "selector",
-                    "operator": "equal",
-                    "operand": "source.go"
-                }
-            ]
-        }
+            "file": "Packages/GoSublime/macros/Dot.sublime-macro"
+        },
+        "context":
+        [
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": false
+            },
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.go"
+            }
+        ]
     }
 
 A sample file is provided in `Packages/GoSublime/examples/Default.sublime-keymap.example`, you can simply copy or symlink it to your `Packages/User` directory.
