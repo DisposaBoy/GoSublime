@@ -6,6 +6,7 @@ from os.path import dirname, basename, join as pathjoin
 
 LEADING_COMMENTS_PAT = re.compile(r'(^(\s*//.*?[\r\n]+|\s*/\*.*?\*/)+)', re.DOTALL)
 PACKAGE_NAME_PAT = re.compile(r'package\s+(\w+)', re.UNICODE)
+LINE_INDENT_PAT = re.compile(r'[\r\n]+[ \t]+')
 
 class GsLint(sublime_plugin.EventListener):
     rc = 0
@@ -99,13 +100,15 @@ class GsLint(sublime_plugin.EventListener):
             view_id = view.id()
             self.errors[view_id] = {}
 
-            for m in re.finditer(r'%s:(\d+):(\d+):\s+(.+)\s*$' % pat_prefix, err, re.MULTILINE):
-                line, start, err = int(m.group(1))-1, int(m.group(2))-1, m.group(3)
-                self.errors[view_id][line] = err
-                pos = view.line(view.text_point(line, 0)).begin() + start
-                if pos >= view.size():
-                    pos = view.size() - 1
-                regions.append(sublime.Region(pos, pos))
+            if err:
+                err = LINE_INDENT_PAT.sub(' ', err)
+                for m in re.finditer(r'%s:(\d+):(\d+):\s+(.+)\s*$' % pat_prefix, err, re.MULTILINE):
+                    line, start, err = int(m.group(1))-1, int(m.group(2))-1, m.group(3)
+                    self.errors[view_id][line] = err
+                    pos = view.line(view.text_point(line, 0)).begin() + start
+                    if pos >= view.size():
+                        pos = view.size() - 1
+                    regions.append(sublime.Region(pos, pos))
 
             if regions:
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
