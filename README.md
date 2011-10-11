@@ -19,7 +19,7 @@ Features
 Demo
 ----
 
-* http://vimeo.com/disposaboy/gosublime-a2-demo
+* http://vimeo.com/disposaboy/gosublime-demo2
 
 Installation
 ------------
