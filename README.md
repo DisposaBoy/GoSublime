@@ -40,24 +40,9 @@ Please see USAGE.md for general usage and other tips for effective usage of GoSu
 Settings
 --------
 
-You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings`. A sample settings file `Packages/GoSublime/examples/GoSublime.sublime-settings.example` is provided inside the GoSublime package directory.
+You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings` or alternatively copy the default settings file `Packages/GoSublime/GoSublime.sublime-settings` to your `User` package and edit it to your liking.
 
 Note: Filenames are case-sensitive on some platforms(e.g. Linux) so the filename should be exactly `GoSublime.sublime-settings` with capitalization preserved.
-
-e.g. If you want to change the path of gocode, you can edit the `gocode_cmd` setting:
-
-    "gocode_cmd": "/go/bin/gocode"
-
-
-The available settings are:
-
-* gocode_cmd - the command that shall be called for gocode, this can be the command name e.g. `gocode` or full path to a binary e.g. `/go/bin/gocode` - default `gocode`
-
-* gofmt_cmd - the command that shall be called for gofmt, this can be the command name e.g. `gofmt` or full path to a binary e.g. `/go/bin/gofmt` - default `gofmt`
-
-* gslint_cmd - the command that shall be called for gotype, this can be the command name e.g. `gotype` or full path to a binary e.g. `/go/bin/gotype` - default `gotype`
-
-* gslint_timeout - how long to wait after the last keystroke before the command is run (in milliseconds) - default `500`
 
 Completion Markers
 ------------------
