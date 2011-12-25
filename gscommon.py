@@ -15,7 +15,7 @@ GLOBAL_SNIPPETS = [
     (u'\u0282  func: Function (receiver) ...', 'func (${1:receiver} ${2:type}) ${3:name}($4)$5 {\n\t$0\n}'),
     (u'\u0282  var: Variable (...)', 'var (\n\t$1\n)'),
     (u'\u0282  const: Constant (...)', 'const (\n\t$1\n)'),
-    (u'\u0282  import: Import (...)', 'import (\n\t$2"$1"\n)'),
+    (u'\u0282  import: Import (...)', 'import (\n\t"$1"\n)'),
     (u'\u0282  package: Package ...', 'package ${1:NAME}')
 ]
 
