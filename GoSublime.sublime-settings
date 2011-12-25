@@ -12,5 +12,8 @@
 	"gslint_cmd": "gotype",
 
 	// how long to wait after the last keystroke before the gslint_cmd command is run (in milliseconds)
-	"gslint_timeout": 500
+	"gslint_timeout": 500,
+
+	// whether or not to include snippets in the auto-completion list
+	"autocomplete_snippets": true
 }
