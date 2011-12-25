@@ -1,6 +1,15 @@
 Usage
 =====
 
+Settings
+--------
+
+You may customize GoSublimes behaviour by modiying its default settings. Default settings are documented in `Packages/GoSublime/GoSublime.sublime-settings`
+
+
+Code Completion
+---------------
+
 Completion can be accessed by typing the (default) key combination `CTRL+[SPACE]` inside a Golang file.
 
 Automatic/Dot Completion
@@ -81,13 +90,7 @@ which will call the gs_fmt command whenever you press `Ctrl+Shift+E`. You can se
 GsLint
 ------
 
-GsLint is a front-end to `gotype` that highlights errors in the source as you type. Its behaviour can be customized to best suit your style of coding with the following settings.
-
-* gslint_cmd - sets the command to call, it can be the command name e.g. `gotype` or its full path e.g. `/go/bin/gotype`. If you find it distracting or otherwise want to disable it, simply set the value of this setting to an empty string ("")
-
-* gslint_timeout - sets the number of milliseconds to wait after you type a character before calling the command. The default value of 500ms may be too high which causes a noticeable lag from when typing and e.g misspelled(udefined) variables being typed. In that case, set it to something lower like 100 until you feel comfortable with it. Another option is to set it to a value of several seconds, say 3(3000ms) which means it won't activate until you take a rest from typing.
-
-Errors are highlighted as reported by the lint command. In the case of gotype, compile errors reported on line 10 may cause multiple errors. Each line with an error will be marked by a `x` in the gutter and the first character of the invalid code will be underlined. e.g. an undefined variable `name` when passed to an existing function `println` will result in the letter `n` being underlined. To see what the error is, if it's not immediately clear, move the cursor to the relevant line which will cause the error to be displayed in the status bar under the `GsLint: ` marker.
+GsLint is a front-end to `gotype` and similar commands. It highlights errors in the source as you type. Errors are highlighted as reported by the lint command. In the case of gotype, compile errors reported on line 10 may cause multiple errors. Each line with an error will be marked by a `x` in the gutter and the first character of the invalid code will be underlined. e.g. an undefined variable `name` when passed to an existing function `println` will result in the letter `n` being underlined. To see what the error is, if it's not immediately clear, move the cursor to the relevant line which will cause the error to be displayed in the status bar under the `GsLint: ` marker.
 
 
 Misc. Helper Commands

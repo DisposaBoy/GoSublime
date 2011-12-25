@@ -7,9 +7,23 @@
 	// or absolute path to a binary e.g. `/go/bin/gofmt`
 	"gofmt_cmd": "gofmt",
 	
-	// the command that shall be called for gotype, this can be the command name
-	// or absolute path to a binary e.g. `/go/bin/gotype`
-	"gslint_cmd": "gotype",
+	// the command that shall be called for gslint
+	// the command shall output errors to stderr in the format: PATH:LINE_NUMBER:ERROR_OFFSET:ERROR_MESSAGE
+	// e.g. given:
+	//     fmt.Println(x)
+	// the command shall output:
+	//     main.go:10:14: undeclared name: x
+	// compatible commands include: govet, gotype
+	// the following magic values are replaced in the command you specify
+	// 
+	// $pkg   the package name of the view in which the command was invoked
+	// $files the list of project files
+	// 
+	// To disable GsLint, set gslint_cmd to an empty list
+	// "gslint_cmd": [],
+	// 
+	// "gslint_cmd": ["govet", "$files"],
+	"gslint_cmd": ["gotype", "-p", "$pkg", "$files"],
 
 	// how long to wait after the last keystroke before the gslint_cmd command is run (in milliseconds)
 	"gslint_timeout": 500,

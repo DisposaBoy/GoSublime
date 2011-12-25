@@ -77,22 +77,26 @@ class GsLint(sublime_plugin.EventListener):
                                     files.append(fn)
 
                     src = view.substr(sublime.Region(0, view.size())).encode('utf-8')
-                    if files:
-                        # m = LEADING_COMMENTS_PAT.sub('', src)
-                        m = LEADING_COMMENTS_PAT.match(src)
-                        m = PACKAGE_NAME_PAT.search(src, m.end(1) if m else 0)
-                        if m:
-                            pat_prefix = '^' + re.escape(tmp_path)
-                            with open(tmp_path, 'wb') as f:
-                                f.write(src)
-                            args = [cmd, '-p', m.group(1), tmp_path]
-                            args.extend(files)
-                            _, err = gs.runcmd(args)
-                            unlink(tmp_path)
-                        else:
-                            sublime.status_message('Cannot find PackageName')
+                    pkg = 'main'
+                    m = LEADING_COMMENTS_PAT.match(src)
+                    m = PACKAGE_NAME_PAT.search(src, m.end(1) if m else 0)
+                    if m:
+                        pat_prefix = '^' + re.escape(tmp_path)
+                        with open(tmp_path, 'wb') as f:
+                            f.write(src)
+                        files.append(tmp_path)
+                        
+                        t = {
+                            "$pkg": [m.group(1)],
+                            "$files": files
+                        }
+                        args = []
+                        for i in list(cmd):
+                            args.extend(t.get(i, [i]))
+                        _, err = gs.runcmd(args)
+                        unlink(tmp_path)
                     else:
-                        _, err = gs.runcmd([cmd], src)
+                        sublime.status_message('Cannot find PackageName')
             except Exception as e:
                 sublime.status_message(str(e))
 
