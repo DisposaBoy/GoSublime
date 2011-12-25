@@ -28,10 +28,13 @@ class GoSublime(sublime_plugin.EventListener):
         fn = view.file_name()
         cl = self.complete(fn, offset, src)
 
-        if scopes[-1] == 'source.go':
-            cl.extend(gs.GLOBAL_SNIPPETS)
-        elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
-            cl.extend(gs.LOCAL_SNIPPETS)
+        print(gs.setting('hello', '.world.'))
+
+        if gs.setting('autocomplete_snippets', True):
+            if scopes[-1] == 'source.go':
+                cl.extend(gs.GLOBAL_SNIPPETS)
+            elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
+                cl.extend(gs.LOCAL_SNIPPETS)
         
         return cl
     
