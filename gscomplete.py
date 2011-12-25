@@ -28,8 +28,6 @@ class GoSublime(sublime_plugin.EventListener):
         fn = view.file_name()
         cl = self.complete(fn, offset, src)
 
-        print(gs.setting('hello', '.world.'))
-
         if gs.setting('autocomplete_snippets', True):
             if scopes[-1] == 'source.go':
                 cl.extend(gs.GLOBAL_SNIPPETS)
@@ -41,12 +39,8 @@ class GoSublime(sublime_plugin.EventListener):
     def complete(self, fn, offset, src):
         comps = []
         cmd = gs.setting('gocode_cmd', 'gocode')
-        can_pass_char_offset = gs.setting('gocode_accepts_character_offsets', False)
-        if can_pass_char_offset is True:
-            offset = 'c%s' % offset
-        else:
-            offset = gs.char_to_byte_offset(src, offset)
-        args = [cmd, "-f=json", "autocomplete", fn, str(offset)]
+        offset = 'c%s' % offset
+        args = [cmd, "-f=json", "autocomplete", fn, offset]
         js, err = gs.runcmd(args, src)
         if err:
             sublime.error_message(err)
