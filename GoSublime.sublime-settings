@@ -1,10 +1,16 @@
- {
+{
+	// the command that shall be called for gocode, this can be the command name
+	// or absolute path to a binary e.g. `/go/bin/gocode`
 	"gocode_cmd": "gocode",
 	
+	// the command that shall be called for gofmt, this can be the command name
+	// or absolute path to a binary e.g. `/go/bin/gofmt`
 	"gofmt_cmd": "gofmt",
 	
+	// the command that shall be called for gotype, this can be the command name
+	// or absolute path to a binary e.g. `/go/bin/gotype`
 	"gslint_cmd": "gotype",
-	"gslint_timeout": 500,
-	
-	"gocode_accepts_character_offsets": false
+
+	// how long to wait after the last keystroke before the gslint_cmd command is run (in milliseconds)
+	"gslint_timeout": 500
 }
