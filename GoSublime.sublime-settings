@@ -9,6 +9,7 @@
 	
 	// the command that shall be called for gslint
 	// the command shall output errors to stderr in the format: PATH:LINE_NUMBER:ERROR_OFFSET:ERROR_MESSAGE
+	// matching the regexp (.+):(\d+):(\d+):(.+) where ERROR_OFFSET is optional.
 	// e.g. given:
 	//     fmt.Println(x)
 	// the command shall output:
