@@ -37,9 +37,9 @@ NAME_PREFIXES = {
 }
 
 
-def runcmd(args, input=None):
+def runcmd(args, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
     try:
-        p = Popen(args, stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO)
+        p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE, startupinfo=STARTUP_INFO)
         if isinstance(input, unicode):
             input = input.encode('utf-8')
         out, err = p.communicate(input=input)
