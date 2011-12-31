@@ -1,7 +1,7 @@
 import sublime, sublime_plugin
 import gscommon as gs
-import re, threading
-from os import unlink, listdir
+import re, threading, subprocess
+from os import unlink, listdir, chdir, getcwd
 from os.path import dirname, basename, join as pathjoin
 
 LEADING_COMMENTS_PAT = re.compile(r'(^(\s*//.*?[\r\n]+|\s*/\*.*?\*/)+)', re.DOTALL)
@@ -58,10 +58,17 @@ class GsLint(sublime_plugin.EventListener):
         self.rc -= 1
         if self.rc == 0:
             err = ''
+            out = ''
             cmd = gs.setting('gslint_cmd', 'gotype')
             real_path = view.file_name()
+            
+            if not real_path:
+                return
+            
             pat_prefix = ''
+            cwd = getcwd()
             pwd = dirname(real_path)
+            chdir(pwd)
             fn = basename(real_path)
             # normalize the path so we can compare it below
             real_path = pathjoin(pwd, fn)
@@ -93,12 +100,14 @@ class GsLint(sublime_plugin.EventListener):
                         args = []
                         for i in list(cmd):
                             args.extend(t.get(i, [i]))
-                        _, err = gs.runcmd(args)
+                        out, err = gs.runcmd(args)
                         unlink(tmp_path)
                     else:
                         sublime.status_message('Cannot find PackageName')
             except Exception as e:
                 sublime.status_message(str(e))
+
+            chdir(cwd)
 
             regions = []
             view_id = view.id()
@@ -106,14 +115,19 @@ class GsLint(sublime_plugin.EventListener):
 
             if err:
                 err = LINE_INDENT_PAT.sub(' ', err)
-                for m in re.finditer(r'%s:(\d+):(\d+):\s+(.+)\s*$' % pat_prefix, err, re.MULTILINE):
-                    line, start, err = int(m.group(1))-1, int(m.group(2))-1, m.group(3)
+                self.errors[view_id] = {}
+                for m in re.finditer(r'%s[:](\d+)(?:[:](\d+))?[:](.+)$' % pat_prefix, err, re.MULTILINE):
+                    line = int(m.group(1))-1
+                    start = 0 if m.group(2) == '' else int(m.group(2))-1
+                    err = m.group(3).strip()
                     self.errors[view_id][line] = err
                     pos = view.line(view.text_point(line, 0)).begin() + start
                     if pos >= view.size():
                         pos = view.size() - 1
                     regions.append(sublime.Region(pos, pos))
-
+                
+                if len(self.errors[view_id]) == 0:
+                    sublime.status_message(out + '\n' + err)
             if regions:
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
                 view.add_regions('GsLint-errors', regions, 'invalid.illegal', 'cross', flags)
