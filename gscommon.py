@@ -51,3 +51,8 @@ def runcmd(args, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
 def setting(key, default=None):
     s = sublime.load_settings("GoSublime.sublime-settings")
     return s.get(key, default)
+
+def notice(domain, txt):
+    txt = "** %s: %s **" % (domain, txt)
+    print(txt)
+    sublime.status_message(txt)
