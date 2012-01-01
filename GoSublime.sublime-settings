@@ -17,8 +17,13 @@
 	// compatible commands include: govet, gotype
 	// the following magic values are replaced in the command you specify
 	// 
-	// $pkg   the package name of the view in which the command was invoked
-	// $files the list of project files
+	// $pkg        the package name of the file in which the command was invoked
+	// $files      the list of project files
+	// $real_path  the origin path to file in which the command was invoked.
+	// $path       the path to the file in which the command was invoked.
+	//             This defers from $real_path in that it contains the contents
+	//             of the possibly unsaved view.
+	//             Its basename is of the form: .GoSublime~tmp~[VIEW_ID:\d+]~[basename($real_path)]~
 	// 
 	// To disable GsLint, set gslint_cmd to an empty list
 	// "gslint_cmd": [],

@@ -145,7 +145,9 @@ class GsLintThread(threading.Thread):
                         
                         t = {
                             "$pkg": [m.group(1)],
-                            "$files": files
+                            "$files": files,
+                            "$path": tmp_path,
+                            "$real_path": real_path
                         }
                         args = []
                         for i in list(cmd):
