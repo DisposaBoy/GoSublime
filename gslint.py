@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import gscommon as gs
-import re, threading, subprocess
+import re, threading, subprocess, time, traceback, Queue
 from os import unlink, listdir, chdir, getcwd
 from os.path import dirname, basename, join as pathjoin
 
@@ -9,60 +9,111 @@ PACKAGE_NAME_PAT = re.compile(r'package\s+(\w+)', re.UNICODE)
 LINE_INDENT_PAT = re.compile(r'[\r\n]+[ \t]+')
 
 class GsLint(sublime_plugin.EventListener):
-    rc = 0
-    errors = {}
+    _q = Queue.Queue()
+
+    _errors = {}
+    _errors_sem = threading.Semaphore()
+
+    _linters = {}
+    _linters_sem = threading.Semaphore()
+
+    def __del__(self):
+        for lt in self._linters:
+            lt.stop()
+
+    def errors(self, view, default={}):
+        with self._errors_sem:
+            return self._errors.get(view.id(), default)
+
+    def set_errors(self, view, errors):
+        with self._errors_sem:
+            self._errors[view.id()] = errors
+
+    def linter(self, view):
+        with self._linters_sem:
+            lt = self._linters.get(view.id())
+            if not lt or not lt.is_alive():
+                lt = GsLintThread(self, view)
+                self._linters[view.id()] = lt
+                lt.start()
+            return lt
+
+    def check(self, view):
+        sel = view.sel()[0].begin()
+        if view.score_selector(sel, 'source.go') > 0:
+            def cb():
+                self._q.get_nowait()
+                if self._q.empty():
+                    self.linter(view).notify()
+            
+            self._q.put(True)
+            sublime.set_timeout(cb, int(gs.setting('gslint_timeout', 500)))
 
     def on_selection_modified(self, view):
         sel = view.sel()[0].begin()
         if view.score_selector(sel, 'source.go') > 0:
             line = view.rowcol(sel)[0]
-            msg = self.errors.get(view.id(), {}).get(line, '')
+            msg = self.errors(view).get(line, '')
             view.set_status('GsLint', ('GsLint: ' + msg) if msg else '')
-    
+
     def on_modified(self, view):
-        pos = view.sel()[0].begin()
-        scopes = view.scope_name(pos).split()
-        if 'source.go' in scopes:
-            self.rc += 1
-
-            should_run = (
-                         'string.quoted.double.go' not in scopes and
-                         'string.quoted.single.go' not in scopes and
-                         'string.quoted.raw.go' not in scopes and
-                         'comment.line.double-slash.go' not in scopes and
-                         'comment.block.go' not in scopes
-            )
-
-            def cb():
-                self.lint(view)
-            
-            if should_run:
-                sublime.set_timeout(cb, int(gs.setting('gslint_timeout', 500)))
-            else:
-                # we want to cleanup if e.g settings changed or we caused an error entering an excluded scope
-                sublime.set_timeout(cb, 1000)
+        self.check(view)
 
     def on_load(self, view):
-        self.on_modified(view)
+        self.check(view)
 
     def on_activated(self, view):
-        self.on_modified(view)
+        self.check(view)
 
     def on_close(self, view):
-        try:
-            del self.errors[view.id()]
-        except KeyError:
-            pass
+        self.linter(view).stop()
+        self.set_errors(view, {})
+
+class GsLintThread(threading.Thread):
+    ignored_scopes = frozenset([
+        'string.quoted.double.go',
+        'string.quoted.single.go',
+        'string.quoted.raw.go',
+        'comment.line.double-slash.go',
+        'comment.block.go'
+    ])
+
+    def __init__(self, gslint, view):
+        threading.Thread.__init__(self)
+
+        self.daemon = True
+        self.gslint = gslint
+        self.view = view
+        self.stop_ev = threading.Event()
+        self.ready_ev = threading.Event()
     
-    def lint(self, view):
-        self.rc -= 1
-        if self.rc == 0:
+    def notify(self):
+        self.ready_ev.set()
+
+    def stop(self):
+        self.stop_ev.set()
+
+    def run(self):
+        while not self.stop_ev.is_set():
+            try:
+                self.ready_ev.wait()
+                self.ready_ev.clear()
+                self.lint()
+            except Exception:
+                gs.notice("GsLintThread: Loop", traceback.format_exc())
+
+    def lint(self):
+        view = self.view
+        pos = view.sel()[0].begin()
+        scopes = set(self.view.scope_name(pos).split())
+        if 'source.go' in scopes and self.ignored_scopes.isdisjoint(scopes):
             err = ''
             out = ''
             cmd = gs.setting('gslint_cmd', 'gotype')
             real_path = view.file_name()
-            
-            if not real_path:
+            src = view.substr(sublime.Region(0, view.size())).encode('utf-8')
+
+            if not real_path or not src:
                 return
             
             pat_prefix = ''
@@ -82,8 +133,7 @@ class GsLint(sublime_plugin.EventListener):
                                 fn = pathjoin(pwd, fn)
                                 if fn != real_path:
                                     files.append(fn)
-
-                    src = view.substr(sublime.Region(0, view.size())).encode('utf-8')
+                    
                     pkg = 'main'
                     m = LEADING_COMMENTS_PAT.match(src)
                     m = PACKAGE_NAME_PAT.search(src, m.end(1) if m else 0)
@@ -102,35 +152,33 @@ class GsLint(sublime_plugin.EventListener):
                             args.extend(t.get(i, [i]))
                         out, err = gs.runcmd(args)
                         unlink(tmp_path)
-                    else:
-                        sublime.status_message('Cannot find PackageName')
-            except Exception as e:
-                sublime.status_message(str(e))
-
+            except Exception:
+                gs.notice("GsLintThread: Cmd", traceback.format_exc())
+            
             chdir(cwd)
 
             regions = []
-            view_id = view.id()
-            self.errors[view_id] = {}
+            errors = {}
 
             if err:
                 err = LINE_INDENT_PAT.sub(' ', err)
-                self.errors[view_id] = {}
                 for m in re.finditer(r'%s[:](\d+)(?:[:](\d+))?[:](.+)$' % pat_prefix, err, re.MULTILINE):
                     line = int(m.group(1))-1
                     start = 0 if m.group(2) == '' else int(m.group(2))-1
                     err = m.group(3).strip()
-                    self.errors[view_id][line] = err
+                    errors[line] = err
                     pos = view.line(view.text_point(line, 0)).begin() + start
                     if pos >= view.size():
                         pos = view.size() - 1
                     regions.append(sublime.Region(pos, pos))
                 
-                if len(self.errors[view_id]) == 0:
-                    sublime.status_message(out + '\n' + err)
+                if len(errors) == 0:
+                    gs.notice("GsLintThread: Unknown Error:", out + '\n' + err)
+            
+            self.gslint.set_errors(view, errors)
             if regions:
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
                 view.add_regions('GsLint-errors', regions, 'invalid.illegal', 'cross', flags)
             else:
                 view.erase_regions('GsLint-errors')
-        self.on_selection_modified(view)
+    
