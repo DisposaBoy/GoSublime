@@ -101,6 +101,8 @@ class GsLintThread(threading.Thread):
                 self.lint()
             except Exception:
                 gs.notice("GsLintThread: Loop", traceback.format_exc())
+            # updat the view so the error is displayed without needing to move the cursor
+            self.gslint.on_selection_modified(self.view)
 
     def lint(self):
         view = self.view
@@ -120,20 +122,26 @@ class GsLintThread(threading.Thread):
             cwd = getcwd()
             pwd = dirname(real_path)
             chdir(pwd)
-            fn = basename(real_path)
+            real_fn = basename(real_path)
             # normalize the path so we can compare it below
-            real_path = pathjoin(pwd, fn)
-            tmp_path = pathjoin(pwd, '.GoSublime~tmp~%d~%s~' % (view.id(), fn))
+            real_path = pathjoin(pwd, real_fn)
+            tmp_path = pathjoin(pwd, '.GoSublime~tmp~%d~%s~' % (view.id(), real_fn))
             try:
-                if cmd:
-                    files = []
-                    if real_path:
-                        for fn in listdir(pwd):
-                            if fn.lower().endswith('.go'):
-                                fn = pathjoin(pwd, fn)
-                                if fn != real_path:
-                                    files.append(fn)
-                    
+                real_fn_lower = real_fn.lower()
+                x = gs.GOOSARCHES_PAT.match(real_fn_lower)
+                x = x.groups() if x else None
+                if x and cmd:
+                    files = [tmp_path]
+                    for fn in listdir(pwd):
+                        fn_lower = fn.lower()
+                        y = gs.GOOSARCHES_PAT.match(fn_lower)
+                        y = y.groups() if y else None
+                        if y and fn_lower != real_fn_lower:
+                            path = pathjoin(pwd, fn)
+                            # attempt to resolve any os-specific file names...
+                            # [0] => fn prefix, [1] => os, [2] => arch
+                            if (x[0] != y[0]) or (x[1] == y[1] and (not x[2] or not y[2] or x[2] == y[2])):
+                                files.append(path)
                     pkg = 'main'
                     m = LEADING_COMMENTS_PAT.match(src)
                     m = PACKAGE_NAME_PAT.search(src, m.end(1) if m else 0)
@@ -141,8 +149,7 @@ class GsLintThread(threading.Thread):
                         pat_prefix = '^' + re.escape(tmp_path)
                         with open(tmp_path, 'wb') as f:
                             f.write(src)
-                        files.append(tmp_path)
-                        
+                                                
                         t = {
                             "$pkg": [m.group(1)],
                             "$files": files,
@@ -173,14 +180,9 @@ class GsLintThread(threading.Thread):
                     if pos >= view.size():
                         pos = view.size() - 1
                     regions.append(sublime.Region(pos, pos))
-                
-                if len(errors) == 0:
-                    gs.notice("GsLintThread: Unknown Error:", out + '\n' + err)
-            
             self.gslint.set_errors(view, errors)
             if regions:
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
                 view.add_regions('GsLint-errors', regions, 'invalid.illegal', 'cross', flags)
             else:
                 view.erase_regions('GsLint-errors')
-    
