@@ -82,7 +82,7 @@ GoSublime provides a text command `gs_fmt` which formats the current file using 
 
 You can utilize this command by adding a key binding, e.g. by clicking the menu`Preferences > Key Bindings - User` in Sublime Text 2 and adding the following entry:
 
-    { "keys": ["ctrl+shift+e"], "command": "gs_fmt" }
+    { "keys": ["ctrl+shift+e"], "command": "gs_fmt", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }
 
 which will call the gs_fmt command whenever you press `Ctrl+Shift+E`. You can set the key binding to anything you prefer, however, it's not recommended to bind it to `Ctrl+S` which also saves the file because the buffer must be edited and in the unlikely event that the patch fails, the changes are undone leaving the file on-disk with the erroneous changes.
 
@@ -98,6 +98,6 @@ Misc. Helper Commands
 
 The following commands can use bound to key bindings to further improve your editing experience.
 
-* gs_commend_forward - this command will activate the ctrl+/ commenting and move the cursor to the next line, allowing you to comment/uncomment multiple lines in sequence without breaking to move the cursor. You can replace the default behaviour by overriding it in your user key bindings(Preferences > Key Bindings - User) with `{ "keys": ["ctrl+/"], "command": "gs_comment_forward" }`
+* gs_commend_forward - this command will activate the ctrl+/ commenting and move the cursor to the next line, allowing you to comment/uncomment multiple lines in sequence without breaking to move the cursor. You can replace the default behaviour by overriding it in your user key bindings(Preferences > Key Bindings - User) with `{ "keys": ["ctrl+/"], "command": "gs_comment_forward", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }`
 
-* gs_fmt_save, gs_fmt_prompt_save_as - Due to technical limitations, it's not recommended to run the `gs_fmt` command during the save events(see GsFmt entry above). However, it's possible and may be reasonable to bind to a command that runs `gs_fmt` followed by the `save` command, ensuring any undo's will get saved. For this, two helper commands are provided and can be used to override the default save(`ctrl+s`) and save-as(`ctrl+shift+s`) bindings respectively by adding the following entries to your user key bindings(Preferences > Key Bindings - User): `{ "keys": ["ctrl+s"], "command": "gs_fmt_save" }` and `{ "keys": ["ctrl+shift+s"], "command": "gs_fmt_prompt_save_as" }`.
+* gs_fmt_save, gs_fmt_prompt_save_as - Due to technical limitations, it's not recommended to run the `gs_fmt` command during the save events(see GsFmt entry above). However, it's possible and may be reasonable to bind to a command that runs `gs_fmt` followed by the `save` command, ensuring any undo's will get saved. For this, two helper commands are provided and can be used to override the default save(`ctrl+s`) and save-as(`ctrl+shift+s`) bindings respectively by adding the following entries to your user key bindings(Preferences > Key Bindings - User): `{ "keys": ["ctrl+s"], "command": "gs_fmt_save", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }` and `{ "keys": ["ctrl+shift+s"], "command": "gs_fmt_prompt_save_as", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }`.
