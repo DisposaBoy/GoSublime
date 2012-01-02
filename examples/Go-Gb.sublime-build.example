@@ -1,0 +1,5 @@
+{
+	"cmd": "gb",
+	"file_regex": "^(.+):([0-9]+):.*",
+	"selector": "source.go"
+}
