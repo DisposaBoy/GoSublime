@@ -1,5 +1,5 @@
 import sublime
-import subprocess
+import subprocess, re
 from subprocess import Popen, PIPE
 
 try:
@@ -36,6 +36,28 @@ NAME_PREFIXES = {
     'interface': u'\u00A1  ',
 }
 
+GOARCHES = [
+    '386',
+    'amd64',
+    'arm',
+]
+
+GOOSES = [
+    'darwin',
+    'freebsd',
+    'linux',
+    'netbsd',
+    'openbsd',
+    'plan9',
+    'windows',
+]
+
+GOOSARCHES = []
+for os in GOOSES:
+    for arch in GOARCHES:
+        GOOSARCHES.append('%s_%s' % (os, arch))
+
+GOOSARCHES_PAT = re.compile(r'^(.+?)(?:_(%s))?(?:_(%s))?\.go$' % ('|'.join(GOOSES), '|'.join(GOARCHES)))
 
 def runcmd(args, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
     try:
