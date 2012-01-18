@@ -77,7 +77,7 @@ def setting(key, default=None):
 def notice(domain, txt):
     txt = "** %s: %s **" % (domain, txt)
     print(txt)
-    sublime.status_message(txt)
+    sublime.set_timeout(lambda: sublime.status_message(txt), 0)
 
 def is_go_source_view(view):
     return view.score_selector(view.sel()[0].begin(), 'source.go') > 0
