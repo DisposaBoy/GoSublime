@@ -44,8 +44,8 @@ def patch(editor, diff):
 		while sp < ep:
 			p, ln = patch[sp]
 			if p == '@@':
-				ln = ln.strip('').split(' ')
-				if len(ln) > 2 and ln[0][0] == '-' and ln[1][0] == '+' and ln[2].strip('') == '@@':
+				ln = ln.strip().split(' ')
+				if len(ln) > 2 and ln[0][0] == '-' and ln[1][0] == '+' and ln[2].strip() == '@@':
 					ed_index = ln[1][1:].split(',')
 					ed_index = int(ed_index[0]) - 1
 					sp += 1
