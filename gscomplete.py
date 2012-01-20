@@ -31,7 +31,7 @@ class GoSublime(sublime_plugin.EventListener):
             return []
 
 
-        cl = self.complete(fn, offset, src)
+        cl = self.complete(fn, offset, src, view.substr(sublime.Region(pos, pos+1)) == '(')
 
         if gs.setting('autocomplete_snippets', True):
             if scopes[-1] == 'source.go':
@@ -41,7 +41,7 @@ class GoSublime(sublime_plugin.EventListener):
         
         return cl
     
-    def complete(self, fn, offset, src):
+    def complete(self, fn, offset, src, func_name_only):
         comps = []
         cmd = gs.setting('gocode_cmd', 'gocode')
         offset = 'c%s' % offset
@@ -60,7 +60,7 @@ class GoSublime(sublime_plugin.EventListener):
                         eclass = ent['class']
                         ename = ent['name']
                         tname = self.typeclass_prefix(eclass, etype) + ename
-                        if ent['class'] == 'func':
+                        if ent['class'] == 'func' and not func_name_only:
                             comps.append(self.parse_decl_hack(etype, ename, tname))
                         elif ent['class'] != 'PANIC':
                             comps.append((tname, ename))
