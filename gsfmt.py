@@ -6,6 +6,7 @@ class SublimeEditor(thatcher.Editor):
     def __init__(self, view, edit):
         self.view = view
         self.edit = edit
+        self.dirty = False
 
     def update_regions(self):
         self.regions = self.view.split_by_newlines(sublime.Region(0, self.view.size()))
@@ -23,7 +24,8 @@ class SublimeEditor(thatcher.Editor):
                 pos = self.regions[line_index].begin()
             else:
                 pos = self.view.size()
-            self.view.insert(self.edit, pos, content+"\n")
+            self.view.insert(self.edit, pos, content+self.view.line_endings())
+            self.dirty = True
             return True
         return False
 
@@ -31,13 +33,13 @@ class SublimeEditor(thatcher.Editor):
         self.update_regions()
         if line_index < len(self.regions):
             self.view.erase(self.edit, self.view.full_line(self.regions[line_index]))
+            self.dirty = True
             return True
         return False
 
 class GsFmtCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        scopes = self.view.scope_name(0).split()
-        if 'source.go' not in scopes:
+        if not gs.is_go_source_view(self.view):
             return
 
         region = sublime.Region(0, self.view.size())
@@ -48,9 +50,7 @@ class GsFmtCommand(sublime_plugin.TextCommand):
         if err:
             fn = self.view.file_name()
             err = err.replace('<standard input>', fn)
-            def report_error():
-                sublime.status_message('GsFmt: File %s contains errors' % fn)
-            sublime.set_timeout(report_error, 0)
+            gs.notice('GsFmt', 'File %s contains errors' % fn)
         elif diff:
             err = ''
             try:
@@ -61,8 +61,10 @@ class GsFmtCommand(sublime_plugin.TextCommand):
                 err = "%s\n\n%s" % (err, e)
             finally:
                 self.view.end_edit(edit)
+            
             if err:
-                def report_err():
-                    self.view.run_command('undo')
-                    sublime.status_message("GsFmt: Could not patch the buffer: %s" % err)
-                sublime.set_timeout(report_err, 0)
+                def cb():
+                    if ed.dirty:
+                        self.view.run_command('undo')
+                    gs.notice("GsFmt", "Could not patch the buffer: %s" % err)
+                sublime.set_timeout(cb, 0)
