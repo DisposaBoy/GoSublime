@@ -160,22 +160,30 @@ def describe_errors():
         view.set_status('GsLint', ('GsLint: ' + msg) if msg else '')
 
 def vsync():
+    delay = 1000
     view = gs.active_valid_go_view()
     if view:
-        vid = view.id()
-        tm, sz = gs.l_vsyncs.get(vid, (0.0, -1))
-        if sz != view.size():
-            if int((time.time() - tm) * 1000.0) > int(gs.setting('gslint_timeout', 500)):
-                gs.l_vsyncs[vid] = (time.time(), view.size())
-                with gs.l_lt.sem:
-                    gs.l_lt.view_real_path = view.file_name()
-                    gs.l_lt.view_src = view.substr(sublime.Region(0, view.size()))
-                    gs.l_lt.view_id = vid
-                    gs.l_lt.view = view
-                    gs.l_lt.notify()
-                    gs.l_lt.cmd = gs.setting('gslint_cmd', [])
-                return
-    set_timeout(vsync, 250) 
+        if gs.setting('gslint_enabled', False):
+            delay = 250
+            vid = view.id()
+            tm, sz = gs.l_vsyncs.get(vid, (0.0, -1))
+            if sz != view.size():
+                if int((time.time() - tm) * 1000.0) > int(gs.setting('gslint_timeout', 500)):
+                    gs.l_vsyncs[vid] = (time.time(), view.size())
+                    with gs.l_lt.sem:
+                        gs.l_lt.view_real_path = view.file_name()
+                        gs.l_lt.view_src = view.substr(sublime.Region(0, view.size()))
+                        gs.l_lt.view_id = vid
+                        gs.l_lt.view = view
+                        gs.l_lt.notify()
+                        gs.l_lt.cmd = gs.setting('gslint_cmd', [])
+                    return
+        else:
+            delay = 5000
+            gs.l_errors = {}
+            describe_errors()
+            view.erase_regions('GsLint-errors')
+    set_timeout(vsync, delay)
 
 try:
     # only init once

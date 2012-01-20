@@ -1,4 +1,7 @@
 {
+	// Whether or not gscomplete(gocode) is enabled
+	"gscomplete_enabled": true,
+
 	// the command that shall be called for gocode, this can be the command name
 	// or absolute path to a binary e.g. `/go/bin/gocode`
 	"gocode_cmd": "gocode",
@@ -7,6 +10,9 @@
 	// or absolute path to a binary e.g. `/go/bin/gofmt`
 	"gofmt_cmd": "gofmt",
 	
+	// Whether or not gslint is enabled
+	"gslint_enabled": true,
+
 	// the command that shall be called for gslint
 	// the command shall output errors to stderr in the format: PATH:LINE_NUMBER:ERROR_OFFSET:ERROR_MESSAGE
 	// matching the regexp (.+):(\d+):(\d+):(.+) where ERROR_OFFSET is optional.
@@ -25,8 +31,6 @@
 	//             of the possibly unsaved view.
 	//             Its basename is of the form: .GoSublime~tmp~[VIEW_ID:\d+]~[basename($real_path)]~
 	// 
-	// To disable GsLint, set gslint_cmd to an empty list
-	// "gslint_cmd": [],
 	// 
 	// "gslint_cmd": ["govet", "$files"],
 	"gslint_cmd": ["gotype", "-p", "$pkg", "$files"],
