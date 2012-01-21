@@ -24,7 +24,7 @@ class SublimeEditor(thatcher.Editor):
                 pos = self.regions[line_index].begin()
             else:
                 pos = self.view.size()
-            self.view.insert(self.edit, pos, content+self.view.line_endings())
+            self.view.insert(self.edit, pos, content+'\n')
             self.dirty = True
             return True
         return False
