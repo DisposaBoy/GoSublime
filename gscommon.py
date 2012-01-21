@@ -11,29 +11,29 @@ except (AttributeError):
 
 
 GLOBAL_SNIPPETS = [
-    (u'\u0282  func: Function ...', 'func ${1:name}($2)$3 {\n\t$0\n}'),
-    (u'\u0282  func: Function (receiver) ...', 'func (${1:receiver} ${2:type}) ${3:name}($4)$5 {\n\t$0\n}'),
-    (u'\u0282  var: Variable (...)', 'var (\n\t$1\n)'),
-    (u'\u0282  const: Constant (...)', 'const (\n\t$1\n)'),
-    (u'\u0282  import: Import (...)', 'import (\n\t"$1"\n)'),
-    (u'\u0282  package: Package ...', 'package ${1:NAME}')
+    (u'func\tfunc {...} \u0282', 'func ${1:name}($2)$3 {\n\t$0\n}'),
+    (u'func\tfunc ([receiver]) {...} \u0282', 'func (${1:receiver} ${2:type}) ${3:name}($4)$5 {\n\t$0\n}'),
+    (u'var\tvar (...) \u0282', 'var (\n\t$1\n)'),
+    (u'const\tconst (...) \u0282', 'const (\n\t$1\n)'),
+    (u'import\timport (...) \u0282', 'import (\n\t"$1"\n)'),
+    (u'package\tpackage [name] \u0282', 'package ${1:NAME}')
 ]
 
 LOCAL_SNIPPETS = [
-    (u'\u0282  func: Function() ...', 'func($1) {\n\t$0\n}($2)'),
-    (u'\u0282  var: Variable (...)', 'var ${1:name} ${2:type}'),
+    (u'func\tfunc{...}() \u0282', 'func($1) {\n\t$0\n}($2)'),
+    (u'var\tvar [name] [type] \u0282', 'var ${1:name} ${2:type}'),
 ]
 
 CLASS_PREFIXES = {
-    'const': u'\u0196   ',
-    'func': u'\u0192   ',
-    'type': u'\u0288   ',
-    'var':  u'\u03BD  ',
-    'package': u'\u03C1  ',
+    'const': u'\u0196',
+    'func': u'\u0192',
+    'type': u'\u0288',
+    'var':  u'\u03BD',
+    'package': u'\u03C1',
 }
 
 NAME_PREFIXES = {
-    'interface': u'\u00A1  ',
+    'interface': u'\u00A1',
 }
 
 GOARCHES = [
