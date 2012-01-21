@@ -33,12 +33,12 @@ class GoSublime(sublime_plugin.EventListener):
 
         cl = self.complete(fn, offset, src, view.substr(sublime.Region(pos, pos+1)) == '(')
 
-        if gs.setting('autocomplete_snippets', True):
+        pc = view.substr(sublime.Region(pos-1, pos))
+        if gs.setting('autocomplete_snippets', True) and (pc.isspace() or pc.isalpha()):
             if scopes[-1] == 'source.go':
                 cl.extend(gs.GLOBAL_SNIPPETS)
             elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
                 cl.extend(gs.LOCAL_SNIPPETS)
-        
         return cl
     
     def complete(self, fn, offset, src, func_name_only):
@@ -54,48 +54,69 @@ class GoSublime(sublime_plugin.EventListener):
                 js = json.loads(js)
                 if js and js[1]:
                     for ent in js[1]:
-                        if ent['name'] == 'main':
-                            continue
-                        etype = ent['type']
-                        eclass = ent['class']
-                        ename = ent['name']
-                        tname = self.typeclass_prefix(eclass, etype) + ename
-                        if ent['class'] == 'func' and not func_name_only:
-                            comps.append(self.parse_decl_hack(etype, ename, tname))
-                        elif ent['class'] != 'PANIC':
-                            comps.append((tname, ename))
+                        tn = ent['type']
+                        cn = ent['class']
+                        nm = ent['name']
+                        sfx = self.typeclass_prefix(cn, tn)
+                        if cn == 'func':
+                            if nm in ('main', 'init'):
+                                continue
+                            act = gs.setting('autocomplete_tests', False)
+                            if not act and nm.startswith(('Test', 'Benchmark', 'Example')):
+                                continue
+                            
+                            params, ret = declex(tn)
+                            ret = ret.strip('() ')
+                            if func_name_only:
+                                a = nm
+                            else:
+                                a = []
+                                for i, p in enumerate(params):
+                                    n, t = p
+                                    if t.startswith('...'):
+                                        n = '...'
+                                    a.append('${%d:%s}' % (i+1, n))
+                                a = '%s(%s)' % (nm, ', '.join(a))
+                            comps.append(('%s\t%s %s' % (nm, ret, sfx), a))
+                        elif cn != 'PANIC':
+                            comps.append(('%s\t%s %s' % (nm, tn, sfx), nm))
             except KeyError as e:
                 sublime.error_message('Error while running gocode, possibly malformed data returned: %s' % e)
             except ValueError as e:
                 sublime.error_message("Error while decoding gocode output: %s" % e)
         return comps
     
-    def parse_decl_hack(self, s, name, tname):
-        # this will go if/when there is sublime output support in gocode 
-        p_count = 0
-        lp_index = -1
-        rp_index = -1
-
-        for i, c in enumerate(s):
-            if c == '(':
-                if p_count == 0:
-                    lp_index = i + 1
-                p_count += 1
-            elif c == ')':
-                if p_count == 1:
-                    rp_index = i
-                    break
-                p_count -= 1
-
-        if lp_index >= 0 and  rp_index >= 1:
-            decl = []
-            args = s[lp_index:rp_index].split(',')
-            for i, a in enumerate(args):
-                a = a.strip().replace('{', '\\{').replace('}', '\\}')
-                decl.append('${%d:%s}' % (i+1, a))
-            if decl:
-                return (tname, '%s(%s)' % (name, ', '.join(decl)))
-        return (tname, name)
-    
     def typeclass_prefix(self, typeclass, typename):
-        return gs.NAME_PREFIXES.get(typename, gs.CLASS_PREFIXES.get(typeclass, ''))
+        return gs.NAME_PREFIXES.get(typename, gs.CLASS_PREFIXES.get(typeclass, ' '))
+
+
+def declex(s):
+    params = []
+    ret = ''
+    if s.startswith('func('):
+        lp = len(s)
+        sp = 5
+        ep = sp
+        dc = 1
+        names = []
+        while ep < lp and dc > 0:
+            c = s[ep]
+            if dc == 1 and c in (',', ')'):
+                if sp < ep:
+                    n, _, t = s[sp:ep].strip().partition(' ')
+                    t = t.strip()
+                    if t:
+                        for name in names:
+                            params.append((name, t))
+                        names = []
+                        params.append((n, t))
+                    else:
+                        names.append(n)
+                    sp = ep + 1
+            if c == '(':
+                dc += 1
+            elif c == ')':
+                dc -= 1
+            ep += 1
+        ret = s[ep:].strip() if ep < lp else ''
+    return (params, ret)
