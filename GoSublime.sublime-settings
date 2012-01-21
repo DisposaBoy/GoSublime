@@ -39,5 +39,8 @@
 	"gslint_timeout": 500,
 
 	// whether or not to include snippets in the auto-completion list
-	"autocomplete_snippets": true
+	"autocomplete_snippets": true,
+
+	// whether or not to include Test*, Benchmark* and Example* functions in the auto-completion list
+	"autocomplete_tests": false
 }
