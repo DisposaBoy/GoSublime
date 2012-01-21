@@ -29,7 +29,7 @@ CLASS_PREFIXES = {
     'func': u'\u0192',
     'type': u'\u0288',
     'var':  u'\u03BD',
-    'package': u'\u03C1',
+    'package': u'package \u03C1',
 }
 
 NAME_PREFIXES = {
