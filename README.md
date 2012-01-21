@@ -47,7 +47,7 @@ Note: Filenames are case-sensitive on some platforms(e.g. Linux) so the filename
 Completion Markers
 ------------------
 
-The following letters are used to prefix entries in the completion list.
+The following letters are used as suffix for entries in the completion list.
 
 * ʂ - Snippets. These snippets are provided by GoSublime and should not be confused with SublimeText's snippets. Furthermore, they are context sensitive, therefore the snippets provided in the global scope will be different to those provided in function scope.
 
