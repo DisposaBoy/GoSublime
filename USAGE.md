@@ -15,7 +15,7 @@ Completion can be accessed by typing the (default) key combination `CTRL+[SPACE]
 Key Bindings
 ------------
 
-By default, a number of key bindings are provided. They can be view in `Packages/GoSublime/Default.sublime-keymap`
+By default, a number of key bindings are provided. They can be viewed in `Packages/GoSublime/Default.sublime-keymap`
 
 Useful key bindings
 -------------------
