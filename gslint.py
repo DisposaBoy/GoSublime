@@ -18,9 +18,18 @@ class GsLint(sublime_plugin.EventListener):
         if gs.is_go_source_view(view):
             vid = view.id()
             def cb():
-                del gs.l_vsyncs[vid]
-                del gs.l_errors[vid]
+                try:
+                    del gs.l_vsyncs[vid]
+                    del gs.l_errors[vid]
+                except:
+                    pass
             set_timeout(cb, 0)
+
+class ErrorReport(object):
+    def __init__(self, row, col, err):
+        self.row = row
+        self.col = col
+        self.err = err
 
 class GsLintThread(threading.Thread):
     def __init__(self):
@@ -117,27 +126,24 @@ class GsLintThread(threading.Thread):
         
         chdir(cwd)
 
-        error_lines = {}
+        errors = {}
         if err:
             err = LINE_INDENT_PAT.sub(' ', err)
             for m in re.finditer(r'%s[:](\d+)(?:[:](\d+))?[:](.+)$' % pat_prefix, err, re.MULTILINE):
-                line = int(m.group(1))-1
-                start = 0 if m.group(2) == '' else int(m.group(2))-1
+                row = int(m.group(1))-1
+                col = 0 if m.group(2) == '' else int(m.group(2))-1
                 err = m.group(3).strip()
-                error_lines[line] = (line, start, err)
+                errors[row] = ErrorReport(row, col, err)
         
         def cb():
-            errors = {}
             regions = []
-            if error_lines:
-                for i in error_lines:
-                    line, start, err = error_lines[i]
-                    pos = view.line(view.text_point(line, 0)).begin() + start
-                    if pos >= view.size():
-                        pos = view.size() - 1
-                    regions.append(sublime.Region(pos, pos))
-                    errors[line] = err
-            
+            for k in errors:
+                er = errors[k]
+                line = view.line(view.text_point(er.row, 0))
+                pos = line.begin() + er.col
+                if pos >= line.end():
+                    pos = line.end()
+                regions.append(sublime.Region(pos, pos))
             gs.l_errors[view.id()] = errors
             if regions:
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
@@ -154,10 +160,9 @@ def describe_errors():
     view = gs.active_valid_go_view()
     if view:
         sel = view.sel()[0].begin()
-        scopes = set(view.scope_name(sel).split())
-        line = view.rowcol(sel)[0]
-        msg = gs.l_errors.get(view.id(), {}).get(line, '')
-        view.set_status('GsLint', ('GsLint: ' + msg) if msg else '')
+        row, _ = view.rowcol(sel)
+        er = gs.l_errors.get(view.id(), {}).get(row, ErrorReport(0, 0, ''))
+        view.set_status('GsLint', ('GsLint: ' + er.err) if er.err else '')
 
 def vsync():
     delay = 1000
