@@ -4,8 +4,7 @@ import gscommon as gs
 class GsCommentForwardCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command("toggle_comment", {"block": False})
-		if gs.is_go_source_view(self.view):
-			self.view.run_command("move", {"by": "lines", "forward": True})
+		self.view.run_command("move", {"by": "lines", "forward": True})
 
 class GsFmtSaveCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
