@@ -1,7 +1,4 @@
 [
-    { "keys": ["ctrl+shift+e"], "command": "gs_fmt", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] },
-    { "keys": ["ctrl+s"], "command": "gs_fmt_save", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]},
-    { "keys": ["ctrl+shift+s"], "command": "gs_fmt_prompt_save_as", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] },
     { "keys": ["ctrl+/"], "command": "gs_comment_forward", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] },
 
     {
