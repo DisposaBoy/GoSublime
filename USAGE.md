@@ -12,8 +12,13 @@ Code Completion
 
 Completion can be accessed by typing the (default) key combination `CTRL+[SPACE]` inside a Golang file.
 
-Automatic/Dot Completion
-------------------------
+Key Bindings
+------------
+
+By default, a number of key bindings are provided. They can be view in `Packages/GoSublime/Default.sublime-keymap`
+
+Useful key bindings
+-------------------
 
 It's useful to have the autocomplete popup up as soon as you hit the dot key.
 
@@ -62,7 +67,12 @@ You may achieve this by adding this to your `Packages/User/Default.sublime-keyma
         ]
     }
 
-A sample file is provided in `Packages/GoSublime/examples/Default.sublime-keymap.example`, you can simply copy or symlink it to your `Packages/User` directory.
+
+Often when commenting out a line the immediate action following this is to move the cursor to the next line either to continue working or comment out the following line.
+
+With this following key binding, you can have the line commented out and the cursor automatically moved to the next line.
+
+{ "keys": ["ctrl+/"], "command": "gs_comment_forward", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] },
 
 Build System
 ------------
@@ -79,29 +89,23 @@ If gomake is not in your system path you will have to add the following key/valu
 
 The instructions above apply to all example build system configs in `Packages/GoSublime/examples/[BUILD SYSTEM].sublime-build.example`.
 
-Gofmt
------
-
-GoSublime provides a text command `gs_fmt` which formats the current file using gofmt.
-
-You can utilize this command by adding a key binding, e.g. by clicking the menu`Preferences > Key Bindings - User` in Sublime Text 2 and adding the following entry:
-
-    { "keys": ["ctrl+shift+e"], "command": "gs_fmt", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }
-
-which will call the gs_fmt command whenever you press `Ctrl+Shift+E`. You can set the key binding to anything you prefer, however, it's not recommended to bind it to `Ctrl+S` which also saves the file because the buffer must be edited and in the unlikely event that the patch fails, the changes are undone leaving the file on-disk with the erroneous changes.
-
-
 GsLint
 ------
 
 GsLint is a front-end to `gotype` and similar commands. It highlights errors in the source as you type. Errors are highlighted as reported by the lint command. In the case of gotype, compile errors reported on line 10 may cause multiple errors. Each line with an error will be marked by a `x` in the gutter and the first character of the invalid code will be underlined. e.g. an undefined variable `name` when passed to an existing function `println` will result in the letter `n` being underlined. To see what the error is, if it's not immediately clear, move the cursor to the relevant line which will cause the error to be displayed in the status bar under the `GsLint: ` marker.
 
+GsPalette
+---------
+
+The GsPalette is a quick panel allowing you to quickly jump to errors identified by GsLint and back to the previous position of cursor. The default key binding is `ctrl+shift+g`. Currently only GsLint is supported but in the future it may support add/removing imports, building and/or the project, etc.
 
 Misc. Helper Commands
 ---------------------
 
 The following commands can use bound to key bindings to further improve your editing experience.
 
-* gs_commend_forward - this command will activate the ctrl+/ commenting and move the cursor to the next line, allowing you to comment/uncomment multiple lines in sequence without breaking to move the cursor. You can replace the default behaviour by overriding it in your user key bindings(Preferences > Key Bindings - User) with `{ "keys": ["ctrl+/"], "command": "gs_comment_forward", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }`
+* gs_fmt - this command runs `gofmt` on the current buffer.
 
-* gs_fmt_save, gs_fmt_prompt_save_as - Due to technical limitations, it's not recommended to run the `gs_fmt` command during the save events(see GsFmt entry above). However, it's possible and may be reasonable to bind to a command that runs `gs_fmt` followed by the `save` command, ensuring any undo's will get saved. For this, two helper commands are provided and can be used to override the default save(`ctrl+s`) and save-as(`ctrl+shift+s`) bindings respectively by adding the following entries to your user key bindings(Preferences > Key Bindings - User): `{ "keys": ["ctrl+s"], "command": "gs_fmt_save", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }` and `{ "keys": ["ctrl+shift+s"], "command": "gs_fmt_prompt_save_as", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }`.
+* gs_fmt_save, gs_fmt_prompt_save_as - these commands will run the `go_fmt` followed `save` or `prompt_save_as` - these are bound to `ctrl+s` and `ctrl+shift+s` respectively by default
+
+* gs_comment_forward - this command will activate the ctrl+/ commenting and move the cursor to the next line, allowing you to comment/uncomment multiple lines in sequence without breaking to move the cursor. You can replace the default behaviour by overriding it in your user key bindings(Preferences > Key Bindings - User) with `{ "keys": ["ctrl+/"], "command": "gs_comment_forward", "context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }] }`

@@ -15,6 +15,7 @@ Features
 * gotype support with errors highlighted in the editor view
 * gofmt support for quickly reformatting your source to conform with the Go standards
 * automatic code completion popup when you press dot(.)
+* quick panel palette to jump errors (and jump back to where you were before)
 
 Demo
 ----
