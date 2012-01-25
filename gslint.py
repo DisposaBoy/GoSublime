@@ -10,16 +10,13 @@ PACKAGE_NAME_PAT = re.compile(r'package\s+(\w+)', re.UNICODE)
 LINE_INDENT_PAT = re.compile(r'[\r\n]+[ \t]+')
 
 class GsLint(sublime_plugin.EventListener):
-    def on_selection_modified(self, view):
-        if gs.is_go_source_view(view):
-            set_timeout(describe_errors, 0)
-    
     def on_close(self, view):
         if gs.is_go_source_view(view):
             vid = view.id()
             def cb():
                 try:
                     del gs.l_vsyncs[vid]
+                    del gs.l_lsyncs[vid]
                     del gs.l_errors[vid]
                 except:
                     pass
@@ -161,6 +158,7 @@ def describe_errors():
     if view:
         sel = view.sel()[0].begin()
         row, _ = view.rowcol(sel)
+        gs.l_lsyncs[view.id()] = row
         er = gs.l_errors.get(view.id(), {}).get(row, ErrorReport(0, 0, ''))
         view.set_status('GsLint', ('GsLint: ' + er.err) if er.err else '')
 
@@ -171,22 +169,29 @@ def vsync():
         if gs.setting('gslint_enabled', False):
             delay = 250
             vid = view.id()
+            size = view.size()
             tm, sz = gs.l_vsyncs.get(vid, (0.0, -1))
-            if sz != view.size():
-                gs.l_vsyncs[vid] = (time.time(), view.size())
-            elif tm > 0.0 and sz == view.size():
+            if sz != size:
+                gs.l_vsyncs[vid] = (time.time(), size)
+            elif tm > 0.0 and sz == size:
                 timeout = int(gs.setting('gslint_timeout', 500))
                 delta = int((time.time() - tm) * 1000.0)
                 if delta >= timeout:
-                    gs.l_vsyncs[vid] = (0.0, view.size())
+                    gs.l_vsyncs[vid] = (0.0, size)
                     with gs.l_lt.sem:
                         gs.l_lt.view_real_path = view.file_name()
-                        gs.l_lt.view_src = view.substr(sublime.Region(0, view.size()))
+                        gs.l_lt.view_src = view.substr(sublime.Region(0, size))
                         gs.l_lt.view_id = vid
                         gs.l_lt.view = view
                         gs.l_lt.notify()
                         gs.l_lt.cmd = gs.setting('gslint_cmd', [])
                     return
+                        
+            row, _ = view.rowcol(view.sel()[0].begin())
+            rw = gs.l_lsyncs.get(vid, -1)
+            if row != rw:
+                gs.l_lsyncs[vid] = row
+                describe_errors()
         else:
             delay = 5000
             gs.l_errors = {}
@@ -201,6 +206,7 @@ except AttributeError:
     gs.l_lt = GsLintThread()
     gs.l_lt.start()
     gs.l_vsyncs = {}
+    gs.l_lsyncs = {}
     gs.l_errors = {}
 
     vsync()
