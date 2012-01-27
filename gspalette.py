@@ -21,7 +21,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def show(self):
 		view = gs.active_valid_go_view()
 		if view:
-			items = [['', 'GoSublime Palette']]
+			items = [[' ', 'GoSublime Palette']]
 			actions = {}
 			l = len(self.bookmarks)
 			if l > 0:
