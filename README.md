@@ -22,6 +22,9 @@ Demo
 
 * http://vimeo.com/disposaboy/gosublime-demo2
 
+![](https://github.com/DisposaBoy/GoSublime/raw/master/ss/2.png)
+![](https://github.com/DisposaBoy/GoSublime/raw/master/ss/1.png)
+
 Dependencies
 ------------
 
