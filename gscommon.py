@@ -82,10 +82,14 @@ def notice(domain, txt):
 def is_go_source_view(view):
     return view.score_selector(view.sel()[0].begin(), 'source.go') > 0
 
-def active_valid_go_view():
-    win = sublime.active_window()
+def active_valid_go_view(win=None):
+    if not win:
+        win = sublime.active_window()
     if win:
         view = win.active_view()
         if view and view.file_name() and is_go_source_view(view):
             return view
     return None
+
+def rowcol(view):
+    return view.rowcol(view.sel()[0].begin())
