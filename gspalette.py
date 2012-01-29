@@ -9,14 +9,24 @@ class Loc(object):
 		self.col = col
 
 class GsPaletteCommand(sublime_plugin.WindowCommand):
-	def run(self):
+	def run(self, palette='main'):
 		if not hasattr(self, 'items'):
 			self.items = []
 			self.bookmarks = []
 		
-		self.act_show_palette()
+		palettes = {
+			'main': self.act_show_main_palette,
+			'declarations': self.act_list_declarations,
+		}
+		
+		p = palettes.get(palette)
+		if p:
+			p()
+		else:
+			gs.notice('GsPalette', 'Invalid palette `%s`' % palette)
+			palettes['main']()
 
-	def act_show_palette(self, _=None):
+	def act_show_main_palette(self, _=None):
 		view = gs.active_valid_go_view(self.window)
 		if view:
 			errors = gs.l_errors.get(view.id(), {})
@@ -26,9 +36,9 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				self.add_item(["Error on line %d" % (er.row+1), er.err], self.act_jump_to, loc)
 			if gs.setting('margo_addr'):
 				self.add_item("List Declarations", self.act_list_declarations)
-			self.show()
+			self.show_palette()
 
-	def show(self):
+	def show_palette(self):
 		view = gs.active_valid_go_view(self.window)
 		if view:
 			items = [[' ', 'GoSublime Palette']]
@@ -46,7 +56,6 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				items[0][0] = u'\u2190 Go Back (%s%s)' % (fn, line)
 				actions[0] = (self.act_jump_back, None)
 			
-			self.items.sort()
 			for tup in self.items:
 				item, action, args = tup
 				actions[len(items)] = (action, args)
@@ -81,7 +90,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		if view:
 			row, col = gs.rowcol(view)
 			if loc.row != row:
-				self.log_bookmark(loc)
+				self.log_bookmark(Loc(view.file_name(), row, col))
 			self.goto(loc)
 
 	def act_list_declarations(self, _=None):
@@ -100,5 +109,5 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 					loc = Loc(v['filename'], v['line']-1, v['column']-1)
 					prefix = u' %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
 					self.add_item([prefix+v['name'], v['doc']], self.act_jump_to, loc)
-				self.show()
+				self.show_palette()
 		
