@@ -30,7 +30,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		view = gs.active_valid_go_view(self.window)
 		if view:
 			errors = gs.l_errors.get(view.id(), {})
-			for k in errors:
+			for k in sorted(errors.keys()):
 				er = errors[k]
 				loc = Loc(view.file_name(), er.row, er.col)
 				self.add_item(["Error on line %d" % (er.row+1), er.err], self.act_jump_to, loc)
