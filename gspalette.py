@@ -103,7 +103,9 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			if m:
 				if m.has_key('error'):
 					gs.notice('GsPalette', m['error'])
-				for i, v in enumerate(m.get('declarations', [])):
+				decls = m.get('declarations', [])
+				decls.sort(key=lambda v: v['line'])
+				for i, v in enumerate(decls):
 					if v['name'] in ('main', 'init'):
 						continue
 					loc = Loc(v['filename'], v['line']-1, v['column']-1)
