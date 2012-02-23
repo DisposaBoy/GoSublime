@@ -106,7 +106,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				decls = m.get('declarations', [])
 				decls.sort(key=lambda v: v['line'])
 				for i, v in enumerate(decls):
-					if v['name'] in ('main', 'init'):
+					if v['name'] in ('main', 'init', '_'):
 						continue
 					loc = Loc(v['filename'], v['line']-1, v['column']-1)
 					prefix = u' %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
