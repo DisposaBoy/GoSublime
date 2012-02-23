@@ -48,7 +48,7 @@ class GoSublime(sublime_plugin.EventListener):
         args = [cmd, "-f=json", "autocomplete", fn, offset]
         js, err = gs.runcmd(args, src)
         if err:
-            sublime.error_message(err)
+            gs.notice('GsComplete', err)
         else:
             try:    
                 js = json.loads(js)
@@ -81,9 +81,9 @@ class GoSublime(sublime_plugin.EventListener):
                         elif cn != 'PANIC':
                             comps.append(('%s\t%s %s' % (nm, tn, sfx), nm))
             except KeyError as e:
-                sublime.error_message('Error while running gocode, possibly malformed data returned: %s' % e)
+                gs.notice('GsComplete', 'Error while running gocode, possibly malformed data returned: %s' % e)
             except ValueError as e:
-                sublime.error_message("Error while decoding gocode output: %s" % e)
+                gs.notice('GsComplete', "Error while decoding gocode output: %s" % e)
         return comps
     
     def typeclass_prefix(self, typeclass, typename):
