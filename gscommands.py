@@ -19,8 +19,8 @@ class GsFmtPromptSaveAsCommand(sublime_plugin.TextCommand):
 		sublime.set_timeout(lambda: self.view.run_command("prompt_save_as"), 0)
 
 class GsGotoRowColCommand(sublime_plugin.TextCommand):
-    def run(self, edit, row, col=0):
-        pt = self.view.text_point(row, col)
-        self.view.sel().clear()
-        self.view.sel().add(sublime.Region(pt))
-        self.view.show(pt)
+	def run(self, edit, row, col=0):
+		pt = self.view.text_point(row, col)
+		self.view.sel().clear()
+		self.view.sel().add(sublime.Region(pt))
+		self.view.show(pt)
