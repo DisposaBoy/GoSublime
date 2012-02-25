@@ -61,3 +61,4 @@ def do(a, default):
 			resp["error"] = "Invalid Data"
 	return (resp["data"], resp["error"])
 
+do({'call': 'hello'}, {}) # start MarGo
