@@ -17,7 +17,7 @@ class GoSublime(sublime_plugin.EventListener):
             # afaik we must return something in order to disable st2's word completion
             
             comps = []
-            impaths, _ = margo.request('/import-paths', {}, [])
+            impaths, _ = margo.do({'call': 'import_paths'}, [])
             for nm in impaths:
                 comps.append(('%s\t %s' % (nm, gs.CLASS_PREFIXES.get('package', '')), nm))
             return comps

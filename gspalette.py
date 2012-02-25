@@ -96,7 +96,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def act_list_declarations(self, _=None):
 		view = gs.active_valid_go_view(self.window)
 		if view:
-			decls, err = margo.request('/declarations', {
+			decls, err = margo.do({
+				'call': 'declarations',
 				'filename': view.file_name(),
 				'src': view.substr(sublime.Region(0, view.size()))
 			}, [])

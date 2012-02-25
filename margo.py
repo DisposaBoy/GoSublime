@@ -1,40 +1,51 @@
-import subprocess, httplib, urllib, json, traceback
+import subprocess, socket, json, traceback
 import gscommon as gs
 
 def isinst(v, base):
 	return isinstance(v, type(base))
 
-def sendreq(margo_addr, path, a, h):
-	conn = httplib.HTTPConnection(margo_addr)
-	conn.request("POST", path, a, h)
-	return conn
+def send(sck_addr, a):
+	sck = socket.socket()
+	sck.connect(sck_addr)
+	sf = sck.makefile()
+	json.dump(a, sf)
+	sf.flush()
+	return json.load(sf)
 
-def request(path, args, default):
-	if not gs.setting('margo_enabled', False):
-		return (default, '')
-
-	margo_cmd = list(gs.setting('margo_cmd', []))
-	margo_addr = gs.setting('margo_addr')
-
-	if not margo_cmd or not margo_addr:
-		err = 'Missing `margo_cmd` or `margo_addr`'
-		gs.notice("MarGo", err)
-		return (default, err)
-
+def do(a, default):
 	resp = None
 	try:
-		args = urllib.urlencode(args)
-		h = {'Content-type': 'application/x-www-form-urlencoded'}
+		if not gs.setting('margo_enabled', False):
+			return (default, '')
+
+		margo_cmd = list(gs.setting('margo_cmd', []))
+		if not margo_cmd:
+			err = 'Missing `margo_cmd`'
+			gs.notice("MarGo", err)
+			return (default, err)
+
+		margo_addr = gs.setting('margo_addr')
+		if not margo_addr:
+			err = 'Missing `margo_addr`'
+			gs.notice("MarGo", err)
+			return (default, err)
+
+		sck_addr = margo_addr.split(':')
+		if len(sck_addr) != 2:
+			err = 'Invalid `margo_addr`... must be in the format: `host:port`'
+			gs.notice("MarGo", err)
+			return (default, err)
+		sck_addr = (sck_addr[0], int(sck_addr[1]))
+
 		try:
-			conn = sendreq(margo_addr, path, args, h)
+			resp = send(sck_addr, a)
 		except:
-			margo_cmd.extend(["-d", "-http", margo_addr])
+			margo_cmd.extend(["-d", "-addr", margo_addr])
 			gs.notice('MarGo', 'Attempting to start MarGo: `%s`' % ' '.join(margo_cmd))
 			_, err = gs.runcmd(margo_cmd)
 			if err:
 				gs.notice('MarGo', err)
-			conn = sendreq(margo_addr, path, args, h)
-		resp = json.load(conn.getresponse())
+			resp = send(sck_addr, a)
 	except:
 		err = traceback.format_exc()
 		gs.notice("MarGo", err)
@@ -42,7 +53,7 @@ def request(path, args, default):
 
 	if not isinst(resp, {}):
 		resp = {}
-	if not isinst(resp.get("error"), ""):
+	if not isinst(resp.get("error"), u""):
 		resp["error"] = "Invalid Response"
 	if not isinst(resp.get("data"), default):
 		resp["data"] = default
