@@ -34,7 +34,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				er = errors[k]
 				loc = Loc(view.file_name(), er.row, er.col)
 				self.add_item(["Error on line %d" % (er.row+1), er.err], self.act_jump_to, loc)
-			if gs.setting('margo_addr'):
+			if gs.setting('margo_enabled', False):
 				self.add_item("List Declarations", self.act_list_declarations)
 			self.show_palette()
 
@@ -96,20 +96,18 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def act_list_declarations(self, _=None):
 		view = gs.active_valid_go_view(self.window)
 		if view:
-			m = margo.request('/declarations', {
+			decls, err = margo.request('/declarations', {
 				'filename': view.file_name(),
 				'src': view.substr(sublime.Region(0, view.size()))
-			})
-			if m:
-				if m.has_key('error'):
-					gs.notice('GsPalette', m['error'])
-				decls = m.get('declarations', [])
-				decls.sort(key=lambda v: v['line'])
-				for i, v in enumerate(decls):
-					if v['name'] in ('main', 'init', '_'):
-						continue
-					loc = Loc(v['filename'], v['line']-1, v['column']-1)
-					prefix = u' %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
-					self.add_item([prefix+v['name'], v['doc']], self.act_jump_to, loc)
-				self.show_palette()
+			}, [])
+			if err:
+				gs.notice('GsPalette', err)
+			decls.sort(key=lambda v: v['line'])
+			for i, v in enumerate(decls):
+				if v['name'] in ('main', 'init', '_'):
+					continue
+				loc = Loc(v['filename'], v['line']-1, v['column']-1)
+				prefix = u' %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
+				self.add_item([prefix+v['name'], v['doc']], self.act_jump_to, loc)
+			self.show_palette()
 		
