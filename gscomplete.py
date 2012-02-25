@@ -1,6 +1,7 @@
 import sublime, sublime_plugin
 import json, os
 import gscommon as gs
+import margo
 from os.path import basename
 
 class GoSublime(sublime_plugin.EventListener):
@@ -14,7 +15,12 @@ class GoSublime(sublime_plugin.EventListener):
         # if we complete inside e.g. a map's key we're going to cause subtle bugs so bail
         if 'string.quoted.double.go' in scopes or 'string.quoted.single.go' in scopes or 'string.quoted.raw.go' in scopes:
             # afaik we must return something in order to disable st2's word completion
-            return [(' ', '$0')]
+            
+            comps = []
+            impaths, _ = margo.request('/import-paths', {}, [])
+            for nm in impaths:
+                comps.append(('%s\t %s' % (nm, gs.CLASS_PREFIXES.get('package', '')), nm))
+            return comps
 
         if not self.gocode_set:
             self.gocode_set = True
