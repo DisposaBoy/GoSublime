@@ -1,5 +1,6 @@
-import subprocess, socket, json, traceback
+import subprocess, socket, json, traceback, os
 import gscommon as gs
+import gsinit
 
 def isinst(v, base):
 	return isinstance(v, type(base))
@@ -12,7 +13,8 @@ def send(sck_addr, a):
 	sf.flush()
 	return json.load(sf)
 
-def do(a, default):
+def call(method, args, default):
+	a = {'method': method, 'env': gsinit.env, 'args': args}
 	resp = None
 	try:
 		if not gs.setting('margo_enabled', False):
@@ -41,11 +43,17 @@ def do(a, default):
 			resp = send(sck_addr, a)
 		except:
 			margo_cmd.extend(["-d", "-addr", margo_addr])
-			gs.notice('MarGo', 'Attempting to start MarGo: `%s`' % ' '.join(margo_cmd))
-			_, err = gs.runcmd(margo_cmd)
+			out, err = gs.runcmd(margo_cmd)
+			
+			out = out.strip()
+			if out:
+				gs.notice('MarGo', out)
+			
+			err = err.strip()
 			if err:
 				gs.notice('MarGo', err)
-			resp = send(sck_addr, a)
+			else:
+				resp = send(sck_addr, a)
 	except:
 		err = traceback.format_exc()
 		gs.notice("MarGo", err)
@@ -61,4 +69,20 @@ def do(a, default):
 			resp["error"] = "Invalid Data"
 	return (resp["data"], resp["error"])
 
-do({'call': 'hello'}, {}) # start MarGo
+def exit():
+	call('exit', {}, None)
+
+def hello():
+	return call('hello', {}, {})
+
+def env():
+	return call('env', {}, [])
+
+def declarations(filename, src):
+	return call('declarations', {'filename': filename, 'src': src}, [])
+
+def import_paths():
+	return call('import_paths', {}, [])
+
+
+hello() # start MarGo

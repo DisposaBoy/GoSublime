@@ -96,11 +96,10 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def act_list_declarations(self, _=None):
 		view = gs.active_valid_go_view(self.window)
 		if view:
-			decls, err = margo.do({
-				'call': 'declarations',
-				'filename': view.file_name(),
-				'src': view.substr(sublime.Region(0, view.size()))
-			}, [])
+			decls, err = margo.declarations(
+				view.file_name(),
+				view.substr(sublime.Region(0, view.size()))
+			)
 			if err:
 				gs.notice('GsPalette', err)
 			decls.sort(key=lambda v: v['line'])
