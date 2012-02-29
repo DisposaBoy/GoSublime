@@ -9,7 +9,7 @@ class GoSublime(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
 		pos = locations[0]
 		scopes = view.scope_name(pos).split()
-		if 'source.go' not in scopes or not gs.setting('gscomplete_enabled', False):
+		if not ('source.go' in scopes and gs.IGNORED_SCOPES.isdisjoint(scopes) and gs.setting('gscomplete_enabled', False) is True):
 			return []
 		
 		# if we complete inside e.g. a map's key we're going to cause subtle bugs so bail
