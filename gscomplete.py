@@ -12,16 +12,6 @@ class GoSublime(sublime_plugin.EventListener):
 		if not ('source.go' in scopes and gs.IGNORED_SCOPES.isdisjoint(scopes) and gs.setting('gscomplete_enabled', False) is True):
 			return []
 		
-		# if we complete inside e.g. a map's key we're going to cause subtle bugs so bail
-		if 'string.quoted.double.go' in scopes or 'string.quoted.single.go' in scopes or 'string.quoted.raw.go' in scopes:
-			# afaik we must return something in order to disable st2's word completion
-			
-			comps = []
-			impaths, _ = margo.import_paths()
-			for nm in impaths:
-				comps.append(('%s\t %s' % (nm, gs.CLASS_PREFIXES.get('package', '')), nm))
-			return comps
-
 		if not self.gocode_set:
 			self.gocode_set = True
 			# autostart the daemon
