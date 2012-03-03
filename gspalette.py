@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
-import margo, gscommon as gs
-from os.path import dirname, relpath
+import gspatch, margo, gscommon as gs
+from os.path import dirname, relpath, basename
 
 class Loc(object):
 	def __init__(self, fn, row, col=0):
@@ -34,7 +34,9 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				er = errors[k]
 				loc = Loc(view.file_name(), er.row, er.col)
 				self.add_item(["Error on line %d" % (er.row+1), er.err], self.act_jump_to, loc)
+			
 			if gs.setting('margo_enabled', False):
+				self.add_item("Add/Remove imports", self.act_show_import_palette)
 				self.add_item("List Declarations", self.act_list_declarations)
 			self.show_palette()
 
@@ -84,7 +86,57 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def act_jump_back(self, _):
 		if len(self.bookmarks) > 0:
 			self.goto(self.bookmarks.pop())
-	
+
+	def act_show_import_palette(self, _):
+		view = gs.active_valid_go_view(self.window)
+		if view:
+			im, err = margo.imports(
+				view.file_name(),
+				view.substr(sublime.Region(0, view.size())),
+				True,
+				[]
+			)
+			if err:
+				gs.notice('GsPalette', err)
+
+			delete_imports = []
+			add_imports = []
+			imports = im.get('file_imports', [])
+			for path in im.get('import_paths', []):
+				skipAdd = False
+				for i in imports:
+					if i.get('path') == path:
+						skipAdd = True
+						name = i.get('name', '')
+						if not name:
+							name = basename(path)
+						delete_imports.append(([name, 'delete import `%s`' % path], i))
+
+				if not skipAdd:
+					add_imports.append(([path], {'path': path}))
+			for i in sorted(delete_imports):
+				self.add_item(i[0], self.toggle_import, (view, i[1]))
+			for i in sorted(add_imports):
+				self.add_item(i[0], self.toggle_import, (view, i[1]))
+			self.show_palette()
+
+	def toggle_import(self, a):
+		view, decl = a
+		im, err = margo.imports(
+			view.file_name(),
+			view.substr(sublime.Region(0, view.size())),
+			False,
+			[decl]
+		)
+		if err:
+			gs.notice('GsPalette', err)
+		else:
+			src = im.get('src', '')
+			size_ref = im.get('size_ref', 0)
+			if src and size_ref > 0:
+				if gspatch.merge(view, size_ref, src) == '':
+					gs.notice('GsPalette', 'imports ammended...')
+
 	def act_jump_to(self, loc):
 		view = gs.active_valid_go_view(self.window)
 		if view:
@@ -110,4 +162,3 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				prefix = u' %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
 				self.add_item([prefix+v['name'], v['doc']], self.act_jump_to, loc)
 			self.show_palette()
-		
