@@ -1,20 +1,23 @@
 import subprocess, socket, json, traceback, os
-import gscommon as gs
-import gsinit
+import sublime
+import gsinit, gscommon as gs
 
 def isinst(v, base):
 	return isinstance(v, type(base))
 
-def send(sck_addr, a):
+def send(sck_addr, header, body):
 	sck = socket.socket()
 	sck.connect(sck_addr)
 	sf = sck.makefile()
-	json.dump(a, sf)
+	json.dump(header, sf)
+	sf.write("\r")
+	json.dump(body, sf)
+	sf.write("\n")
 	sf.flush()
 	return json.load(sf)
 
-def call(method, args, default):
-	a = {'method': method, 'env': gsinit.env, 'args': args}
+def call(method, a, default):
+	h = {'method': method}
 	resp = None
 	try:
 		if not gs.setting('margo_enabled', False):
@@ -40,30 +43,29 @@ def call(method, args, default):
 		sck_addr = (sck_addr[0], int(sck_addr[1]))
 
 		try:
-			resp = send(sck_addr, a)
-		except:
+			resp = send(sck_addr, h, a)
+		except socket.error:
 			margo_cmd.extend(["-d", "-addr", margo_addr])
 			out, err = gs.runcmd(margo_cmd)
 			
 			out = out.strip()
 			if out:
-				gs.notice('MarGo', out)
+				print('MarGo: %s' % out)
 			
 			err = err.strip()
 			if err:
 				gs.notice('MarGo', err)
 			else:
-				resp = send(sck_addr, a)
+				resp = send(sck_addr, h, a)
 	except:
 		err = traceback.format_exc()
 		gs.notice("MarGo", err)
 		return (default, err)
-
 	if not isinst(resp, {}):
 		resp = {}
 	if not isinst(resp.get("error"), u""):
 		resp["error"] = "Invalid Response"
-	if not isinst(resp.get("data"), default):
+	if default is not None and not isinst(resp.get("data"), default):
 		resp["data"] = default
 		if not resp["error"]:
 			resp["error"] = "Invalid Data"
@@ -72,17 +74,26 @@ def call(method, args, default):
 def exit():
 	call('exit', {}, None)
 
-def hello():
-	return call('hello', {}, {})
-
-def env():
-	return call('env', {}, [])
+def hello(arg=None):
+	return call('hello', arg, None)
 
 def declarations(filename, src):
-	return call('declarations', {'filename': filename, 'src': src}, [])
+	return call('declarations', {
+		'fn': filename,
+		'src': src
+	}, [])
 
-def import_paths():
-	return call('import_paths', {}, [])
+def package_name(filename, src):
+	return call('package_name', {
+		'fn': filename,
+		'src': src
+	}, u'')
 
-
-hello() # start MarGo
+def imports(filename, src, import_paths, toggle):
+	return call('imports', {
+		'fn': filename,
+		'src': src,
+		'env': gsinit.env,
+		'import_paths': import_paths,
+		'toggle': toggle,
+	}, {})
