@@ -1,0 +1,18 @@
+[
+	{
+		"caption": "Preferences",
+		"mnemonic": "n",
+		"id": "preferences",
+		"children":
+		[
+			{
+				"caption": "GoSublime",
+				"children":
+				[
+                    { "command": "open_file", "args": {"file": "${packages}/GoSublime/GoSublime.sublime-settings"}, "caption": "Settings – Default" },
+                    { "command": "open_file", "args": {"file": "${packages}/User/GoSublime.sublime-settings"}, "caption": "Settings – User" }
+				]
+			}
+		]
+	}
+]
