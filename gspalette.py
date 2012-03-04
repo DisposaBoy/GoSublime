@@ -134,8 +134,11 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			src = im.get('src', '')
 			size_ref = im.get('size_ref', 0)
 			if src and size_ref > 0:
-				if gspatch.merge(view, size_ref, src) == '':
-					gs.notice('GsPalette', 'imports ammended...')
+				dirty, err = gspatch.merge(view, size_ref, src)
+				if err:
+					gs.notice_undo('GsImports', err, view, dirty)
+				elif dirty:
+					gs.notice('GsImports', 'imports updated...')
 
 	def act_jump_to(self, loc):
 		view = gs.active_valid_go_view(self.window)
