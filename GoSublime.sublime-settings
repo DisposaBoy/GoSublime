@@ -53,7 +53,7 @@
 
 	"margo_enabled": false,
 	"margo_cmd": ["MarGo"],
-	// the http address on which MarGo listen/should listen
+	// the tcp address on which MarGo listen/should listen
 	// if GoSublime can't connect to `margo_addr` it attempts to start MarGo
 	// with `margo_cmd` passing `margo_addr`
 	"margo_addr": "127.9.5.1:57951"
