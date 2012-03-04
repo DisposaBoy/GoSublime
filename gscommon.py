@@ -87,6 +87,13 @@ def notice(domain, txt):
 	print(txt)
 	sublime.set_timeout(lambda: sublime.status_message(txt), 0)
 
+def notice_undo(domain, txt, view, should_undo):
+	def cb():
+		if should_undo:
+			view.run_command('undo')
+		notice(domain, txt)
+	sublime.set_timeout(cb, 0)
+
 def is_go_source_view(view):
 	return view.score_selector(view.sel()[0].begin(), 'source.go') > 0
 
