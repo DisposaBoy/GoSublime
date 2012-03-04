@@ -33,21 +33,26 @@ def _merge(view, size, text, edit):
 				if ss(i, i+l) != s:
 					raise MergeException('mismatch', dirty)
 				view.erase(edit, sublime.Region(i, i+l))
+	return dirty
 
 def merge(view, size, text):
-	if size < 0:
-		size = view.size()
-	edit = view.begin_edit()
 	try:
-		_merge(view, size, text, edit)
-	except MergeException as (err, dirty):
-		def cb():
-			if dirty:
-				view.run_command('undo')
-			gs.notice("GsPatch", "Could not merge changes into the buffer, edit aborted: %s" % err)
-		sublime.set_timeout(cb, 0)
-		return err
+		edit = view.begin_edit()
+		dirty = False
+		err = ''
+		vs = view.settings()
+		ttts = vs.get("translate_tabs_to_spaces")
+		vs.set("translate_tabs_to_spaces", False)
+		if size < 0:
+			size = view.size()
+		dirty = _merge(view, size, text, edit)
+	except MergeException as (err, d):
+		dirty = d
+		err = "Could not merge changes into the buffer, edit aborted: %s" % err
+	except Exception as ex:
+		err = "where ma bees at?: %s" % ex
 	finally:
 		view.end_edit(edit)
-	return ''
+		vs.set("translate_tabs_to_spaces", ttts)
+		return (dirty, err)
 
