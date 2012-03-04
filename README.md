@@ -17,6 +17,16 @@ Features
 * automatic code completion popup when you press dot(.)
 * quick panel palette to jump errors (and jump back to where you were before (accross files))
 
+MarGo
+-----
+
+As Go 1 approaches, the move to [Margo](https://github.com/DisposaBoy/MarGo) has started.
+Some features such as goto definition(currently only supports the current file) and auto-add/remove package imports are only available from MarGo.
+
+Because it's still very experimental, margo is disable by default. If you would like to experiment with it, make features request, etc. you may enable it by adding a setting `"margo_enabled": true` to your `GoSublime.sublime-settings` file.
+
+You can install MarGo with command: `go get github.com/DisposaBoy/MarGo`
+
 Demo
 ----
 
