@@ -1,16 +1,57 @@
 [
 	{
-		"caption": "Preferences",
-		"mnemonic": "n",
 		"id": "preferences",
 		"children":
 		[
 			{
-				"caption": "GoSublime",
+				"id": "package-settings",
 				"children":
 				[
-                    { "command": "open_file", "args": {"file": "${packages}/GoSublime/GoSublime.sublime-settings"}, "caption": "Settings – Default" },
-                    { "command": "open_file", "args": {"file": "${packages}/User/GoSublime.sublime-settings"}, "caption": "Settings – User" }
+					{
+						"caption": "GoSublime",
+						"children":
+						[
+							{
+								"caption": "Settings – Default",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/GoSublime.sublime-settings"
+								}
+							},
+							{
+								"caption": "Settings – User",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/User/GoSublime.sublime-settings"
+								}
+							},
+							{ "caption": "-" },
+							{
+								"caption": "Key Bindings – Default",
+								"platform": "Linux",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/Default.sublime-keymap"
+								}
+							},
+							{
+								"caption": "Key Bindings – Default",
+								"platform": "Windows",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/Default.sublime-keymap"
+								}
+							},
+							{
+								"caption": "Key Bindings – Default",
+								"platform": "OSX",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/Default (OSX).sublime-keymap"
+								}
+							}
+						]
+					}
 				]
 			}
 		]
