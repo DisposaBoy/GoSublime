@@ -47,9 +47,6 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		if not gs.setting('margo_enabled', False):
 			re_margo = 'Requires MarGo: https://github.com/DisposaBoy/MarGo'
 
-		bc = u' \u00BB %s \u21B5' % palette.title() if palette else ''
-		items = [[' ', u'GoSublime Palette%s' % bc]]
-		actions = { 0: (self.show_palette, 'main') }
 		if len(self.bookmarks) > 0:
 			loc = self.bookmarks[-1]
 			line = 'line %d' % (loc.row + 1)
@@ -61,12 +58,13 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 					fn = loc.fn
 				fn = '%s ' % fn
 			self.add_item(u'\u2190 Go Back (%s%s)' % (fn, line), self.jump_back, None)
+
+		if palette:
+			self.add_item(u'@%s \u21B5' % palette.title(), self.show_palette, 'main')
 		
 		li1 = len(self.items)
 		if pcb:
 			pcb(view)
-		if li1 != len(self.items):
-			self.add_item([' ', 'Palettes:'], self.show_palette, 'main')
 
 		for k in sorted(self.palettes.keys()):
 			if k:
@@ -83,7 +81,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 						itm = ttl
 					self.add_item(itm, self.show_palette, k)
 
-
+		items = []
+		actions = {}
 		for tup in self.items:
 			item, action, args = tup
 			actions[len(items)] = (action, args)
@@ -116,7 +115,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		for k in sorted(errors.keys()):
 			er = errors[k]
 			loc = Loc(view.file_name(), er.row, er.col)
-			self.add_item(["Error: line %d" % (er.row+1), er.err], self.jump_to, (view, loc))
+			self.add_item("    line %d: %s" % ((er.row+1), er.err), self.jump_to, (view, loc))
 
 	def palette_imports(self, view):
 		im, err = margo.imports(
@@ -139,12 +138,16 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 					name = i.get('name', '')
 					if not name:
 						name = basename(path)
-					delete_imports.append((['UnImport: %s' % name, 'delete import `%s`' % path], i))
+					if name == path:
+						delete_imports.append(('    %s - ( delete import )' % name, i))
+					else:
+						delete_imports.append(('    %s `%s` - ( delete import )' % (name, path), i))
 
 			if not skipAdd:
-				add_imports.append((['Import: %s' % path], {'path': path}))
+				add_imports.append(('    %s' % path, {'path': path}))
 		for i in sorted(delete_imports):
 			self.add_item(i[0], self.toggle_import, (view, i[1]))
+		self.add_item('    -', self.show_palette, 'imports')
 		for i in sorted(add_imports):
 			self.add_item(i[0], self.toggle_import, (view, i[1]))
 
@@ -157,7 +160,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			[decl]
 		)
 		if err:
-			gs.notice('GsPalette', err)
+			gs.notice('GsImports', err)
 		else:
 			src = im.get('src', '')
 			size_ref = im.get('size_ref', 0)
@@ -181,11 +184,11 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			view.substr(sublime.Region(0, view.size()))
 		)
 		if err:
-			gs.notice('GsPalette', err)
+			gs.notice('GsDeclarations', err)
 		decls.sort(key=lambda v: v['line'])
 		for i, v in enumerate(decls):
 			if v['name'] == '_':
 				continue
 			loc = Loc(v['filename'], v['line']-1, v['column']-1)
-			prefix = u'Goto: %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
-			self.add_item([prefix+v['name'], v['doc']], self.jump_to, (view, loc))
+			prefix = u'    %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
+			self.add_item(prefix+v['name'], self.jump_to, (view, loc))
