@@ -33,7 +33,7 @@
 								"platform": "Linux",
 								"command": "open_file",
 								"args": {
-									"file": "${packages}/GoSublime/Default.sublime-keymap"
+									"file": "${packages}/GoSublime/Default (Linux).sublime-keymap"
 								}
 							},
 							{
@@ -41,7 +41,7 @@
 								"platform": "Windows",
 								"command": "open_file",
 								"args": {
-									"file": "${packages}/GoSublime/Default.sublime-keymap"
+									"file": "${packages}/GoSublime/Default (Windows).sublime-keymap"
 								}
 							},
 							{

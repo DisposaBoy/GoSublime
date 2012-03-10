@@ -1,16 +1,16 @@
 [
 	{
-		"keys": ["super+s"],
+		"keys": ["ctrl+s"],
 		"command": "gs_fmt_save",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
-		"keys": ["super+shift+s"],
+		"keys": ["ctrl+shift+s"],
 		"command": "gs_fmt_prompt_save_as",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
-		"keys": ["super+shift+g"],
+		"keys": ["ctrl+shift+g"],
 		"command": "gs_palette",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
