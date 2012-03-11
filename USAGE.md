@@ -85,7 +85,9 @@ With this following key binding, you can have the line commented out and the cur
 Build System
 ------------
 
-A number of build system configs are provided which covers gomake, go build, goinstall and [gb](https://github.com/skelterjohn/go-gb).
+By default a Go build system is provided under the name `GsShell`. If you're using this build system, when you press `ctrl+b` you will get a prompt for the command want to run. The command can be any valid command e.g `go build && pkill MarGo; ./MarGo` or `go run *.go`. The prompt is automatically filled with `go ` and pressing tab will try to complete some of the common `go` subcommands. So typing `go b` then pressing tab results in `go build`. If the prompt is empty or only contains `go` (ignoring whitespace) then when you press tab, it will instead be replaced with the last command you ran.
+
+In addition to GsShell, a number of example build system configs are provided which covers gomake, go build, goinstall and [gb](https://github.com/skelterjohn/go-gb).
 
 The gomake build system enables Sublime Text 2 to recognize the 5g/6g/8g output so you can jump to compile errors by clicking on the output or cycle through them by using F4/Shift+F4.
 
@@ -105,7 +107,7 @@ GsLint is a front-end to `gotype` and similar commands. It highlights errors in 
 GsPalette
 ---------
 
-The GsPalette is a quick panel allowing you to quickly jump to errors identified by GsLint and back to the previous position of cursor. The default key binding is `ctrl+shift+g`. Currently only GsLint is supported but in the future it may support add/removing imports, building and/or the project, etc.
+The GsPalette is a quick panel allowing you to quickly jump to errors identified by GsLint and back to the previous position of cursor. The default key binding is `ctrl+shift+g`.
 
 Misc. Helper Commands
 ---------------------

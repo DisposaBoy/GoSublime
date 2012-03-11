@@ -11,11 +11,14 @@ Features
 
 * code completion from [Gocode](https://github.com/nsf/gocode)
 * context aware snippets via the code-completion popup to complement the existing SublimeText Go package.
-* sublime build system(ctrl+b) for gomake, go build, goinstall and [gb](https://github.com/skelterjohn/go-gb) including support for cycling errors with F4/Shift+F4
+* sublime build system(ctrl+b) allowing to run any command your shell will accept with some focus on the `go` command including support for cycling errors with F4/Shift+F4
 * gotype support with errors highlighted in the editor view
 * gofmt support for quickly reformatting your source to conform with the Go standards
 * automatic code completion popup when you press dot(.)
-* quick panel palette to jump errors (and jump back to where you were before (accross files))
+* quick panel palette to:
+	* jump errors (and jump back to where you were before (accross files))
+	* list declarations in the current file
+	* automtically add/remove package imports
 
 MarGo
 -----
