@@ -18,7 +18,7 @@ class Prompt(object):
 		self.view.window().run_command("exec", {
 			'shell': True,
 			'cmd': s,
-			'file_regex': '^(.+):([0-9]+):(?:([0-9]+):)?\s*(.*)',
+			'file_regex': '^(.+\.go):([0-9]+):(?:([0-9]+):)?\s*(.*)',
 		})
 
 	def on_change(self, s):
