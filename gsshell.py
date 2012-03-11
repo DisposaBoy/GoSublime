@@ -17,7 +17,7 @@ class Prompt(object):
 		self.view.window().run_command("exec", { 'kill': True })
 		self.view.window().run_command("exec", {
 			'shell': True,
-			'cmd': s,
+			'cmd': [s],
 			'file_regex': '^(.+\.go):([0-9]+):(?:([0-9]+):)?\s*(.*)',
 		})
 
