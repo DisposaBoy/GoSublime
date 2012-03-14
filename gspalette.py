@@ -139,9 +139,9 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 					if not name:
 						name = basename(path)
 					if name == path:
-						delete_imports.append(('    %s - ( delete import )' % name, i))
+						delete_imports.append(('    %s - ( delete )' % name, i))
 					else:
-						delete_imports.append(('    %s `%s` - ( delete import )' % (name, path), i))
+						delete_imports.append(('    %s - ( delete %s )' % (name, path), i))
 
 			if not skipAdd:
 				add_imports.append(('    %s' % path, {'path': path}))
