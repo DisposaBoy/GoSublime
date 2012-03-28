@@ -1,6 +1,12 @@
 GoSublime
 =========
 
+NOTICE
+------
+
+The project isn't dead, but there is a chance that I will become unresponsive for a little while take a brief hiatus to re-adjust to life.
+
+
 Intro
 -----
 
