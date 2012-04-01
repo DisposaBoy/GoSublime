@@ -81,7 +81,7 @@ class GsLintThread(threading.Thread):
         real_fn = basename(real_path)
         # normalize the path so we can compare it below
         real_path = pathjoin(pwd, real_fn)
-        tmp_path = pathjoin(pwd, '.GoSublime~tmp~%d~%s~' % (view_id, real_fn))
+        tmp_path = pathjoin(pwd, 'GoSublime~tmp~%d~%s' % (view_id, real_fn))
         try:
             real_fn_lower = real_fn.lower()
             x = gs.GOOSARCHES_PAT.match(real_fn_lower)
@@ -98,19 +98,16 @@ class GsLintThread(threading.Thread):
                         # [0] => fn prefix, [1] => os, [2] => arch
                         if (x[0] != y[0]) or (x[1] == y[1] and (not x[2] or not y[2] or x[2] == y[2])):
                             files.append(path)
-                pkg = 'main'
                 m = LEADING_COMMENTS_PAT.match(src)
                 m = PACKAGE_NAME_PAT.search(src, m.end(1) if m else 0)
                 if m:
-                    pat_prefix = '^' + re.escape(tmp_path)
                     with open(tmp_path, 'wb') as f:
                         f.write(src)
                                             
                     t = {
-                        "$pkg": [m.group(1)],
                         "$files": files,
-                        "$path": tmp_path,
-                        "$real_path": real_path
+                        "$path": [tmp_path],
+                        "$real_path": [real_path]
                     }
                     args = []
                     for i in list(cmd):
@@ -124,12 +121,17 @@ class GsLintThread(threading.Thread):
         chdir(cwd)
 
         errors = {}
-        if err:
-            err = LINE_INDENT_PAT.sub(' ', err)
-            for m in re.finditer(r'%s[:](\d+)(?:[:](\d+))?[:](.+)$' % pat_prefix, err, re.MULTILINE):
-                row = int(m.group(1))-1
-                col = 0 if m.group(2) == '' else int(m.group(2))-1
+        if out:
+            for m in re.finditer(r'^(.*)%s[:](\d+)[:](.+)$' % re.escape(real_fn), out, re.MULTILINE):
+                row = int(m.group(2))-1
                 err = m.group(3).strip()
+                errors[row] = ErrorReport(row, 0, err)
+
+        if err:
+            for m in re.finditer(r'^(.*)%s[:](\d+)(?:[:](\d+))?[:](.+)$' % re.escape(real_fn), err, re.MULTILINE):
+                row = int(m.group(2))-1
+                col = 0 if m.group(3) == '' else int(m.group(3))-1
+                err = m.group(4).strip()
                 errors[row] = ErrorReport(row, col, err)
         
         def cb():
