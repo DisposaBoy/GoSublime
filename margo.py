@@ -84,6 +84,9 @@ def fmt(filename, src):
 		'src': src
 	}, u"")
 
+def hello(motd):
+	return post('/', motd, {})
+
 def package(filename, src):
 	return post('/package', {
 		'fn': filename,
