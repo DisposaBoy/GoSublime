@@ -11,4 +11,15 @@ for k, v in gs.setting('env', {}).iteritems():
 for i in os.environ.iteritems():
 	env[i[0]] = i[1]
 
-sublime.set_timeout(lambda: margo.hello("hello world"), 0)
+def margo_dep():
+	motd = "hello world"
+	resp, err = margo.hello(motd)
+	m = resp.get('motd')
+
+	if not err and m != motd:
+		err = "Invalid response when calling MarGo. Expected `%s` got `%s`" % (motd, m)
+
+	if err:
+		gs.notice('GsInit', err)
+
+sublime.set_timeout(margo_dep, 3)
