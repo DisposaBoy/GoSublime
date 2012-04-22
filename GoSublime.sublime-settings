@@ -12,11 +12,11 @@
 	// the command that shall be called for gocode, this can be the command name
 	// or absolute path to a binary e.g. `/go/bin/gocode`
 	"gocode_cmd": "gocode",
-	
+
 	// the command that shall be called for gofmt, this can be the command name
 	// or absolute path to a binary e.g. `/go/bin/gofmt`
 	"gofmt_cmd": "gofmt",
-	
+
 	// Whether or not gslint is enabled
 	"gslint_enabled": true,
 
@@ -29,7 +29,7 @@
 	//     main.go:10:14: undeclared name: x
 	// compatible commands include: govet, gotype
 	// the following magic values are replaced in the command you specify
-	// 
+	//
 	// $pkg        the package name of the file in which the command was invoked
 	// $files      the list of project files
 	// $real_path  the origin path to file in which the command was invoked.
@@ -37,8 +37,8 @@
 	//             This defers from $real_path in that it contains the contents
 	//             of the possibly unsaved view.
 	//             Its basename is of the form: .GoSublime~tmp~[VIEW_ID:\d+]~[basename($real_path)]~
-	// 
-	// 
+	//
+	//
 	// "gslint_cmd": ["govet", "$files"],
 	"gslint_cmd": ["gotype", "-p", "$pkg", "$files"],
 
@@ -51,7 +51,6 @@
 	// whether or not to include Test*, Benchmark* and Example* functions in the auto-completion list
 	"autocomplete_tests": false,
 
-	"margo_enabled": false,
 	"margo_cmd": ["MarGo"],
 	// the tcp address on which MarGo listen/should listen
 	// if GoSublime can't connect to `margo_addr` it attempts to start MarGo

@@ -29,12 +29,16 @@ Features
 MarGo
 -----
 
-As Go 1 approaches, the move to [Margo](https://github.com/DisposaBoy/MarGo) has started.
-Some features such as goto definition(currently only supports the current file) and auto-add/remove package imports are only available from MarGo.
+Some features such as goto definition(currently only supports the current file) and auto-add/remove package imports are only available from MarGo. Additionally, in the future, most(likely all) features that depend on external commands (gofmt, etc.) will be removed and instead be implemented in MarGo.
 
-Because it's still very experimental, margo is disable by default. If you would like to experiment with it, make features request, etc. you may enable it by adding a setting `"margo_enabled": true` to your `GoSublime.sublime-settings` file.
+An installation of MarGo will be attempted on Sublime Text startup if communication with MarGo fails.
+If this doesn't work, or other errors are reported afterwards, please discuss it here: https://github.com/DisposaBoy/GoSublime/issues/44. You can install MarGo manually with command: `go get github.com/DisposaBoy/MarGo`
 
-You can install MarGo with command: `go get github.com/DisposaBoy/MarGo`
+Other Dependencies
+------------
+
+If you haven't done so already, install [Gocode](https://github.com/nsf/gocode).
+Gocode provides most of the code completion in GoSublime.
 
 Demo
 ----
@@ -43,12 +47,6 @@ Demo
 
 ![](https://github.com/DisposaBoy/GoSublime/raw/master/ss/2.png)
 ![](https://github.com/DisposaBoy/GoSublime/raw/master/ss/1.png)
-
-Dependencies
-------------
-
-First (if you haven't done so already) install [Gocode](https://github.com/nsf/gocode).
-Gocode provides the code completion in GoSublime.
 
 Installation
 ------------

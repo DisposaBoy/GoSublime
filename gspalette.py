@@ -33,7 +33,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			palette = self.last_activate_palette
 		elif palette == 'main':
 			palette = ''
-		
+
 		pcb = None
 		if palette:
 			pcb = self.palettes.get(palette)
@@ -42,10 +42,6 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			else:
 				gs.notice('GsPalette', 'Invalid palette `%s`' % palette)
 				palette = ''
-
-		re_margo = ''
-		if not gs.setting('margo_enabled', False):
-			re_margo = 'Requires MarGo: https://github.com/DisposaBoy/MarGo'
 
 		if len(self.bookmarks) > 0:
 			loc = self.bookmarks[-1]
@@ -61,7 +57,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 
 		if palette:
 			self.add_item(u'@%s \u21B5' % palette.title(), self.show_palette, 'main')
-		
+
 		li1 = len(self.items)
 		if pcb:
 			pcb(view)
@@ -75,10 +71,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 						if l == 0:
 							continue
 						ttl = '%s (%d)' % (ttl, l)
-					if k in self.requires_margo and re_margo:
-						itm = [ttl, re_margo]
-					else:
-						itm = ttl
+					itm = ttl
 					self.add_item(itm, self.show_palette, k)
 
 		items = []
@@ -94,7 +87,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			if i >= 0 and action:
 				action(args)
 		self.window.show_quick_panel(items, on_done)
-	
+
 	def add_item(self, item, action=None, args=None):
 		self.items.append((item, action, args))
 
@@ -102,7 +95,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		bks = self.bookmarks
 		if len(bks) == 0 or (bks[-1].row != loc.row and bks[-1].fn != view.file_name()):
 			bks.append(loc)
-	
+
 	def goto(self, loc):
 		self.window.open_file('%s:%d:%d' % (loc.fn, loc.row+1, loc.col+1), sublime.ENCODED_POSITION)
 
