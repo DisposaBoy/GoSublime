@@ -1,5 +1,6 @@
 {
 	"cmd": ["go", "build"],
-	"file_regex": "^(.+):([0-9]+):.*",
+	//  file name, line number, column number and error message
+	"file_regex": "^([^#][^:]+):([0-9]+):(?:([0-9]+):|).(.*)$",
 	"selector": "source.go"
 }
