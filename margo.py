@@ -48,11 +48,11 @@ def post(path, a, default):
 				return (default, err)
 			margo_cmd.extend(["-d", "-addr", gs.setting('margo_addr', '')])
 			out, err = gs.runcmd(margo_cmd)
-			
+
 			out = out.strip()
 			if out:
 				print('MarGo: started: %s' % out)
-			
+
 			err = err.strip()
 			if err:
 				gs.notice('MarGo', err)
@@ -77,6 +77,12 @@ def declarations(filename, src):
 		'fn': filename,
 		'src': src
 	}, [])
+
+def fmt(filename, src):
+	return post('/fmt', {
+		'fn': filename,
+		'src': src
+	}, u"")
 
 def package(filename, src):
 	return post('/package', {
