@@ -85,7 +85,7 @@ With this following key binding, you can have the line commented out and the cur
 Build System
 ------------
 
-By default a Go build system is provided under the name `GsShell`. If you're using this build system, when you press `ctrl+b` you will get a prompt for the command want to run. The command can be any valid command e.g `go build && pkill MarGo; ./MarGo` or `go run *.go`. The prompt is automatically filled with `go ` and pressing tab will try to complete some of the common `go` subcommands. So typing `go b` then pressing tab results in `go build`. If the prompt is empty or only contains `go` (ignoring whitespace) then when you press tab, it will instead be replaced with the last command you ran.
+A Go build system is provided under the menu `Tools > Build System > GsShell`. If you're using this build system, when you press `ctrl+b` you will get a prompt for the command you want to run. The command can be any valid command e.g `go build && pkill MarGo; ./MarGo` or `go run *.go`. The prompt is automatically filled with `go ` and pressing tab will try to complete some of the common `go` subcommands. So typing `go b` then pressing tab results in `go build`. If the prompt is empty or only contains `go` (ignoring whitespace) then when you press tab, it will instead be replaced with the last command you ran.
 
 In addition to GsShell, a number of example build system configs are provided which covers gomake, go build, goinstall and [gb](https://github.com/skelterjohn/go-gb).
 
