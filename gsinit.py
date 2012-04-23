@@ -40,4 +40,4 @@ except:
 	for i in os.environ.iteritems():
 		env[i[0]] = i[1]
 
-	sublime.set_timeout(lambda: margo_dep(True), 0)
+	sublime.set_timeout(lambda: margo_dep(False), 3)
