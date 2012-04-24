@@ -4,14 +4,20 @@ import gscommon as gs
 import margo
 from os.path import basename
 
+AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
+
 class GoSublime(sublime_plugin.EventListener):
 	gocode_set = False
 	def on_query_completions(self, view, prefix, locations):
 		pos = locations[0]
 		scopes = view.scope_name(pos).split()
-		if not ('source.go' in scopes and gs.IGNORED_SCOPES.isdisjoint(scopes) and gs.setting('gscomplete_enabled', False) is True):
+		if ('source.go' not in scopes) or (gs.setting('gscomplete_enabled', False) is not True):
 			return []
-		
+
+		if gs.IGNORED_SCOPES.intersection(scopes):
+			print scopes
+			return ([], AC_OPTS)
+
 		if not self.gocode_set:
 			self.gocode_set = True
 			# autostart the daemon
@@ -24,7 +30,7 @@ class GoSublime(sublime_plugin.EventListener):
 
 		fn = view.file_name()
 		if not src or not fn:
-			return []
+			return ([], AC_OPTS)
 
 
 		cl = self.complete(fn, offset, src, view.substr(sublime.Region(pos, pos+1)) == '(')
@@ -35,8 +41,8 @@ class GoSublime(sublime_plugin.EventListener):
 				cl.extend(gs.GLOBAL_SNIPPETS)
 			elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
 				cl.extend(gs.LOCAL_SNIPPETS)
-		return cl
-	
+		return (cl, AC_OPTS)
+
 	def complete(self, fn, offset, src, func_name_only):
 		comps = []
 		cmd = gs.setting('gocode_cmd', 'gocode')
@@ -46,7 +52,7 @@ class GoSublime(sublime_plugin.EventListener):
 		if err:
 			gs.notice('GsComplete', err)
 		else:
-			try:	
+			try:
 				js = json.loads(js)
 				if js and js[1]:
 					for ent in js[1]:
@@ -60,7 +66,7 @@ class GoSublime(sublime_plugin.EventListener):
 							act = gs.setting('autocomplete_tests', False)
 							if not act and nm.startswith(('Test', 'Benchmark', 'Example')):
 								continue
-							
+
 							params, ret = declex(tn)
 							ret = ret.strip('() ')
 							if func_name_only:
@@ -81,7 +87,7 @@ class GoSublime(sublime_plugin.EventListener):
 			except ValueError as e:
 				gs.notice('GsComplete', "Error while decoding gocode output: %s" % e)
 		return comps
-	
+
 	def typeclass_prefix(self, typeclass, typename):
 		return gs.NAME_PREFIXES.get(typename, gs.CLASS_PREFIXES.get(typeclass, ' '))
 
