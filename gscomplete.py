@@ -15,7 +15,6 @@ class GoSublime(sublime_plugin.EventListener):
 			return []
 
 		if gs.IGNORED_SCOPES.intersection(scopes):
-			print scopes
 			return ([], AC_OPTS)
 
 		if not self.gocode_set:
