@@ -2,7 +2,7 @@ import sublime, sublime_plugin
 from sublime import set_timeout
 import gscommon as gs
 import re, threading, subprocess, time, traceback
-from os import unlink, listdir, chdir, getcwd
+from os import unlink, listdir, chdir, getcwd, devnull
 from os.path import dirname, basename, join as pathjoin
 
 LEADING_COMMENTS_PAT = re.compile(r'(^(\s*//.*?[\r\n]+|\s*/\*.*?\*/)+)', re.DOTALL)
@@ -37,14 +37,14 @@ class GsLintThread(threading.Thread):
         self.ready_ev = threading.Event()
         self.sem = threading.Semaphore()
         self.clear()
-    
+
     def clear(self):
         self.view_real_path = ""
         self.view_src = ""
         self.view_id = False
         self.view = None
         self.cmd = []
-    
+
     def notify(self):
         self.ready_ev.set()
 
@@ -62,7 +62,6 @@ class GsLintThread(threading.Thread):
 
     def lint(self):
         err = ''
-        out = ''
         with self.sem:
             cmd = self.cmd
             view_id = self.view_id
@@ -73,7 +72,7 @@ class GsLintThread(threading.Thread):
 
         if not (real_path and src):
             return
-        
+
         pat_prefix = ''
         cwd = getcwd()
         pwd = dirname(real_path)
@@ -81,7 +80,7 @@ class GsLintThread(threading.Thread):
         real_fn = basename(real_path)
         # normalize the path so we can compare it below
         real_path = pathjoin(pwd, real_fn)
-        tmp_path = pathjoin(pwd, '.GoSublime~tmp~%d~%s~' % (view_id, real_fn))
+        tmp_path = pathjoin(pwd, 'GoSublime~tmp~%d~%s' % (view_id, real_fn))
         try:
             real_fn_lower = real_fn.lower()
             x = gs.GOOSARCHES_PAT.match(real_fn_lower)
@@ -102,25 +101,26 @@ class GsLintThread(threading.Thread):
                 m = LEADING_COMMENTS_PAT.match(src)
                 m = PACKAGE_NAME_PAT.search(src, m.end(1) if m else 0)
                 if m:
-                    pat_prefix = '^' + re.escape(tmp_path)
+                    pat_prefix = re.escape(basename(tmp_path))
                     with open(tmp_path, 'wb') as f:
                         f.write(src)
-                                            
+
                     t = {
                         "$pkg": [m.group(1)],
                         "$files": files,
-                        "$path": tmp_path,
-                        "$real_path": real_path
+                        "$path": [tmp_path],
+                        "$real_path": [real_path],
+                        "$devnull": [devnull]
                     }
                     args = []
                     for i in list(cmd):
                         args.extend(t.get(i, [i]))
-                    out, err = gs.runcmd(args)
+                    err, _ = gs.runcmd(args, stderr=subprocess.STDOUT)
 
                     unlink(tmp_path)
         except Exception:
             gs.notice("GsLintThread: Cmd", traceback.format_exc())
-        
+
         chdir(cwd)
 
         errors = {}
@@ -128,10 +128,10 @@ class GsLintThread(threading.Thread):
             err = LINE_INDENT_PAT.sub(' ', err)
             for m in re.finditer(r'%s[:](\d+)(?:[:](\d+))?[:](.+)$' % pat_prefix, err, re.MULTILINE):
                 row = int(m.group(1))-1
-                col = 0 if m.group(2) == '' else int(m.group(2))-1
+                col = int(m.group(2))-1 if m.group(2) else 0
                 err = m.group(3).strip()
                 errors[row] = ErrorReport(row, col, err)
-        
+
         def cb():
             regions = []
             for k in errors:
@@ -186,7 +186,7 @@ def vsync():
                         gs.l_lt.notify()
                         gs.l_lt.cmd = gs.setting('gslint_cmd', [])
                     return
-                        
+
             row, _ = view.rowcol(view.sel()[0].begin())
             rw = gs.l_lsyncs.get(vid, -1)
             if row != rw:

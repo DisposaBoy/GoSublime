@@ -21,13 +21,13 @@
 	"gslint_enabled": true,
 
 	// the command that shall be called for gslint
-	// the command shall output errors to stderr in the format: PATH:LINE_NUMBER:ERROR_OFFSET:ERROR_MESSAGE
+	// the command shall output errors in the format: PATH:LINE_NUMBER:ERROR_OFFSET:ERROR_MESSAGE
 	// matching the regexp (.+):(\d+):(\d+):(.+) where ERROR_OFFSET is optional.
 	// e.g. given:
 	//     fmt.Println(x)
 	// the command shall output:
 	//     main.go:10:14: undeclared name: x
-	// compatible commands include: govet, gotype
+	// compatible commands include: govet, gotype, go build
 	// the following magic values are replaced in the command you specify
 	//
 	// $pkg        the package name of the file in which the command was invoked
@@ -36,11 +36,13 @@
 	// $path       the path to the file in which the command was invoked.
 	//             This defers from $real_path in that it contains the contents
 	//             of the possibly unsaved view.
-	//             Its basename is of the form: .GoSublime~tmp~[VIEW_ID:\d+]~[basename($real_path)]~
+	//             Its basename is of the form: GoSublime~tmp~[VIEW_ID:\d+]~[basename($real_path)]
+	// $devnull    the platform-specific blackhole/null device (`/dev/null` on *nix and `nul` on windows)
 	//
 	//
 	// "gslint_cmd": ["govet", "$files"],
-	"gslint_cmd": ["gotype", "-p", "$pkg", "$files"],
+	// "gslint_cmd": ["gotype", "-p", "$pkg", "$files"],
+	"gslint_cmd": ["go", "build", "-o", "$devnull", "$files"],
 
 	// how long to wait after the last keystroke before the gslint_cmd command is run (in milliseconds)
 	"gslint_timeout": 500,
