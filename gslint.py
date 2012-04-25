@@ -171,18 +171,19 @@ def vsync():
         if gs.setting('gslint_enabled', False):
             delay = 250
             vid = view.id()
-            size = view.size()
-            tm, sz = gs.l_vsyncs.get(vid, (0.0, -1))
-            if sz != size:
-                gs.l_vsyncs[vid] = (time.time(), size)
-            elif tm > 0.0 and sz == size:
+            src = view.substr(sublime.Region(0, view.size()))
+            tm = gs.l_vsyncs.get(vid, 0.0)
+            if gs.l_lt.view_src != src:
+                with gs.l_lt.sem:
+                    gs.l_lt.view_src = src
+                gs.l_vsyncs[vid] = time.time()
+            elif tm > 0.0:
                 timeout = int(gs.setting('gslint_timeout', 500))
                 delta = int((time.time() - tm) * 1000.0)
                 if delta >= timeout:
-                    gs.l_vsyncs[vid] = (0.0, size)
+                    gs.l_vsyncs[vid] = 0.0
                     with gs.l_lt.sem:
                         gs.l_lt.view_real_path = view.file_name()
-                        gs.l_lt.view_src = view.substr(sublime.Region(0, size))
                         gs.l_lt.view_id = vid
                         gs.l_lt.view = view
                         gs.l_lt.notify()
