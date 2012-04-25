@@ -144,7 +144,7 @@ class GsLintThread(threading.Thread):
             gs.l_errors[view.id()] = errors
             if regions:
                 flags = sublime.DRAW_EMPTY_AS_OVERWRITE
-                view.add_regions('GsLint-errors', regions, 'invalid.illegal', 'bookmark', flags)
+                view.add_regions('GsLint-errors', regions, 'comment', 'bookmark', flags)
             else:
                 view.erase_regions('GsLint-errors')
             # update the view so the error is displayed without needing to move the cursor
