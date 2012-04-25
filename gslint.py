@@ -134,16 +134,18 @@ class GsLintThread(threading.Thread):
 
         def cb():
             regions = []
+            flags = sublime.HIDDEN
             for k in errors:
                 er = errors[k]
                 line = view.line(view.text_point(er.row, 0))
+                if er.col > 0:
+                    flags = sublime.DRAW_EMPTY_AS_OVERWRITE
                 pos = line.begin() + er.col
                 if pos >= line.end():
                     pos = line.end()
                 regions.append(sublime.Region(pos, pos))
             gs.l_errors[view.id()] = errors
             if regions:
-                flags = sublime.DRAW_EMPTY_AS_OVERWRITE
                 view.add_regions('GsLint-errors', regions, 'comment', 'bookmark', flags)
             else:
                 view.erase_regions('GsLint-errors')
