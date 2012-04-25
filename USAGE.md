@@ -28,54 +28,6 @@ By default, a number of key bindings are provided. They can be viewed in `Packag
 Useful key bindings
 -------------------
 
-It's useful to have the autocomplete popup up as soon as you hit the dot key.
-
-You may achieve this by adding this to your `Packages/User/Default.sublime-keymap` file:
-
-    {
-        "keys": ["."],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/GoSublime/macros/DotCompletion.sublime-macro"
-        },
-        "context":
-        [
-            {
-                "key": "auto_complete_visible",
-                "operator": "equal",
-                "operand": true
-            },
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.go"
-            }
-        ]
-    },
-    {
-        "keys": ["."],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/GoSublime/macros/Dot.sublime-macro"
-        },
-        "context":
-        [
-            {
-                "key": "auto_complete_visible",
-                "operator": "equal",
-                "operand": false
-            },
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.go"
-            }
-        ]
-    }
-
-
 Often when commenting out a line the immediate action following this is to move the cursor to the next line either to continue working or comment out the following line.
 
 With this following key binding, you can have the line commented out and the cursor automatically moved to the next line.
