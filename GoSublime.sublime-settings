@@ -18,7 +18,7 @@
 	"gofmt_cmd": "gofmt",
 
 	// Whether or not gslint is enabled
-	"gslint_enabled": true,
+	"gslint_enabled": false,
 
 	// the command that shall be called for gslint
 	// the command shall output errors in the format: PATH:LINE_NUMBER:ERROR_OFFSET:ERROR_MESSAGE
