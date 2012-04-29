@@ -30,11 +30,4 @@ def margo_dep(try_install):
 	if err:
 		gs.notice(DOMAIN, err)
 
-def sync_env():
-	for k, v in gs.setting('env', {}).iteritems():
-		os.environ[k] = os.path.expandvars(os.path.expanduser(v))
-
-gs.settings_obj().add_on_change('env', sync_env)
-
-gsq.dispatch(sync_env)
 gsq.dispatch(lambda: margo_dep(False))
