@@ -1,7 +1,6 @@
 import sublime
-import subprocess, re
+import subprocess, re, os
 from subprocess import Popen, PIPE
-from os import environ
 
 try:
 	STARTUP_INFO = subprocess.STARTUPINFO()
@@ -54,9 +53,9 @@ GOOSES = [
 ]
 
 GOOSARCHES = []
-for os in GOOSES:
+for s in GOOSES:
 	for arch in GOARCHES:
-		GOOSARCHES.append('%s_%s' % (os, arch))
+		GOOSARCHES.append('%s_%s' % (s, arch))
 
 GOOSARCHES_PAT = re.compile(r'^(.+?)(?:_(%s))?(?:_(%s))?\.go$' % ('|'.join(GOOSES), '|'.join(GOARCHES)))
 
@@ -113,7 +112,7 @@ def rowcol(view):
 	return view.rowcol(view.sel()[0].begin())
 
 def env():
-	env = {}
-	for i in environ.iteritems():
-		env[i[0]] = i[1]
+	env = os.environ.copy()
+	for k, v in setting('env', {}).iteritems():
+		env[k] = os.path.expandvars(os.path.expanduser(v))
 	return env
