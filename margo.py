@@ -1,6 +1,6 @@
 import subprocess, httplib, urllib, json, traceback, os
 import sublime
-import gsinit, gscommon as gs
+import gscommon as gs
 
 class Conn(object):
 	def __init__(self):
@@ -97,7 +97,7 @@ def imports(filename, src, import_paths, toggle):
 	return post('/imports', {
 		'fn': filename,
 		'src': src,
-		'env': gsinit.env,
+		'env': gs.env(),
 		'import_paths': import_paths,
 		'toggle': toggle,
 	}, {})
