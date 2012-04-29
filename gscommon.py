@@ -67,9 +67,10 @@ IGNORED_SCOPES = frozenset([
 	'comment.block.go'
 ])
 
-def runcmd(args, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False):
 	try:
-		p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE, startupinfo=STARTUP_INFO)
+		p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE,
+			startupinfo=STARTUP_INFO, env=env(), shell=shell)
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
