@@ -1,6 +1,7 @@
 import sublime
 import subprocess, re
 from subprocess import Popen, PIPE
+from os import environ
 
 try:
 	STARTUP_INFO = subprocess.STARTUPINFO()
@@ -78,9 +79,11 @@ def runcmd(args, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
 		err = u'Error while running %s: %s' % (args[0], e)
 		return ("", err)
 
+def settings_obj():
+	return sublime.load_settings("GoSublime.sublime-settings")
+
 def setting(key, default=None):
-	s = sublime.load_settings("GoSublime.sublime-settings")
-	return s.get(key, default)
+	return settings_obj().get(key, default)
 
 def notice(domain, txt):
 	txt = "** %s: %s **" % (domain, txt)
@@ -108,3 +111,9 @@ def active_valid_go_view(win=None):
 
 def rowcol(view):
 	return view.rowcol(view.sel()[0].begin())
+
+def env():
+	env = {}
+	for i in environ.iteritems():
+		env[i[0]] = i[1]
+	return env
