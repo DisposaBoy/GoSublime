@@ -144,7 +144,7 @@ def sync_settings():
 				_settings[k] = v
 		e = {}
 		for k, v in _settings.get('env', {}).iteritems():
-			e[k] = os.path.expandvars(os.path.expanduser(v))
+			e[k] = str(os.path.expandvars(os.path.expanduser(v)))
 		_settings['env'] = e
 
 
