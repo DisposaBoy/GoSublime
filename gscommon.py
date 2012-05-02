@@ -10,7 +10,20 @@ except (AttributeError):
 	STARTUP_INFO = None
 
 _sem = threading.Semaphore()
-_user_env = {}
+_settings = {
+	"env": {},
+	"gscomplete_enabled": False,
+	"gocode_cmd": "",
+	"gofmt_cmd": "",
+	"fmt_enabled": False,
+	"gslint_enabled": False,
+	"gslint_cmd": [],
+	"gslint_timeout": 0,
+	"autocomplete_snippets": False,
+	"autocomplete_tests": False,
+	"margo_cmd": [],
+	"margo_addr": ""
+}
 
 GLOBAL_SNIPPETS = [
 	(u'func\tfunc {...} \u0282', 'func ${1:name}($2)$3 {\n\t$0\n}'),
@@ -85,7 +98,8 @@ def settings_obj():
 	return sublime.load_settings("GoSublime.sublime-settings")
 
 def setting(key, default=None):
-	return settings_obj().get(key, default)
+	with _sem:
+		return _settings.get(key, default)
 
 def notice(domain, txt):
 	txt = "** %s: %s **" % (domain, txt)
@@ -116,17 +130,24 @@ def rowcol(view):
 
 def env():
 	e = os.environ.copy()
-	with _sem:
-		e.update(_user_env)
+	e.update(setting('env', {}))
 	return e
 
-def sync_user_env():
-	global _user_env
+def sync_settings():
+	global _settings
+	so = settings_obj()
 	with _sem:
-		_user_env = {}
-		for k, v in setting('env', {}).iteritems():
-			_user_env[k] = os.path.expandvars(os.path.expanduser(v))
+		for k in _settings:
+			v = so.get(k, None)
+			if v is not None:
+				# todo: check the type of `v`
+				_settings[k] = v
+		e = {}
+		for k, v in _settings.get('env', {}).iteritems():
+			e[k] = os.path.expandvars(os.path.expanduser(v))
+		_settings['env'] = e
 
 
-settings_obj().add_on_change("env", sync_user_env)
-
+settings_obj().clear_on_change("GoSublime.settings")
+settings_obj().add_on_change("GoSublime.settings", sync_settings)
+sync_settings()
