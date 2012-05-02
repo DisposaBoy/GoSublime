@@ -36,11 +36,12 @@ class GsLintThread(threading.Thread):
         self.stop_ev = threading.Event()
         self.ready_ev = threading.Event()
         self.sem = threading.Semaphore()
-        self.clear()
+        self.clear(True)
 
-    def clear(self):
+    def clear(self, clear_src=False):
         self.view_real_path = ""
-        self.view_src = ""
+        if clear_src:
+            self.view_src = ""
         self.view_id = False
         self.view = None
         self.cmd = []
@@ -181,8 +182,8 @@ def vsync():
                 timeout = int(gs.setting('gslint_timeout', 500))
                 delta = int((time.time() - tm) * 1000.0)
                 if delta >= timeout:
-                    gs.l_vsyncs[vid] = 0.0
                     with gs.l_lt.sem:
+                        gs.l_vsyncs[vid] = 0.0
                         gs.l_lt.view_real_path = view.file_name()
                         gs.l_lt.view_id = vid
                         gs.l_lt.view = view
