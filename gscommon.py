@@ -1,5 +1,5 @@
 import sublime
-import subprocess, re, os
+import subprocess, re, os, threading
 from subprocess import Popen, PIPE
 
 try:
@@ -9,6 +9,8 @@ try:
 except (AttributeError):
 	STARTUP_INFO = None
 
+_sem = threading.Semaphore()
+_user_env = {}
 
 GLOBAL_SNIPPETS = [
 	(u'func\tfunc {...} \u0282', 'func ${1:name}($2)$3 {\n\t$0\n}'),
@@ -113,7 +115,18 @@ def rowcol(view):
 	return view.rowcol(view.sel()[0].begin())
 
 def env():
-	env = os.environ.copy()
-	for k, v in setting('env', {}).iteritems():
-		env[k] = os.path.expandvars(os.path.expanduser(v))
-	return env
+	e = os.environ.copy()
+	with _sem:
+		e.update(_user_env)
+	return e
+
+def sync_user_env():
+	global _user_env
+	with _sem:
+		_user_env = {}
+		for k, v in setting('env', {}).iteritems():
+			_user_env[k] = os.path.expandvars(os.path.expanduser(v))
+
+
+settings_obj().add_on_change("env", sync_user_env)
+
