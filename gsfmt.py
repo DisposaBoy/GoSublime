@@ -39,7 +39,7 @@ class SublimeEditor(thatcher.Editor):
 
 class GsFmtCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        if not gs.is_go_source_view(self.view):
+        if not (gs.setting('fmt_enabled', False) is True and gs.is_go_source_view(self.view)):
             return
 
         region = sublime.Region(0, self.view.size())
@@ -61,7 +61,7 @@ class GsFmtCommand(sublime_plugin.TextCommand):
                 err = "%s\n\n%s" % (err, e)
             finally:
                 self.view.end_edit(edit)
-            
+
             if err:
                 def cb():
                     if ed.dirty:
