@@ -131,6 +131,16 @@ def rowcol(view):
 def env():
 	e = os.environ.copy()
 	e.update(setting('env', {}))
+
+	roots = e.get('GOPATH', '').split(os.pathsep)
+	roots.append(e.get('GOROOT', ''))
+	add_path = e.get('PATH', '').split(os.pathsep)
+	for s in roots:
+		if s:
+			s = os.path.join(s, 'bin')
+			if s not in add_path:
+				add_path.append(s)
+	e['PATH'] = os.pathsep.join(add_path)
 	return e
 
 def sync_settings():
