@@ -9,6 +9,7 @@ class GsQ(threading.Thread):
 		threading.Thread.__init__(self)
 		self.sem = threading.Semaphore()
 		self.view = None
+		self.has_view = False
 		self.msg = ''
 		self.q = Queue.PriorityQueue()
 		self.frame = 0
@@ -22,9 +23,10 @@ class GsQ(threading.Thread):
 	def run(self):
 		while True:
 			try:
-				_, f, msg, view = self.q.get()
-				if view:
+				_, f, msg, view, has_view = self.q.get()
+				if has_view:
 					with self.sem:
+						self.has_view = True
 						self.view = view
 						self.msg = ' %s: %s' % (DOMAIN, msg) if msg else ''
 
@@ -32,6 +34,7 @@ class GsQ(threading.Thread):
 					f()
 
 					with self.sem:
+						self.has_view = False
 						self.view = None
 						self.msg = ''
 					sublime.set_timeout(lambda: view.set_status(DOMAIN, ''), 0)
@@ -42,7 +45,7 @@ class GsQ(threading.Thread):
 
 	def animate(self):
 		with self.sem:
-			if self.view:
+			if self.has_view:
 				text = u'%s%s' % (self.frames[self.frame], self.msg)
 				self.frame = (self.frame + 1) % len(self.frames)
 			else:
@@ -51,14 +54,14 @@ class GsQ(threading.Thread):
 
 		def cb():
 			with self.sem:
-				if self.view:
+				if self.has_view:
 					self.view.set_status(DOMAIN, text)
 					sublime.set_timeout(self.animate, 250)
 		sublime.set_timeout(cb, 0)
 
-	def dispatch(self, f, msg, view=None, p=0):
+	def dispatch(self, f, msg, view=None, has_view=False, p=0):
 		try:
-			self.q.put((p, f, msg, view))
+			self.q.put((p, f, msg, view, has_view))
 		except Exception:
 			gs.notice(DOMAIN, traceback.format_exc())
 
@@ -73,4 +76,4 @@ def dispatch(f, msg='', view=None, p=0):
 		win = sublime.active_window()
 		if win:
 			view = win.active_view()
-	Q.dispatch(f, msg, view, p)
+	Q.dispatch(f, msg, view, view is not None, p)
