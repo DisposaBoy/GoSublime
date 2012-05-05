@@ -45,8 +45,8 @@ def check_depends():
 					if i == 1:
 						prompt = gsshell.Prompt(view)
 						prompt.on_done('go get -u -v %s %s' % (gocode_repo, margo_repo))
-						margo.bye_ni()
-						gs.runcmd('gocode close')
+						gsq.dispatch(margo.bye_ni)
+						gsq.dispatch(lambda: gs.runcmd(['gocode', 'close']))
 						settings.set('tracking_rev', new_rev)
 						sublime.save_settings(settings_fn)
 
@@ -69,7 +69,7 @@ def check_depends():
 					]
 				]
 				win.show_quick_panel(items, on_panel_close)
-	else:
-		gsq.dispatch(hello)
+				return
+	gsq.dispatch(hello)
 
 sublime.set_timeout(check_depends, 1000)
