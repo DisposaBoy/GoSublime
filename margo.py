@@ -29,7 +29,7 @@ conn = Conn()
 def isinst(v, base):
 	return isinstance(v, type(base))
 
-def post(path, a, default):
+def post(path, a, default, fail_early=False):
 	resp = None
 	try:
 		params = urllib.urlencode({ 'data': json.dumps(a) })
@@ -41,6 +41,9 @@ def post(path, a, default):
 		try:
 			resp = conn.post(path, params, headers)
 		except Exception:
+			if fail_early:
+				return (default, traceback.format_exc())
+
 			margo_cmd = list(gs.setting('margo_cmd', []))
 			if not margo_cmd:
 				err = 'Missing `margo_cmd`'
@@ -86,6 +89,9 @@ def fmt(filename, src):
 
 def hello(motd):
 	return post('/', motd, {})
+
+def bye_ni():
+	return post('/', 'bye ni', {}, True)
 
 def package(filename, src):
 	return post('/package', {
