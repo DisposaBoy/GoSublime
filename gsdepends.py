@@ -38,7 +38,7 @@ def run_go_get(view):
 			subprocess.call(['gocode', 'close'])
 		except Exception:
 			pass
-	gsq.dispatch(f, view)
+	gsq.dispatch(f, '', view)
 
 def check_depends(view):
 	global dep_check_done
