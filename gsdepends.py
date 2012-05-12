@@ -1,4 +1,4 @@
-import gscommon as gs, gsshell, margo, gsq
+import gscommon as gs, margo, gsq
 import threading, traceback, os, re, subprocess
 import sublime, sublime_plugin
 
@@ -36,13 +36,13 @@ def hello():
 	call_cmd(['gocode'])
 
 def run_go_get(view):
-	prompt = gsshell.Prompt(view)
-	prompt.on_done('go get -u -v -x %s %s' % (GOCODE_REPO, MARGO_REPO))
-
+	msg = 'Installing/updating gocode and MarGo...'
 	def f():
+		out, err = gs.runcmd(['go', 'get', '-u', '-v', GOCODE_REPO, MARGO_REPO])
 		margo.bye_ni()
 		call_cmd(['gocode', 'close'])
-	gsq.dispatch(f, '', view)
+		gs.notice(DOMAIN, '%s done\n%s%s' % (msg, out, err))
+	gsq.dispatch(f, msg, view)
 
 def check_depends(view):
 	global dep_check_done
