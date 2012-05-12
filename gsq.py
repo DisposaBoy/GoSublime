@@ -22,26 +22,30 @@ class GsQ(threading.Thread):
 
 	def run(self):
 		while True:
-			try:
-				_, f, msg, view, has_view = self.q.get()
-				if has_view:
-					with self.sem:
-						self.has_view = True
-						self.view = view
-						self.msg = ' %s: %s' % (DOMAIN, msg) if msg else ''
+			_, f, msg, view, has_view = self.q.get()
 
-					self.animate()
+			def call_f():
+				try:
 					f()
+				except Exception:
+					gs.notice(DOMAIN, traceback.format_exc())
 
-					with self.sem:
-						self.has_view = False
-						self.view = None
-						self.msg = ''
-					sublime.set_timeout(lambda: view.set_status(DOMAIN, ''), 0)
-				else:
-					f()
-			except Exception:
-				gs.notice(DOMAIN, traceback.format_exc())
+			if has_view:
+				with self.sem:
+					self.has_view = True
+					self.view = view
+					self.msg = ' %s: %s' % (DOMAIN, msg) if msg else ''
+
+				self.animate()
+				call_f()
+
+				with self.sem:
+					self.has_view = False
+					self.view = None
+					self.msg = ''
+				sublime.set_timeout(lambda: view.set_status(DOMAIN, ''), 0)
+			else:
+				call_f()
 
 	def animate(self):
 		with self.sem:
