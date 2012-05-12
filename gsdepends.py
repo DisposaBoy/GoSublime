@@ -1,5 +1,5 @@
 import gscommon as gs, margo, gsq
-import threading, traceback, os, re, subprocess
+import threading, traceback, os, re
 import sublime, sublime_plugin
 
 DOMAIN = 'GsDepends'
@@ -25,11 +25,8 @@ def split_changes(s):
 	return changes
 
 def call_cmd(cmd):
-	try:
-		subprocess.call(cmd, env=gs.env(), startupinfo=gs.STARTUP_INFO)
-	except Exception:
-		return False
-	return True
+	_, _, exc = gs.runcmd(cmd)
+	return not exc
 
 def hello():
 	margo.hello("hello world")
