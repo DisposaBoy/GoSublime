@@ -76,8 +76,11 @@ def dispatch(f, msg='', view=None, p=0):
 	if not Q:
 		Q = GsQ()
 		Q.start()
-	if not view:
-		win = sublime.active_window()
-		if win:
-			view = win.active_view()
-	Q.dispatch(f, msg, view, view is not None, p)
+
+	def cb(v):
+		if v is None:
+			win = sublime.active_window()
+			if win:
+				v = win.active_view()
+		Q.dispatch(f, msg, v, v is not None, p)
+	sublime.set_timeout(lambda: cb(view), 0)
