@@ -24,9 +24,12 @@ def split_changes(s):
 	changes.sort()
 	return changes
 
+def call_cmd(cmd):
+	subprocess.call(cmd, env=gs.env(), startupinfo=gs.STARTUP_INFO)
+
 def hello():
 	margo.hello("hello world")
-	subprocess.call(['gocode'], env=gs.env(), startupinfo=gs.STARTUP_INFO)
+	call_cmd(['gocode'])
 
 def run_go_get(view):
 	prompt = gsshell.Prompt(view)
@@ -35,7 +38,7 @@ def run_go_get(view):
 	def f():
 		try:
 			margo.bye_ni()
-			subprocess.call(['gocode', 'close'], env=gs.env(), startupinfo=gs.STARTUP_INFO)
+			call_cmd(['gocode', 'close'])
 		except Exception:
 			pass
 	gsq.dispatch(f, '', view)
@@ -59,7 +62,7 @@ def check_depends(view):
 		gs.notice(DOMAIN, "GOPATH and/or GOROOT appear to be unset")
 
 	try:
-		subprocess.call(['go', '--help'])
+		call_cmd(['go', '--help'])
 	except OSError:
 		gs.notice(DOMAIN, 'The `go` command cannot be found')
 		return
@@ -71,7 +74,7 @@ def check_depends(view):
 	]
 	for cmd in cmds:
 		try:
-			subprocess.call(cmd)
+			call_cmd(cmd)
 		except OSError:
 			missing.append(cmd[0])
 
