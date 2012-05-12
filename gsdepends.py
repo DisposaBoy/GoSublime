@@ -42,6 +42,7 @@ def run_go_get(view):
 		margo.bye_ni()
 		call_cmd(['gocode', 'close'])
 		gs.notice(DOMAIN, '%s done\n%s%s' % (msg, out, err))
+		gsq.dispatch(hello, 'Starting MarGo and gocode...', view)
 	gsq.dispatch(f, msg, view)
 
 def check_depends(view):
