@@ -25,7 +25,11 @@ def split_changes(s):
 	return changes
 
 def call_cmd(cmd):
-	subprocess.call(cmd, env=gs.env(), startupinfo=gs.STARTUP_INFO)
+	try:
+		subprocess.call(cmd, env=gs.env(), startupinfo=gs.STARTUP_INFO)
+	except Exception:
+		return False
+	return True
 
 def hello():
 	margo.hello("hello world")
@@ -36,11 +40,8 @@ def run_go_get(view):
 	prompt.on_done('go get -u -v -x %s %s' % (GOCODE_REPO, MARGO_REPO))
 
 	def f():
-		try:
-			margo.bye_ni()
-			call_cmd(['gocode', 'close'])
-		except Exception:
-			pass
+		margo.bye_ni()
+		call_cmd(['gocode', 'close'])
 	gsq.dispatch(f, '', view)
 
 def check_depends(view):
@@ -61,9 +62,7 @@ def check_depends(view):
 	if not (e.get('GOROOT') and e.get('GOPATH')):
 		gs.notice(DOMAIN, "GOPATH and/or GOROOT appear to be unset")
 
-	try:
-		call_cmd(['go', '--help'])
-	except OSError:
+	if not call_cmd(['go', '--help']):
 		gs.notice(DOMAIN, 'The `go` command cannot be found')
 		return
 
@@ -73,9 +72,7 @@ def check_depends(view):
 		['MarGo', '--help'],
 	]
 	for cmd in cmds:
-		try:
-			call_cmd(cmd)
-		except OSError:
+		if not call_cmd(cmd):
 			missing.append(cmd[0])
 
 	if missing:
