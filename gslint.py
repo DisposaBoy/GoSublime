@@ -116,7 +116,7 @@ class GsLintThread(threading.Thread):
                     args = []
                     for i in list(cmd):
                         args.extend(t.get(i, [i]))
-                    err, _ = gs.runcmd(args, stderr=subprocess.STDOUT)
+                    err, _, _ = gs.runcmd(args, stderr=subprocess.STDOUT)
 
                     unlink(tmp_path)
         except Exception:

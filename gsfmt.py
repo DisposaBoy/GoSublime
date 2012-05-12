@@ -46,7 +46,7 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 		src = self.view.substr(region)
 
 		args = [gs.setting("gofmt_cmd", "gofmt"), "-d"]
-		diff, err = gs.runcmd(args, src)
+		diff, err, _ = gs.runcmd(args, src)
 		if err:
 			fn = self.view.file_name()
 			err = err.replace('<standard input>', fn)

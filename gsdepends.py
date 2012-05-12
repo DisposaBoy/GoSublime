@@ -38,7 +38,7 @@ def hello():
 def run_go_get(view):
 	msg = 'Installing/updating gocode and MarGo...'
 	def f():
-		out, err = gs.runcmd(['go', 'get', '-u', '-v', GOCODE_REPO, MARGO_REPO])
+		out, err, _ = gs.runcmd(['go', 'get', '-u', '-v', GOCODE_REPO, MARGO_REPO])
 		margo.bye_ni()
 		call_cmd(['gocode', 'close'])
 		gs.notice(DOMAIN, '%s done\n%s%s' % (msg, out, err))

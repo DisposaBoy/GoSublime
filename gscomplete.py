@@ -47,7 +47,7 @@ class GoSublime(sublime_plugin.EventListener):
 		cmd = gs.setting('gocode_cmd', 'gocode')
 		offset = 'c%s' % offset
 		args = [cmd, "-f=json", "autocomplete", fn, offset]
-		js, err = gs.runcmd(args, src)
+		js, err, _ = gs.runcmd(args, src)
 		if err:
 			gs.notice('GsComplete', err)
 		else:

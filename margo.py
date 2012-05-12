@@ -50,7 +50,7 @@ def post(path, a, default, fail_early=False):
 				gs.notice("MarGo", err)
 				return (default, err)
 			margo_cmd.extend(["-d", "-addr", gs.setting('margo_addr', '')])
-			out, err = gs.runcmd(margo_cmd)
+			out, err, _ = gs.runcmd(margo_cmd)
 
 			out = out.strip()
 			if out:

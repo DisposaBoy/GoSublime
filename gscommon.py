@@ -83,16 +83,25 @@ IGNORED_SCOPES = frozenset([
 ])
 
 def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False):
+	out = ""
+	err = ""
+	exc = None
+
+	old_env = os.environ.copy()
+	os.environ.update(env())
 	try:
 		p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE,
-			startupinfo=STARTUP_INFO, env=env(), shell=shell)
+			startupinfo=STARTUP_INFO, shell=shell)
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
-		return (out.decode('utf-8') if out else '', err.decode('utf-8') if err else '')
-	except (OSError, ValueError) as e:
+		out = out.decode('utf-8') if out else ''
+		err = err.decode('utf-8') if err else ''
+	except (Exception) as e:
 		err = u'Error while running %s: %s' % (args[0], e)
-		return ("", err)
+		exc = e
+	os.environ.update(old_env)
+	return (out, err, exc)
 
 def settings_obj():
 	return sublime.load_settings("GoSublime.sublime-settings")
