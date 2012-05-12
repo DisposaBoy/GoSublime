@@ -26,7 +26,7 @@ def split_changes(s):
 
 def hello():
 	margo.hello("hello world")
-	subprocess.call(['gocode'])
+	subprocess.call(['gocode'], env=gs.env(), startupinfo=gs.STARTUP_INFO)
 
 def run_go_get(view):
 	prompt = gsshell.Prompt(view)
@@ -35,7 +35,7 @@ def run_go_get(view):
 	def f():
 		try:
 			margo.bye_ni()
-			subprocess.call(['gocode', 'close'])
+			subprocess.call(['gocode', 'close'], env=gs.env(), startupinfo=gs.STARTUP_INFO)
 		except Exception:
 			pass
 	gsq.dispatch(f, '', view)
