@@ -7,6 +7,7 @@ DOMAIN = 'GsQ'
 class GsQ(threading.Thread):
 	def __init__(self):
 		threading.Thread.__init__(self)
+		self.daemon = True
 		self.sem = threading.Semaphore()
 		self.view = None
 		self.has_view = False
