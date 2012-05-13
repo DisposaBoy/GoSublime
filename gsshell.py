@@ -1,5 +1,8 @@
 import sublime, sublime_plugin
 import gscommon as gs
+import re
+
+GO_RUN_PAT = re.compile(r'^go\s+run$', re.IGNORECASE)
 
 class Prompt(object):
 	def __init__(self, view):
@@ -16,6 +19,10 @@ class Prompt(object):
 		if s:
 			self.settings.set('last_command', s)
 			sublime.save_settings('GoSublime-GsShell.sublime-settings')
+
+		if GO_RUN_PAT.match(s):
+			s = 'go run *.go'
+
 		self.view.window().run_command("exec", { 'kill': True })
 		self.view.window().run_command("exec", {
 			'shell': True,
