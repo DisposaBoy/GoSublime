@@ -25,13 +25,13 @@ _settings = {
 	"margo_addr": ""
 }
 
+GLOBAL_SNIPPET_PACKAGE = (u'package\tpackage [name] \u0282', 'package ${1:NAME}')
+GLOBAL_SNIPPET_IMPORT = (u'import\timport (...) \u0282', 'import (\n\t"$1"\n)')
 GLOBAL_SNIPPETS = [
 	(u'func\tfunc {...} \u0282', 'func ${1:name}($2)$3 {\n\t$0\n}'),
 	(u'func\tfunc ([receiver]) {...} \u0282', 'func (${1:receiver} ${2:type}) ${3:name}($4)$5 {\n\t$0\n}'),
 	(u'var\tvar (...) \u0282', 'var (\n\t$1\n)'),
 	(u'const\tconst (...) \u0282', 'const (\n\t$1\n)'),
-	(u'import\timport (...) \u0282', 'import (\n\t"$1"\n)'),
-	(u'package\tpackage [name] \u0282', 'package ${1:NAME}')
 ]
 
 LOCAL_SNIPPETS = [
