@@ -23,19 +23,19 @@
 	{
 		"keys": ["super+.", "super+p"],
 		"command": "gs_palette",
-		"args": {"palette": "imports"},
+		"args": {"palette": "imports", "direct": true},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
 		"keys": ["super+.", "super+d"],
 		"command": "gs_palette",
-		"args": {"palette": "declarations"},
+		"args": {"palette": "declarations", "direct": true},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
 		"keys": ["super+.", "super+e"],
 		"command": "gs_palette",
-		"args": {"palette": "errors"},
+		"args": {"palette": "errors", "direct": true},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
