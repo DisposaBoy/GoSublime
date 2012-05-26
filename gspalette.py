@@ -21,6 +21,9 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				'errors': self.palette_errors,
 			}
 
+		if palette == 'jump_back':
+			self.jump_back()
+			return
 		self.show_palette(palette)
 
 	def show_palette(self, palette):
@@ -99,7 +102,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def goto(self, loc):
 		self.window.open_file('%s:%d:%d' % (loc.fn, loc.row+1, loc.col+1), sublime.ENCODED_POSITION)
 
-	def jump_back(self, _):
+	def jump_back(self, _=None):
 		if len(self.bookmarks) > 0:
 			self.goto(self.bookmarks.pop())
 
