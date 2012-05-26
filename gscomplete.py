@@ -17,10 +17,14 @@ class GoSublime(sublime_plugin.EventListener):
 		if gs.IGNORED_SCOPES.intersection(scopes):
 			return ([], AC_OPTS)
 
-		if not self.gocode_set:
-			self.gocode_set = True
-			# autostart the daemon
-			gs.runcmd([gs.setting('gocode_cmd', 'gocode')])
+		show_snippets = gs.setting('autocomplete_snippets', True) is True
+
+		package_end_pt = self.find_end_pt(view, 'package', 0, pos)
+		if package_end_pt < 0:
+			return ([gs.GLOBAL_SNIPPET_PACKAGE], AC_OPTS) if show_snippets else ([], AC_OPTS)
+
+		if self.find_end_pt(view, 'import', package_end_pt, pos) < 0:
+			return ([gs.GLOBAL_SNIPPET_IMPORT], AC_OPTS) if show_snippets else ([], AC_OPTS)
 
 		# gocode is case-sesitive so push the location back to the 'dot' so it gives
 		# gives us everything then st2 can pick the matches for us
@@ -31,16 +35,19 @@ class GoSublime(sublime_plugin.EventListener):
 		if not src or not fn:
 			return ([], AC_OPTS)
 
-
 		cl = self.complete(fn, offset, src, view.substr(sublime.Region(pos, pos+1)) == '(')
 
 		pc = view.substr(sublime.Region(pos-1, pos))
-		if gs.setting('autocomplete_snippets', True) and (pc.isspace() or pc.isalpha()):
+		if show_snippets and (pc.isspace() or pc.isalpha()):
 			if scopes[-1] == 'source.go':
 				cl.extend(gs.GLOBAL_SNIPPETS)
 			elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
 				cl.extend(gs.LOCAL_SNIPPETS)
 		return (cl, AC_OPTS)
+
+	def find_end_pt(self, view, pat, start, end, flags=sublime.LITERAL):
+		r = view.find(pat, start, flags)
+		return r.end() if r and r.end() < end else -1
 
 	def complete(self, fn, offset, src, func_name_only):
 		comps = []
