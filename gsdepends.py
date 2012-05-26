@@ -100,7 +100,7 @@ def check_depends(view):
 		if win:
 			settings_fn = 'GoSublime-GsDepends.sublime-settings'
 			settings = sublime.load_settings(settings_fn)
-			new_rev = changes[0][0]
+			new_rev = changes[-1][0]
 			old_rev = settings.get('tracking_rev', '')
 
 			def on_panel_close(i):
