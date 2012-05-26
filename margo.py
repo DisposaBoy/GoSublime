@@ -99,6 +99,12 @@ def package(filename, src):
 		'src': src
 	}, {})
 
+def lint(filename, src):
+	return post('/lint', {
+		'fn': filename,
+		'src': src
+	}, [])
+
 def imports(filename, src, import_paths, toggle):
 	return post('/imports', {
 		'fn': filename,
