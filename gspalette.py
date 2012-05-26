@@ -1,5 +1,5 @@
 import sublime, sublime_plugin
-import gspatch, margo, gscommon as gs
+import gspatch, margo, gscommon as gs, gslint
 from os.path import dirname, relpath, basename
 
 class Loc(object):
@@ -67,10 +67,10 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				if k != palette:
 					ttl = '@' + k.title()
 					if k == 'errors':
-						l = len(gs.l_errors.get(view.id(), {}))
-						if l == 0:
+						fr = gslint.ref(view.file_name())
+						if not fr or len(fr.reports) == 0:
 							continue
-						ttl = '%s (%d)' % (ttl, l)
+						ttl = '%s (%d)' % (ttl, len(fr.reports))
 					itm = ttl
 					self.add_item(itm, self.show_palette, k)
 
@@ -104,11 +104,15 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			self.goto(self.bookmarks.pop())
 
 	def palette_errors(self, view):
-		errors = gs.l_errors.get(view.id(), {})
-		for k in sorted(errors.keys()):
-			er = errors[k]
-			loc = Loc(view.file_name(), er.row, er.col)
-			self.add_item("    line %d: %s" % ((er.row+1), er.err), self.jump_to, (view, loc))
+		reps = {}
+		fr = gslint.ref(view.file_name())
+		if fr:
+			reps = fr.reports.copy()
+		for k in sorted(reps.keys()):
+			r = reps[k]
+			loc = Loc(view.file_name(), r.row, r.col)
+			m = "    line %d: %s" % (r.row+1, r.msg)
+			self.add_item(m, self.jump_to, (view, loc))
 
 	def palette_imports(self, view):
 		im, err = margo.imports(
