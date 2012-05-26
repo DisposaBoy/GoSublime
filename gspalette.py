@@ -9,7 +9,7 @@ class Loc(object):
 		self.col = col
 
 class GsPaletteCommand(sublime_plugin.WindowCommand):
-	def run(self, palette='auto'):
+	def run(self, palette='auto', direct=False):
 		if not hasattr(self, 'items'):
 			self.items = []
 			self.bookmarks = []
@@ -24,9 +24,9 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		if palette == 'jump_back':
 			self.jump_back()
 			return
-		self.show_palette(palette)
+		self.show_palette(palette, direct)
 
-	def show_palette(self, palette):
+	def show_palette(self, palette, direct=False):
 		view = gs.active_valid_go_view(self.window)
 		if not view:
 			return
@@ -46,7 +46,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				gs.notice('GsPalette', 'Invalid palette `%s`' % palette)
 				palette = ''
 
-		if len(self.bookmarks) > 0:
+		if not direct and len(self.bookmarks) > 0:
 			loc = self.bookmarks[-1]
 			line = 'line %d' % (loc.row + 1)
 			if view.file_name() == loc.fn:
@@ -58,24 +58,25 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				fn = '%s ' % fn
 			self.add_item(u'\u2190 Go Back (%s%s)' % (fn, line), self.jump_back, None)
 
-		if palette:
+		if not direct and palette:
 			self.add_item(u'@%s \u21B5' % palette.title(), self.show_palette, 'main')
 
 		li1 = len(self.items)
 		if pcb:
 			pcb(view)
 
-		for k in sorted(self.palettes.keys()):
-			if k:
-				if k != palette:
-					ttl = '@' + k.title()
-					if k == 'errors':
-						fr = gslint.ref(view.file_name())
-						if not fr or len(fr.reports) == 0:
-							continue
-						ttl = '%s (%d)' % (ttl, len(fr.reports))
-					itm = ttl
-					self.add_item(itm, self.show_palette, k)
+		if not direct:
+			for k in sorted(self.palettes.keys()):
+				if k:
+					if k != palette:
+						ttl = '@' + k.title()
+						if k == 'errors':
+							fr = gslint.ref(view.file_name())
+							if not fr or len(fr.reports) == 0:
+								continue
+							ttl = '%s (%d)' % (ttl, len(fr.reports))
+						itm = ttl
+						self.add_item(itm, self.show_palette, k)
 
 		items = []
 		actions = {}
