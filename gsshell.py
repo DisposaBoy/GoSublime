@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import gscommon as gs
-import re
+import re, os
 
 GO_RUN_PAT = re.compile(r'^go\s+run$', re.IGNORECASE)
 
@@ -23,6 +23,15 @@ class Prompt(object):
 		if GO_RUN_PAT.match(s):
 			s = 'go run *.go'
 
+		gpat = ' *.go'
+		if gpat in s:
+			fns = []
+			for fn in os.listdir(os.path.dirname(self.view.file_name())):
+				if fn.endswith('.go') and fn[0] not in ('.', '_') and not fn.endswith('_test.go'):
+					fns.append(fn)
+			fns = ' '.join(fns)
+			if fns:
+				s = s.replace(gpat, ' '+fns)
 		self.view.window().run_command("exec", { 'kill': True })
 		self.view.window().run_command("exec", {
 			'shell': True,
