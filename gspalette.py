@@ -63,7 +63,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 
 		li1 = len(self.items)
 		if pcb:
-			pcb(view)
+			pcb(view, direct)
 
 		if not direct:
 			for k in sorted(self.palettes.keys()):
@@ -107,7 +107,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		if len(self.bookmarks) > 0:
 			self.goto(self.bookmarks.pop())
 
-	def palette_errors(self, view):
+	def palette_errors(self, view, direct=False):
+		indent = '' if direct else '    '
 		reps = {}
 		fr = gslint.ref(view.file_name())
 		if fr:
@@ -115,10 +116,11 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		for k in sorted(reps.keys()):
 			r = reps[k]
 			loc = Loc(view.file_name(), r.row, r.col)
-			m = "    line %d: %s" % (r.row+1, r.msg)
+			m = "%sline %d: %s" % (indent, r.row+1, r.msg)
 			self.add_item(m, self.jump_to, (view, loc))
 
-	def palette_imports(self, view):
+	def palette_imports(self, view, direct=False):
+		indent = '' if direct else '    '
 		im, err = margo.imports(
 			view.file_name(),
 			view.substr(sublime.Region(0, view.size())),
@@ -140,15 +142,15 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 					if not name:
 						name = basename(path)
 					if name == path:
-						delete_imports.append(('    %s - ( delete )' % name, i))
+						delete_imports.append(('%sdelete: %s' % (indent, name), i))
 					else:
-						delete_imports.append(('    %s - ( delete %s )' % (name, path), i))
+						delete_imports.append(('%sdelete: %s ( %s )' % (indent, name, path), i))
 
 			if not skipAdd:
-				add_imports.append(('    %s' % path, {'path': path}))
+				add_imports.append(('%s%s' % (indent, path), {'path': path}))
 		for i in sorted(delete_imports):
 			self.add_item(i[0], self.toggle_import, (view, i[1]))
-		self.add_item('    -', self.show_palette, 'imports')
+		self.add_item(' --- ', self.show_palette, 'imports')
 		for i in sorted(add_imports):
 			self.add_item(i[0], self.toggle_import, (view, i[1]))
 
@@ -179,7 +181,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			self.log_bookmark(view, Loc(view.file_name(), row, col))
 		self.goto(loc)
 
-	def palette_declarations(self, view):
+	def palette_declarations(self, view, direct=False):
+		indent = '' if direct else '    '
 		decls, err = margo.declarations(
 			view.file_name(),
 			view.substr(sublime.Region(0, view.size()))
@@ -191,5 +194,5 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			if v['name'] == '_':
 				continue
 			loc = Loc(v['filename'], v['line']-1, v['column']-1)
-			prefix = u'    %s \u00B7   ' % gs.CLASS_PREFIXES.get(v['kind'], '')
+			prefix = u'%s%s \u00B7   ' % (indent, gs.CLASS_PREFIXES.get(v['kind'], ''))
 			self.add_item(prefix+v['name'], self.jump_to, (view, loc))
