@@ -1,17 +1,35 @@
 [
 	{
-		"caption": "GoSublime: Import Package",
+		"caption": "GoSublime: Add/Remove package",
 		"command": "gs_palette",
 		"args": {"palette": "imports", "direct": true}
 	},
 	{
-		"caption": "GoSublime: List Declarations",
+		"caption": "GoSublime: List declarations",
 		"command": "gs_palette",
 		"args": {"palette": "declarations", "direct": true}
 	},
 	{
-		"caption": "GoSublime: Show Errors",
+		"caption": "GoSublime: Show errors",
 		"command": "gs_palette",
 		"args": {"palette": "errors", "direct": true}
+	},
+	{
+		"caption": "GoSublime: Go to last bookmark",
+		"command": "gs_palette",
+		"args": {"palette": "jump_back"}
+	},
+	{
+		"caption": "GoSublime: Go to imports section",
+		"command": "gs_palette",
+		"args": {"palette": "jump_to_imports"}
+	},
+	{
+		"caption": "GoSublime: Fmt and save",
+		"command": "gs_fmt_save"
+	},
+	{
+		"caption": "GoSublime: Fmt and save as ...",
+		"command": "gs_fmt_prompt_save_as"
 	}
 ]

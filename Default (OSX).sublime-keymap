@@ -39,9 +39,15 @@
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
-		"keys": ["super+.", "super+,"],
+		"keys": ["super+.", "super+["],
 		"command": "gs_palette",
 		"args": {"palette": "jump_back"},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["super+.", "super+i"],
+		"command": "gs_palette",
+		"args": {"palette": "jump_to_imports"},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	}
 ]
