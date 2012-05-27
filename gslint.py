@@ -70,22 +70,27 @@ def highlight(fr):
 		cleanup(fr.view)
 
 		regions = []
-		flags = sublime.HIDDEN
+		regions0 = []
+		domain0 = DOMAIN+'-zero'
 		for r in fr.reports.values():
 			line = fr.view.line(fr.view.text_point(r.row, 0))
-			if r.col > 0:
-				flags = sublime.DRAW_EMPTY_AS_OVERWRITE
-
 			pos = line.begin() + r.col
 			if pos >= line.end():
 				pos = line.end()
-
-			regions.append(sublime.Region(pos, pos))
+			if pos == line.begin():
+				regions0.append(sublime.Region(pos, pos))
+			else:
+				regions.append(sublime.Region(pos, pos))
 
 		if regions:
-			fr.view.add_regions(DOMAIN, regions, 'comment', 'dot', flags)
+			fr.view.add_regions(DOMAIN, regions, 'comment', 'dot', sublime.DRAW_EMPTY_AS_OVERWRITE)
 		else:
 			fr.view.erase_regions(DOMAIN)
+
+		if regions0:
+			fr.view.add_regions(domain0, regions0, 'comment', 'dot', sublime.HIDDEN)
+		else:
+			fr.view.erase_regions(domain0)
 
 	msg = ''
 	reps = fr.reports.copy()
@@ -104,6 +109,7 @@ def highlight(fr):
 def cleanup(view):
 	view.set_status(DOMAIN, '')
 	view.erase_regions(DOMAIN)
+	view.erase_regions(DOMAIN+'-zero')
 
 def watch():
 	global file_refs
