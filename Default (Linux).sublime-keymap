@@ -49,5 +49,10 @@
 		"command": "gs_palette",
 		"args": {"palette": "jump_to_imports"},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["ctrl+.", "ctrl+b"],
+		"command": "gs_shell",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	}
 ]

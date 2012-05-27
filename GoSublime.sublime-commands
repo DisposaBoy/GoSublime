@@ -31,5 +31,9 @@
 	{
 		"caption": "GoSublime: Fmt and save as ...",
 		"command": "gs_fmt_prompt_save_as"
+	},
+	{
+		"caption": "GoSublime: Open shell/build prompt",
+		"command": "gs_shell"
 	}
 ]
