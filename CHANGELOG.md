@@ -1,3 +1,6 @@
+## r12.05.29-1
+	* update MarGo
+
 ## r12.05.26-2
 	* re-enable linting
 
