@@ -1,3 +1,6 @@
+## r12.05.30-1
+	* fix completion only offering the 'import snippet' if there aren't any imports in the file
+
 ## r12.05.29-1
 	* update MarGo
 
