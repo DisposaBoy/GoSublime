@@ -23,9 +23,6 @@ class GoSublime(sublime_plugin.EventListener):
 		if package_end_pt < 0:
 			return ([gs.GLOBAL_SNIPPET_PACKAGE], AC_OPTS) if show_snippets else ([], AC_OPTS)
 
-		if self.find_end_pt(view, 'import', package_end_pt, pos) < 0:
-			return ([gs.GLOBAL_SNIPPET_IMPORT], AC_OPTS) if show_snippets else ([], AC_OPTS)
-
 		# gocode is case-sesitive so push the location back to the 'dot' so it gives
 		# gives us everything then st2 can pick the matches for us
 		offset = pos - len(prefix)
