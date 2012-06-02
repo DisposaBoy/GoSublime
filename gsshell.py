@@ -62,6 +62,9 @@ class Prompt(object):
 					self.panel.end_edit(edit)
 
 class GsShellCommand(sublime_plugin.WindowCommand):
+	def is_enabled(self):
+		return bool(gs.active_valid_go_view(self.window))
+
 	def run(self):
 		view = gs.active_valid_go_view(self.window)
 		if not view:
