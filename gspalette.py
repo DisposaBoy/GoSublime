@@ -13,6 +13,9 @@ class Loc(object):
 		self.col = col
 
 class GsPaletteCommand(sublime_plugin.WindowCommand):
+	def is_enabled(self):
+		return bool(gs.active_valid_go_view(self.window))
+
 	def run(self, palette='auto', direct=False):
 		if not hasattr(self, 'items'):
 			self.items = []
