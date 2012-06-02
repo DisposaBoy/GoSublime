@@ -35,5 +35,15 @@
 	{
 		"caption": "GoSublime: Open shell/build prompt",
 		"command": "gs_shell"
+	},
+	{
+		"caption": "GoSublime: Goto Definition",
+		"command": "gs_doc",
+		"args": {"mode": "goto"}
+	},
+	{
+		"caption": "GoSublime: Show documentation hint",
+		"command": "gs_doc",
+		"args": {"mode": "hint"}
 	}
 ]

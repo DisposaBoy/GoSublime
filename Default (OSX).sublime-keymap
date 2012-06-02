@@ -54,5 +54,23 @@
 		"keys": ["super+.", "super+b"],
 		"command": "gs_shell",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["super+.", "super+g"],
+		"command": "gs_doc",
+		"args": {"mode": "goto"},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["super+.", "super+h"],
+		"command": "gs_doc",
+		"args": {"mode": "hint"},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["super+.", "super+."],
+		"command": "show_overlay",
+		"args": {"overlay": "command_palette", "text": "GoSublime: "},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	}
 ]
