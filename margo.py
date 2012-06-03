@@ -114,10 +114,11 @@ def imports(filename, src, import_paths, toggle):
 		'toggle': toggle,
 	}, {})
 
-def doc(filename, src, expr):
+def doc(filename, src, offset, expr):
 	return post('/doc', {
 		'fn': filename,
 		'src': src,
+		'offset': offset,
 		'env': gs.env(),
 		'expr': expr,
 	}, [])

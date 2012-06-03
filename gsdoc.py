@@ -24,7 +24,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 			r = sublime.Region(min(r.begin(), r2.begin()), max(r.end(), r2.end()))
 			expr = view.substr(r)
 			src = view.substr(sublime.Region(0, view.size()))
-			docs, err = margo.doc(view.file_name(), src, expr)
+			docs, err = margo.doc(view.file_name(), src, pt, expr)
 			if err:
 				gs.notice(DOMAIN, err)
 			elif docs:
