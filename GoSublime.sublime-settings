@@ -16,6 +16,12 @@
 	// Whether or not gsfmt is enabled
 	"fmt_enabled": true,
 
+	// whether or not to indent with tabs (alignment is always done using spaces)
+	"fmt_tab_indent": true,
+
+	// the assumed width of the tab character (or number of spaces to indent with)
+	"fmt_tab_width": 8,
+
 	// Whether or not gslint is enabled
 	"gslint_enabled": true,
 
