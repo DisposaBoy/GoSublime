@@ -84,7 +84,9 @@ def declarations(filename, src):
 def fmt(filename, src):
 	return post('/fmt', {
 		'fn': filename,
-		'src': src
+		'src': src,
+		'tab_indent': gs.setting('fmt_tab_indent'),
+		'tab_width': gs.setting('fmt_tab_width'),
 	}, u"")
 
 def hello(motd):
