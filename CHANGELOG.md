@@ -1,3 +1,6 @@
+## r12.06.05-1
+	* add support for configuring the fmt tab settings - see GoSublime.sublime-settings (fmt_tab_width and fmt_tab_indent)
+
 ## r12.06.02-1
 	* Add initial stub implementation of goto-definition and show-documentation
 	*     this requires the latest version of MarGo
