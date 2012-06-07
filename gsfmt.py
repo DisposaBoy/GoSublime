@@ -14,12 +14,11 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 			return
 
 		src, err = margo.fmt(self.view.file_name(), src)
-		if not src.strip():
-			gs.notice(DOMAIN, "cannot fmt file. it appears to contain syntax errors")
-			return
-
 		if err:
 			gs.notice(DOMAIN, "cannot fmt file. error: `%s'" % err)
+			return
+		if not src.strip():
+			gs.notice(DOMAIN, "cannot fmt file. it appears to contain syntax errors")
 			return
 
 		dirty, err = gspatch.merge(self.view, vsize, src)
