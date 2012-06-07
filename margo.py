@@ -77,13 +77,13 @@ def post(path, a, default, fail_early=False):
 
 def declarations(filename, src):
 	return post('/declarations', {
-		'fn': filename,
+		'fn': filename or '',
 		'src': src
 	}, [])
 
 def fmt(filename, src):
 	return post('/fmt', {
-		'fn': filename,
+		'fn': filename or '',
 		'src': src,
 		'tab_indent': gs.setting('fmt_tab_indent'),
 		'tab_width': gs.setting('fmt_tab_width'),
@@ -97,28 +97,30 @@ def bye_ni():
 
 def package(filename, src):
 	return post('/package', {
-		'fn': filename,
+		'fn': filename or '',
 		'src': src
 	}, {})
 
 def lint(filename, src):
 	return post('/lint', {
-		'fn': filename,
+		'fn': filename or '',
 		'src': src
 	}, [])
 
 def imports(filename, src, import_paths, toggle):
 	return post('/imports', {
-		'fn': filename,
+		'fn': filename or '',
 		'src': src,
 		'env': gs.env(),
 		'import_paths': import_paths,
 		'toggle': toggle,
+		'tab_indent': gs.setting('fmt_tab_indent'),
+		'tab_width': gs.setting('fmt_tab_width'),
 	}, {})
 
 def doc(filename, src, offset, expr):
 	return post('/doc', {
-		'fn': filename,
+		'fn': filename or '',
 		'src': src,
 		'offset': offset,
 		'env': gs.env(),
