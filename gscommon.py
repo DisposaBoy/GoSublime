@@ -131,7 +131,7 @@ def active_valid_go_view(win=None):
 		win = sublime.active_window()
 	if win:
 		view = win.active_view()
-		if view and view.file_name() and is_go_source_view(view):
+		if view and is_go_source_view(view):
 			return view
 	return None
 
