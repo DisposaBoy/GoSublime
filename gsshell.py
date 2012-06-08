@@ -2,6 +2,7 @@ import sublime, sublime_plugin
 import gscommon as gs
 import re, os
 
+DOMAIN = "GsShell"
 GO_RUN_PAT = re.compile(r'^go\s+run$', re.IGNORECASE)
 
 class Prompt(object):
@@ -21,17 +22,17 @@ class Prompt(object):
 			sublime.save_settings('GoSublime-GsShell.sublime-settings')
 
 		if GO_RUN_PAT.match(s):
-			s = 'go run *.go'
-
-		gpat = ' *.go'
-		if gpat in s:
-			fns = []
-			for fn in os.listdir(os.path.dirname(self.view.file_name())):
-				if fn.endswith('.go') and fn[0] not in ('.', '_') and not fn.endswith('_test.go'):
-					fns.append(fn)
-			fns = ' '.join(fns)
-			if fns:
-				s = s.replace(gpat, ' '+fns)
+			s = 'go run %s' % self.view.file_name()
+		else:
+			gpat = ' *.go'
+			if gpat in s:
+				fns = []
+				for fn in os.listdir(os.path.dirname(self.view.file_name())):
+					if fn.endswith('.go') and fn[0] not in ('.', '_') and not fn.endswith('_test.go'):
+						fns.append(fn)
+				fns = ' '.join(fns)
+				if fns:
+					s = s.replace(gpat, ' '+fns)
 		self.view.window().run_command("exec", { 'kill': True })
 		self.view.window().run_command("exec", {
 			'shell': True,
@@ -63,12 +64,16 @@ class Prompt(object):
 
 class GsShellCommand(sublime_plugin.WindowCommand):
 	def is_enabled(self):
-		return bool(gs.active_valid_go_view(self.window))
+		view = gs.active_valid_go_view(self.window)
+		return view and view.file_name()
 
 	def run(self):
 		view = gs.active_valid_go_view(self.window)
 		if not view:
-			gs.notice("GsShell", "this not a source.go view")
+			gs.notice(DOMAIN, "this not a source.go view")
+			return
+		if not view.file_name():
+			gs.notice(DOMAIN, "please save the file and try again")
 			return
 
 		p = Prompt(view)
