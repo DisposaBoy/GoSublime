@@ -107,15 +107,20 @@ def lint(filename, src):
 		'src': src
 	}, [])
 
-def imports(filename, src, import_paths, toggle):
+def imports(filename, src, toggle):
 	return post('/imports', {
 		'fn': filename or '',
 		'src': src,
-		'env': gs.env(),
-		'import_paths': import_paths,
 		'toggle': toggle,
 		'tab_indent': gs.setting('fmt_tab_indent'),
 		'tab_width': gs.setting('fmt_tab_width'),
+	}, {})
+
+def import_paths(filename, src):
+	return post('/import_paths', {
+		'fn': filename or '',
+		'src': src,
+		'env': gs.env(),
 	}, {})
 
 def doc(filename, src, offset, expr):
