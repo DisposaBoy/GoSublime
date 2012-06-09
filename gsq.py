@@ -5,7 +5,7 @@ import sublime
 DOMAIN = 'GsQ'
 
 class GsQ(threading.Thread):
-	def __init__(self):
+	def __init__(self, domain):
 		threading.Thread.__init__(self)
 		self.daemon = True
 		self.sem = threading.Semaphore()
@@ -20,6 +20,7 @@ class GsQ(threading.Thread):
 			u'\u25D3',
 			u'\u25D0'
 		)
+		self.domain = domain
 
 	def run(self):
 		while True:
@@ -29,13 +30,13 @@ class GsQ(threading.Thread):
 				try:
 					f()
 				except Exception:
-					gs.notice(DOMAIN, traceback.format_exc())
+					gs.notice(self.domain, traceback.format_exc())
 
 			if has_view:
 				with self.sem:
 					self.has_view = True
 					self.view = view
-					self.msg = ' %s: %s' % (DOMAIN, msg) if msg else ''
+					self.msg = ' %s: %s' % (self.domain, msg) if msg else ''
 
 				self.animate()
 				call_f()
@@ -44,7 +45,7 @@ class GsQ(threading.Thread):
 					self.has_view = False
 					self.view = None
 					self.msg = ''
-				sublime.set_timeout(lambda: view.set_status(DOMAIN, ''), 0)
+				sublime.set_timeout(lambda: view.set_status(self.domain, ''), 0)
 			else:
 				call_f()
 
@@ -60,7 +61,7 @@ class GsQ(threading.Thread):
 		def cb():
 			with self.sem:
 				if self.has_view:
-					self.view.set_status(DOMAIN, text)
+					self.view.set_status(self.domain, text)
 					sublime.set_timeout(self.animate, 250)
 		sublime.set_timeout(cb, 0)
 
@@ -68,14 +69,14 @@ class GsQ(threading.Thread):
 		try:
 			self.q.put((p, f, msg, view, has_view))
 		except Exception:
-			gs.notice(DOMAIN, traceback.format_exc())
+			gs.notice(self.domain, traceback.format_exc())
 
 Q = None
 
 def dispatch(f, msg='', view=None, p=0):
 	global Q
 	if not Q:
-		Q = GsQ()
+		Q = GsQ(DOMAIN)
 		Q.start()
 
 	def cb(v):
