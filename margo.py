@@ -42,7 +42,7 @@ def post(path, a, default, fail_early=False):
 		err = 'MarGo: %s' % ex
 		# gsdepeds.hello calls us...
 		if not fail_early:
-			gsdepends.hello()
+			gsdepends.dispatch(gsdepends.hello)
 		return (default, err)
 
 	if not isinst(resp, {}):

@@ -32,13 +32,20 @@ def call_cmd(cmd):
 	_, _, exc = gs.runcmd(cmd)
 	return not exc
 
+hello_sarting = False
 def hello():
 	def cb():
+		global hello_sarting
+		if hello_sarting:
+			return
+		hello_sarting = True
+		print 'starting gocode'
 		call_cmd(['gocode'])
 		margo_cmd = list(gs.setting('margo_cmd', []))
 		if not margo_cmd:
 			err = 'Missing `margo_cmd`'
 			gs.notice("MarGo", err)
+			hello_sarting = False
 			return
 
 		margo_cmd.extend([
@@ -46,6 +53,7 @@ def hello():
 			"-call", "replace",
 			"-addr", gs.setting('margo_addr', '')
 		])
+		print 'starting margo'
 		out, err, _ = gs.runcmd(margo_cmd)
 		out = out.strip()
 		err = err.strip()
@@ -53,13 +61,13 @@ def hello():
 			gs.notice(DOMAIN, err)
 		elif out:
 			gs.notice(DOMAIN, 'MarGo started %s' % out)
+		hello_sarting = False
 
 	_, err = margo.post('/', 'hello', {}, True)
 	if err:
 		dispatch(cb, 'Starting MarGo and gocode...')
 	else:
 		call_cmd(['gocode'])
-
 
 def run_go_get(view):
 	msg = 'Installing/updating gocode and MarGo...'
@@ -160,7 +168,7 @@ def check_depends(view):
 				]
 				win.show_quick_panel(items, on_panel_close)
 				return
-	hello()
+	dispatch(hello)
 
 
 
