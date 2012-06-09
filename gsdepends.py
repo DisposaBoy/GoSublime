@@ -15,6 +15,10 @@ class GsDependsOnActivated(sublime_plugin.EventListener):
 		if not dep_check_done:
 			sublime.set_timeout(lambda: check_depends(view), 0)
 
+class GsUpdateDeps(sublime_plugin.TextCommand):
+	def run(self, edit):
+		run_go_get(self.view)
+
 def split_changes(s):
 	changes = []
 	for m in CHANGES_SPLIT_PAT.split(s):
@@ -29,8 +33,33 @@ def call_cmd(cmd):
 	return not exc
 
 def hello():
-	margo.hello("hello world")
-	call_cmd(['gocode'])
+	def cb():
+		call_cmd(['gocode'])
+		margo_cmd = list(gs.setting('margo_cmd', []))
+		if not margo_cmd:
+			err = 'Missing `margo_cmd`'
+			gs.notice("MarGo", err)
+			return
+
+		margo_cmd.extend([
+			"-d",
+			"-call", "replace",
+			"-addr", gs.setting('margo_addr', '')
+		])
+		out, err, _ = gs.runcmd(margo_cmd)
+		out = out.strip()
+		err = err.strip()
+		if err:
+			gs.notice(DOMAIN, err)
+		elif out:
+			gs.notice(DOMAIN, 'MarGo started %s' % out)
+
+	_, err = margo.post('/', 'hello', {}, True)
+	if err:
+		dispatch(cb, 'Starting MarGo and gocode...')
+	else:
+		call_cmd(['gocode'])
+
 
 def run_go_get(view):
 	msg = 'Installing/updating gocode and MarGo...'
@@ -39,8 +68,7 @@ def run_go_get(view):
 		margo.bye_ni()
 		call_cmd(['gocode', 'close'])
 		gs.notice(DOMAIN, '%s done\n%s%s' % (msg, out, err))
-		gsq.dispatch(hello, 'Starting MarGo and gocode...', view)
-	gsq.dispatch(f, msg, view)
+	dispatch(f, msg, view)
 
 def check_depends(view):
 	global dep_check_done
@@ -132,4 +160,22 @@ def check_depends(view):
 				]
 				win.show_quick_panel(items, on_panel_close)
 				return
-	gsq.dispatch(hello)
+	hello()
+
+
+
+Q = None
+
+def dispatch(f, msg='', view=None, p=0):
+	global Q
+	if not Q:
+		Q = gsq.GsQ(DOMAIN)
+		Q.start()
+
+	def cb(v):
+		if v is None:
+			win = sublime.active_window()
+			if win:
+				v = win.active_view()
+		Q.dispatch(f, msg, v, v is not None, p)
+	sublime.set_timeout(lambda: cb(view), 0)
