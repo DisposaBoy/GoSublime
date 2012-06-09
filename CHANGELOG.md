@@ -1,3 +1,6 @@
+## r12.06.09-2
+	* MarGo now supports warning about calling flag.String() etc and forgetting to call flag.Parse() afterwards
+
 ## r12.06.09-1
 	* removed ctrl+shift+g keybinding, please use `ctrl+dot`,`ctrl+dot` to show the list of available commands and their kebindings
 	* complete implementation of imports:
