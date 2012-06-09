@@ -49,5 +49,9 @@
 	{
 		"caption": "GoSublime: Fmt the current file (without saving it)",
 		"command": "gs_fmt"
+	},
+	{
+		"caption": "GoSublime: Install/Update MarGo and Gocode",
+		"command": "gs_update_deps"
 	}
 ]
