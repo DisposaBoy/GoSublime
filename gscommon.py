@@ -1,5 +1,5 @@
 import sublime
-import subprocess, re, os, threading
+import subprocess, re, os, threading, tempfile
 from subprocess import Popen, PIPE
 
 try:
@@ -82,6 +82,20 @@ IGNORED_SCOPES = frozenset([
 	'comment.line.double-slash.go',
 	'comment.block.go'
 ])
+
+def temp_file(suffix='', prefix='', delete=True):
+	tmpdir = os.path.join(tempfile.gettempdir(), 'GoSublime')
+	if not tmpdir:
+		try:
+			os.mkdir(tmpdir)
+		except Exception:
+			pass
+	try:
+		f = tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=tmpdir, delete=delete)
+	except Exception as ex:
+		return (None, 'Error: %s' % ex)
+	return (f, '')
+
 
 def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False):
 	out = ""
