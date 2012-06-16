@@ -1,3 +1,8 @@
+## r12.06.17-1
+	* add support for running(play) the current file without saving it (`ctrl+dot`, `ctrl+r`)
+	* add support for sharing the contents of the current on play.golang.org
+	press `ctrl+dot`, `ctrl+dot` for a list of all commands and their key bindings as well sharing functionality
+
 ## r12.06.09-2
 	* MarGo now supports warning about calling flag.String() etc and forgetting to call flag.Parse() afterwards
 
