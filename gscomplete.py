@@ -21,15 +21,15 @@ class GoSublime(sublime_plugin.EventListener):
 
 		package_end_pt = self.find_end_pt(view, 'package', 0, pos)
 		if package_end_pt < 0:
-			return ([gs.GLOBAL_SNIPPET_PACKAGE], AC_OPTS) if show_snippets else ([], AC_OPTS)
+			return (gs.GLOBAL_SNIPPET_PACKAGE, AC_OPTS) if show_snippets else ([], AC_OPTS)
 
 		# gocode is case-sesitive so push the location back to the 'dot' so it gives
 		# gives us everything then st2 can pick the matches for us
 		offset = pos - len(prefix)
 		src = view.substr(sublime.Region(0, view.size()))
 
-		fn = view.file_name()
-		if not src or not fn:
+		fn = view.file_name() or '<stdin>'
+		if not src:
 			return ([], AC_OPTS)
 
 		cl = self.complete(fn, offset, src, view.substr(sublime.Region(pos, pos+1)) == '(')
