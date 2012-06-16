@@ -37,6 +37,16 @@
 		"command": "gs_shell"
 	},
 	{
+		"caption": "GoSublime: Play/Run (current file only)",
+		"command": "gs_shell",
+		"args": {"run": "go play"}
+	},
+	{
+		"caption": "GoSublime: Share (on play.golang.org)",
+		"command": "gs_shell",
+		"args": {"run": "go share"}
+	},
+	{
 		"caption": "GoSublime: Goto Definition",
 		"command": "gs_doc",
 		"args": {"mode": "goto"}

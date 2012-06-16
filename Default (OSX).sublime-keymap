@@ -51,6 +51,12 @@
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
+		"keys": ["super+.", "super+r"],
+		"command": "gs_shell",
+		"args": {"run": "go play"},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
 		"keys": ["super+.", "super+g"],
 		"command": "gs_doc",
 		"args": {"mode": "goto"},
