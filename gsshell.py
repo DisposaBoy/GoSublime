@@ -19,6 +19,9 @@ class Prompt(object):
 
 	def on_done(self, s):
 		file_name = self.view.file_name()
+		if file_name:
+			self.view.run_command('save')
+
 		s = s.strip()
 		if s:
 			self.settings.set('last_command', s)
