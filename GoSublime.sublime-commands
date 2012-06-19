@@ -61,6 +61,10 @@
 		"command": "gs_fmt"
 	},
 	{
+		"caption": "GoSublime: New Go File",
+		"command": "gs_new_go_file"
+	},
+	{
 		"caption": "GoSublime: Install/Update MarGo and Gocode",
 		"command": "gs_update_deps"
 	}

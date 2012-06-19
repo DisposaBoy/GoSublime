@@ -22,3 +22,11 @@ class GsGotoRowColCommand(sublime_plugin.TextCommand):
 		self.view.sel().clear()
 		self.view.sel().add(sublime.Region(pt))
 		self.view.show(pt)
+
+class GsNewGoFileCommand(sublime_plugin.WindowCommand):
+	def run(self):
+		def cb(s):
+			view = self.window.new_file()
+			view.set_name(s)
+			view.set_syntax_file('Packages/Go/Go.tmLanguage')
+		self.window.show_input_panel("Choose File Name", 'untitled.go', cb, None, None)
