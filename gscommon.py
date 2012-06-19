@@ -88,11 +88,10 @@ IGNORED_SCOPES = frozenset([
 
 def temp_file(suffix='', prefix='', delete=True):
 	tmpdir = os.path.join(tempfile.gettempdir(), 'GoSublime')
-	if not tmpdir:
-		try:
-			os.mkdir(tmpdir)
-		except Exception:
-			pass
+	try:
+		os.mkdir(tmpdir)
+	except Exception as ex:
+		pass
 	try:
 		f = tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=tmpdir, delete=delete)
 	except Exception as ex:
