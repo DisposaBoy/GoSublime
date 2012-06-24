@@ -20,7 +20,7 @@ class Prompt(object):
 	def on_done(self, s):
 		file_name = self.view.file_name()
 		if file_name:
-			self.view.run_command('save')
+			self.view.run_command('gs_fmt_save')
 
 		s = s.strip()
 		if s:
