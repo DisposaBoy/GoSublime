@@ -5,9 +5,10 @@ import re, os, httplib
 DOMAIN = "GsShell"
 GO_RUN_PAT = re.compile(r'^go\s+(run|play)$', re.IGNORECASE)
 GO_SHARE_PAT = re.compile(r'^go\s+share$', re.IGNORECASE)
+GO_PLAY_PAT = re.compile(r'(\b)go\s+play(\b)', re.IGNORECASE)
 
 class Prompt(object):
-	def __init__(self, view):
+	def __init__(self, view, change_history=True):
 		self.view = view
 		self.panel = None
 		self.subcommands = [
@@ -16,71 +17,83 @@ class Prompt(object):
 			'go share', 'go play',
 		]
 		self.settings = sublime.load_settings('GoSublime-GsShell.sublime-settings')
+		self.change_history = change_history
 
 	def on_done(self, s):
-		file_name = self.view.file_name()
-		if file_name:
-			self.view.run_command('gs_fmt_save')
+		fn = self.view.file_name()
+		win = self.view.window()
+		if fn and win:
+			basedir = os.path.dirname(fn)
+			for v in win.views():
+				vfn = v.file_name()
+				if os.path.dirname(vfn) == basedir and vfn.endswith('.go'):
+					v.run_command('gs_fmt_save')
 
-		s = s.strip()
-		if s:
-			self.settings.set('last_command', s)
-			sublime.save_settings('GoSublime-GsShell.sublime-settings')
+		# above we do some saves - thus creating a race so push this back to the end of the queue
+		def cb(s):
+			file_name = self.view.file_name()
+			s = GO_PLAY_PAT.sub(r'\1go run\2', s)
+			s = s.strip()
+			if s and self.change_history:
+				self.settings.set('last_command', s)
+				sublime.save_settings('GoSublime-GsShell.sublime-settings')
 
-		if GO_SHARE_PAT.match(s):
-			s = ''
-			host = "play.golang.org"
-			warning = 'Are you sure you want to share this file. It will be public on %s' % host
-			if not sublime.ok_cancel_dialog(warning):
+			if GO_SHARE_PAT.match(s):
+				s = ''
+				host = "play.golang.org"
+				warning = 'Are you sure you want to share this file. It will be public on %s' % host
+				if not sublime.ok_cancel_dialog(warning):
+					return
+
+				try:
+					c = httplib.HTTPConnection(host)
+					src = self.view.substr(sublime.Region(0, self.view.size()))
+					c.request('POST', '/share', src, {'User-Agent': 'GoSublime'})
+					s = 'http://%s/p/%s' % (host, c.getresponse().read())
+				except Exception as ex:
+					s = 'Error: %s' % ex
+
+				self.show_output(s)
 				return
 
-			try:
-				c = httplib.HTTPConnection(host)
-				src = self.view.substr(sublime.Region(0, self.view.size()))
-				c.request('POST', '/share', src, {'User-Agent': 'GoSublime'})
-				s = 'http://%s/p/%s' % (host, c.getresponse().read())
-			except Exception as ex:
-				s = 'Error: %s' % ex
-
-			self.show_output(s)
-			return
-
-		if GO_RUN_PAT.match(s):
-			if not file_name:
-				# todo: clean this up after the command runs
-				f, err = gs.temp_file(suffix='.go', prefix=DOMAIN+'-play.', delete=False)
-				if err:
-					self.show_output(err)
-					return
-				else:
-					try:
-						src = self.view.substr(sublime.Region(0, self.view.size()))
-						if isinstance(src, unicode):
-							src = src.encode('utf-8')
-						f.write(src)
-						f.close()
-					except Exception as ex:
-						self.show_output('Error: %s' % ex)
+			if GO_RUN_PAT.match(s):
+				if not file_name:
+					# todo: clean this up after the command runs
+					f, err = gs.temp_file(suffix='.go', prefix=DOMAIN+'-play.', delete=False)
+					if err:
+						self.show_output(err)
 						return
-					file_name = f.name
-			s = 'go run "%s"' % file_name
-		else:
-			gpat = ' *.go'
-			if gpat in s:
-				fns = []
-				for fn in os.listdir(os.path.dirname(self.view.file_name())):
-					if fn.endswith('.go') and fn[0] not in ('.', '_') and not fn.endswith('_test.go'):
-						fns.append('"%s"' % fn)
-				fns = ' '.join(fns)
-				if fns:
-					s = s.replace(gpat, ' '+fns)
-		self.view.window().run_command("exec", { 'kill': True })
-		self.view.window().run_command("exec", {
-			'shell': True,
-			'env': gs.env(),
-			'cmd': [s],
-			'file_regex': '^(.+\.go):([0-9]+):(?:([0-9]+):)?\s*(.*)',
-		})
+					else:
+						try:
+							src = self.view.substr(sublime.Region(0, self.view.size()))
+							if isinstance(src, unicode):
+								src = src.encode('utf-8')
+							f.write(src)
+							f.close()
+						except Exception as ex:
+							self.show_output('Error: %s' % ex)
+							return
+						file_name = f.name
+				s = 'go run "%s"' % file_name
+			else:
+				gpat = ' *.go'
+				if gpat in s:
+					fns = []
+					for fn in os.listdir(os.path.dirname(self.view.file_name())):
+						if fn.endswith('.go') and fn[0] not in ('.', '_') and not fn.endswith('_test.go'):
+							fns.append('"%s"' % fn)
+					fns = ' '.join(fns)
+					if fns:
+						s = s.replace(gpat, ' '+fns)
+			self.view.window().run_command("exec", { 'kill': True })
+			self.view.window().run_command("exec", {
+				'shell': True,
+				'env': gs.env(),
+				'cmd': [s],
+				'file_regex': '^(.+\.go):([0-9]+):(?:([0-9]+):)?\s*(.*)',
+			})
+
+		sublime.set_timeout(lambda: cb(s), 0)
 
 	def show_output(self, s):
 		panel_name = DOMAIN+'-share'
@@ -129,7 +142,8 @@ class GsShellCommand(sublime_plugin.WindowCommand):
 			gs.notice(DOMAIN, "this not a source.go view")
 			return
 
-		p = Prompt(view)
+		run = run.strip()
+		p = Prompt(view, run == "")
 		if run:
 			p.on_done(run)
 		else:
