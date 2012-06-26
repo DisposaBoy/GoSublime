@@ -48,7 +48,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 						doc = '%s\n\n%s' % (decl, doc)
 
 					if src:
-						doc = '%s\n%s' % (doc, src)
+						doc = src
 
 					s.append(doc.strip() or ('// %s no docs' % DOMAIN))
 				s = '\n\n\n\n'.join(s)
