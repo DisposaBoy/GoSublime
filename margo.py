@@ -103,11 +103,12 @@ def import_paths(filename, src):
 		'env': gs.env(),
 	}, {})
 
-def doc(filename, src, offset, expr):
+def doc(filename, src, offset):
 	return post('/doc', {
 		'fn': filename or '',
 		'src': src,
 		'offset': offset,
 		'env': gs.env(),
-		'expr': expr,
+		'tab_indent': gs.setting('fmt_tab_indent'),
+		'tab_width': gs.setting('fmt_tab_width'),
 	}, [])
