@@ -78,5 +78,10 @@
 		"keys": ["ctrl+.", "ctrl+f"],
 		"command": "gs_fmt",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["ctrl+.", "ctrl+n"],
+		"command": "gs_new_go_file",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	}
 ]
