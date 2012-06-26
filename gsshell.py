@@ -35,7 +35,12 @@ class Prompt(object):
 			s = GO_PLAY_PAT.sub(r'\1go run\2', s)
 			s = s.strip()
 			if s and self.change_history:
-				self.settings.set('last_command', s)
+				hist = self.settings.get('cmd_hist')
+				if not isinstance(hist, dict):
+					hist = {}
+				basedir = gs.basedir_or_cwd(file_name)
+				hist[basedir] = [s] # todo: store a list of historical commands
+				self.settings.set('cmd_hist', hist)
 				sublime.save_settings('GoSublime-GsShell.sublime-settings')
 
 			if GO_SHARE_PAT.match(s):
@@ -114,7 +119,13 @@ class Prompt(object):
 		if self.panel:
 			size = self.view.size()
 			if s.endswith('\t'):
-				lc = self.settings.get('last_command', 'go ')
+				basedir = gs.basedir_or_cwd(self.view.file_name())
+				lc = 'go '
+				hist = self.settings.get('cmd_hist')
+				if isinstance(hist, dict):
+					hist = hist.get(basedir)
+					if hist and isinstance(hist, list):
+						lc = hist[-1]
 				s = s.strip()
 				if s and s not in ('', 'go'):
 					l = []
