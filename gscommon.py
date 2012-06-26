@@ -144,6 +144,28 @@ def notice_undo(domain, txt, view, should_undo):
 		notice(domain, txt)
 	sublime.set_timeout(cb, 0)
 
+def show_output(panel_name, s, print_output=True, syntax_file=''):
+	def cb(panel_name, s, print_output, win):
+		if print_output:
+			print('%s output: %s' % (panel_name, s))
+
+		win = sublime.active_window()
+		if win:
+			panel = win.get_output_panel(panel_name)
+			edit = panel.begin_edit()
+			try:
+				panel.set_read_only(False)
+				panel.sel().clear()
+				panel.settings().set("rulers", [])
+				panel.replace(edit, sublime.Region(0, panel.size()), s)
+				if syntax_file:
+					panel.set_syntax_file(syntax_file)
+				panel.set_read_only(True)
+			finally:
+				panel.end_edit(edit)
+			win.run_command("show_panel", {"panel": "output.%s" % panel_name})
+	sublime.set_timeout(lambda: cb(panel_name, s, print_output, syntax_file), 0)
+
 def is_go_source_view(view):
 	return view.score_selector(view.sel()[0].begin(), 'source.go') > 0
 
