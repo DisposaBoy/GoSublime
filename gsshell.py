@@ -31,7 +31,7 @@ class Prompt(object):
 
 		# above we do some saves - thus creating a race so push this back to the end of the queue
 		def cb(s):
-			file_name = self.view.file_name()
+			file_name = self.view.file_name() or ''
 			s = GO_PLAY_PAT.sub(r'\1go run\2', s)
 			s = s.strip()
 			if s and self.change_history:
