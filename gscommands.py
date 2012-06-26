@@ -1,5 +1,6 @@
 import sublime, sublime_plugin
-import gscommon as gs
+import gscommon as gs, margo
+import os
 
 class GsCommentForwardCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -26,7 +27,24 @@ class GsGotoRowColCommand(sublime_plugin.TextCommand):
 class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		def cb(s):
+			pkg_name = 'main'
+			view = gs.active_valid_go_view()
+			basedir = gs.basedir_or_cwd(view and view.file_name())
+			for fn in os.listdir(basedir):
+				if fn.endswith('.go'):
+					name, _ = margo.package(os.path.join(basedir, fn), '')
+					if name and name.get('Name'):
+						pkg_name = name.get('Name')
+						break
+
 			view = self.window.new_file()
 			view.set_name(s)
 			view.set_syntax_file('Packages/Go/Go.tmLanguage')
+			edit = view.begin_edit()
+			try:
+				view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
+				view.sel().clear()
+				view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
+			finally:
+				view.end_edit(edit)
 		self.window.show_input_panel("Choose File Name", 'untitled.go', cb, None, None)
