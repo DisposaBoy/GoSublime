@@ -1,3 +1,10 @@
+## r12.06.26-1
+	* fix: file saving in gsshell
+	* fix: duplicating comment that follows imports when imports are modified
+	* fix: adding duplicate entries to the package list due to filename case-insensitivity
+	* the new_go_file command now automatically fills out the package declaration
+	* add binding to create a new go file ( ctrl+dot,ctrl+n )
+
 ## r12.06.17-1
 	* add support for running(play) the current file without saving it (`ctrl+dot`, `ctrl+r`)
 	* add support for sharing the contents of the current on play.golang.org
