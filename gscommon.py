@@ -34,6 +34,7 @@ GLOBAL_SNIPPETS = [
 	GLOBAL_SNIPPET_IMPORT,
 	(u'func\tfunc {...} \u0282', 'func ${1:name}($2)$3 {\n\t$0\n}'),
 	(u'func\tfunc ([receiver]) {...} \u0282', 'func (${1:receiver} ${2:type}) ${3:name}($4)$5 {\n\t$0\n}'),
+	(u'func main\tfunc main {...} \u0282', 'func main() {\n\t$0\n}\n'),
 	(u'var\tvar (...) \u0282', 'var (\n\t$1\n)'),
 	(u'const\tconst (...) \u0282', 'const (\n\t$1\n)'),
 ]
@@ -98,6 +99,10 @@ def temp_file(suffix='', prefix='', delete=True):
 		return (None, 'Error: %s' % ex)
 	return (f, '')
 
+def basedir_or_cwd(fn):
+	if fn:
+		return os.path.dirname(fn)
+	return os.getcwd()
 
 def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False):
 	out = ""
