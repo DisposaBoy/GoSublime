@@ -1,3 +1,11 @@
+## r12.06.26-2
+	* GsDoc now supports local, package-global and imported package variables and functions
+		(MarGo/doc is still incomplete, however: types(structs, etc.) are not resolved yet)
+		I've changed the way GsDoc works. Both mode are unified, ctrl+dot,ctrl+g will take you to
+		the definition but the hint( ctrl+dot,ctrl+h ) now displays the src along with any comments
+		attached to it (this is usually pure documentation)
+	* MarGo needs updating
+
 ## r12.06.26-1
 	* fix: file saving in gsshell
 	* fix: duplicating comment that follows imports when imports are modified
