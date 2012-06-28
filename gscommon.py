@@ -209,7 +209,8 @@ def env():
 	gs_gopath = []
 	for i, s in enumerate(comps):
 		if s.lower() == "src":
-			gs_gopath.append(os.sep.join(comps[:i+1]))
+			gs_gopath.append(os.sep.join(comps[:i]))
+	gs_gopath.reverse()
 	gs_gopath = os.pathsep.join(gs_gopath)
 
 	for k in e:
