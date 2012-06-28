@@ -193,6 +193,28 @@ def env():
 	e = os.environ.copy()
 	e.update(setting('env', {}))
 
+	fn = ''
+	win = sublime.active_window()
+	if win:
+		view = win.active_view()
+		if view:
+			psettings = view.settings().get('GoSublime')
+			if psettings:
+				penv = psettings.get('env')
+				if penv:
+					e.update(penv)
+			fn = view.file_name()
+	fn = basedir_or_cwd(fn)
+	comps = fn.split(os.sep)
+	gs_gopath = []
+	for i, s in enumerate(comps):
+		if s.lower() == "src":
+			gs_gopath.append(os.sep.join(comps[:i+1]))
+	gs_gopath = os.pathsep.join(gs_gopath)
+
+	for k in e:
+		e[k] = e[k].replace('$GS_GOPATH', gs_gopath)
+
 	roots = e.get('GOPATH', '').split(os.pathsep)
 	roots.append(e.get('GOROOT', ''))
 	add_path = e.get('PATH', '').split(os.pathsep)
