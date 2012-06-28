@@ -166,15 +166,23 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 			win.run_command("show_panel", {"panel": "output.%s" % panel_name})
 	sublime.set_timeout(lambda: cb(panel_name, s, print_output, syntax_file), 0)
 
-def is_go_source_view(view):
-	return view.score_selector(view.sel()[0].begin(), 'source.go') > 0
+def is_go_source_view(view=None, strict=True):
+	if not view:
+		return False
 
-def active_valid_go_view(win=None):
+	if strict:
+		return view.score_selector(view.sel()[0].begin(), 'source.go') > 0
+
+	# todo: check the directory tree as well
+	fn = view.file_name() or ''
+	return fn.lower().endswith('.go')
+
+def active_valid_go_view(win=None, strict=True):
 	if not win:
 		win = sublime.active_window()
 	if win:
 		view = win.active_view()
-		if view and is_go_source_view(view):
+		if view and is_go_source_view(view, strict):
 			return view
 	return None
 
