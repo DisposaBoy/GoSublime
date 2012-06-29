@@ -12,6 +12,7 @@ dep_check_done = False
 
 class GsDependsOnActivated(sublime_plugin.EventListener):
 	def on_activated(self, view):
+		sublime.set_timeout(gs.sync_settings, 0)
 		if not dep_check_done:
 			sublime.set_timeout(lambda: check_depends(view), 0)
 
