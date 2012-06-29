@@ -149,11 +149,16 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		fr = gslint.ref(view.file_name())
 		if fr:
 			reps = fr.reports.copy()
-		for k in sorted(reps.keys()):
-			r = reps[k]
-			loc = Loc(view.file_name(), r.row, r.col)
-			m = "%sline %d: %s" % (indent, r.row+1, r.msg)
-			self.add_item(m, self.jump_to, (view, loc))
+		keys = sorted(reps.keys())
+		if keys:
+			for k in keys:
+				r = reps[k]
+				loc = Loc(view.file_name(), r.row, r.col)
+				m = "%sline %d: %s" % (indent, r.row+1, r.msg)
+				self.add_item(m, self.jump_to, (view, loc))
+		else:
+			self.add_item(['', 'No errors to report'])
+
 
 	def palette_imports(self, view, direct=False):
 		indent = '' if direct else '    '
