@@ -6,6 +6,8 @@ from os.path import basename
 
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
 
+last_gopath = ''
+
 class GoSublime(sublime_plugin.EventListener):
 	gocode_set = False
 	def on_query_completions(self, view, prefix, locations):
@@ -47,6 +49,16 @@ class GoSublime(sublime_plugin.EventListener):
 		return r.end() if r and r.end() < end else -1
 
 	def complete(self, fn, offset, src, func_name_only):
+		global last_gopath
+		gopath = gs.env().get('GOPATH')
+		if gopath and gopath != last_gopath:
+			out, _, _ = gs.runcmd(['go', 'env', 'GOOS', 'GOARCH'])
+			vars = out.strip().split()
+			if len(vars) == 2:
+				last_gopath = gopath
+				fn =  os.path.join(gopath, 'pkg', '_'.join(vars))
+				gs.runcmd(['gocode', 'set', 'lib-path', fn])
+
 		comps = []
 		cmd = gs.setting('gocode_cmd', 'gocode')
 		offset = 'c%s' % offset
