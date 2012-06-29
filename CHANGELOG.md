@@ -1,3 +1,21 @@
+## r12.06.29-1
+	* fix: threading that caused gslint to crash
+	*
+	* added initial support for per-project settings
+	*     a settings object named `GoSublime` in your project settings will override values
+	*     specified in the `Gosublime.sublime-settings` file
+	*
+	* added new dynamic pseudo-environment variable `GS_GOPATH` will contain an auto-detected GOPATH
+	*     e.g. if you file name is `/tmp/go/src/hello/main.go` it will contain the value `/tmp/go`
+	*     it can safely added to your regular `GOPATH` `env` setting e.g.
+	*     `"env": { "GOPATH": "$HOME/go:$GS_GOPATH" }`
+	*     this allows for seemless use of project-based GOPATHs without explicit configuration
+	*
+	* added ctrl+click binding for GsDoc
+	*     `ctrl+shift+left-click` acts as alias for `ctrl+dot,ctrl+g` a.k.a goto definition
+	*     `ctrl+shift+right-click` acts as alias for `ctrl+dot,ctrl+h` a.k.a show documentation hint
+	*     as always, `super` replace `ctrl` on OS X
+
 ## r12.06.26-2
 	* GsDoc now supports local, package-global and imported package variables and functions
 		(MarGo/doc is still incomplete, however: types(structs, etc.) are not resolved yet)
