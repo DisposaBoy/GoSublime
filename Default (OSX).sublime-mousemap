@@ -1,14 +1,14 @@
 [
 	{
 		"button": "button1",
-		"modifiers": ["ctrl", "shift"],
+		"modifiers": ["super", "shift"],
 		"press_command": "drag_select",
 		"command": "gs_doc",
 		"args": {"mode": "goto"}
 	},
 	{
 		"button": "button2",
-		"modifiers": ["ctrl", "shift"],
+		"modifiers": ["super", "shift"],
 		"press_command": "drag_select",
 		"command": "gs_doc",
 		"args": {"mode": "hint"}
