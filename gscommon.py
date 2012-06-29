@@ -192,30 +192,6 @@ def rowcol(view):
 def env():
 	e = os.environ.copy()
 	e.update(setting('env', {}))
-
-	fn = ''
-	win = sublime.active_window()
-	if win:
-		view = win.active_view()
-		if view:
-			psettings = view.settings().get('GoSublime')
-			if psettings:
-				penv = psettings.get('env')
-				if penv:
-					e.update(penv)
-			fn = view.file_name()
-	fn = basedir_or_cwd(fn)
-	comps = fn.split(os.sep)
-	gs_gopath = []
-	for i, s in enumerate(comps):
-		if s.lower() == "src":
-			gs_gopath.append(os.sep.join(comps[:i]))
-	gs_gopath.reverse()
-	gs_gopath = os.pathsep.join(gs_gopath)
-
-	for k in e:
-		e[k] = e[k].replace('$GS_GOPATH', gs_gopath)
-
 	roots = e.get('GOPATH', '').split(os.pathsep)
 	roots.append(e.get('GOROOT', ''))
 	add_path = e.get('PATH', '').split(os.pathsep)
@@ -236,9 +212,38 @@ def sync_settings():
 			if v is not None:
 				# todo: check the type of `v`
 				_settings[k] = v
-		e = {}
-		for k, v in _settings.get('env', {}).iteritems():
-			e[k] = str(os.path.expandvars(os.path.expanduser(v)))
+
+		e = _settings.get('env', {})
+		vfn = ''
+		win = sublime.active_window()
+		if win:
+			view = win.active_view()
+			if view:
+				vfn = view.file_name()
+				psettings = view.settings().get('GoSublime')
+				if psettings:
+					for k in _settings:
+						v = psettings.get(k, None)
+						if v is not None and k != "env":
+							_settings[k] = v
+					penv = psettings.get('env')
+					if penv:
+						e.update(penv)
+
+		vfn = basedir_or_cwd(vfn)
+		comps = vfn.split(os.sep)
+		gs_gopath = []
+		for i, s in enumerate(comps):
+			if s.lower() == "src":
+				gs_gopath.append(os.sep.join(comps[:i]))
+		gs_gopath.reverse()
+		gs_gopath = str(os.pathsep.join(gs_gopath))
+
+		for k in e:
+			e[k] = e[k].replace('$GS_GOPATH', gs_gopath)
+		for k in e:
+			e[k] = str(os.path.expandvars(os.path.expanduser(e[k])))
+
 		_settings['env'] = e
 
 
