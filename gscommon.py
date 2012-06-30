@@ -156,12 +156,15 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 			try:
 				panel.set_read_only(False)
 				panel.sel().clear()
-				panel.settings().set("rulers", [])
+				pst = panel.settings()
+				pst.set("rulers", [])
+				pst.set("fold_buttons", True)
+				pst.set("fade_fold_buttons", False),
 				panel.replace(edit, sublime.Region(0, panel.size()), s)
 				if syntax_file:
-					if syntax_file == 'go':
-						panel.set_syntax_file('Packages/Go/Go.tmLanguage')
-						func_regions = panel.find_by_selector('source.go meta.function.plain.go meta.block.go')
+					if syntax_file == 'GsDoc':
+						panel.set_syntax_file('Packages/GoSublime/GsDoc.tmLanguage')
+						func_regions = panel.find_by_selector('GsDoc.go meta.function.plain.go meta.block.go')
 						if func_regions:
 							panel.fold(func_regions)
 					else:

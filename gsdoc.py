@@ -8,7 +8,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 		return gs.is_go_source_view(self.view)
 
 	def show_output(self, s):
-		gs.show_output(DOMAIN+'-output', s, False, 'go')
+		gs.show_output(DOMAIN+'-output', s, False, 'GsDoc')
 
 	def run(self, _, mode=''):
 		view = self.view
