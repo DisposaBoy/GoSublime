@@ -1,6 +1,13 @@
 Usage
 =====
 
+Note
+----
+
+* Unless otherwise mentioned, `super` replaces `ctrl` in keybindings on OS X.
+* A mention of a (GO)PATH variable uses a colon(`:`) as the sepator.
+This is the PATH separator on Linux and OS X, Windows uses a semi-colon(`;`)
+
 Settings
 --------
 
@@ -50,12 +57,6 @@ Build System
 
 A Go build system is provided under the menu `Tools > Build System > GsShell`. If you're using this build system, when you press `ctrl+b` you will get a prompt for the command you want to run. The command can be any valid command e.g `go build && pkill MarGo; ./MarGo` or `go run *.go`. The prompt is automatically filled with `go ` and pressing tab will try to complete some of the common `go` subcommands. So typing `go b` then pressing tab results in `go build`. If the prompt is empty or only contains `go` (ignoring whitespace) then when you press tab, it will instead be replaced with the last command you ran.
 
-Lint/Syntax Check
------------------
-
-The source is continuously scanned for syntax errors. It will try to catch some common errors, like
-forgetting to call flag.Parse - if this causes false positives, please file a bug report
-
 Build/Test/Go Command
 ---------------------
 
@@ -67,11 +68,44 @@ Additionally some command alias are available via tabbing e.g typing `go t[tab]`
 
 To access GsShell you can press `ctrl+dot,ctrl+b` or alternatetively access it by setting you Go build system to GsShell at which point it will become available via `ctrl+b` as well. Pressing `ctrl+r` will invoke the `go play`(go run) command via GsShell.
 
+Per-project  settings & Project-based GOPATH
+------------------------------
+
+If you have a settings object called `GoSublime` in your project settings its values will override those
+inside the `GoSublime.sublime-settings` file. As a side-effect you may set a specific GOPATH for a simple
+project.
+
+If the only setting you use this functionality to change is the GOPATH, then you may be able to find
+success by adding the string `$GS_GOPATH` to your global `GOPATH` setting e.g.
+`"env": { "GOPATH": "$HOME/go:$GS_GOPATH" }`
+This is a pseudo-environment-variable.
+It's changed to match all a possible GOPATH based on the current file name. e.g. if your file name is
+`/tmp/go/src/hello/main.go` then it will contain the value `/tmp/go`
+
+Lint/Syntax Check
+-----------------
+
+The source is continuously scanned for syntax errors. It will try to catch some common errors, like
+forgetting to call flag.Parse (if this causes false positives, please file a bug report).
+
+Apart from the hilighting in the view using a dot icon in the gutter and usually underlining the
+first character of an error region. You are given an entry in the status bar in the form: `GsLint (N)`
+where `N` is the number of errors found in that file. You can show the list of errors and navigate to
+then by pressing `ctrl+dot,ctrl+e`
+
 Fmt
 ---
 
 by default `ctrl+s` and `ctrl+shift+s` are overridden to fmt the the file before saving it. You may also
 fmt a file without saving it by pressing `ctrl+dot,ctrl+f`
+
+Godoc/Goto Definition
+---------------------
+
+To show the source and associated comments(documentation) of a variable press `ctrl+dot,ctrl+h` or
+using the mouse `ctrl+shift,right-click`. This will show an output panel that presents the full
+definition of the variable or function under the (first) cursor along with its comments.
+To goto the definition instead, press `ctrl+dot,ctrl+g` or alternatively using the mouse `ctrl+shift,left-click`.
 
 Declarations/Code Outline?
 --------------------------
