@@ -159,7 +159,13 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 				panel.settings().set("rulers", [])
 				panel.replace(edit, sublime.Region(0, panel.size()), s)
 				if syntax_file:
-					panel.set_syntax_file(syntax_file)
+					if syntax_file == 'go':
+						panel.set_syntax_file('Packages/Go/Go.tmLanguage')
+						func_regions = panel.find_by_selector('source.go meta.function.plain.go meta.block.go')
+						if func_regions:
+							panel.fold(func_regions)
+					else:
+						panel.set_syntax_file(syntax_file)
 				panel.set_read_only(True)
 			finally:
 				panel.end_edit(edit)
