@@ -1,3 +1,7 @@
+## r12.06.29-2
+	* GsDoc documentation now shows example functions and blocks are now collapsed
+	* update MarGo
+
 ## r12.06.29-1
 	* fix: threading that caused gslint to crash
 	*
