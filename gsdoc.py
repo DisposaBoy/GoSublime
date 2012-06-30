@@ -33,7 +33,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 						flags = sublime.ENCODED_POSITION
 						fn = '%s:%d:%d' % (fn, row+1, col+1)
 				if fn:
-					view.window().open_file(fn,	flags)
+					view.window().open_file(fn, flags)
 					return
 				else:
 					self.show_output("%s: cannot find definition" % DOMAIN)
