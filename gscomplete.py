@@ -34,7 +34,8 @@ class GoSublime(sublime_plugin.EventListener):
 		if not src:
 			return ([], AC_OPTS)
 
-		cl = self.complete(fn, offset, src, view.substr(sublime.Region(pos, pos+1)) == '(')
+		nc = view.substr(sublime.Region(pos, pos+1))
+		cl = self.complete(fn, offset, src, nc.isalpha() or nc == "(")
 
 		pc = view.substr(sublime.Region(pos-1, pos))
 		if show_snippets and (pc.isspace() or pc.isalpha()):
