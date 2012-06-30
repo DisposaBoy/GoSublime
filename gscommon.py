@@ -153,25 +153,33 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 		if win:
 			panel = win.get_output_panel(panel_name)
 			edit = panel.begin_edit()
+			panel.set_read_only(False)
+
 			try:
-				panel.set_read_only(False)
-				panel.sel().clear()
-				pst = panel.settings()
-				pst.set("rulers", [])
-				pst.set("fold_buttons", True)
-				pst.set("fade_fold_buttons", False),
 				panel.replace(edit, sublime.Region(0, panel.size()), s)
-				if syntax_file:
-					if syntax_file == 'GsDoc':
-						panel.set_syntax_file('Packages/GoSublime/GsDoc.tmLanguage')
-						func_regions = panel.find_by_selector('GsDoc.go meta.function.plain.go meta.block.go')
-						if func_regions:
-							panel.fold(func_regions)
-					else:
-						panel.set_syntax_file(syntax_file)
-				panel.set_read_only(True)
 			finally:
 				panel.end_edit(edit)
+
+			panel.sel().clear()
+			pst = panel.settings()
+			pst.set("rulers", [])
+			pst.set("fold_buttons", True)
+			pst.set("fade_fold_buttons", False)
+			pst.set("gutter", True)
+			pst.set("line_numbers", False)
+			if syntax_file:
+				if syntax_file == 'GsDoc':
+					panel.set_syntax_file('Packages/GoSublime/GsDoc.tmLanguage')
+					l = panel.find_by_selector('GsDoc.go meta.block.go')
+					for r in l:
+						b = r.begin()+1
+						e = r.end()-2
+						r2 = sublime.Region(b, e)
+						if b < e:
+							panel.fold(r2)
+				else:
+					panel.set_syntax_file(syntax_file)
+			panel.set_read_only(True)
 			win.run_command("show_panel", {"panel": "output.%s" % panel_name})
 	sublime.set_timeout(lambda: cb(panel_name, s, print_output, syntax_file), 0)
 
