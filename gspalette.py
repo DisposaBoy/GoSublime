@@ -236,9 +236,14 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		if err:
 			gs.notice('GsDeclarations', err)
 		decls.sort(key=lambda v: v['line'])
+		vfn = view.file_name() or ''
+		added = 0
 		for i, v in enumerate(decls):
-			if v['name'] == '_':
+			if vfn and v['filename'] != vfn:
 				continue
 			loc = Loc(v['filename'], v['line']-1, v['column']-1)
 			prefix = u'%s%s \u00B7   ' % (indent, gs.CLASS_PREFIXES.get(v['kind'], ''))
 			self.add_item(prefix+v['name'], self.jump_to, (view, loc))
+			added += 1
+		if added < 1:
+			self.add_item(['', 'No declarations found'])
