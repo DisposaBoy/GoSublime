@@ -15,6 +15,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 		if (not gs.is_go_source_view(view)) or (mode not in ['goto', 'hint']):
 			return
 
+		doc = ''
 		pt = view.sel()[0].begin()
 		src = view.substr(sublime.Region(0, view.size()))
 		docs, err = margo.doc(view.file_name(), src, pt)
@@ -38,14 +39,12 @@ class GsDocCommand(sublime_plugin.TextCommand):
 			elif mode == "hint":
 				s = []
 				for d in docs:
-					doc = '// %s %s\n// ...\n' % (d.get('kind', ''), d.get('name', ''))
 					src = d.get('src', '').strip()
 					if src:
+						doc = '// %s %s\n// ...\n' % (d.get('kind', ''), d.get('name', ''))
 						doc = '%s%s' % (doc, src)
 
 					s.append(doc)
-				s = '\n\n\n'.join(s)
-				self.show_output(s)
-		else:
-			self.show_output("%s: no docs found" % DOMAIN)
+				doc = '\n\n\n'.join(s).strip()
+		self.show_output(doc or "// %s: no docs found" % DOMAIN)
 
