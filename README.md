@@ -40,7 +40,9 @@ If this doesn't work, or other errors are reported, please discuss it here: http
 Demo
 ----
 
-* http://vimeo.com/disposaboy/gosublime-demo2
+* New demos will be uploaded to http://www.youtube.com/user/GoSublime/videos
+
+* Old demo http://vimeo.com/disposaboy/gosublime-demo2
 
 ![](https://github.com/DisposaBoy/GoSublime/raw/master/ss/2.png)
 ![](https://github.com/DisposaBoy/GoSublime/raw/master/ss/1.png)
