@@ -8,7 +8,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 		return gs.is_go_source_view(self.view)
 
 	def show_output(self, s):
-		gs.show_output(DOMAIN+'-output', s, False, 'Packages/Go/Go.tmLanguage')
+		gs.show_output(DOMAIN+'-output', s, False, 'go')
 
 	def run(self, _, mode=''):
 		view = self.view
