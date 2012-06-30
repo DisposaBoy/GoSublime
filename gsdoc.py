@@ -38,13 +38,13 @@ class GsDocCommand(sublime_plugin.TextCommand):
 			elif mode == "hint":
 				s = []
 				for d in docs:
-					doc = '%s %s\n// ...\n' % (d.get('kind', ''), d.get('name', ''))
+					doc = '// %s %s\n// ...\n' % (d.get('kind', ''), d.get('name', ''))
 					src = d.get('src', '').strip()
 					if src:
 						doc = '%s%s' % (doc, src)
 
 					s.append(doc)
-				s = '\n\n\n\n'.join(s)
+				s = '\n\n\n'.join(s)
 				self.show_output(s)
 		else:
 			self.show_output("%s: no docs found" % DOMAIN)
