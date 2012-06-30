@@ -91,7 +91,7 @@ forgetting to call flag.Parse (if this causes false positives, please file a bug
 Apart from the hilighting in the view using a dot icon in the gutter and usually underlining the
 first character of an error region. You are given an entry in the status bar in the form: `GsLint (N)`
 where `N` is the number of errors found in that file. You can show the list of errors and navigate to
-then by pressing `ctrl+dot,ctrl+e`
+then by pressing `ctrl+dot,ctrl+e`. Errors for the current line are shown in the status bar.
 
 Fmt
 ---
