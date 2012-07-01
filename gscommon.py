@@ -170,13 +170,7 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 			if syntax_file:
 				if syntax_file == 'GsDoc':
 					panel.set_syntax_file('Packages/GoSublime/GsDoc.tmLanguage')
-					l = panel.find_by_selector('GsDoc.go meta.block.go')
-					for r in l:
-						b = r.begin()+1
-						e = r.end()-2
-						r2 = sublime.Region(b, e)
-						if b < e:
-							panel.fold(r2)
+					panel.run_command("fold_by_level", { "level": 1 })
 				else:
 					panel.set_syntax_file(syntax_file)
 			panel.set_read_only(True)
