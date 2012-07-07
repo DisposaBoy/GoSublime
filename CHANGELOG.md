@@ -1,3 +1,8 @@
+## r12.07.07-1
+	* improve GsLint detection of un-called flag.Parse()
+	* listing declarations now works in unsaved files
+	* please update MarGo
+
 ## r12.06.29-2
 	* GsDoc documentation now shows example functions and blocks are now collapsed
 	* update MarGo
