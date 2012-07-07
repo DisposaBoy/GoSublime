@@ -1,3 +1,10 @@
+## r12.07.07-2
+	* you can now browse declarations in the current package(beyond file-scope)
+	      as well as all other packages
+	      press `ctrl+dot`,`ctrl+a` to browser packages via a quick panel
+	      listing the declarations in the current is still `ctrl+dot+`,`ctrl+d`
+	* update MarGo
+
 ## r12.07.07-1
 	* improve GsLint detection of un-called flag.Parse()
 	* listing declarations now works in unsaved files
