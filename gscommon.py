@@ -25,6 +25,8 @@ _settings = {
 	"margo_addr": ""
 }
 
+DOMAIN = 'GoSublime'
+
 GLOBAL_SNIPPET_PACKAGE = [
 	(u'package\tpackage [name] \u0282', 'package ${1:NAME}'),
 	(u'package main\tpackage main \u0282', 'package main\n\nfunc main() {\n\t$0\n}\n')
@@ -88,7 +90,7 @@ IGNORED_SCOPES = frozenset([
 ])
 
 def temp_file(suffix='', prefix='', delete=True):
-	tmpdir = os.path.join(tempfile.gettempdir(), 'GoSublime')
+	tmpdir = os.path.join(tempfile.gettempdir(), DOMAIN)
 	try:
 		os.mkdir(tmpdir)
 	except Exception as ex:
@@ -231,7 +233,7 @@ def sync_settings():
 			view = win.active_view()
 			if view:
 				vfn = view.file_name()
-				psettings = view.settings().get('GoSublime')
+				psettings = view.settings().get(DOMAIN)
 				if psettings:
 					for k in _settings:
 						v = psettings.get(k, None)
@@ -284,7 +286,7 @@ def focus(fn, row=0, col=0):
 				view.run_command("gs_goto_row_col", { "row": row, "col": col })
 				return
 
-		notice('Cannot find file position %s:%s:%s' % (fn, row, col))
+		notice(DOMAIN, 'Cannot find file position %s:%s:%s' % (fn, row, col))
 	sublime.set_timeout(lambda: cb(fn, row, col), 0)
 
 
