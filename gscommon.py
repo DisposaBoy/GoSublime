@@ -284,7 +284,7 @@ def focus(fn, row=0, col=0):
 				view.run_command("gs_goto_row_col", { "row": row, "col": col })
 				return
 
-		gs.notice('Cannot find file position %s:%s:%s' % (fn, row, col))
+		notice('Cannot find file position %s:%s:%s' % (fn, row, col))
 	sublime.set_timeout(lambda: cb(fn, row, col), 0)
 
 
