@@ -30,14 +30,10 @@ class GsDocCommand(sublime_plugin.TextCommand):
 					fn = d.get('fn', '')
 					row = d.get('row', 0)
 					col = d.get('col', 0)
-					if row > 0:
-						flags = sublime.ENCODED_POSITION
-						fn = '%s:%d:%d' % (fn, row+1, col+1)
-				if fn:
-					view.window().open_file(fn, flags)
-					return
-				else:
-					self.show_output("%s: cannot find definition" % DOMAIN)
+					if fn:
+						gs.focus(fn, row, col)
+						return
+				self.show_output("%s: cannot find definition" % DOMAIN)
 			elif mode == "hint":
 				s = []
 				for d in docs:
