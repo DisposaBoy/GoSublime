@@ -110,17 +110,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			bks.append(loc)
 
 	def goto(self, loc):
-		fn = loc.fn
-		if not fn or fn == "<stdin>":
-			win = sublime.active_window()
-			if win:
-				view = win.active_view()
-				if view:
-					view.run_command("gs_goto_row_col", { "row": loc.row, "col": loc.col })
-					return
-			gs.notice('Cannot find file position')
-		else:
-			self.window.open_file('%s:%d:%d' % (fn, loc.row+1, loc.col+1), sublime.ENCODED_POSITION)
+		gs.focus(loc.fn, loc.row, loc.col)
 
 	def jump_to_imports(self):
 		view = gs.active_valid_go_view()

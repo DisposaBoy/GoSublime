@@ -257,7 +257,38 @@ def sync_settings():
 
 		_settings['env'] = e
 
+def vfn(view):
+	if view:
+		if view.file_name():
+			return view.file_name()
+		return 'view://%s' % view.id()
+	return ''
 
+def focus(fn, row=0, col=0):
+	def cb(fn, row, col):
+		win = sublime.active_window()
+		if win:
+			if not fn or fn == "<stdin>":
+				view = win.active_view()
+			elif fn.startswith("view://"):
+				vid = int(fn[7:])
+				for v in win.views():
+					if v.id() == vid:
+						view = v
+						break
+			else:
+				view = win.open_file(fn)
+
+			if view:
+				win.focus_view(view)
+				view.run_command("gs_goto_row_col", { "row": row, "col": col })
+				return
+
+		gs.notice('Cannot find file position %s:%s:%s' % (fn, row, col))
+	sublime.set_timeout(lambda: cb(fn, row, col), 0)
+
+
+# init
 settings_obj().clear_on_change("GoSublime.settings")
 settings_obj().add_on_change("GoSublime.settings", sync_settings)
 sync_settings()

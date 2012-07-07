@@ -20,9 +20,21 @@ class GsFmtPromptSaveAsCommand(sublime_plugin.TextCommand):
 class GsGotoRowColCommand(sublime_plugin.TextCommand):
 	def run(self, edit, row, col=0):
 		pt = self.view.text_point(row, col)
+		r = sublime.Region(pt, pt)
 		self.view.sel().clear()
-		self.view.sel().add(sublime.Region(pt))
+		self.view.sel().add(r)
 		self.view.show(pt)
+		dmn = 'gs.focus.%s:%s:%s' % (gs.view_fn(self.view), row, col)
+		flags = sublime.DRAW_EMPTY_AS_OVERWRITE
+		show = lambda: self.view.add_regions(dmn, [r], 'string', 'bookmark', flags)
+		hide = lambda: self.view.erase_regions(dmn)
+
+		for i in range(3):
+			m = 300
+			s = i * m * 2
+			h = s + m
+			sublime.set_timeout(show, s)
+			sublime.set_timeout(hide, h)
 
 class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 	def run(self):
