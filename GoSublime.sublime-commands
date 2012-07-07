@@ -67,5 +67,9 @@
 	{
 		"caption": "GoSublime: Install/Update MarGo and Gocode",
 		"command": "gs_update_deps"
+	},
+	{
+		"caption": "GoSublime: Browse Declarations",
+		"command": "gs_browse_declarations"
 	}
 ]

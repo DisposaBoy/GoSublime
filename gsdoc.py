@@ -1,5 +1,6 @@
 import gscommon as gs, margo
 import sublime, sublime_plugin
+import os
 
 DOMAIN = 'GsDoc'
 
@@ -46,4 +47,63 @@ class GsDocCommand(sublime_plugin.TextCommand):
 					s.append(doc)
 				doc = '\n\n\n'.join(s).strip()
 		self.show_output(doc or "// %s: no docs found" % DOMAIN)
+
+class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
+	def is_enabled(self):
+		return gs.is_go_source_view(self.window.active_view())
+
+	def run(self):
+		win, view = gs.win_view(None, self.window)
+		if view is None:
+			return
+
+		current = "Current Package"
+
+		im, _ = margo.import_paths('', '')
+		paths = im.get('paths', [])
+		paths.sort()
+		paths.insert(0, current)
+
+		def cb(i):
+			if i == 0:
+				vfn = gs.view_fn(view)
+				src = gs.view_src(view)
+				pkg_dir = ''
+				if view.file_name():
+					pkg_dir = os.path.dirname(view.file_name())
+				self.present(vfn, src, pkg_dir)
+			elif i > 0:
+				self.present('', '', paths[i])
+		win.show_quick_panel(paths, cb)
+
+
+	def present(self, vfn, src, pkg_dir):
+		win = self.window
+		if win is None:
+			return
+
+		res, err = margo.declarations(vfn, src, pkg_dir)
+		if err:
+			gs.notice(DOMAIN, err)
+			return
+
+		decls = res.get('file_decls', [])
+		for d in res.get('pkg_decls', []):
+			if not vfn or d['fn'] != vfn:
+				decls.append(d)
+
+		for d in decls:
+			d['ent'] = '%s %s' % (d['kind'], d['name'])
+
+		ents = []
+		decls.sort(key=lambda d: d['ent'])
+		for d in decls:
+			ents.append(d['ent'])
+
+		def cb(i):
+			if i >= 0:
+				d = decls[i]
+				gs.focus(d['fn'], d['row'], d['col'], win)
+
+		win.show_quick_panel(ents, cb)
 
