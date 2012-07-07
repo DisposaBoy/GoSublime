@@ -83,5 +83,10 @@
 		"keys": ["super+.", "super+n"],
 		"command": "gs_new_go_file",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["super+.", "super+a"],
+		"command": "gs_browse_declarations",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	}
 ]
