@@ -31,6 +31,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 					row = d.get('row', 0)
 					col = d.get('col', 0)
 					if fn:
+						gs.println('opening %s:%s:%s' % (fn, row, col))
 						gs.focus(fn, row, col)
 						return
 				self.show_output("%s: cannot find definition" % DOMAIN)

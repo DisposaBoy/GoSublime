@@ -26,7 +26,7 @@ class GsGotoRowColCommand(sublime_plugin.TextCommand):
 		self.view.show(pt)
 		dmn = 'gs.focus.%s:%s:%s' % (gs.view_fn(self.view), row, col)
 		flags = sublime.DRAW_EMPTY_AS_OVERWRITE
-		show = lambda: self.view.add_regions(dmn, [r], 'string', 'bookmark', flags)
+		show = lambda: self.view.add_regions(dmn, [r], 'comment', 'bookmark', flags)
 		hide = lambda: self.view.erase_regions(dmn)
 
 		for i in range(3):

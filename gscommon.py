@@ -134,8 +134,11 @@ def setting(key, default=None):
 	with _sem:
 		return _settings.get(key, default)
 
-def println(s):
-	print('\n** %s **:\n%s\n--------------------------------' % (datetime.datetime.now(), s))
+def println(*a):
+	print('\n** %s **:' % datetime.datetime.now())
+	for s in a:
+		print(str(s).strip())
+	print('--------------------------------')
 
 def notice(domain, txt):
 	txt = "%s: %s" % (domain, txt)
@@ -269,27 +272,39 @@ def view_fn(view):
 		return 'view://%s' % view.id()
 	return ''
 
-def focus(fn, row=0, col=0):
-	def cb(fn, row, col):
+def win_view(vfn, win=None):
+	if not win:
 		win = sublime.active_window()
-		if win:
-			if not fn or fn == "<stdin>":
-				view = win.active_view()
-			elif fn.startswith("view://"):
-				vid = int(fn[7:])
+
+	view = None
+	if win:
+		if not vfn or vfn == "<stdin>":
+			view = win.active_view()
+		elif vfn.startswith("view://"):
+			try:
+				vid = int(vfn[7:])
 				for v in win.views():
 					if v.id() == vid:
 						view = v
 						break
-			else:
-				view = win.open_file(fn)
+			except:
+				pass
+		else:
+			view = win.open_file(vfn)
+	return (win, view)
 
-			if view:
-				win.focus_view(view)
-				view.run_command("gs_goto_row_col", { "row": row, "col": col })
-				return
+def do_focus(fn, row, col, win=None):
+	win, view = win_view(fn, win)
+	if win is None or view is None:
 		notice(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
-	sublime.set_timeout(lambda: cb(fn, row, col), 0)
+	elif view.is_loading():
+		focus(fn, row, col, win)
+	else:
+		win.focus_view(view)
+		view.run_command("gs_goto_row_col", { "row": row, "col": col })
+
+def focus(fn, row=0, col=0, win=None, timeout=100):
+	sublime.set_timeout(lambda: do_focus(fn, row, col, win), timeout)
 
 
 # init
