@@ -51,6 +51,44 @@
 								"args": {
 									"file": "${packages}/GoSublime/Default (OSX).sublime-keymap"
 								}
+							},
+							{ "caption": "-" },
+							{
+								"caption": "Changes & Announcement",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/CHANGELOG.md"
+								}
+							},
+							{ "caption": "-" },
+							{
+								"caption": "Read Me",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/README.md"
+								}
+							},
+							{
+								"caption": "Usage & Tips",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/USAGE.md"
+								}
+							},
+							{ "caption": "-" },
+							{
+								"caption": "Authors & Contributors",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/AUTHORS.md"
+								}
+							},
+							{
+								"caption": "License (MIT)",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/GoSublime/LICENSE.md"
+								}
 							}
 						]
 					}
