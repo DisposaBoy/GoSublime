@@ -1,5 +1,5 @@
 import sublime
-import subprocess, re, os, threading, tempfile
+import subprocess, re, os, threading, tempfile, datetime
 from subprocess import Popen, PIPE
 
 try:
@@ -134,9 +134,12 @@ def setting(key, default=None):
 	with _sem:
 		return _settings.get(key, default)
 
+def println(s):
+	print('\n** %s **:\n%s\n--------------------------------' % (datetime.datetime.now(), s))
+
 def notice(domain, txt):
-	txt = "** %s: %s **" % (domain, txt)
-	print(txt)
+	txt = "%s: %s" % (domain, txt)
+	println(txt)
 	sublime.set_timeout(lambda: sublime.status_message(txt), 0)
 
 def notice_undo(domain, txt, view, should_undo):
