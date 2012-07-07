@@ -25,7 +25,8 @@ class GsDocCommand(sublime_plugin.TextCommand):
 			if mode == "goto":
 				fn = ''
 				flags = 0
-				for d in docs:
+				if len(docs) > 0:
+					d = docs[0]
 					fn = d.get('fn', '')
 					row = d.get('row', 0)
 					col = d.get('col', 0)
