@@ -259,7 +259,7 @@ def sync_settings():
 
 		_settings['env'] = e
 
-def vfn(view):
+def view_fn(view):
 	if view:
 		if view.file_name():
 			return view.file_name()
@@ -285,7 +285,6 @@ def focus(fn, row=0, col=0):
 				win.focus_view(view)
 				view.run_command("gs_goto_row_col", { "row": row, "col": col })
 				return
-
 		notice(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
 	sublime.set_timeout(lambda: cb(fn, row, col), 0)
 
