@@ -102,7 +102,7 @@ def temp_file(suffix='', prefix='', delete=True):
 	return (f, '')
 
 def basedir_or_cwd(fn):
-	if fn:
+	if fn and not fn.startswith('view://'):
 		return os.path.dirname(fn)
 	return os.getcwd()
 
@@ -272,7 +272,12 @@ def view_fn(view):
 		return 'view://%s' % view.id()
 	return ''
 
-def win_view(vfn, win=None):
+def view_src(view):
+	if view:
+		return view.substr(sublime.Region(0, view.size()))
+	return ''
+
+def win_view(vfn=None, win=None):
 	if not win:
 		win = sublime.active_window()
 

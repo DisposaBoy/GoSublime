@@ -55,10 +55,12 @@ def post(path, a, default, fail_early=False):
 			resp["error"] = "Invalid Data"
 	return (resp["data"], resp["error"])
 
-def declarations(filename, src):
+def declarations(filename, src, pkg_dir):
 	return post('/declarations', {
 		'fn': filename or '',
-		'src': src
+		'src': src,
+		'env': gs.env(),
+		'pkg_dir': pkg_dir,
 	}, {})
 
 def fmt(filename, src):
