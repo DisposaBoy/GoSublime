@@ -59,7 +59,7 @@ def declarations(filename, src):
 	return post('/declarations', {
 		'fn': filename or '',
 		'src': src
-	}, [])
+	}, {})
 
 def fmt(filename, src):
 	return post('/fmt', {
