@@ -1,3 +1,9 @@
+## r12.07.08-1
+	* you can now browse packages
+	    press `ctrl+dot`,`ctrl+o` to open the first file found in the select pkg dir
+	* new key binding added `ctrl+dot`,`ctrl+l` to list the declarations in the current pkg in a single step
+	    it does the same thing as `ctrl+dot`,`ctrl+a` and then selecting 'Current Package'
+
 ## r12.07.07-2
 	* you can now browse declarations in the current package(beyond file-scope)
 	      as well as all other packages
