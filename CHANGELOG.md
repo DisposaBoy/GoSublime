@@ -1,3 +1,8 @@
+## r12.07.08-2
+	* new quick panel for go test
+	    allows easily running `Test.*`, `Example.*`, `Benchmark.*` or individual tests, examples and benchmarks
+	    press `ctrl+dot`,`ctrl+t` to access the quick panel
+
 ## r12.07.08-1
 	* you can now browse packages
 	    press `ctrl+dot`,`ctrl+o` to open the first file found in the select pkg dir
