@@ -91,6 +91,7 @@ class Prompt(object):
 					if fns:
 						s = s.replace(gpat, ' '+fns)
 			self.view.window().run_command("exec", { 'kill': True })
+			gs.println('running %s' % s)
 			self.view.window().run_command("exec", {
 				'shell': True,
 				'env': gs.env(),
