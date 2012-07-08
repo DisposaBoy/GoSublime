@@ -52,7 +52,7 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 	def is_enabled(self):
 		return gs.is_go_source_view(self.window.active_view())
 
-	def run(self):
+	def run(self, dir=''):
 		win, view = gs.win_view(None, self.window)
 		if view is None:
 			return
@@ -74,7 +74,16 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 				self.present(vfn, src, pkg_dir)
 			elif i > 0:
 				self.present('', '', paths[i])
-		win.show_quick_panel(paths, cb)
+
+		if paths:
+			if dir == '.':
+				cb(0)
+			elif dir:
+				self.present('', '', dir)
+			else:
+				win.show_quick_panel(paths, cb)
+		else:
+			win.show_quick_panel([['', 'No package paths found']], lambda x: None)
 
 
 	def present(self, vfn, src, pkg_dir):
@@ -93,7 +102,7 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 				decls.append(d)
 
 		for d in decls:
-			d['ent'] = '%s %s' % (d['kind'], d['name'])
+			d['ent'] = '%s %s' % (d['kind'], (d['repr'] or d['name']))
 
 		ents = []
 		decls.sort(key=lambda d: d['ent'])
@@ -105,5 +114,39 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 				d = decls[i]
 				gs.focus(d['fn'], d['row'], d['col'], win)
 
-		win.show_quick_panel(ents, cb)
+		if ents:
+			win.show_quick_panel(ents, cb)
+		else:
+			win.show_quick_panel([['', 'No declarations found']], lambda x: None)
+
+
+class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
+	def is_enabled(self):
+		return gs.is_go_source_view(self.window.active_view())
+
+	def run(self):
+		win, view = gs.win_view(None, self.window)
+		if view is None:
+			return
+
+		res, err = margo.pkgdirs()
+		if err:
+			gs.notice(DOMAIN, err)
+			return
+
+		m = {}
+		for root, dirs in res.iteritems():
+			for dir, fn in dirs.iteritems():
+				if not m.get(dir):
+					m[dir] = fn
+		ents = sorted(m.keys())
+		if ents:
+			def cb(i):
+				if i >= 0:
+					fn = m[ents[i]]
+					gs.focus(fn, 0, 0, win)
+			win.show_quick_panel(ents, cb)
+		else:
+			win.show_quick_panel([['', 'No source directories found']], lambda x: None)
+
 

@@ -63,6 +63,11 @@ def declarations(filename, src, pkg_dir=''):
 		'pkg_dir': pkg_dir,
 	}, {})
 
+def pkgdirs():
+	return post('/pkgdirs', {
+		'env': gs.env(),
+	}, {})
+
 def fmt(filename, src):
 	return post('/fmt', {
 		'fn': filename or '',
