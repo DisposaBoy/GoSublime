@@ -44,20 +44,20 @@ class GsTestCommand(sublime_plugin.WindowCommand):
 				s = 'Run %ss Only' % k
 				ents.append(s)
 				if k == 'Benchmark':
-					args[s] = '-test.bench=%s.*' % k
+					args[s] = '-test.run=none -test.bench=%s.*' % k
 				else:
 					args[s] = '-test.run=%s.*' % k
 
 		for k in names:
 			ents.append(k)
 			if k.startswith('Benchmark'):
-				args[k] = '-test.bench=^%s$' % k
+				args[k] = '-test.run=none -test.bench=^%s$' % k
 			else:
 				args[k] = '-test.run=^%s$' % k
 
 		def cb(i):
 			if i >= 0:
-				s = 'go test -test.v %s' % args.get(ents[i], '')
+				s = 'go test %s' % args.get(ents[i], '')
 				win.run_command('gs_shell', {'run': s})
 
 		win.show_quick_panel(ents, cb)
