@@ -5,9 +5,14 @@
 		"args": {"palette": "imports", "direct": true}
 	},
 	{
-		"caption": "GoSublime: List declarations",
+		"caption": "GoSublime: List File declarations",
 		"command": "gs_palette",
 		"args": {"palette": "declarations", "direct": true}
+	},
+	{
+		"caption": "GoSublime: List Package declarations",
+		"command": "gs_browse_declarations",
+		"args": {"dir": "."}
 	},
 	{
 		"caption": "GoSublime: Show errors",
@@ -71,5 +76,9 @@
 	{
 		"caption": "GoSublime: Browse Declarations",
 		"command": "gs_browse_declarations"
+	},
+	{
+		"caption": "GoSublime: Browse Packages",
+		"command": "gs_browse_packages"
 	}
 ]

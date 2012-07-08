@@ -88,5 +88,16 @@
 		"keys": ["ctrl+.", "ctrl+a"],
 		"command": "gs_browse_declarations",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["ctrl+.", "ctrl+l"],
+		"command": "gs_browse_declarations",
+		"args": { "dir": "." },
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["ctrl+.", "ctrl+o"],
+		"command": "gs_browse_packages",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	}
 ]
