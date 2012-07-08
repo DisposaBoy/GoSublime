@@ -121,9 +121,6 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 
 
 class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
-	def is_enabled(self):
-		return gs.is_go_source_view(self.window.active_view())
-
 	def run(self):
 		win, view = gs.win_view(None, self.window)
 		if view is None:
