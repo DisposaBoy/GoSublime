@@ -122,10 +122,7 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 
 class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 	def run(self):
-		win, view = gs.win_view(None, self.window)
-		if view is None:
-			return
-
+		win = self.window
 		res, err = margo.pkgdirs()
 		if err:
 			gs.notice(DOMAIN, err)

@@ -71,8 +71,7 @@
 	{
 		"keys": ["super+.", "super+."],
 		"command": "show_overlay",
-		"args": {"overlay": "command_palette", "text": "GoSublime: "},
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"args": {"overlay": "command_palette", "text": "GoSublime: "}
 	},
 	{
 		"keys": ["super+.", "super+f"],
@@ -81,8 +80,7 @@
 	},
 	{
 		"keys": ["super+.", "super+n"],
-		"command": "gs_new_go_file",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "gs_new_go_file"
 	},
 	{
 		"keys": ["super+.", "super+a"],
@@ -97,8 +95,7 @@
 	},
 	{
 		"keys": ["super+.", "super+o"],
-		"command": "gs_browse_packages",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "gs_browse_packages"
 	},
 	{
 		"keys": ["super+.", "super+t"],
