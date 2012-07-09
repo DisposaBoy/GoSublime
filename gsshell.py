@@ -79,7 +79,7 @@ class Prompt(object):
 							self.show_output('Error: %s' % ex)
 							return
 						file_name = f.name
-				s = 'go run "%s"' % file_name
+				s = ['go', 'run', file_name]
 			else:
 				gpat = ' *.go'
 				if gpat in s:
@@ -91,11 +91,16 @@ class Prompt(object):
 					if fns:
 						s = s.replace(gpat, ' '+fns)
 			self.view.window().run_command("exec", { 'kill': True })
-			gs.println('running %s' % s)
+			if isinstance(s, list):
+				use_shell = False
+			else:
+				use_shell = True
+				s = [s]
+			gs.println('running %s' % ' '.join(s))
 			self.view.window().run_command("exec", {
-				'shell': True,
+				'shell': use_shell,
 				'env': gs.env(),
-				'cmd': [s],
+				'cmd': s,
 				'file_regex': '^(.+\.go):([0-9]+):(?:([0-9]+):)?\s*(.*)',
 			})
 
