@@ -41,7 +41,12 @@ class GsDocCommand(sublime_plugin.TextCommand):
 				for d in docs:
 					src = d.get('src', '').strip()
 					if src:
-						doc = '// %s %s\n//\n' % (d.get('kind', ''), d.get('name', ''))
+						kind = d.get('kind', '')
+						name = d.get('name', '')
+						pkg = d.get('pkg', '')
+						if pkg:
+							name = '%s.%s' % (pkg, name)
+						doc = '// %s %s\n//\n' % (name, kind)
 						doc = '%s%s' % (doc, src)
 
 					s.append(doc)
