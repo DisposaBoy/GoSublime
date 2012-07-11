@@ -39,15 +39,16 @@ class GsDocCommand(sublime_plugin.TextCommand):
 			elif mode == "hint":
 				s = []
 				for d in docs:
-					src = d.get('src', '').strip()
-					if src:
+					name = d.get('name', '')
+					if name:
 						kind = d.get('kind', '')
-						name = d.get('name', '')
 						pkg = d.get('pkg', '')
 						if pkg:
 							name = '%s.%s' % (pkg, name)
-						doc = '// %s %s\n//\n' % (name, kind)
-						doc = '%s%s' % (doc, src)
+						src = d.get('src', '')
+						if src:
+							src = '\n//\n%s' % src
+						doc = '// %s %s%s' % (name, kind, src)
 
 					s.append(doc)
 				doc = '\n\n\n'.join(s).strip()
