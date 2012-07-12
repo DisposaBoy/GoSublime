@@ -1,3 +1,11 @@
+## r12.07.12-1
+	* fix: imports not sorted on fmt/save
+	* fix: GsDoc doesn't work correctly in unsaved files
+	* various keybindings now available in non .go files
+	    `ctrl+dot`,`ctrl+dot` - open the command palette with only GoSublime entries
+	    `ctrl+dot`,`ctrl+n` - create a new .go file
+	    `ctrl+dot`,`ctrl+o` - browse packages
+
 ## r12.07.08-2
 	* new quick panel for go test
 	    allows easily running `Test.*`, `Example.*`, `Benchmark.*` or individual tests, examples and benchmarks
