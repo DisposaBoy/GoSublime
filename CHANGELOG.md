@@ -1,6 +1,10 @@
 ## r12.07.12-1
 	* fix: imports not sorted on fmt/save
 	* fix: GsDoc doesn't work correctly in unsaved files
+	* various presentation tweaks
+	* documentation comments are now displayed for types
+	* package documentation is now displayed
+	* goto definition of packages is now enabled
 	* various keybindings now available in non .go files
 	    `ctrl+dot`,`ctrl+dot` - open the command palette with only GoSublime entries
 	    `ctrl+dot`,`ctrl+n` - create a new .go file
