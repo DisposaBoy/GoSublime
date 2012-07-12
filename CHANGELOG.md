@@ -9,6 +9,7 @@
 	    `ctrl+dot`,`ctrl+dot` - open the command palette with only GoSublime entries
 	    `ctrl+dot`,`ctrl+n` - create a new .go file
 	    `ctrl+dot`,`ctrl+o` - browse packages
+	* update MarGo
 
 ## r12.07.08-2
 	* new quick panel for go test
