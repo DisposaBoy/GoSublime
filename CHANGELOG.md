@@ -1,3 +1,6 @@
+## r12.07.15-1
+	* update gocode: nsf recently added improved support for variables declared in the head of `if` and `for` statements
+
 ## r12.07.12-1
 	* fix: imports not sorted on fmt/save
 	* fix: GsDoc doesn't work correctly in unsaved files
