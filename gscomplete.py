@@ -1,12 +1,14 @@
 import sublime, sublime_plugin
-import json, os
+import json, os, re
 import gscommon as gs
-import margo
 from os.path import basename
 
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
 
 last_gopath = ''
+END_SELECTOR_PAT = re.compile(r'.*?((?:[\w.]+\.)?(\w+))$')
+START_SELECTOR_PAT = re.compile(r'^([\w.]+)')
+DOMAIN = 'GsComplete'
 
 class GoSublime(sublime_plugin.EventListener):
 	gocode_set = False
@@ -66,7 +68,7 @@ class GoSublime(sublime_plugin.EventListener):
 		args = [cmd, "-f=json", "autocomplete", fn, offset]
 		js, err, _ = gs.runcmd(args, src)
 		if err:
-			gs.notice('GsComplete', err)
+			gs.notice(DOMAIN, err)
 		else:
 			try:
 				js = json.loads(js)
@@ -99,9 +101,9 @@ class GoSublime(sublime_plugin.EventListener):
 						elif cn != 'PANIC':
 							comps.append(('%s\t%s %s' % (nm, tn, sfx), nm))
 			except KeyError as e:
-				gs.notice('GsComplete', 'Error while running gocode, possibly malformed data returned: %s' % e)
+				gs.notice(DOMAIN, 'Error while running gocode, possibly malformed data returned: %s' % e)
 			except ValueError as e:
-				gs.notice('GsComplete', "Error while decoding gocode output: %s" % e)
+				gs.notice(DOMAIN, "Error while decoding gocode output: %s" % e)
 		return comps
 
 	def typeclass_prefix(self, typeclass, typename):
@@ -138,3 +140,141 @@ def declex(s):
 			ep += 1
 		ret = s[ep:].strip() if ep < lp else ''
 	return (params, ret)
+
+class GsShowCallTip(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		return gs.is_go_source_view(self.view)
+
+	def show_hint(self, s):
+		dmn = '%s.completion-hint' % DOMAIN
+		gs.show_output(dmn, s, print_output=False, syntax_file='GsDoc')
+
+	def run(self, edit):
+		view = self.view
+		pt = view.sel()[0].begin()
+		if view.substr(sublime.Region(pt-1, pt)) == '(':
+			depth = 1
+		else:
+			depth = 0
+		c = ''
+		while True:
+			line = view.line(pt)
+			scope = view.scope_name(pt)
+			if 'string' in scope or 'comment' in scope:
+				pt = view.extract_scope(pt).begin() - 1
+				continue
+
+			c = view.substr(sublime.Region(pt-1, pt))
+			if not c:
+				pt = -1
+				break
+
+			if c.isalpha() and depth >= 0:
+				while c.isalpha() or c == '.':
+					pt += 1
+					c = view.substr(sublime.Region(pt-1, pt))
+
+				# curly braces ftw
+				break # break outer while loop
+			if c == ')':
+				depth -= 1
+			elif c == '(':
+				depth += 1
+				i = pt
+				while True:
+					pc = view.substr(sublime.Region(i-1, i))
+					if pc == '.' or pc.isalpha():
+						i -= 1
+					else:
+						break
+
+				if i != pt:
+					pt = i
+					continue
+
+			pt -= 1
+			if pt <= line.begin():
+				pt = -1
+				break
+
+		while not c.isalpha() and pt > 0:
+			pt -= 1
+			c = view.substr(sublime.Region(pt-1, pt))
+
+		if pt <= 0 or view.scope_name(pt).strip() == 'source.go':
+			self.show_hint("// can't find selector")
+			return
+
+		line = view.line(pt)
+		line_start = line.begin()
+
+		s = view.substr(line)
+		if not s:
+			self.show_hint('// no source')
+			return
+
+		scopes = [
+			'support.function.any-method.go',
+			'meta.function-call.go',
+			'support.function.builtin.go',
+		]
+		found = False
+		while True:
+			scope = view.scope_name(pt).strip()
+			for s in scopes:
+				if scope.endswith(s):
+					found = True
+					break
+
+			if found or pt <= line_start:
+				break
+
+			pt -= 1
+
+		if not found:
+			self.show_hint("// can't find function call")
+			return
+
+		s = view.substr(sublime.Region(line_start, pt))
+		m = END_SELECTOR_PAT.match(s)
+		if not m:
+			self.show_hint("// can't match selector")
+			return
+
+		offset = (line_start + m.end())
+		coffset = 'c%d' % offset
+		sel = m.group(1)
+		name = m.group(2)
+		print('match', sel, name)
+		candidates = []
+		src = view.substr(sublime.Region(0, view.size()))
+		fn = view.file_name() or '<stdin>'
+		cmd = gs.setting('gocode_cmd', 'gocode')
+		args = [cmd, "-f=json", "autocomplete", fn, coffset]
+		js, err, _ = gs.runcmd(args, src)
+		if err:
+			gs.notice(DOMAIN, err)
+		else:
+			try:
+				js = json.loads(js)
+				if js and js[1]:
+					candidates = js[1]
+			except:
+				pass
+
+		c = {}
+		for i in candidates:
+			if i['name'] == name:
+				if c:
+					c = None
+					break
+				c = i
+
+		if not c:
+			self.show_hint('// no candidates found')
+			return
+
+		s = '// %s %s\n%s' % (c['name'], c['class'], c['type'])
+		self.show_hint(s)
+
+
