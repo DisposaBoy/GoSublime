@@ -1,3 +1,7 @@
+## r12.07.15-2
+	* add basic call-tip? support
+	* press `ctrl+dot`,`ctrl+space` inside a function parameter list to show its declaration
+
 ## r12.07.15-1
 	* update gocode: nsf recently added improved support for variables declared in the head of `if` and `for` statements
 
