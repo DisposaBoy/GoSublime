@@ -84,5 +84,9 @@
 	{
 		"caption": "GoSublime: Run Tests",
 		"command": "gs_test"
+	},
+	{
+		"caption": "GoSublime: Show call tip",
+		"command": "gs_show_call_tip"
 	}
 ]

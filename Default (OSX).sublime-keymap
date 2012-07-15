@@ -101,5 +101,10 @@
 		"keys": ["super+.", "super+t"],
 		"command": "gs_test",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["super+.", "super+space"],
+		"command": "gs_show_call_tip",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	}
 ]
