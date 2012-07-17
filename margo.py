@@ -12,7 +12,7 @@ class Conn(object):
 				self.c.close()
 			except:
 				pass
-		self.c = httplib.HTTPConnection(gs.setting('margo_addr', ''))
+		self.c = httplib.HTTPConnection(gs.setting('margo_addr', ''), timeout=5)
 
 	def post(self, path, p, h):
 		if not self.c:
