@@ -11,7 +11,7 @@ This is the PATH separator on Linux and OS X, Windows uses a semi-colon(`;`)
 Settings
 --------
 
-You may customize GoSublimes behaviour by modiying its default settings. Default settings are documented in `Packages/GoSublime/GoSublime.sublime-settings`
+You may customize GoSublimes behaviour by (creating and) customizing the file file `Packages/User/GoSublime.sublime-settings`. Default settings are documented in `Packages/GoSublime/GoSublime.sublime-settings`. **WARNING** Do not edit any package file outside of `Packages/User/`, including files inside `Packages/GoSublime/` unless you have a reason to. These files are subject to being overritten on update of the respective package and/or Sublime Text itself. You may also inadvertently prevent the respective package from being able to update via git etc.
 
 Quirks
 ------
