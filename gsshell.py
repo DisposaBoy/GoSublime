@@ -80,16 +80,7 @@ class Prompt(object):
 							return
 						file_name = f.name
 				s = ['go', 'run', file_name]
-			else:
-				gpat = ' *.go'
-				if gpat in s:
-					fns = []
-					for fn in os.listdir(os.path.dirname(self.view.file_name())):
-						if fn.endswith('.go') and fn[0] not in ('.', '_') and not fn.endswith('_test.go'):
-							fns.append('"%s"' % fn)
-					fns = ' '.join(fns)
-					if fns:
-						s = s.replace(gpat, ' '+fns)
+
 			self.view.window().run_command("exec", { 'kill': True })
 			if isinstance(s, list):
 				use_shell = False
