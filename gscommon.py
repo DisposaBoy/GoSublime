@@ -298,18 +298,22 @@ def win_view(vfn=None, win=None):
 			view = win.open_file(vfn)
 	return (win, view)
 
-def do_focus(fn, row, col, win=None):
+def do_focus(fn, row, col, win=None, focus_pkg=True):
 	win, view = win_view(fn, win)
 	if win is None or view is None:
 		notice(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
 	elif view.is_loading():
-		focus(fn, row, col, win)
+		focus(fn, row, col, win, focus_pkg)
 	else:
 		win.focus_view(view)
+		if row <= 0 and col <= 0 and focus_pkg:
+			r = view.find('^package ', 0)
+			if r:
+				row, col = view.rowcol(r.begin())
 		view.run_command("gs_goto_row_col", { "row": row, "col": col })
 
-def focus(fn, row=0, col=0, win=None, timeout=100):
-	sublime.set_timeout(lambda: do_focus(fn, row, col, win), timeout)
+def focus(fn, row=0, col=0, win=None, timeout=100, focus_pkg=True):
+	sublime.set_timeout(lambda: do_focus(fn, row, col, win, focus_pkg), timeout)
 
 
 # init
