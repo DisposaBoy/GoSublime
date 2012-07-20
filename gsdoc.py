@@ -139,8 +139,9 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 			for dir, fn in dirs.iteritems():
 				if not m.get(dir):
 					m[dir] = fn
-		ents = sorted(m.keys())
+		ents = m.keys()
 		if ents:
+			ents.sort(key = lambda a: a.lower())
 			def cb(i):
 				if i >= 0:
 					fn = m[ents[i]]
