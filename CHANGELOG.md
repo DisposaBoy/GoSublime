@@ -1,3 +1,7 @@
+## r12.07.21-2
+	* fix: handle filename for browse files correctly
+	    update MarGo
+
 ## r12.07.21-1
 	* add support for browsing/listing the files in a the current package
 	    press `ctrl+dor`,`ctrl+m`
