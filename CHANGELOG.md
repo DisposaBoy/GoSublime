@@ -4,7 +4,7 @@
 
 ## r12.07.21-1
 	* add support for browsing/listing the files in a the current package
-	    press `ctrl+dor`,`ctrl+m`
+	    press `ctrl+dot`,`ctrl+m`
 	    update MarGo
 
 ## r12.07.15-2
