@@ -228,7 +228,6 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		self.goto(loc)
 
 	def palette_declarations(self, view, direct=False):
-		indent = '' if direct else '    '
 		res, err = margo.declarations(
 			view.file_name(),
 			view.substr(sublime.Region(0, view.size()))
@@ -241,11 +240,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			added = 0
 			for i, v in enumerate(decls):
 				loc = Loc(v['fn'], v['row'], v['col'])
-				prefix = u'%s%s \u00B7   ' % (indent, gs.CLASS_PREFIXES.get(v['kind'], ''))
-				s = v['name']
-				if v['repr']:
-					s = v['repr']
-				self.add_item(prefix+s, self.jump_to, (view, loc))
+				s = '%s %s' % (v['kind'], (v['repr'] or v['name']))
+				self.add_item(s, self.jump_to, (view, loc))
 				added += 1
 
 		if added < 1:
