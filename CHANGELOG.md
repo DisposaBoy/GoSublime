@@ -1,3 +1,8 @@
+## r12.07.21-1
+	* add support for browsing/listing the files in a the current package
+	    press `ctrl+dor`,`ctrl+m`
+	    update MarGo
+
 ## r12.07.15-2
 	* add basic call-tip? support
 	* press `ctrl+dot`,`ctrl+space` inside a function parameter list to show its declaration
