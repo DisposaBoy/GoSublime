@@ -82,6 +82,10 @@
 		"command": "gs_browse_packages"
 	},
 	{
+		"caption": "GoSublime: Browse Files",
+		"command": "gs_browse_files"
+	},
+	{
 		"caption": "GoSublime: Run Tests",
 		"command": "gs_test"
 	},

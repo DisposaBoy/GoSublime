@@ -98,6 +98,10 @@
 		"command": "gs_browse_packages"
 	},
 	{
+		"keys": ["supe+.", "supe+m"],
+		"command": "gs_browse_files"
+	},
+	{
 		"keys": ["super+.", "super+t"],
 		"command": "gs_test",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]

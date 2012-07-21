@@ -98,6 +98,10 @@
 		"command": "gs_browse_packages"
 	},
 	{
+		"keys": ["ctrl+.", "ctrl+m"],
+		"command": "gs_browse_files"
+	},
+	{
 		"keys": ["ctrl+.", "ctrl+t"],
 		"command": "gs_test",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
