@@ -68,6 +68,11 @@ def pkgdirs():
 		'env': gs.env(),
 	}, {})
 
+def pkgfiles(dirname):
+	return post('/pkgfiles', {
+		'path': dirname,
+	}, {})
+
 def fmt(filename, src):
 	return post('/fmt', {
 		'fn': filename or '',
