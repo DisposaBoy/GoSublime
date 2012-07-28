@@ -1,3 +1,7 @@
+## r12.07.28-2
+	* add command palette entry to show the build output
+	    press `ctrl+dot`,`ctrl+dot` and start typing `build output`
+
 ## r12.07.28-1
 	* update gocode: nsf fixed a bug that could cause gocode to hang on invalid input
 
