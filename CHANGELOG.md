@@ -1,3 +1,6 @@
+## r12.07.28-1
+	* update gocode: nsf fixed a bug that could cause gocode to hang on invalid input
+
 ## r12.07.21-2
 	* fix: handle filename for browse files correctly
 	    update MarGo
