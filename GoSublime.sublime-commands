@@ -92,5 +92,10 @@
 	{
 		"caption": "GoSublime: Show call tip",
 		"command": "gs_show_call_tip"
+	},
+	{
+		"caption": "GoSublime: Show last build output",
+		"command": "show_panel",
+		"args": {"panel": "output.exec"}
 	}
 ]
