@@ -129,26 +129,34 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		win = self.window
-		res, err = margo.pkgdirs()
-		if err:
-			gs.notice(DOMAIN, err)
-			return
+		def f(res, err):
+			if err:
+				gs.notice(DOMAIN, err)
+				return
 
-		m = {}
-		for root, dirs in res.iteritems():
-			for dir, fn in dirs.iteritems():
-				if not m.get(dir):
-					m[dir] = fn
-		ents = m.keys()
-		if ents:
-			ents.sort(key = lambda a: a.lower())
-			def cb(i):
-				if i >= 0:
-					fn = m[ents[i]]
-					gs.focus(fn, 0, 0, win)
-			win.show_quick_panel(ents, cb)
-		else:
-			win.show_quick_panel([['', 'No source directories found']], lambda x: None)
+			m = {}
+			for root, dirs in res.iteritems():
+				for dir, fn in dirs.iteritems():
+					if not m.get(dir):
+						m[dir] = fn
+			ents = m.keys()
+			if ents:
+				ents.sort(key = lambda a: a.lower())
+				def cb(i):
+					if i >= 0:
+						fn = m[ents[i]]
+						gs.focus(fn, 0, 0, win)
+				win.show_quick_panel(ents, cb)
+			else:
+				win.show_quick_panel([['', 'No source directories found']], lambda x: None)
+
+		margo.call(
+			path='/pkgdirs',
+			args={},
+			default={},
+			cb=f,
+			message='fetching pkg dirs'
+		)
 
 class GsBrowseFilesCommand(sublime_plugin.WindowCommand):
 	def is_enabled(self):

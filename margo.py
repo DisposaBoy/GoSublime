@@ -2,6 +2,8 @@ import subprocess, httplib, urllib, json, traceback, os
 import sublime
 import gscommon as gs, gsdepends, gsq
 
+DOMAIN = 'MarGo'
+
 class Conn(object):
 	def __init__(self):
 		self.c = None
@@ -63,11 +65,6 @@ def declarations(filename, src, pkg_dir=''):
 		'pkg_dir': pkg_dir,
 	}, {})
 
-def pkgdirs():
-	return post('/pkgdirs', {
-		'env': gs.env(),
-	}, {})
-
 def pkgfiles(dirname):
 	return post('/pkgfiles', {
 		'path': dirname,
@@ -125,7 +122,7 @@ def doc(filename, src, offset):
 		'tab_width': gs.setting('fmt_tab_width'),
 	}, [])
 
-def call(path, args={}, default={}, cb=None, message='', fail_early=False):
+def call(path='/', args={}, default={}, cb=None, message='', fail_early=False):
 	try:
 		if args is None:
 			a = ''
