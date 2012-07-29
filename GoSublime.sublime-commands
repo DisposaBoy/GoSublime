@@ -97,5 +97,9 @@
 		"caption": "GoSublime: Show last build output",
 		"command": "show_panel",
 		"args": {"panel": "output.exec"}
+	},
+	{
+		"caption": "GoSublime: Show pending tasks",
+		"command": "gs_show_tasks"
 	}
 ]

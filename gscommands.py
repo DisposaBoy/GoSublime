@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import gscommon as gs, margo
-import os
+import os, datetime
 
 class GsCommentForwardCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -59,3 +59,27 @@ class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 			view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
 		finally:
 			view.end_edit(edit)
+
+class GsShowTasksCommand(sublime_plugin.WindowCommand):
+	def run(self):
+		ents = []
+		now = datetime.datetime.now()
+		with gs.sm_lck:
+			tasks = gs.sm_tasks.values()
+
+		try:
+			for t in gs.sm_tasks.values():
+				delta = (now - t['start'])
+				ents.append([
+					t['domain'],
+					t['message'],
+					'duration: %s' % delta,
+				])
+			ents.sort(key=lambda t: t[2], reverse=True)
+		except:
+			ents = [['', 'Failed to gather runnning tasks']]
+
+		if len(ents) == 0:
+			ents = [['', 'No task currently runnning']]
+
+		self.window.show_quick_panel(ents, None)
