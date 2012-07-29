@@ -73,7 +73,7 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 				ents.append([
 					t['domain'],
 					t['message'],
-					'duration: %s' % delta,
+					'%s' % delta,
 				])
 			ents.sort(key=lambda t: t[2], reverse=True)
 		except:
