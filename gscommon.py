@@ -143,7 +143,7 @@ def println(*a):
 def notice(domain, txt):
 	txt = "%s: %s" % (domain, txt)
 	println(txt)
-	sublime.set_timeout(lambda: sublime.status_message(txt), 0)
+	status_message(txt)
 
 def notice_undo(domain, txt, view, should_undo):
 	def cb():
