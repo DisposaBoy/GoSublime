@@ -173,18 +173,5 @@ def check_depends(view):
 
 
 
-Q = None
-
 def dispatch(f, msg='', view=None, p=0):
-	global Q
-	if not Q:
-		Q = gsq.GsQ(DOMAIN)
-		Q.start()
-
-	def cb(v):
-		if v is None:
-			win = sublime.active_window()
-			if win:
-				v = win.active_view()
-		Q.dispatch(f, msg, v, v is not None, p)
-	sublime.set_timeout(lambda: cb(view), 0)
+	gsq.dispatch(DOMAIN, f, msg)
