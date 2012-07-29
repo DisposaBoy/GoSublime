@@ -1,5 +1,5 @@
 import sublime
-import subprocess, re, os, threading, tempfile, datetime
+import subprocess, re, os, threading, tempfile, datetime, uuid
 from subprocess import Popen, PIPE
 
 try:
@@ -315,6 +315,96 @@ def do_focus(fn, row, col, win=None, focus_pkg=True):
 def focus(fn, row=0, col=0, win=None, timeout=100, focus_pkg=True):
 	sublime.set_timeout(lambda: do_focus(fn, row, col, win, focus_pkg), timeout)
 
+def sm_cb():
+	global sm_text
+	global sm_set_text
+	global sm_frame
+
+	with sm_lck:
+		ntasks = len(sm_tasks)
+		tm = sm_tm
+		s = sm_text
+		if s:
+			delta = (datetime.datetime.now() - tm)
+			if delta.seconds >= 5:
+				sm_text = ''
+
+	if ntasks > 0:
+		if s:
+			s = u'%s, %s' % (sm_frames[sm_frame], s)
+		else:
+			s = u'%s' % sm_frames[sm_frame]
+
+		if ntasks > 1:
+			s = '%d %s' % (ntasks, s)
+
+		sm_frame = (sm_frame + 1) % len(sm_frames)
+
+	if s != sm_set_text:
+		sm_set_text = s
+		st2_status_message(s)
+
+	sched_sm_cb()
+
+
+def sched_sm_cb():
+	sublime.set_timeout(sm_cb, 250)
+
+def status_message(s):
+	global sm_text
+	global sm_tm
+
+	with sm_lck:
+		sm_text = s
+		sm_tm = datetime.datetime.now()
+
+def begin(domain, message, set_status=True):
+	if message and set_status:
+		status_message('%s: %s' % (domain, message))
+
+	id = uuid.uuid4()
+	dat = {
+		'start': datetime.datetime.now(),
+		'domain': domain,
+		'message': message,
+	}
+
+	with sm_lck:
+		sm_tasks[id] = dat
+
+	return id
+
+def end(task_id):
+	with sm_lck:
+		try:
+			del(sm_tasks[task_id])
+		except:
+			pass
+
+def clear_tasks():
+	with sm_lck:
+		sm_tasks = {}
+
+try:
+	st2_status_message
+except:
+	sm_lck = threading.Lock()
+	sm_tasks = {}
+	sm_frame = 0
+	sm_frames = (
+		u'\u25D2',
+		u'\u25D1',
+		u'\u25D3',
+		u'\u25D0'
+	)
+	sm_tm = datetime.datetime.now()
+	sm_text = ''
+	sm_set_text = ''
+
+	st2_status_message = sublime.status_message
+	sublime.status_message = status_message
+
+	sched_sm_cb()
 
 # init
 settings_obj().clear_on_change("GoSublime.settings")
