@@ -19,15 +19,16 @@ class Prompt(object):
 		self.settings = sublime.load_settings('GoSublime-GsShell.sublime-settings')
 		self.change_history = change_history
 
-	def on_done(self, s):
+	def on_done(self, s, fmt_save=True):
 		fn = self.view.file_name()
 		win = self.view.window()
 		if fn and win:
 			basedir = os.path.dirname(fn)
-			for v in win.views():
-				vfn = v.file_name()
-				if vfn and os.path.dirname(vfn) == basedir and vfn.endswith('.go'):
-					v.run_command('gs_fmt_save')
+			if fmt_save:
+				for v in win.views():
+					vfn = v.file_name()
+					if vfn and os.path.dirname(vfn) == basedir and vfn.endswith('.go'):
+						v.run_command('gs_fmt_save')
 
 		# above we do some saves - thus creating a race so push this back to the end of the queue
 		def cb(s):
@@ -144,7 +145,7 @@ class GsShellCommand(sublime_plugin.WindowCommand):
 		view = gs.active_valid_go_view(self.window)
 		return bool(view)
 
-	def run(self, prompt="go ", run=""):
+	def run(self, prompt="go ", run="", fmt_save=True):
 		view = gs.active_valid_go_view(self.window)
 		if not view:
 			gs.notice(DOMAIN, "this not a source.go view")
@@ -153,6 +154,6 @@ class GsShellCommand(sublime_plugin.WindowCommand):
 		run = run.strip()
 		p = Prompt(view, run == "")
 		if run:
-			p.on_done(run)
+			p.on_done(run, fmt_save)
 		else:
 			p.panel = self.window.show_input_panel("GsShell", prompt, p.on_done, p.on_change, None)
