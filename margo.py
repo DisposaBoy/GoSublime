@@ -1,6 +1,6 @@
 import subprocess, httplib, urllib, json, traceback, os
 import sublime
-import gscommon as gs, gsdepends
+import gscommon as gs, gsdepends, gsq
 
 class Conn(object):
 	def __init__(self):
@@ -124,3 +124,29 @@ def doc(filename, src, offset):
 		'tab_indent': gs.setting('fmt_tab_indent'),
 		'tab_width': gs.setting('fmt_tab_width'),
 	}, [])
+
+def call(path, args={}, default={}, cb=None, message='', fail_early=False):
+	try:
+		if args is None:
+			a = ''
+		elif isinst(args, {}):
+			a = {
+				'env': gs.env(),
+				'tab_indent': gs.setting('fmt_tab_indent'),
+				'tab_width': gs.setting('fmt_tab_width'),
+			}
+			for k, v in args.iteritems():
+				if v is None:
+					v = ''
+				a[k] = v
+		else:
+			a = args
+	except:
+		a = args
+
+	def f():
+		res, err = post(path, a, default, fail_early)
+		if cb:
+			sublime.set_timeout(lambda: cb(res, err), 0)
+
+	gsq.dispatch(DOMAIN, f, 'call %s: %s' % (path, message))
