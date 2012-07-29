@@ -31,21 +31,32 @@ conn = Conn()
 def isinst(v, base):
 	return isinstance(v, type(base))
 
-def post(path, a, default, fail_early=False):
+def post(path, a, default, fail_early=False, can_block=False):
 	resp = None
+
 	try:
 		params = urllib.urlencode({ 'data': json.dumps(a) })
 		headers = {
 			"Content-type": "application/x-www-form-urlencoded",
 			"Accept": "application/json; charset=utf-8"
 		}
+	except Exception as ex:
+		return (default, ('MarGo: %s' % ex))
+
+	try:
 		resp = conn.post(path, params, headers)
 	except Exception as ex:
-		err = 'MarGo: %s' % ex
-		# gsdepeds.hello calls us...
-		if not fail_early:
-			gsdepends.dispatch(gsdepends.hello)
-		return (default, err)
+		if can_block:
+			gsdepends.do_hello()
+			try:
+				resp = conn.post(path, params, headers)
+			except Exception as ex:
+				return (default, ('MarGo: %s' % ex))
+		else:
+			# gsdepeds.hello calls us...
+			if not fail_early:
+				gsdepends.dispatch(gsdepends.hello)
+			return (default, ('MarGo: %s' % ex))
 
 	if not isinst(resp, {}):
 		resp = {}
@@ -117,7 +128,7 @@ def doc(filename, src, offset):
 		'tab_width': gs.setting('fmt_tab_width'),
 	}, [])
 
-def call(path='/', args={}, default={}, cb=None, message='', fail_early=False):
+def call(path='/', args={}, default={}, cb=None, message=''):
 	try:
 		if args is None:
 			a = ''
@@ -137,7 +148,7 @@ def call(path='/', args={}, default={}, cb=None, message='', fail_early=False):
 		a = args
 
 	def f():
-		res, err = post(path, a, default, fail_early)
+		res, err = post(path, a, default, False, True)
 		if cb:
 			sublime.set_timeout(lambda: cb(res, err), 0)
 
