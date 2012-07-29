@@ -168,30 +168,40 @@ class GsBrowseFilesCommand(sublime_plugin.WindowCommand):
 		ents = []
 		m = {}
 		if view:
-			res, err = margo.pkgfiles(gs.basedir_or_cwd(view.file_name()))
-			if err:
-				gs.notice(DOMAIN, err)
-				return
+			def f(res, err):
+				if err:
+					gs.notice(DOMAIN, err)
+					return
 
-			if len(res) == 1:
-				for pkgname, filenames in res.iteritems():
-					for name, fn in filenames.iteritems():
-						m[name] = fn
-						ents.append(name)
-			else:
-				for pkgname, filenames in res.iteritems():
-					for name, fn in filenames.iteritems():
-						s = '(%s) %s' % (pkgname, name)
-						m[s] = fn
-						ents.append(s)
+				if len(res) == 1:
+					for pkgname, filenames in res.iteritems():
+						for name, fn in filenames.iteritems():
+							m[name] = fn
+							ents.append(name)
+				else:
+					for pkgname, filenames in res.iteritems():
+						for name, fn in filenames.iteritems():
+							s = '(%s) %s' % (pkgname, name)
+							m[s] = fn
+							ents.append(s)
 
-		if ents:
-			ents.sort(key = lambda a: a.lower())
-			def cb(i):
-				if i >= 0:
-					gs.focus(m[ents[i]], 0, 0, win)
-			win.show_quick_panel(ents, cb)
-		else:
-			win.show_quick_panel([['', 'No files found']], lambda x: None)
+				if ents:
+					ents.sort(key = lambda a: a.lower())
+					def cb(i):
+						if i >= 0:
+							gs.focus(m[ents[i]], 0, 0, win)
+					win.show_quick_panel(ents, cb)
+				else:
+					win.show_quick_panel([['', 'No files found']], lambda x: None)
+
+			margo.call(
+				path='/pkgfiles',
+				args={
+					'path': gs.basedir_or_cwd(view.file_name()),
+				},
+				default={},
+				cb=f,
+				message='fetching pkg files'
+			)
 
 
