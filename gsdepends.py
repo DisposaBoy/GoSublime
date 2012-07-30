@@ -11,7 +11,7 @@ MARGO_REPO = 'github.com/DisposaBoy/MarGo'
 dep_check_done = False
 
 class GsDependsOnActivated(sublime_plugin.EventListener):
-	def on_activated(self, view):
+	def on_load(self, view):
 		sublime.set_timeout(gs.sync_settings, 0)
 		if not dep_check_done:
 			sublime.set_timeout(lambda: check_depends(view), 0)
@@ -91,10 +91,6 @@ def check_depends(view):
 	if dep_check_done:
 		return
 
-	if not view or not view.window():
-		sublime.set_timeout(lambda: check_depends(view), 1000)
-		return
-
 	if not gs.is_go_source_view(view):
 		return
 
@@ -127,9 +123,12 @@ def check_depends(view):
 			'gocode repo: %s' % GOCODE_REPO,
 			'MarGo repo: %s' % MARGO_REPO,
 		]]
-		view.window().show_quick_panel(items, cb)
-		return
 
+		win = sublime.active_window()
+		if win:
+			win.show_quick_panel(items, cb)
+		gs.println(DOMAIN, '\n'.join(items[0]))
+		return
 	changelog_fn = os.path.join(sublime.packages_path(), 'GoSublime', "CHANGELOG.md")
 	try:
 		with open(changelog_fn) as f:
@@ -176,7 +175,12 @@ def check_depends(view):
 				]
 				win.show_quick_panel(items, on_panel_close)
 				return
-	dispatch(hello)
+
+	margo.call(
+		path='/',
+		args='hello',
+		message='hello MarGo'
+	)
 
 
 
