@@ -36,6 +36,7 @@ GLOBAL_SNIPPETS = [
 	GLOBAL_SNIPPET_IMPORT,
 	(u'func\tfunc {...} \u0282', 'func ${1:name}($2)$3 {\n\t$0\n}'),
 	(u'func\tfunc ([receiver]) {...} \u0282', 'func (${1:receiver} ${2:type}) ${3:name}($4)$5 {\n\t$0\n}'),
+	(u'func handler\thttp.HandlerFunc {...} \u0282', 'func ${1:name}(rw http.ResponseWriter, req *http.Request) {\n\t$0\n}'),
 	(u'func main\tfunc main {...} \u0282', 'func main() {\n\t$0\n}\n'),
 	(u'var\tvar (...) \u0282', 'var (\n\t$1\n)'),
 	(u'const\tconst (...) \u0282', 'const (\n\t$1\n)'),
