@@ -388,6 +388,10 @@ def end(task_id):
 		except:
 			pass
 
+def task(task_id, default=None):
+	with sm_lck:
+		return sm_tasks.get(task_id, default)
+
 def clear_tasks():
 	with sm_lck:
 		sm_tasks = {}
