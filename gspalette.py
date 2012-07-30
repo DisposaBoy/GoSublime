@@ -87,6 +87,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 						itm = ttl
 						self.add_item(itm, self.show_palette, k)
 
+	def do_show_panel(self):
+		# todo cleanup this file and get rid of the old gspalette
 		items = []
 		actions = {}
 		for tup in self.items:
@@ -159,6 +161,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		else:
 			self.add_item(['', 'No errors to report'])
 
+		self.do_show_panel()
+
 
 	def palette_imports(self, view, direct=False):
 		indent = '' if direct else '    '
@@ -191,6 +195,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				self.add_item(' ', self.show_palette, 'imports')
 			for i in sorted(add_imports):
 				self.add_item(i[0], self.toggle_import, (view, i[1]))
+
+			self.do_show_panel()
 
 		margo.call(
 			path='/import_paths',
@@ -254,6 +260,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			if added < 1:
 				self.add_item(['', 'No declarations found'])
 
+			self.do_show_panel()
+
 		margo.call(
 			path='/declarations',
 			args={
@@ -264,3 +272,4 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			cb=f,
 			message='fetching file declarations'
 		)
+
