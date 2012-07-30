@@ -238,21 +238,29 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		self.goto(loc)
 
 	def palette_declarations(self, view, direct=False):
-		res, err = margo.declarations(
-			view.file_name(),
-			view.substr(sublime.Region(0, view.size()))
-		)
-		if err:
-			gs.notice('GsDeclarations', err)
-		else:
-			decls = res.get('file_decls', [])
-			decls.sort(key=lambda v: v.get('row', 0))
-			added = 0
-			for i, v in enumerate(decls):
-				loc = Loc(v['fn'], v['row'], v['col'])
-				s = '%s %s' % (v['kind'], (v['repr'] or v['name']))
-				self.add_item(s, self.jump_to, (view, loc))
-				added += 1
+		def f(res, err):
+			if err:
+				gs.notice('GsDeclarations', err)
+			else:
+				decls = res.get('file_decls', [])
+				decls.sort(key=lambda v: v.get('row', 0))
+				added = 0
+				for i, v in enumerate(decls):
+					loc = Loc(v['fn'], v['row'], v['col'])
+					s = '%s %s' % (v['kind'], (v['repr'] or v['name']))
+					self.add_item(s, self.jump_to, (view, loc))
+					added += 1
 
-		if added < 1:
-			self.add_item(['', 'No declarations found'])
+			if added < 1:
+				self.add_item(['', 'No declarations found'])
+
+		margo.call(
+			path='/declarations',
+			args={
+				'fn': view.file_name(),
+				'src': view.substr(sublime.Region(0, view.size())),
+			},
+			default={},
+			cb=f,
+			message='fetching file declarations'
+		)
