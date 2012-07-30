@@ -358,7 +358,7 @@ def status_message(s):
 		sm_text = s
 		sm_tm = datetime.datetime.now()
 
-def begin(domain, message, set_status=True):
+def begin(domain, message, set_status=True, cancel=None):
 	if message and set_status:
 		status_message('%s: %s' % (domain, message))
 
@@ -367,6 +367,7 @@ def begin(domain, message, set_status=True):
 		'start': datetime.datetime.now(),
 		'domain': domain,
 		'message': message,
+		'cancel': cancel,
 	}
 
 	with sm_lck:
