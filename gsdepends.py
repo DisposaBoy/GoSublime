@@ -13,12 +13,12 @@ dep_check_done = False
 class GsDependsOnActivated(sublime_plugin.EventListener):
 	def on_load(self, view):
 		sublime.set_timeout(gs.sync_settings, 0)
-		if not dep_check_done:
-			sublime.set_timeout(lambda: check_depends(view), 0)
+		if not dep_check_done and gs.is_go_source_view(view):
+			margo.dispatch(check_depends, 'checking dependencies')
 
 class GsUpdateDeps(sublime_plugin.TextCommand):
 	def run(self, edit):
-		run_go_get(self.view)
+		run_go_get()
 
 def split_changes(s):
 	changes = []
@@ -75,7 +75,7 @@ def hello():
 	else:
 		call_cmd(['gocode'])
 
-def run_go_get(view):
+def run_go_get():
 	msg = 'Installing/updating gocode and MarGo...'
 	def f():
 		out, err, _ = gs.runcmd(['go', 'get', '-u', '-v', GOCODE_REPO, MARGO_REPO])
@@ -86,12 +86,9 @@ def run_go_get(view):
 		do_hello(True)
 	dispatch(f, msg)
 
-def check_depends(view):
+def check_depends():
 	global dep_check_done
 	if dep_check_done:
-		return
-
-	if not gs.is_go_source_view(view):
 		return
 
 	dep_check_done = True
@@ -116,7 +113,7 @@ def check_depends(view):
 	if missing:
 		def cb(i):
 			if i == 0:
-				run_go_get(view)
+				run_go_get()
 		items = [[
 			'GoSublime depends on gocode and MarGo',
 			'Install %s (using `go get`)' % ', '.join(missing),
@@ -148,9 +145,9 @@ def check_depends(view):
 
 			def on_panel_close(i):
 				if i == 1 or i == 2:
-					view = win.open_file(changelog_fn)
+					win.open_file(changelog_fn)
 					if i == 1:
-						run_go_get(view)
+						run_go_get()
 						settings.set('tracking_rev', new_rev)
 						sublime.save_settings(settings_fn)
 
