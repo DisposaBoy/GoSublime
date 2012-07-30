@@ -83,7 +83,7 @@ def run_go_get():
 		call_cmd(['gocode', 'close'])
 		gs.notice(DOMAIN, '%s done' % msg)
 		gs.println(DOMAIN, '%s done\n%s%s' % (msg, out, err))
-		do_hello(True)
+		do_hello()
 	dispatch(f, msg)
 
 def check_depends():
