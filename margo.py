@@ -111,23 +111,6 @@ def imports(filename, src, toggle):
 		'tab_width': gs.setting('fmt_tab_width'),
 	}, {})
 
-def import_paths(filename, src):
-	return post('/import_paths', {
-		'fn': filename or '',
-		'src': src,
-		'env': gs.env(),
-	}, {})
-
-def doc(filename, src, offset):
-	return post('/doc', {
-		'fn': filename or '',
-		'src': src,
-		'offset': offset,
-		'env': gs.env(),
-		'tab_indent': gs.setting('fmt_tab_indent'),
-		'tab_width': gs.setting('fmt_tab_width'),
-	}, [])
-
 def call(path='/', args={}, default={}, cb=None, message=''):
 	try:
 		if args is None:
