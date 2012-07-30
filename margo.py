@@ -152,4 +152,8 @@ def call(path='/', args={}, default={}, cb=None, message=''):
 		if cb:
 			sublime.set_timeout(lambda: cb(res, err), 0)
 
-	gsq.dispatch(DOMAIN, f, 'call %s: %s' % (path, message))
+	dispatch(f, 'call %s: %s' % (path, message))
+
+def dispatch(f, msg):
+	gsq.dispatch(DOMAIN, f, msg)
+
