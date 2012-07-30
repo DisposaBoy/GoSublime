@@ -163,34 +163,44 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def palette_imports(self, view, direct=False):
 		indent = '' if direct else '    '
 		src = view.substr(sublime.Region(0, view.size()))
-		im, err = margo.import_paths(view.file_name(), src)
-		if err:
-			gs.notice(DOMAIN, err)
-			return
+		def f(im, err):
+			if err:
+				gs.notice(DOMAIN, err)
+				return
 
-		delete_imports = []
-		add_imports = []
-		for path in im.get('paths', []):
-			skipAdd = False
-			for i in im.get('imports', []):
-				if i.get('path') == path:
-					skipAdd = True
-					name = i.get('name', '')
-					if not name:
-						name = basename(path)
-					if name == path:
-						delete_imports.append(('%sdelete: %s' % (indent, name), i))
-					else:
-						delete_imports.append(('%sdelete: %s ( %s )' % (indent, name, path), i))
+			delete_imports = []
+			add_imports = []
+			for path in im.get('paths', []):
+				skipAdd = False
+				for i in im.get('imports', []):
+					if i.get('path') == path:
+						skipAdd = True
+						name = i.get('name', '')
+						if not name:
+							name = basename(path)
+						if name == path:
+							delete_imports.append(('%sdelete: %s' % (indent, name), i))
+						else:
+							delete_imports.append(('%sdelete: %s ( %s )' % (indent, name, path), i))
 
-			if not skipAdd:
-				add_imports.append(('%s%s' % (indent, path), {'path': path, 'add': True}))
-		for i in sorted(delete_imports):
-			self.add_item(i[0], self.toggle_import, (view, i[1]))
-		if len(delete_imports) > 0:
-			self.add_item(' ', self.show_palette, 'imports')
-		for i in sorted(add_imports):
-			self.add_item(i[0], self.toggle_import, (view, i[1]))
+				if not skipAdd:
+					add_imports.append(('%s%s' % (indent, path), {'path': path, 'add': True}))
+			for i in sorted(delete_imports):
+				self.add_item(i[0], self.toggle_import, (view, i[1]))
+			if len(delete_imports) > 0:
+				self.add_item(' ', self.show_palette, 'imports')
+			for i in sorted(add_imports):
+				self.add_item(i[0], self.toggle_import, (view, i[1]))
+
+		margo.call(
+			path='/import_paths',
+			args={
+				'fn': view.file_name(),
+				'src': src,
+			},
+			cb=f,
+			message='fetching pkg import paths'
+		)
 
 	def toggle_import(self, a):
 		global last_import_path
