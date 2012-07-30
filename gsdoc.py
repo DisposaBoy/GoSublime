@@ -19,40 +19,52 @@ class GsDocCommand(sublime_plugin.TextCommand):
 		doc = ''
 		pt = view.sel()[0].begin()
 		src = view.substr(sublime.Region(0, view.size()))
-		docs, err = margo.doc(view.file_name(), src, pt)
-		if err:
-			self.show_output('// Error: %s' % err)
-		elif docs:
-			if mode == "goto":
-				fn = ''
-				flags = 0
-				if len(docs) > 0:
-					d = docs[0]
-					fn = d.get('fn', '')
-					row = d.get('row', 0)
-					col = d.get('col', 0)
-					if fn:
-						gs.println('opening %s:%s:%s' % (fn, row, col))
-						gs.focus(fn, row, col)
-						return
-				self.show_output("%s: cannot find definition" % DOMAIN)
-			elif mode == "hint":
-				s = []
-				for d in docs:
-					name = d.get('name', '')
-					if name:
-						kind = d.get('kind', '')
-						pkg = d.get('pkg', '')
-						if pkg:
-							name = '%s.%s' % (pkg, name)
-						src = d.get('src', '')
-						if src:
-							src = '\n//\n%s' % src
-						doc = '// %s %s%s' % (name, kind, src)
+		def f(docs, err):
+			if err:
+				self.show_output('// Error: %s' % err)
+			elif docs:
+				if mode == "goto":
+					fn = ''
+					flags = 0
+					if len(docs) > 0:
+						d = docs[0]
+						fn = d.get('fn', '')
+						row = d.get('row', 0)
+						col = d.get('col', 0)
+						if fn:
+							gs.println('opening %s:%s:%s' % (fn, row, col))
+							gs.focus(fn, row, col)
+							return
+					self.show_output("%s: cannot find definition" % DOMAIN)
+				elif mode == "hint":
+					s = []
+					for d in docs:
+						name = d.get('name', '')
+						if name:
+							kind = d.get('kind', '')
+							pkg = d.get('pkg', '')
+							if pkg:
+								name = '%s.%s' % (pkg, name)
+							src = d.get('src', '')
+							if src:
+								src = '\n//\n%s' % src
+							doc = '// %s %s%s' % (name, kind, src)
 
-					s.append(doc)
-				doc = '\n\n\n'.join(s).strip()
-		self.show_output(doc or "// %s: no docs found" % DOMAIN)
+						s.append(doc)
+					doc = '\n\n\n'.join(s).strip()
+			self.show_output(doc or "// %s: no docs found" % DOMAIN)
+
+		margo.call(
+			path='/doc',
+			args={
+				'fn': view.file_name(),
+				'src': src,
+				'offset': pt,
+			},
+			default=[],
+			cb=f,
+			message='fetching docs'
+		)
 
 class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 	def is_enabled(self):
