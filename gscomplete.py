@@ -245,7 +245,6 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 		coffset = 'c%d' % offset
 		sel = m.group(1)
 		name = m.group(2)
-		print('match', sel, name)
 		candidates = []
 		src = view.substr(sublime.Region(0, view.size()))
 		fn = view.file_name() or '<stdin>'
