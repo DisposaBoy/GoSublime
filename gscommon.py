@@ -141,6 +141,8 @@ def println(*a):
 		print(str(s).strip())
 	print('--------------------------------')
 
+debug = println
+
 def notice(domain, txt):
 	txt = "%s: %s" % (domain, txt)
 	println(txt)
@@ -187,13 +189,16 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 	sublime.set_timeout(lambda: cb(panel_name, s, print_output, syntax_file), 0)
 
 def is_go_source_view(view=None, strict=True):
-	if not view:
+	if view is None:
 		return False
 
-	if strict:
-		return view.score_selector(view.sel()[0].begin(), 'source.go') > 0
+	selector_match = view.score_selector(view.sel()[0].begin(), 'source.go') > 0
+	if selector_match:
+		return True
 
-	# todo: check the directory tree as well
+	if strict:
+		return False
+
 	fn = view.file_name() or ''
 	return fn.lower().endswith('.go')
 
