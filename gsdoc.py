@@ -65,31 +65,38 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 
 		current = "Current Package"
 
-		im, _ = margo.import_paths('', '')
-		paths = im.get('paths', [])
-		paths.sort()
-		paths.insert(0, current)
+		def f(im, _):
+			paths = im.get('paths', [])
+			paths.sort()
+			paths.insert(0, current)
 
-		def cb(i):
-			if i == 0:
-				vfn = gs.view_fn(view)
-				src = gs.view_src(view)
-				pkg_dir = ''
-				if view.file_name():
-					pkg_dir = os.path.dirname(view.file_name())
-				self.present(vfn, src, pkg_dir)
-			elif i > 0:
-				self.present('', '', paths[i])
+			def cb(i):
+				if i == 0:
+					vfn = gs.view_fn(view)
+					src = gs.view_src(view)
+					pkg_dir = ''
+					if view.file_name():
+						pkg_dir = os.path.dirname(view.file_name())
+					self.present(vfn, src, pkg_dir)
+				elif i > 0:
+					self.present('', '', paths[i])
 
-		if paths:
-			if dir == '.':
-				cb(0)
-			elif dir:
-				self.present('', '', dir)
+			if paths:
+				if dir == '.':
+					cb(0)
+				elif dir:
+					self.present('', '', dir)
+				else:
+					win.show_quick_panel(paths, cb)
 			else:
-				win.show_quick_panel(paths, cb)
-		else:
-			win.show_quick_panel([['', 'No package paths found']], lambda x: None)
+				win.show_quick_panel([['', 'No package paths found']], lambda x: None)
+
+		margo.call(
+			path='/import_paths',
+			args={},
+			cb=f,
+			message='fetching imprt paths'
+		)
 
 
 	def present(self, vfn, src, pkg_dir):
