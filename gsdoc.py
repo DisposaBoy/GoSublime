@@ -16,10 +16,10 @@ class GsDocCommand(sublime_plugin.TextCommand):
 		if (not gs.is_go_source_view(view)) or (mode not in ['goto', 'hint']):
 			return
 
-		doc = ''
 		pt = view.sel()[0].begin()
 		src = view.substr(sublime.Region(0, view.size()))
 		def f(docs, err):
+			doc = ''
 			if err:
 				self.show_output('// Error: %s' % err)
 			elif docs:
@@ -116,33 +116,45 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 		if win is None:
 			return
 
-		res, err = margo.declarations(vfn, src, pkg_dir)
-		if err:
-			gs.notice(DOMAIN, err)
-			return
+		def f(res, err):
+			if err:
+				gs.notice(DOMAIN, err)
+				return
 
-		decls = res.get('file_decls', [])
-		for d in res.get('pkg_decls', []):
-			if not vfn or d['fn'] != vfn:
-				decls.append(d)
+			decls = res.get('file_decls', [])
+			for d in res.get('pkg_decls', []):
+				if not vfn or d['fn'] != vfn:
+					decls.append(d)
 
-		for d in decls:
-			d['ent'] = '%s %s' % (d['kind'], (d['repr'] or d['name']))
+			for d in decls:
+				d['ent'] = '%s %s' % (d['kind'], (d['repr'] or d['name']))
 
-		ents = []
-		decls.sort(key=lambda d: d['ent'])
-		for d in decls:
-			ents.append(d['ent'])
+			ents = []
+			decls.sort(key=lambda d: d['ent'])
+			for d in decls:
+				ents.append(d['ent'])
 
-		def cb(i):
-			if i >= 0:
-				d = decls[i]
-				gs.focus(d['fn'], d['row'], d['col'], win)
+			def cb(i):
+				if i >= 0:
+					d = decls[i]
+					gs.focus(d['fn'], d['row'], d['col'], win)
 
-		if ents:
-			win.show_quick_panel(ents, cb)
-		else:
-			win.show_quick_panel([['', 'No declarations found']], lambda x: None)
+			if ents:
+				win.show_quick_panel(ents, cb)
+			else:
+				win.show_quick_panel([['', 'No declarations found']], lambda x: None)
+
+		margo.call(
+			path='/declarations',
+			args={
+				'fn': vfn,
+				'src': src,
+				'pkg_dir': pkg_dir,
+			},
+			default={},
+			cb=f,
+			message='fetching pkg declarations'
+		)
 
 
 class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
