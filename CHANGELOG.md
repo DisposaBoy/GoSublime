@@ -1,3 +1,6 @@
+## r12.07.31-1
+	* add platform info e.g (linux, amd64) to pkg declarations list (`ctrl+dot`,`ctrl+l`)
+
 ## r12.07.28-2
 	* add command palette entry to show the build output
 	    press `ctrl+dot`,`ctrl+dot` and start typing `build output`
