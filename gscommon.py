@@ -73,6 +73,7 @@ GOOSES = [
 	'openbsd',
 	'plan9',
 	'windows',
+	'unix',
 ]
 
 GOOSARCHES = []
