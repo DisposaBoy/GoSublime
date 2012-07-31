@@ -1,8 +1,11 @@
 import gscommon as gs, margo
 import sublime, sublime_plugin
-import os
+import os, re
 
 DOMAIN = 'GsDoc'
+
+GOOS_PAT = re.compile(r'_(%s)' % '|'.join(gs.GOOSES))
+GOARCH_PAT = re.compile(r'_(%s)' % '|'.join(gs.GOARCHES))
 
 class GsDocCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -127,7 +130,15 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 					decls.append(d)
 
 			for d in decls:
-				d['ent'] = '%s %s' % (d['kind'], (d['repr'] or d['name']))
+				dname = (d['repr'] or d['name'])
+				trailer = []
+				trailer.extend(GOOS_PAT.findall(d['fn']))
+				trailer.extend(GOARCH_PAT.findall(d['fn']))
+				if trailer:
+					trailer = ' (%s)' % ', '.join(trailer)
+				else:
+					trailer = ''
+				d['ent'] = '%s %s%s' % (d['kind'], dname, trailer)
 
 			ents = []
 			decls.sort(key=lambda d: d['ent'])
