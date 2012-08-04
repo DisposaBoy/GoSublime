@@ -91,14 +91,18 @@ IGNORED_SCOPES = frozenset([
 	'comment.block.go'
 ])
 
-def temp_file(suffix='', prefix='', delete=True):
-	tmpdir = os.path.join(tempfile.gettempdir(), NAME)
+def temp_dir(subdir=''):
+	tmpdir = os.path.join(tempfile.gettempdir(), NAME, subdir)
+	err = ''
 	try:
 		os.mkdir(tmpdir)
 	except Exception as ex:
-		pass
+		err = str(ex)
+	return (tmpdir, err)
+
+def temp_file(suffix='', prefix='', delete=True):
 	try:
-		f = tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=tmpdir, delete=delete)
+		f = tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=temp_dir(), delete=delete)
 	except Exception as ex:
 		return (None, 'Error: %s' % ex)
 	return (f, '')
@@ -273,7 +277,7 @@ def sync_settings():
 		_settings['env'] = e
 
 def view_fn(view):
-	if view:
+	if view is not None:
 		if view.file_name():
 			return view.file_name()
 		return 'view://%s' % view.id()
