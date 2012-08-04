@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import gscommon as gs
-import re, os, httplib
+import re, os, httplib, hashlib
 
 DOMAIN = "GsShell"
 GO_RUN_PAT = re.compile(r'^go\s+(run|play)$', re.IGNORECASE)
@@ -65,21 +65,23 @@ class Prompt(object):
 			if GO_RUN_PAT.match(s):
 				if not file_name:
 					# todo: clean this up after the command runs
-					f, err = gs.temp_file(suffix='.go', prefix=DOMAIN+'-play.', delete=False)
-					if err:
-						self.show_output(err)
-						return
-					else:
-						try:
+					err = ''
+					tdir, _ = gs.temp_dir('play')
+					file_name = hashlib.sha1(gs.view_fn(self.view) or 'a').hexdigest()
+					file_name = os.path.join(tdir, ('%s.go' % file_name))
+					try:
+						with open(file_name, 'w') as f:
 							src = self.view.substr(sublime.Region(0, self.view.size()))
 							if isinstance(src, unicode):
 								src = src.encode('utf-8')
 							f.write(src)
-							f.close()
-						except Exception as ex:
-							self.show_output('Error: %s' % ex)
-							return
-						file_name = f.name
+					except Exception as ex:
+						err = str(ex)
+
+					if err:
+						self.show_output('Error: %s' % err)
+						return
+
 				s = ['go', 'run', file_name]
 
 			self.view.window().run_command("exec", { 'kill': True })
