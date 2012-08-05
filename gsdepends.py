@@ -34,10 +34,10 @@ def call_cmd(cmd):
 	return not exc
 
 def do_hello():
-	global hello_sarting
-	if hello_sarting:
+	global hello_starting
+	if hello_starting:
 		return
-	hello_sarting = True
+	hello_starting = True
 
 	tid = gs.begin(DOMAIN, 'Starting Gocode', False)
 	call_cmd(['gocode'])
@@ -61,13 +61,13 @@ def do_hello():
 			gs.notice(DOMAIN, err)
 		elif out:
 			gs.notice(DOMAIN, 'MarGo started %s' % out)
-		hello_sarting = False
+		hello_starting = False
 	else:
 		err = 'Missing `margo_cmd`'
 		gs.notice("MarGo", err)
-		hello_sarting = False
+		hello_starting = False
 
-hello_sarting = False
+hello_starting = False
 def hello():
 	_, err = margo.post('/', 'hello', {}, True, False)
 	if err:
@@ -91,93 +91,95 @@ def check_depends():
 	if dep_check_done:
 		return
 
-	dep_check_done = True
+	def f():
+		e = gs.env()
+		if not (e.get('GOROOT') and e.get('GOPATH')):
+			gs.notice(DOMAIN, "GOPATH and/or GOROOT appear to be unset")
 
-	e = gs.env()
-	if not (e.get('GOROOT') and e.get('GOPATH')):
-		gs.notice(DOMAIN, "GOPATH and/or GOROOT appear to be unset")
+		if not call_cmd(['go', '--help']):
+			gs.notice(DOMAIN, 'The `go` command cannot be found')
+			return
 
-	if not call_cmd(['go', '--help']):
-		gs.notice(DOMAIN, 'The `go` command cannot be found')
-		return
+		missing = []
+		cmds = [
+			['gocode', '--help'],
+			['MarGo', '--help'],
+		]
+		for cmd in cmds:
+			if not call_cmd(cmd):
+				missing.append(cmd[0])
 
-	missing = []
-	cmds = [
-		['gocode', '--help'],
-		['MarGo', '--help'],
-	]
-	for cmd in cmds:
-		if not call_cmd(cmd):
-			missing.append(cmd[0])
+		if missing:
+			def cb(i):
+				if i == 0:
+					run_go_get()
+			items = [[
+				'GoSublime depends on gocode and MarGo',
+				'Install %s (using `go get`)' % ', '.join(missing),
+				'gocode repo: %s' % GOCODE_REPO,
+				'MarGo repo: %s' % MARGO_REPO,
+			]]
 
-	if missing:
-		def cb(i):
-			if i == 0:
-				run_go_get()
-		items = [[
-			'GoSublime depends on gocode and MarGo',
-			'Install %s (using `go get`)' % ', '.join(missing),
-			'gocode repo: %s' % GOCODE_REPO,
-			'MarGo repo: %s' % MARGO_REPO,
-		]]
+			win = sublime.active_window()
+			if win:
+				win.show_quick_panel(items, cb)
+			gs.println(DOMAIN, '\n'.join(items[0]))
+			return
+		changelog_fn = os.path.join(sublime.packages_path(), 'GoSublime', "CHANGELOG.md")
+		try:
+			with open(changelog_fn) as f:
+				s = f.read()
+		except IOError:
+			gs.notice(DOMAIN, traceback.format_exc())
+			return
 
-		win = sublime.active_window()
-		if win:
-			win.show_quick_panel(items, cb)
-		gs.println(DOMAIN, '\n'.join(items[0]))
-		return
-	changelog_fn = os.path.join(sublime.packages_path(), 'GoSublime', "CHANGELOG.md")
-	try:
-		with open(changelog_fn) as f:
-			s = f.read()
-	except IOError:
-		gs.notice(DOMAIN, traceback.format_exc())
-		return
+		changes = split_changes(s)
+		if changes:
+			win = sublime.active_window()
+			if win:
+				settings_fn = 'GoSublime-GsDepends.sublime-settings'
+				settings = sublime.load_settings(settings_fn)
+				new_rev = changes[-1][0]
+				old_rev = settings.get('tracking_rev', '')
 
-	changes = split_changes(s)
-	if changes:
-		win = sublime.active_window()
-		if win:
-			settings_fn = 'GoSublime-GsDepends.sublime-settings'
-			settings = sublime.load_settings(settings_fn)
-			new_rev = changes[-1][0]
-			old_rev = settings.get('tracking_rev', '')
-
-			def on_panel_close(i):
-				if i == 1 or i == 2:
-					win.open_file(changelog_fn)
-					if i == 1:
-						run_go_get()
-						settings.set('tracking_rev', new_rev)
-						sublime.save_settings(settings_fn)
+				def on_panel_close(i):
+					if i == 1 or i == 2:
+						win.open_file(changelog_fn)
+						if i == 1:
+							run_go_get()
 
 
-			if new_rev > old_rev:
-				items = [
-					[
-						" ",
-						"GoSublime updated to %s" % new_rev,
-						" ",
-					],
-					[
-						"Install/Update dependencies: Gocode, MarGo",
-						"go get -u %s" % GOCODE_REPO,
-						"go get -u %s" % MARGO_REPO,
-					],
-					[
-						"View changelog",
-						"Packages/GoSublime/CHANGELOG.md"
-						" ",
+				if new_rev > old_rev:
+					items = [
+						[
+							" ",
+							"GoSublime updated to %s" % new_rev,
+							" ",
+						],
+						[
+							"Install/Update dependencies: Gocode, MarGo",
+							"go get -u %s" % GOCODE_REPO,
+							"go get -u %s" % MARGO_REPO,
+						],
+						[
+							"View changelog",
+							"Packages/GoSublime/CHANGELOG.md"
+							" ",
+						]
 					]
-				]
-				win.show_quick_panel(items, on_panel_close)
-				return
+					settings.set('tracking_rev', new_rev)
+					sublime.save_settings(settings_fn)
+					win.show_quick_panel(items, on_panel_close)
+					return
 
-	margo.call(
-		path='/',
-		args='hello',
-		message='hello MarGo'
-	)
+		margo.call(
+			path='/',
+			args='hello',
+			message='hello MarGo'
+		)
+
+	dep_check_done = True
+	sublime.set_timeout(f, 0)
 
 
 
