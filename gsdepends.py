@@ -34,10 +34,10 @@ def call_cmd(cmd):
 	return not exc
 
 def do_hello():
-	global hello_sarting
-	if hello_sarting:
+	global hello_starting
+	if hello_starting:
 		return
-	hello_sarting = True
+	hello_starting = True
 
 	tid = gs.begin(DOMAIN, 'Starting Gocode', False)
 	call_cmd(['gocode'])
@@ -61,13 +61,13 @@ def do_hello():
 			gs.notice(DOMAIN, err)
 		elif out:
 			gs.notice(DOMAIN, 'MarGo started %s' % out)
-		hello_sarting = False
+		hello_starting = False
 	else:
 		err = 'Missing `margo_cmd`'
 		gs.notice("MarGo", err)
-		hello_sarting = False
+		hello_starting = False
 
-hello_sarting = False
+hello_starting = False
 def hello():
 	_, err = margo.post('/', 'hello', {}, True, False)
 	if err:
