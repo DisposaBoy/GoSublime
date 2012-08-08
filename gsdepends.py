@@ -10,10 +10,12 @@ MARGO_REPO = 'github.com/DisposaBoy/MarGo'
 
 dep_check_done = False
 
-class GsDependsOnActivated(sublime_plugin.EventListener):
+class GsDependsOnLoad(sublime_plugin.EventListener):
 	def on_load(self, view):
+		global dep_check_done
 		sublime.set_timeout(gs.sync_settings, 0)
 		if not dep_check_done and gs.is_go_source_view(view):
+			dep_check_done = True
 			margo.dispatch(check_depends, 'checking dependencies')
 
 class GsUpdateDeps(sublime_plugin.TextCommand):
@@ -87,33 +89,33 @@ def run_go_get():
 	dispatch(f, msg)
 
 def check_depends():
-	global dep_check_done
-	if dep_check_done:
-		return
-
-	dep_check_done = True
-
-	e = gs.env()
-	if not (e.get('GOROOT') and e.get('GOPATH')):
-		gs.notice(DOMAIN, "GOPATH and/or GOROOT appear to be unset")
-
-	if not call_cmd(['go', '--help']):
+	gr = gs.go_env_goroot()
+	if not gr:
 		gs.notice(DOMAIN, 'The `go` command cannot be found')
 		return
 
+	e = gs.env()
+	if not e.get('GOROOT'):
+		os.environ['GOROOT'] = gr
+	elif not e.get('GOPATH'):
+		gs.notice(DOMAIN, "GOPATH and/or GOROOT appear to be unset")
+
+	gs.println(
+		'GoSublime: checking dependencies',
+		('\tGOROOT is: %s' % e.get('GOROOT', gr)),
+		('\tGOPATH is: %s' % e.get('GOPATH', ''))
+	)
+
 	missing = []
-	cmds = [
-		['gocode', '--help'],
-		['MarGo', '--help'],
-	]
-	for cmd in cmds:
-		if not call_cmd(cmd):
-			missing.append(cmd[0])
+	for cmd in ('gocode', 'MarGo'):
+		if not call_cmd([cmd, '--help']):
+			missing.append(cmd)
 
 	if missing:
-		def cb(i):
+		def cb(i, _):
 			if i == 0:
 				run_go_get()
+
 		items = [[
 			'GoSublime depends on gocode and MarGo',
 			'Install %s (using `go get`)' % ', '.join(missing),
@@ -121,11 +123,10 @@ def check_depends():
 			'MarGo repo: %s' % MARGO_REPO,
 		]]
 
-		win = sublime.active_window()
-		if win:
-			win.show_quick_panel(items, cb)
+		gs.show_quick_panel(items, cb)
 		gs.println(DOMAIN, '\n'.join(items[0]))
 		return
+
 	changelog_fn = os.path.join(sublime.packages_path(), 'GoSublime', "CHANGELOG.md")
 	try:
 		with open(changelog_fn) as f:
@@ -136,21 +137,19 @@ def check_depends():
 
 	changes = split_changes(s)
 	if changes:
-		win = sublime.active_window()
-		if win:
+		def cb():
 			settings_fn = 'GoSublime-GsDepends.sublime-settings'
 			settings = sublime.load_settings(settings_fn)
 			new_rev = changes[-1][0]
 			old_rev = settings.get('tracking_rev', '')
 
-			def on_panel_close(i):
-				if i == 1 or i == 2:
+			def on_panel_close(i, win):
+				if i > 0:
 					win.open_file(changelog_fn)
 					if i == 1:
 						run_go_get()
 						settings.set('tracking_rev', new_rev)
 						sublime.save_settings(settings_fn)
-
 
 			if new_rev > old_rev:
 				items = [
@@ -170,14 +169,14 @@ def check_depends():
 						" ",
 					]
 				]
-				win.show_quick_panel(items, on_panel_close)
-				return
-
-	margo.call(
-		path='/',
-		args='hello',
-		message='hello MarGo'
-	)
+				gs.show_quick_panel(items, on_panel_close)
+		sublime.set_timeout(cb, 0)
+	else:
+		margo.call(
+			path='/',
+			args='hello',
+			message='hello MarGo'
+		)
 
 
 
