@@ -401,6 +401,18 @@ def clear_tasks():
 	with sm_lck:
 		sm_tasks = {}
 
+def show_quick_panel(items, cb):
+	def f():
+		win = sublime.active_window()
+		if win:
+			win.show_quick_panel(items, lambda i: cb(i, win))
+	sublime.set_timeout(f, 0)
+
+def go_env_goroot():
+	out, _, _ = runcmd(['go env GOROOT'], shell=True)
+	return out.strip()
+
+
 try:
 	st2_status_message
 except:
