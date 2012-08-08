@@ -1,3 +1,7 @@
+## r12.08.08-1
+	* fix which could cause MarGo to take a long time to respond (when accidentally parsing binary files)
+	update MarGo
+
 ## r12.07.31-1
 	* add platform info e.g (linux, amd64) to pkg declarations list (`ctrl+dot`,`ctrl+l`)
 
