@@ -1,3 +1,6 @@
+## r12.08.10-3
+	* `ctrl+dot`,`ctrl+a` is now accessible globally
+
 ## r12.08.10-2
 	* `ctrl+dot`,`ctrl+o` now presents a file list instead of opening a file
 
