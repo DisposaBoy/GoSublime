@@ -412,7 +412,7 @@ def go_env_goroot():
 	out, _, _ = runcmd(['go env GOROOT'], shell=True)
 	return out.strip()
 
-def do_list_dir_tree(dirname, extensions):
+def list_dir_tree(dirname, extensions):
 	lst = []
 
 	try:
@@ -422,7 +422,7 @@ def do_list_dir_tree(dirname, extensions):
 
 			fn = os.path.join(dirname, fn)
 			if os.path.isdir(fn):
-				lst.extend(do_list_dir_tree(fn, extensions))
+				lst.extend(list_dir_tree(fn, extensions))
 			elif extensions:
 				_, ext = os.path.splitext(fn)
 				if ext.lstrip('.') in extensions:
@@ -430,14 +430,9 @@ def do_list_dir_tree(dirname, extensions):
 			else:
 				lst.append(fn)
 	except Exception:
-		raise
 		pass
 
 	return lst
-
-def list_dir_tree(dirname, extensions):
-	return do_list_dir_tree(os.path.abspath(dirname), extensions)
-
 
 
 try:
