@@ -1,5 +1,10 @@
+## r12.08.10-1
+	* `ctrl+dot`,`ctrl+m` now list all relevant files (.go, .c, etc.)
+	    as well all files in the directory tree recursively (sub-packages)
+	    it also now works globally
+
 ## r12.08.08-1
-	* fix which could cause MarGo to take a long time to respond (when accidentally parsing binary files)
+	* fix a bug which could cause MarGo to take a long time to respond (when accidentally parsing binary files)
 	update MarGo
 
 ## r12.07.31-1
