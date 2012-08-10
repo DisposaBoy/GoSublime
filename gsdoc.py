@@ -1,4 +1,4 @@
-import gscommon as gs, margo
+import gscommon as gs, margo, gsq
 import sublime, sublime_plugin
 import os, re
 
@@ -6,6 +6,7 @@ DOMAIN = 'GsDoc'
 
 GOOS_PAT = re.compile(r'_(%s)' % '|'.join(gs.GOOSES))
 GOARCH_PAT = re.compile(r'_(%s)' % '|'.join(gs.GOARCHES))
+PKGFILE_EXTENSIONS = ['go', 'goc', 'c', 'h', 'cc', 'hh', 'hpp', 'asm', 'cpp', 's', 'i']
 
 class GsDocCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -200,50 +201,35 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 			message='fetching pkg dirs'
 		)
 
+def cmp_dir_ents(a, b):
+	ac = a.count('/')
+	bc = b.count('/')
+	if  ac == bc:
+		return cmp(a.lower(), b.lower())
+	return ac - bc
+
+def show_pkgfiles(dirname):
+	ents = []
+	m = {}
+
+	for fn in gs.list_dir_tree(dirname, PKGFILE_EXTENSIONS):
+		name = os.path.relpath(fn, dirname).replace('\\', '/')
+		m[name] = fn
+		ents.append(name)
+	ents.sort(cmp=cmp_dir_ents)
+
+	if ents:
+		def cb(i, win):
+			if i >= 0:
+				gs.focus(m[ents[i]], 0, 0, win)
+		gs.show_quick_panel(ents, cb)
+	else:
+		gs.show_quick_panel([['', 'No files found']])
+
 class GsBrowseFilesCommand(sublime_plugin.WindowCommand):
-	def is_enabled(self):
-		return gs.is_go_source_view(self.window.active_view())
-
 	def run(self):
-		win = self.window
-		view = gs.active_valid_go_view(win=win)
-		ents = []
-		m = {}
-		if view:
-			def f(res, err):
-				if err:
-					gs.notice(DOMAIN, err)
-					return
-
-				if len(res) == 1:
-					for pkgname, filenames in res.iteritems():
-						for name, fn in filenames.iteritems():
-							m[name] = fn
-							ents.append(name)
-				else:
-					for pkgname, filenames in res.iteritems():
-						for name, fn in filenames.iteritems():
-							s = '(%s) %s' % (pkgname, name)
-							m[s] = fn
-							ents.append(s)
-
-				if ents:
-					ents.sort(key = lambda a: a.lower())
-					def cb(i):
-						if i >= 0:
-							gs.focus(m[ents[i]], 0, 0, win)
-					win.show_quick_panel(ents, cb)
-				else:
-					win.show_quick_panel([['', 'No files found']], lambda x: None)
-
-			margo.call(
-				path='/pkgfiles',
-				args={
-					'path': gs.basedir_or_cwd(view.file_name()),
-				},
-				default={},
-				cb=f,
-				message='fetching pkg files'
-			)
+		view = self.window.active_view()
+		dirname = gs.basedir_or_cwd(view.file_name() if view is not None else None)
+		gsq.dispatch('*', lambda: show_pkgfiles(dirname), 'scanning directory for package files')
 
 
