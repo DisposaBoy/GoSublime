@@ -84,8 +84,7 @@
 	},
 	{
 		"keys": ["super+.", "super+a"],
-		"command": "gs_browse_declarations",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "gs_browse_declarations"
 	},
 	{
 		"keys": ["super+.", "super+l"],
