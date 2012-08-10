@@ -1,3 +1,6 @@
+## r12.08.10-2
+	* `ctrl+dot`,`ctrl+o` now presents a file list instead of opening a file
+
 ## r12.08.10-1
 	* `ctrl+dot`,`ctrl+m` now list all relevant files (.go, .c, etc.)
 	    as well all files in the directory tree recursively (sub-packages)
