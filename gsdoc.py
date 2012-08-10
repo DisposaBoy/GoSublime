@@ -171,7 +171,6 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 
 class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 	def run(self):
-		win = self.window
 		def f(res, err):
 			if err:
 				gs.notice(DOMAIN, err)
@@ -185,13 +184,13 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 			ents = m.keys()
 			if ents:
 				ents.sort(key = lambda a: a.lower())
-				def cb(i):
+				def cb(i, win):
 					if i >= 0:
-						fn = m[ents[i]]
-						gs.focus(fn, 0, 0, win)
-				win.show_quick_panel(ents, cb)
+						dirname = gs.basedir_or_cwd(m[ents[i]])
+						win.run_command('gs_browse_files', {'dirname': dirname})
+				gs.show_quick_panel(ents, cb)
 			else:
-				win.show_quick_panel([['', 'No source directories found']], lambda x: None)
+				gs.show_quick_panel([['', 'No source directories found']], lambda x: None)
 
 		margo.call(
 			path='/pkgdirs',
@@ -202,6 +201,7 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 		)
 
 def show_pkgfiles(dirname):
+	dirname = os.path.abspath(dirname)
 	ents = []
 	m = {}
 
@@ -220,9 +220,10 @@ def show_pkgfiles(dirname):
 		gs.show_quick_panel([['', 'No files found']])
 
 class GsBrowseFilesCommand(sublime_plugin.WindowCommand):
-	def run(self):
-		view = self.window.active_view()
-		dirname = gs.basedir_or_cwd(view.file_name() if view is not None else None)
+	def run(self, dirname=''):
+		if not dirname:
+			view = self.window.active_view()
+			dirname = gs.basedir_or_cwd(view.file_name() if view is not None else None)
 		gsq.dispatch('*', lambda: show_pkgfiles(dirname), 'scanning directory for package files')
 
 
