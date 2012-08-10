@@ -145,11 +145,11 @@ def check_depends():
 
 			def on_panel_close(i, win):
 				if i > 0:
+					settings.set('tracking_rev', new_rev)
+					sublime.save_settings(settings_fn)
 					win.open_file(changelog_fn)
 					if i == 1:
 						run_go_get()
-						settings.set('tracking_rev', new_rev)
-						sublime.save_settings(settings_fn)
 
 			if new_rev > old_rev:
 				items = [
