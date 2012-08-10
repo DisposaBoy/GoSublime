@@ -70,50 +70,53 @@ class GsDocCommand(sublime_plugin.TextCommand):
 			message='fetching docs'
 		)
 
+
 class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
-	def is_enabled(self):
-		return gs.is_go_source_view(self.window.active_view())
-
 	def run(self, dir=''):
-		win, view = gs.win_view(None, self.window)
-		if view is None:
-			return
+		if dir == '.':
+			self.present_current()
+		elif dir:
+			self.present('', '', dir)
+		else:
+			def f(res, err):
+				if err:
+					gs.notice(DOMAIN, err)
+					return
 
-		current = "Current Package"
+				ents, m = handle_pkgdirs_res(res)
+				if ents:
+					ents.insert(0, "Current Package")
 
-		def f(im, _):
-			paths = im.get('paths', [])
-			paths.sort()
-			paths.insert(0, current)
+					def cb(i, win):
+						if i == 0:
+							self.present_current()
+						elif i >= 1:
+							self.present('', '', os.path.dirname(m[ents[i]]))
 
-			def cb(i):
-				if i == 0:
-					vfn = gs.view_fn(view)
-					src = gs.view_src(view)
-					pkg_dir = ''
-					if view.file_name():
-						pkg_dir = os.path.dirname(view.file_name())
-					self.present(vfn, src, pkg_dir)
-				elif i > 0:
-					self.present('', '', paths[i])
-
-			if paths:
-				if dir == '.':
-					cb(0)
-				elif dir:
-					self.present('', '', dir)
+					gs.show_quick_panel(ents, cb)
 				else:
-					win.show_quick_panel(paths, cb)
-			else:
-				win.show_quick_panel([['', 'No package paths found']], lambda x: None)
+					gs.show_quick_panel([['', 'No source directories found']])
 
-		margo.call(
-			path='/import_paths',
-			args={},
-			cb=f,
-			message='fetching imprt paths'
-		)
+			margo.call(
+				path='/pkgdirs',
+				args={},
+				default={},
+				cb=f,
+				message='fetching pkg dirs'
+			)
 
+	def present_current(self):
+		pkg_dir = ''
+		view = gs.active_valid_go_view(win=self.window, strict=False)
+		if view:
+			if view.file_name():
+				pkg_dir = os.path.dirname(view.file_name())
+			vfn = gs.view_fn(view)
+			src = gs.view_src(view)
+		else:
+			vfn = ''
+			src = ''
+		self.present(vfn, src, pkg_dir)
 
 	def present(self, vfn, src, pkg_dir):
 		win = self.window
@@ -168,6 +171,15 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 			message='fetching pkg declarations'
 		)
 
+def handle_pkgdirs_res(res):
+	m = {}
+	for root, dirs in res.iteritems():
+		for dir, fn in dirs.iteritems():
+			if not m.get(dir):
+				m[dir] = fn
+	ents = m.keys()
+	ents.sort(key = lambda a: a.lower())
+	return (ents, m)
 
 class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 	def run(self):
@@ -176,21 +188,15 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 				gs.notice(DOMAIN, err)
 				return
 
-			m = {}
-			for root, dirs in res.iteritems():
-				for dir, fn in dirs.iteritems():
-					if not m.get(dir):
-						m[dir] = fn
-			ents = m.keys()
+			ents, m = handle_pkgdirs_res(res)
 			if ents:
-				ents.sort(key = lambda a: a.lower())
 				def cb(i, win):
 					if i >= 0:
 						dirname = gs.basedir_or_cwd(m[ents[i]])
-						win.run_command('gs_browse_files', {'dirname': dirname})
+						win.run_command('gs_browse_files', {'dir': dirname})
 				gs.show_quick_panel(ents, cb)
 			else:
-				gs.show_quick_panel([['', 'No source directories found']], lambda x: None)
+				gs.show_quick_panel([['', 'No source directories found']])
 
 		margo.call(
 			path='/pkgdirs',
@@ -209,7 +215,7 @@ def show_pkgfiles(dirname):
 		name = os.path.relpath(fn, dirname).replace('\\', '/')
 		m[name] = fn
 		ents.append(name)
-	ents.sort()
+	ents.sort(key = lambda a: a.lower())
 
 	if ents:
 		def cb(i, win):
@@ -220,10 +226,10 @@ def show_pkgfiles(dirname):
 		gs.show_quick_panel([['', 'No files found']])
 
 class GsBrowseFilesCommand(sublime_plugin.WindowCommand):
-	def run(self, dirname=''):
-		if not dirname:
+	def run(self, dir=''):
+		if not dir:
 			view = self.window.active_view()
-			dirname = gs.basedir_or_cwd(view.file_name() if view is not None else None)
-		gsq.dispatch('*', lambda: show_pkgfiles(dirname), 'scanning directory for package files')
+			dir = gs.basedir_or_cwd(view.file_name() if view is not None else None)
+		gsq.dispatch('*', lambda: show_pkgfiles(dir), 'scanning directory for package files')
 
 
