@@ -201,13 +201,6 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 			message='fetching pkg dirs'
 		)
 
-def cmp_dir_ents(a, b):
-	ac = a.count('/')
-	bc = b.count('/')
-	if  ac == bc:
-		return cmp(a.lower(), b.lower())
-	return ac - bc
-
 def show_pkgfiles(dirname):
 	ents = []
 	m = {}
@@ -216,7 +209,7 @@ def show_pkgfiles(dirname):
 		name = os.path.relpath(fn, dirname).replace('\\', '/')
 		m[name] = fn
 		ents.append(name)
-	ents.sort(cmp=cmp_dir_ents)
+	ents.sort()
 
 	if ents:
 		def cb(i, win):
