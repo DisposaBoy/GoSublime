@@ -27,7 +27,7 @@ class Prompt(object):
 			if fmt_save:
 				for v in win.views():
 					vfn = v.file_name()
-					if vfn and os.path.dirname(vfn) == basedir and vfn.endswith('.go'):
+					if vfn and v.is_dirty() and os.path.dirname(vfn) == basedir and vfn.endswith('.go'):
 						v.run_command('gs_fmt_save')
 
 		# above we do some saves - thus creating a race so push this back to the end of the queue
