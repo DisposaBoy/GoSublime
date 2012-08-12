@@ -95,7 +95,7 @@ def temp_dir(subdir=''):
 	tmpdir = os.path.join(tempfile.gettempdir(), NAME, subdir)
 	err = ''
 	try:
-		os.mkdir(tmpdir)
+		os.makedirs(tmpdir)
 	except Exception as ex:
 		err = str(ex)
 	return (tmpdir, err)
