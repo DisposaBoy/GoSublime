@@ -29,6 +29,9 @@ class Prompt(object):
 					vfn = v.file_name()
 					if vfn and v.is_dirty() and os.path.dirname(vfn) == basedir and vfn.endswith('.go'):
 						v.run_command('gs_fmt_save')
+		elif fmt_save:
+			self.view.run_command('gs_fmt')
+
 
 		# above we do some saves - thus creating a race so push this back to the end of the queue
 		def cb(s):
