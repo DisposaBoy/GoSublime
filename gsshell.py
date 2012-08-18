@@ -38,7 +38,7 @@ class Prompt(object):
 			file_name = self.view.file_name() or ''
 			s = GO_PLAY_PAT.sub(r'\1go run\2', s)
 			s = s.strip()
-			if s and self.change_history:
+			if s and s.lower() != "go" and self.change_history:
 				hist = self.settings.get('cmd_hist')
 				if not isinstance(hist, dict):
 					hist = {}
