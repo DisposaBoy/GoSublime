@@ -62,7 +62,7 @@ class Prompt(object):
 				except Exception as ex:
 					s = 'Error: %s' % ex
 
-				self.show_output(s)
+				self.show_output(s, focus=True)
 				return
 
 			if GO_RUN_PAT.match(s):
@@ -103,9 +103,10 @@ class Prompt(object):
 
 		sublime.set_timeout(lambda: cb(s), 0)
 
-	def show_output(self, s):
+	def show_output(self, s, focus=False):
 		panel_name = DOMAIN+'-share'
-		panel = self.view.window().get_output_panel(panel_name)
+		win = self.view.window()
+		panel = win.get_output_panel(panel_name)
 		edit = panel.begin_edit()
 		try:
 			panel.set_read_only(False)
@@ -117,6 +118,8 @@ class Prompt(object):
 			panel.end_edit(edit)
 		print('%s output: %s' % (DOMAIN, s))
 		self.view.window().run_command("show_panel", {"panel": "output.%s" % panel_name})
+		if focus:
+			sublime.set_timeout(lambda: win.focus_view(panel), 0)
 
 	def on_change(self, s):
 		if self.panel:
