@@ -57,6 +57,8 @@ class Prompt(object):
 				try:
 					c = httplib.HTTPConnection(host)
 					src = self.view.substr(sublime.Region(0, self.view.size()))
+					if isinstance(src, unicode):
+						src = src.encode('utf-8')
 					c.request('POST', '/share', src, {'User-Agent': 'GoSublime'})
 					s = 'http://%s/p/%s' % (host, c.getresponse().read())
 				except Exception as ex:
