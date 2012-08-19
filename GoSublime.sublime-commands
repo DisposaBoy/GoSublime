@@ -101,5 +101,10 @@
 	{
 		"caption": "GoSublime: Show pending tasks",
 		"command": "gs_show_tasks"
+	},
+	{
+		"caption": "GoSublime: Cancel the currently executing command",
+		"command": "exec",
+		"args": { "kill": true }
 	}
 ]
