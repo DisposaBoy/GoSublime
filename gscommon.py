@@ -18,6 +18,7 @@ _settings = {
 	"fmt_tab_indent": True,
 	"fmt_tab_width": 8,
 	"gslint_enabled": False,
+	"comp_lint_enabled": False,
 	"gslint_timeout": 0,
 	"autocomplete_snippets": False,
 	"autocomplete_tests": False,

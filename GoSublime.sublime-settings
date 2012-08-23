@@ -25,6 +25,9 @@
 	// Whether or not gslint is enabled
 	"gslint_enabled": true,
 
+	// Whether or not comp lint is enabled (this might conflict with gslint)
+	"comp_lint_enabled": false,
+
 	// how long to wait after the last keystroke before the gslint_cmd command is run (in milliseconds)
 	"gslint_timeout": 100,
 
