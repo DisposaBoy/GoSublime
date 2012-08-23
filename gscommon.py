@@ -114,13 +114,14 @@ def basedir_or_cwd(fn):
 		return os.path.dirname(fn)
 	return os.getcwd()
 
-def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False):
+def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}):
 	out = ""
 	err = ""
 	exc = None
 
 	old_env = os.environ.copy()
 	os.environ.update(env())
+	os.environ.update(environ)
 	try:
 		p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE,
 			startupinfo=STARTUP_INFO, shell=shell)
