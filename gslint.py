@@ -1,8 +1,11 @@
-import gscommon as gs, margo
+import gscommon as gs, margo, gsq
 import sublime, sublime_plugin
-import threading, Queue, time
+import threading, Queue, time, os, re
 
 DOMAIN = 'GsLint'
+CL_DOMAIN = 'GsCompLint'
+
+CL_PAT = re.compile(r'(.+?)[:](\d+)(?:[:](\d+)?)(.+)')
 
 class FileRef(object):
 	def __init__(self, view):
@@ -117,6 +120,17 @@ def watch():
 
 	view = gs.active_valid_go_view()
 
+	if view is not None and gs.setting('comp_lint_enabled') is True:
+		fn = view.file_name()
+		fr = ref(fn)
+		with sem:
+			if fr:
+				fr.view = view
+				highlight(fr)
+		sublime.set_timeout(watch, 500)
+		return
+
+
 	if gs.setting('gslint_enabled') is not True:
 		if view:
 			with sem:
@@ -170,6 +184,53 @@ def delref(fn):
 	with sem:
 		if fn in file_refs:
 			del file_refs[fn]
+
+
+def do_comp_lint(dirname, fn):
+	fr = ref(fn, False)
+	reports = {}
+	if not fr:
+		return
+
+	bindir, _ = gs.temp_dir('bin')
+	os.chdir(dirname)
+	out, err, _ = gs.runcmd(['go', 'install'], shell=False, environ={'GOBIN': bindir})
+
+	for m in CL_PAT.findall('%s\n%s' % (out, err)):
+		try:
+			efn, row, col, msg = m
+			row = int(row)-1
+			col = int(col)-1 if col else 0
+			msg = msg.strip()
+			if row >= 0 and msg:
+				efn = os.path.abspath(efn)
+				if fn == efn:
+					if reports.get(row):
+						reports[row].msg = '%s. %s' % (reports[row].msg, msg)
+					else:
+						reports[row] = Report(row, col, msg)
+		except Exception:
+			pass
+
+	def cb():
+		fr.reports = reports
+		fr.state = 1
+		highlight(fr)
+	sublime.set_timeout(cb, 0)
+
+class GsCompLintCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		if gs.setting('comp_lint_enabled') is not True:
+			return
+
+		fn = self.view.file_name()
+		fn = os.path.abspath(fn)
+		if fn:
+			dirname = gs.basedir_or_cwd(fn)
+			file_refs[fn] = FileRef(self.view)
+			gsq.dispatch(CL_DOMAIN, lambda: do_comp_lint(dirname, fn), '')
+
+
 try:
 	init_once
 except:
@@ -180,3 +241,4 @@ except:
 	file_refs = {}
 
 	watch()
+
