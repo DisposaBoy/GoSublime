@@ -43,5 +43,10 @@
 	// with `margo_cmd` passing `margo_addr`
 	"margo_addr": "127.0.0.1:57951",
 
+	// commands to run on (post) save - list of objects of the form {"cmd": "...", "args": {...}}
+	// Any TextCommand may be run. Supported GS commands include:
+	//     gs_comp_lint - compile the pkg and report any errors
+	"on_save": [],
+
 	"auto_complete_triggers": [ {"selector": "source.go", "characters": "."} ]
 }
