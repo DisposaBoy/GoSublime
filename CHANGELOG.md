@@ -1,3 +1,17 @@
+## r12.08.23-1
+	* add experimental support post-save commands
+	    a new entry `on_save` is support in `GoSublime.sublime-settings`, it takes a list of commands
+	    in the form of an object {"cmd": "...", "args": {...}} where cmd can be any TextCommand
+	* add experimental support for `go install` on save in the form of another linter.
+	to activate it add the following to your `GoSublime.sublime-settings`
+
+	    "comp_lint_enabled": true,
+	    "on_save": [
+	        {"cmd": "gs_comp_lint"}
+	    ]
+
+	note: enabling this will override(disable) the regular GsLint
+
 ## r12.08.10-3
 	* `ctrl+dot`,`ctrl+a` is now accessible globally
 
