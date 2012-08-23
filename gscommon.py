@@ -23,7 +23,8 @@ _settings = {
 	"autocomplete_snippets": False,
 	"autocomplete_tests": False,
 	"margo_cmd": [],
-	"margo_addr": ""
+	"margo_addr": "",
+	"on_save": [],
 }
 
 NAME = 'GoSublime'
