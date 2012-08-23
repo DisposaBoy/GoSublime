@@ -193,6 +193,10 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 			win.run_command("show_panel", {"panel": "output.%s" % panel_name})
 	sublime.set_timeout(lambda: cb(panel_name, s, print_output, syntax_file), 0)
 
+def is_pkg_view(view=None):
+	# todo implement this fully
+	return is_go_source_view(view, False)
+
 def is_go_source_view(view=None, strict=True):
 	if view is None:
 		return False
