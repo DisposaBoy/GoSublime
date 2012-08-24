@@ -119,12 +119,11 @@ def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}):
 	err = ""
 	exc = None
 
-	old_env = os.environ.copy()
-	os.environ.update(env())
-	os.environ.update(environ)
+	ev = os.environ.copy()
+	ev.update(env())
+	ev.update(environ)
 	try:
-		p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE,
-			startupinfo=STARTUP_INFO, shell=shell)
+		p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE, startupinfo=STARTUP_INFO, shell=shell, env=ev)
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
@@ -133,7 +132,6 @@ def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}):
 	except (Exception) as e:
 		err = u'Error while running %s: %s' % (args[0], e)
 		exc = e
-	os.environ.update(old_env)
 	return (out, err, exc)
 
 def settings_obj():
