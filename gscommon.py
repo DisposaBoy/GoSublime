@@ -114,16 +114,19 @@ def basedir_or_cwd(fn):
 		return os.path.dirname(fn)
 	return os.getcwd()
 
+def popen(args, stdout=PIPE, stderr=PIPE, shell=False, environ={}):
+	ev = os.environ.copy()
+	ev.update(env())
+	ev.update(environ)
+	return Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE, startupinfo=STARTUP_INFO, shell=shell, env=ev)
+
 def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}):
 	out = ""
 	err = ""
 	exc = None
 
-	ev = os.environ.copy()
-	ev.update(env())
-	ev.update(environ)
 	try:
-		p = Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE, startupinfo=STARTUP_INFO, shell=shell, env=ev)
+		p = popen(args, stdout=stdout, stderr=stderr, shell=shell, environ=environ)
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
@@ -132,6 +135,7 @@ def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}):
 	except (Exception) as e:
 		err = u'Error while running %s: %s' % (args[0], e)
 		exc = e
+
 	return (out, err, exc)
 
 def settings_obj():
