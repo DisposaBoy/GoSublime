@@ -63,13 +63,16 @@ class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 		default_file_name = 'untitled.go'
 		pkg_name = 'main'
 		view = gs.active_valid_go_view()
-		basedir = gs.basedir_or_cwd(view and view.file_name())
-		for fn in os.listdir(basedir):
-			if fn.endswith('.go'):
-				name, _ = margo.package(os.path.join(basedir, fn), '')
-				if name and name.get('Name'):
-					pkg_name = name.get('Name')
-					break
+		try:
+			basedir = gs.basedir_or_cwd(view and view.file_name())
+			for fn in os.listdir(basedir):
+				if fn.endswith('.go'):
+					name, _ = margo.package(os.path.join(basedir, fn), '')
+					if name and name.get('Name'):
+						pkg_name = name.get('Name')
+						break
+		except Exception:
+			pass
 
 		view = self.window.new_file()
 		view.set_name(default_file_name)
