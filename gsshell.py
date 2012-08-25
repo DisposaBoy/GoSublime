@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import gscommon as gs
-import re, os, httplib, hashlib
+import re, os, httplib, hashlib, threading, Queue, traceback, subprocess, time, signal
 
 DOMAIN = "GsShell"
 GO_RUN_PAT = re.compile(r'^go\s+(run|play)$', re.IGNORECASE)
@@ -167,3 +167,154 @@ class GsShellCommand(sublime_plugin.WindowCommand):
 			p.on_done(run, fmt_save)
 		else:
 			p.panel = self.window.show_input_panel("GsShell", prompt, p.on_done, p.on_change, None)
+
+class Command(threading.Thread):
+	def __init__(self, cmd):
+		threading.Thread.__init__(self, cmd)
+		self.lck = threading.Lock()
+		self.shell = False
+		self.daemon = True
+		self.cancelled = False
+		self.q = Queue.Queue()
+		self.p = None
+		self.x = None
+		self.rcode = None
+		self.cmd = cmd
+		self.env = os.environ.copy()
+		self.message = '%s: %s' % (DOMAIN, ' '.join(cmd))
+		self.started = 0
+		self.output_started = 0
+		self.ended = 0
+
+		try:
+			self.cwd = gs.basedir_or_cwd(sublime.active_window().active_view().file_name())
+		except Exception:
+			self.cwd = None
+
+	def outq(self):
+		return self.q
+
+	def process(self):
+		return self.p
+
+	def exception(self):
+		return self.x
+
+	def return_code(self):
+		return self.rcode
+
+	def on_output(self, c, line):
+		c.outq().put(line)
+
+	def consume_outq(self):
+		l = []
+		try:
+			while True:
+				l.append(self.q.get_nowait())
+		except Queue.Empty:
+			pass
+		return l
+
+	def on_done(self, c):
+		pass
+
+	def poll(self):
+		with self.lck:
+			if self.p:
+				return self.p.poll()
+		return False
+
+	def cancel(self):
+		if self.poll() is None:
+			try:
+				os.killpg(self.p.pid, signal.SIGTERM)
+			except Exception:
+				with self.lck:
+					self.p.terminate()
+
+			time.sleep(0.100)
+			if not self.completed():
+				time.sleep(0.500)
+				if not self.completed():
+					with self.lck:
+						try:
+							os.killpg(self.p.pid, signal.SIGKILL)
+						except Exception:
+							try:
+								self.p.kill()
+							except Exception:
+								pass
+					self.close_stdout()
+
+	def close_stdout(self):
+		try:
+			with self.lck:
+				if self.p:
+					self.p.stdout.close()
+		except Exception:
+			pass
+
+	def completed(self):
+		return self.return_code() is not None
+
+	def run(self):
+		self.started = time.time()
+		tid = gs.begin(DOMAIN, self.message, set_status=False, cancel=self.cancel)
+		try:
+			try:
+				self.p = gs.popen(self.cmd, shell=self.shell, stderr=subprocess.STDOUT,
+					environ=self.env, cwd=self.cwd)
+
+				while True:
+					with self.lck:
+						line = self.p.stdout.readline()
+
+					if not line:
+						self.close_stdout()
+						break
+
+					if not self.output_started:
+						self.output_started = time.time()
+
+					self.on_output(self, line.rstrip('\r\n'))
+			except Exception as ex:
+				self.x = ex
+			finally:
+				if self.p:
+					with self.lck:
+						self.rcode = self.p.wait()
+				else:
+					self.rcode = False
+		finally:
+			gs.end(tid)
+			self.ended = time.time()
+			self.on_done(self)
+
+class ShellCommand(Command):
+	def __init__(self, cmd):
+		Command.__init__(self, ' '.join(list(cmd)))
+		self.shell = True
+
+class CommandKLineCountPrinter(object):
+	def __init__(self):
+		self.lc = 0
+
+	def printer(self, c, line):
+		self.lc += 1
+		if self.lc > 100:
+			if self.lc % 1000 == 0:
+				print self.lc
+		else:
+			print self.lc, line
+
+def test_command(cmd=[], shell=False):
+	def on_done(c):
+		print '\ndone: elapsed: %0.3fs, startup: %0.3fs\n' % (max(0, c.ended - c.started), max(0, c.output_started - c.started))
+
+	if shell:
+		c = ShellCommand(cmd or ['find', '/'])
+	else:
+		c = Command(cmd or ['find', '/'])
+	c.on_done = on_done
+	c.on_output = CommandKLineCountPrinter().printer
+	return c
