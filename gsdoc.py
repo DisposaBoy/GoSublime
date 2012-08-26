@@ -6,7 +6,11 @@ DOMAIN = 'GsDoc'
 
 GOOS_PAT = re.compile(r'_(%s)' % '|'.join(gs.GOOSES))
 GOARCH_PAT = re.compile(r'_(%s)' % '|'.join(gs.GOARCHES))
-PKGFILE_EXTENSIONS = ['go', 'goc', 'c', 'h', 'cc', 'hh', 'hpp', 'asm', 'cpp', 's', 'i']
+EXT_EXCLUDE = [
+	'out', 'exe', 'o', 'dll', 'so', 'a', 'dynlib', 'lib', 'com', 'bin', 'pyc', 'pyo', 'cache', 'db',
+	'bak', 'png', 'gif', 'jpeg', 'jpg', 'gz', 'zip', '7z', 'rar', 'tar', '1', '2', '3', 'old', 'tgz',
+	'pprof', 'prof', 'mem', 'cpu', 'swap',
+]
 
 class GsDocCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -206,21 +210,48 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 			message='fetching pkg dirs'
 		)
 
+def ext_filter(pathname, basename, ext):
+	if not ext:
+		return basename == "makefile"
+
+	if ext in EXT_EXCLUDE:
+		return False
+
+	if ext.endswith('~'):
+		return False
+
+	return True
+
 def show_pkgfiles(dirname):
-	dirname = os.path.abspath(dirname)
 	ents = []
 	m = {}
 
-	for fn in gs.list_dir_tree(dirname, PKGFILE_EXTENSIONS):
-		name = os.path.relpath(fn, dirname).replace('\\', '/')
-		m[name] = fn
-		ents.append(name)
-	ents.sort(key = lambda a: a.lower())
+	try:
+		dirname = os.path.abspath(dirname)
+		for fn in gs.list_dir_tree(dirname, ext_filter):
+			name = os.path.relpath(fn, dirname).replace('\\', '/')
+			m[name] = fn
+			ents.append(name)
+	except Exception as ex:
+		gs.notice(DOMAIN, 'Error: %s' % ex)
 
 	if ents:
+		ents.sort(key = lambda a: a.lower())
+
+		try:
+			s = " ../  ( current: %s )" % dirname
+			m[s] = os.path.join(dirname, "..")
+			ents.insert(0, s)
+		except Exception:
+			pass
+
 		def cb(i, win):
 			if i >= 0:
-				gs.focus(m[ents[i]], 0, 0, win)
+				fn = m[ents[i]]
+				if os.path.isdir(fn):
+					win.run_command("gs_browse_files", {"dir": fn})
+				else:
+					gs.focus(fn, 0, 0, win)
 		gs.show_quick_panel(ents, cb)
 	else:
 		gs.show_quick_panel([['', 'No files found']])
