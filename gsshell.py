@@ -304,9 +304,8 @@ class Command(threading.Thread):
 			self.on_done(self)
 
 class ViewCommand(Command):
-	def __init__(self, cmd=[], shell=False, view=None, region_name=''):
+	def __init__(self, cmd=[], shell=False, view=None):
 		self.view = view
-		self.region_name = region_name
 		Command.__init__(self, cmd=cmd, shell=shell)
 		self.i = 0
 
@@ -378,6 +377,6 @@ def test_command(cmd=[], shell=False):
 	c.on_output = CommandKLineCountPrinter().printer
 	return c
 
-def test_view_command(cmd=[], shell=False, view=None, region_name=''):
-	c = ViewCommand(cmd=(cmd or ['find', '/']), shell=shell, view=view, region_name=region_name)
+def test_view_command(cmd=[], shell=False, view=None):
+	c = ViewCommand(cmd=(cmd or ['find', '/']), shell=shell, view=view)
 	return c
