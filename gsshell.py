@@ -315,7 +315,7 @@ class ViewCommand(Command):
 	def poll_output(self):
 		l = []
 		try:
-			for i in range(100):
+			for i in range(500):
 				l.append(self.q.get_nowait())
 		except Queue.Empty:
 			pass
@@ -324,7 +324,7 @@ class ViewCommand(Command):
 			self.do_insert(l)
 
 		if not self.completed() or self.q.qsize() > 0:
-			sublime.set_timeout(self.poll_output, 250)
+			sublime.set_timeout(self.poll_output, 100)
 
 	def do_insert(self, lines):
 		if self.view is not None:
