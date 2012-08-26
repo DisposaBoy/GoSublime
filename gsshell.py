@@ -330,13 +330,15 @@ class ViewCommand(Command):
 		if self.view is not None:
 			edit = self.view.begin_edit()
 			try:
-				for ln in lines:
-					self.view.insert(edit, self.view.size(), ln.decode('utf-8'))
-					self.view.insert(edit, self.view.size(), '\n')
+				self.write_lines(self.view, edit, lines)
 			finally:
 				self.view.end_edit(edit)
 
-			self.view.show(self.view.size() - 1)
+	def write_lines(self, view, edit, lines):
+		for ln in lines:
+			view.insert(edit, view.size(), ln.decode('utf-8'))
+			view.insert(edit, view.size(), '\n')
+		view.show(view.size() - 1)
 
 	def on_done(self, c):
 		ex = self.exception()
