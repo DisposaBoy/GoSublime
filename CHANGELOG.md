@@ -1,6 +1,11 @@
+## r12.08.26-1
+	* make gs_browse_files (`ctrl+dot`,`ctrl+m`) act more like a file browser.
+	    it now lists all files in the current directory tree excluding known binary files:
+	        (.exe, .a, files without extension, etc.) and an entry to go to the parent directory
+
 ## r12.08.23-1
-	* add experimental support post-save commands
-	    a new entry `on_save` is support in `GoSublime.sublime-settings`, it takes a list of commands
+	* add experimental support for post-save commands
+	    a new entry `on_save` is supported in `GoSublime.sublime-settings`, it takes a list of commands
 	    in the form of an object {"cmd": "...", "args": {...}} where cmd can be any TextCommand
 	* add experimental support for `go install` on save in the form of another linter.
 	to activate it add the following to your `GoSublime.sublime-settings`
