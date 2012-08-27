@@ -179,13 +179,18 @@ class Command(threading.Thread):
 		self.x = None
 		self.rcode = None
 		self.env = env
-		self.message = '%s: %s' % (DOMAIN, cmd)
 		self.started = 0
 		self.output_started = 0
 		self.ended = 0
 
+		cmd_is_list = isinstance(cmd, type([]))
+		if cmd_is_list:
+			self.message = ' '.join(cmd)
+		else:
+			self.message = str(cmd)
+
 		self.shell = shell
-		if shell and isinstance(cmd, type([])):
+		if shell and cmd_is_list:
 			self.cmd = ' '.join(cmd)
 		else:
 			self.cmd = str(cmd)
@@ -344,12 +349,12 @@ class ViewCommand(Command):
 			self.on_output(c, 'Error: ' % ex)
 
 		t = (max(0, c.ended - c.started), max(0, c.output_started - c.started))
-		self.on_output(c, '[done: elapsed: %0.3fs, startup: %0.3fs]' % t)
+		self.on_output(c, '[done: elapsed: %0.3fs, startup: %0.3fs]\n' % t)
 
 	def cancel(self):
 		discarded = super(ViewCommand, self).cancel()
 		t = ((time.time() - self.started), discarded)
-		self.on_output(self, ('\n[cancelled: elapsed: %0.3fs, discarded %d line(s)]' % t))
+		self.on_output(self, ('\n[cancelled: elapsed: %0.3fs, discarded %d line(s)]\n' % t))
 
 	def run(self):
 		self.poll_output()
