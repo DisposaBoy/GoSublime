@@ -109,5 +109,19 @@
 		"keys": ["super+.", "super+space"],
 		"command": "gs_show_call_tip",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
+		"keys": ["super+#"],
+		"command": "shelly_prompt"
+	},
+	{
+		"keys": ["up"],
+		"command": "shelly_hist_prev",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "text.shelly-prompt" }]
+	},
+	{
+		"keys": ["down"],
+		"command": "shelly_hist_next",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "text.shelly-prompt" }]
 	}
 ]
