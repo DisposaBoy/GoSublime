@@ -235,17 +235,31 @@ def active_valid_go_view(win=None, strict=True):
 def rowcol(view):
 	return view.rowcol(view.sel()[0].begin())
 
+def getenv(name, default=''):
+	return env().get(name, default)
+
 def env():
 	e = os.environ.copy()
 	e.update(setting('env', {}))
 	roots = e.get('GOPATH', '').split(os.pathsep)
 	roots.append(e.get('GOROOT', ''))
+
 	add_path = e.get('PATH', '').split(os.pathsep)
 	for s in roots:
 		if s:
 			s = os.path.join(s, 'bin')
 			if s not in add_path:
 				add_path.append(s)
+
+	if os.name == "nt":
+		l = ['C:\\Go\\bin']
+	else:
+		l = ['/usr/bin', '/usr/local/go/bin']
+
+	for s in l:
+		if s not in add_path:
+			add_path.append(s)
+
 	e['PATH'] = os.pathsep.join(add_path)
 	return e
 
