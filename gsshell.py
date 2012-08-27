@@ -169,8 +169,8 @@ class GsShellCommand(sublime_plugin.WindowCommand):
 			p.panel = self.window.show_input_panel("GsShell", prompt, p.on_done, p.on_change, None)
 
 class Command(threading.Thread):
-	def __init__(self, cmd=[], shell=False):
-		threading.Thread.__init__(self)
+	def __init__(self, cmd=[], shell=False, env={}, cwd=''):
+		super(Command, self).__init__()
 		self.lck = threading.Lock()
 		self.daemon = True
 		self.cancelled = False
@@ -178,22 +178,25 @@ class Command(threading.Thread):
 		self.p = None
 		self.x = None
 		self.rcode = None
-		self.env = {}
-		self.message = '%s: %s' % (DOMAIN, ' '.join(cmd))
+		self.env = env
+		self.message = '%s: %s' % (DOMAIN, cmd)
 		self.started = 0
 		self.output_started = 0
 		self.ended = 0
 
 		self.shell = shell
-		if shell and not isinstance(cmd, type('')):
+		if shell and isinstance(cmd, type([])):
 			self.cmd = ' '.join(cmd)
 		else:
-			self.cmd = cmd
+			self.cmd = str(cmd)
 
-		try:
-			self.cwd = gs.basedir_or_cwd(sublime.active_window().active_view().file_name())
-		except Exception:
-			self.cwd = None
+		if cwd:
+			self.cwd = cwd
+		else:
+			try:
+				self.cwd = gs.basedir_or_cwd(sublime.active_window().active_view().file_name())
+			except Exception:
+				self.cwd = None
 
 	def outq(self):
 		return self.q
@@ -304,12 +307,9 @@ class Command(threading.Thread):
 			self.on_done(self)
 
 class ViewCommand(Command):
-	def __init__(self, cmd=[], shell=False, view=None):
+	def __init__(self, cmd=[], shell=False, env={}, cwd='', view=None):
 		self.view = view
-		Command.__init__(self, cmd=cmd, shell=shell)
-		self.i = 0
-
-		self.poll_output()
+		super(ViewCommand, self).__init__(cmd=cmd, shell=shell, env=env, cwd=cwd)
 
 	def poll_output(self):
 		l = []
@@ -335,9 +335,8 @@ class ViewCommand(Command):
 
 	def write_lines(self, view, edit, lines):
 		for ln in lines:
-			view.insert(edit, view.size(), ln.decode('utf-8'))
-			view.insert(edit, view.size(), '\n')
-		view.show(view.size() - 1)
+			view.insert(edit, view.size(), u'%s\n' % ln.decode('utf-8'))
+		view.show(view.line(view.size() - 1).begin())
 
 	def on_done(self, c):
 		ex = self.exception()
@@ -345,16 +344,16 @@ class ViewCommand(Command):
 			self.on_output(c, 'Error: ' % ex)
 
 		t = (max(0, c.ended - c.started), max(0, c.output_started - c.started))
-		self.on_output(c, '\n[done: elapsed: %0.3fs, startup: %0.3fs]' % t)
+		self.on_output(c, '[done: elapsed: %0.3fs, startup: %0.3fs]' % t)
 
 	def cancel(self):
-		discarded = Command.cancel(self)
+		discarded = super(ViewCommand, self).cancel()
 		t = ((time.time() - self.started), discarded)
 		self.on_output(self, ('\n[cancelled: elapsed: %0.3fs, discarded %d line(s)]' % t))
 
 	def run(self):
 		self.poll_output()
-		Command.run(self)
+		super(ViewCommand, self).run()
 
 class CommandKLineCountPrinter(object):
 	def __init__(self):
