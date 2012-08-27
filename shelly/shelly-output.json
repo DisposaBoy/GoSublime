@@ -1,0 +1,8 @@
+{
+	"name": "Shelly Output",
+	"scopeName": "text.shelly-output",
+	"fileTypes": [""],
+	"patterns": [
+	],
+	"uuid": "8187d807-9dc2-42d7-8f8f-54cf7d2d275c"
+}

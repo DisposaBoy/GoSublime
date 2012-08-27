@@ -1,0 +1,8 @@
+{
+	"name": "Shelly Prompt",
+	"scopeName": "text.shelly-prompt",
+	"fileTypes": [""],
+	"patterns": [
+	],
+	"uuid": "153c6224-afd5-4e36-89c0-5d3975c6dbae"
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>fileTypes</key>
+	<array>
+		<string></string>
+	</array>
+	<key>name</key>
+	<string>Shelly Output</string>
+	<key>patterns</key>
+	<array>
+	</array>
+	<key>scopeName</key>
+	<string>text.shelly-output</string>
+	<key>uuid</key>
+	<string>8187d807-9dc2-42d7-8f8f-54cf7d2d275c</string>
+</dict>
+</plist>
