@@ -10,6 +10,20 @@ def is_enabled(view):
 
 lwd = ''
 
+
+def h_clear(edit, view):
+	view.erase(edit, sublime.Region(0, view.size()))
+
+subcommands = [
+	'go run', 'go build', 'go clean', 'go fix', 'go env',
+	'go install', 'go test', 'go fmt', 'go vet', 'go tool',
+	'#share', '#play', '#clear'
+]
+
+h_commands = {
+	'#clear': h_clear,
+}
+
 try:
 	_shelly_views
 except Exception:
@@ -45,13 +59,14 @@ class EV(sublime_plugin.EventListener):
 		if view.score_selector(pos, 'text.shelly-prompt') == 0:
 			return []
 
-		cl = []
+		if len(view.sel()) != 1:
+			return []
 
-		subcommands = [
-			'go run', 'go build', 'go clean', 'go fix',
-			'go install', 'go test', 'go fmt', 'go vet', 'go tool',
-			'#share', '#play', '#clear'
-		]
+		sel = view.sel()[0]
+		if sel.end() - sel.begin() != 0:
+			return []
+
+		cl = []
 
 		for s in subcommands:
 			if s.startswith('#'):
@@ -59,10 +74,13 @@ class EV(sublime_plugin.EventListener):
 			else:
 				cl.append((s, s+' '))
 
-		for s in hist:
-			s = s.strip()
-			if s and (s, s+' ') not in cl:
-				cl.append((s, s))
+		try:
+			for s in settings().get('hist', []):
+				s = s.strip()
+				if s and (s, s+' ') not in cl and (s, s) not in cl:
+					cl.append((s, s))
+		except Exception as ex:
+			gs.notice(DOMAIN, 'Error: %s' % ex)
 
 		return (cl, AC_OPTS)
 
@@ -82,6 +100,10 @@ class ShellyViewCommand(gsshell.ViewCommand):
 
 def settings():
 	return sublime.load_settings('GoSublime-GsShell.sublime-settings')
+
+def settings_save(k, v):
+	settings().set(k, v)
+	sublime.save_settings('GoSublime-GsShell.sublime-settings')
 
 class Prompt(object):
 	def __init__(self, win, wd):
@@ -104,8 +126,18 @@ class Prompt(object):
 
 		s = s.strip()
 		if s:
-			c = ShellyViewCommand(cmd=s, shell=True, cwd=self.wd, view=v)
-			c.start()
+			h = h_commands.get(s.lower())
+			if h:
+				edit = v.begin_edit()
+				try:
+					h(edit, v)
+				except Exception as ex:
+					gs.notice(DOMAIN, 'Error: %s' % ex)
+				finally:
+					v.end_edit(edit)
+			else:
+				c = ShellyViewCommand(cmd=s, shell=True, cwd=self.wd, view=v)
+				c.start()
 
 			try:
 				hist = settings().get('hist', [])
@@ -114,7 +146,7 @@ class Prompt(object):
 				except Exception:
 					pass
 				hist.append(s)
-				settings().set('hist', hist)
+				settings_save('hist', hist)
 			except Exception as ex:
 				gs.notice(DOMAIN, 'Error: %s' % ex)
 		self.window.run_command('show_panel', {'panel': 'output.shelly'})
