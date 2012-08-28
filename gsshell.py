@@ -357,7 +357,7 @@ class ViewCommand(Command):
 		self.on_output(self, ('\n[cancelled: elapsed: %0.3fs, discarded %d line(s)]\n' % t))
 
 	def run(self):
-		self.poll_output()
+		sublime.set_timeout(self.poll_output, 0)
 		super(ViewCommand, self).run()
 
 class CommandKLineCountPrinter(object):
