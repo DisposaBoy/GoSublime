@@ -440,7 +440,7 @@ def show_quick_panel(items, cb=None):
 
 def go_env_goroot():
 	out, _, _ = runcmd(['go env GOROOT'], shell=True)
-	return out.strip()
+	return out.strip().encode('utf-8')
 
 def list_dir_tree(dirname, filter, exclude_prefix=('.', '_')):
 	lst = []
