@@ -66,7 +66,7 @@ def on_gocode_done(c):
 	if x:
 		gs.notice(DOMAIN, 'Gocode Error: %s\nOutput: %s' % (x, s))
 	else:
-		gsshell.Command(cmd=['gocode'])
+		gsshell.Command(cmd=['gocode'], cwd=BUNDLE_GOBIN).start()
 
 def on_margo_done(c):
 	s = '\n'.join(c.consume_outq())
