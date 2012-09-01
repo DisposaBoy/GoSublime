@@ -25,7 +25,7 @@ _settings = {
 	"margo_cmd": [],
 	"margo_addr": "",
 	"on_save": [],
-	"shell": "",
+	"shell": [],
 }
 
 NAME = 'GoSublime'
