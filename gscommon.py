@@ -193,7 +193,7 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 			pst.set("rulers", [])
 			pst.set("fold_buttons", True)
 			pst.set("fade_fold_buttons", False)
-			pst.set("gutter", True)
+			pst.set("gutter", False)
 			pst.set("line_numbers", False)
 			if syntax_file:
 				if syntax_file == 'GsDoc':
