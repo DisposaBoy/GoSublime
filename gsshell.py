@@ -181,13 +181,17 @@ class Command(threading.Thread):
 		self.p = None
 		self.x = None
 		self.rcode = None
-		self.env = env
+
 		self.started = 0
 		self.output_started = 0
 		self.ended = 0
 
 		self.on_output = command_on_output
 		self.on_done = command_on_done
+
+		self.env = {}
+		for k,v in env.items():
+			self.env[k] = str(v)
 
 		if not gs.is_a(cmd, []):
 			cmd = [cmd]
