@@ -135,7 +135,7 @@ def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}, 
 
 	try:
 		p = popen(args, stdout=stdout, stderr=stderr, shell=shell, environ=environ, cwd=cwd)
-		if isinstance(input, unicode):
+		if input is not None:
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
 		out = out.decode('utf-8') if out else ''
@@ -145,6 +145,9 @@ def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}, 
 		exc = e
 
 	return (out, err, exc)
+
+def is_a(v, base):
+	return isinstance(v, type(base))
 
 def settings_obj():
 	return sublime.load_settings("GoSublime.sublime-settings")
@@ -245,6 +248,9 @@ def active_valid_go_view(win=None, strict=True):
 def rowcol(view):
 	return view.rowcol(view.sel()[0].begin())
 
+def os_is_windows():
+	return os.name == "nt"
+
 def getenv(name, default=''):
 	return env().get(name, default)
 
@@ -261,7 +267,7 @@ def env():
 			if s not in add_path:
 				add_path.append(s)
 
-	if os.name == "nt":
+	if os_is_windows():
 		l = ['C:\\Go\\bin']
 	else:
 		l = ['/usr/local/go/bin', '/usr/bin']
