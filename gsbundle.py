@@ -73,6 +73,7 @@ enabled = False
 try:
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')
 	BUNDLE_GOBIN = os.path.join(BUNDLE_GOPATH, 'bin')
+	os.environ['PATH'] = '%s%s%s' % (BUNDLE_GOBIN, os.pathsep, os.environ.get('PATH', ''))
 
 	if enabled:
 		e = gs.env()
