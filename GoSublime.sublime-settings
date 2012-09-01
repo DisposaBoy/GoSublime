@@ -5,6 +5,14 @@
 	// the corresponding environment(PATH) variable, if it exists.
 	"env": {},
 
+	// Your shell. e.g. on Linux and OS X, if your shell bash:
+	// you may set it to "/bin/bash --login"
+	// it's useful to pass the --login argument in order for it run your ~/.bashrc etc.
+	// otherwise environment variables may not be seen by Sublime Text and therefore GoSublime
+	//
+	// If set, commands are passed to it instead of the Python default which for *nix is usually
+	// /bin/sh which in most cases is not what you want
+	"shell": "",
 
 	// Whether or not gscomplete(gocode) is enabled
 	"gscomplete_enabled": true,
