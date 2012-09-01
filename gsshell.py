@@ -171,8 +171,52 @@ def command_on_output(c, line):
 def command_on_done(c):
 	pass
 
+def fix_env(env):
+	e = {}
+	for k,v in env.items():
+		e[k] = str(v)
+	return e
+
+def fix_shell_cmd(shell, cmd):
+	if not gs.is_a(cmd, []):
+		cmd = [cmd]
+
+	if shell:
+		sh = gs.setting('shell')
+		cmd_str = ' '.join(cmd)
+		if sh:
+			shell = False
+			cmd = []
+			for v in sh:
+				if v:
+					cmd.append(str(v).replace('$CMD', cmd_str))
+		else:
+			cmd = [cmd_str]
+
+	return (shell, [str(v) for v in cmd])
+
+def run(cmd=[], shell=False, env={}, cwd=None, input=None):
+	out = u""
+	err = u""
+	exc = None
+
+	try:
+		env = fix_env(env)
+		shell, cmd = fix_shell_cmd(shell, cmd)
+		p = gs.popen(cmd, shell=shell, stderr=subprocess.STDOUT, environ=env, cwd=cwd)
+		if input is not None:
+			input = input.encode('utf-8')
+		out, err = p.communicate(input=input)
+		out = out.decode('utf-8') if out else u''
+		err = err.decode('utf-8') if err else u''
+	except (Exception) as e:
+		err = u'Error while running %s: %s' % (args[0], e)
+		exc = e
+
+	return (out, err, exc)
+
 class Command(threading.Thread):
-	def __init__(self, cmd=[], shell=False, env={}, cwd=''):
+	def __init__(self, cmd=[], shell=False, env={}, cwd=None):
 		super(Command, self).__init__()
 		self.lck = threading.Lock()
 		self.daemon = True
@@ -181,45 +225,15 @@ class Command(threading.Thread):
 		self.p = None
 		self.x = None
 		self.rcode = None
-
 		self.started = 0
 		self.output_started = 0
 		self.ended = 0
-
 		self.on_output = command_on_output
 		self.on_done = command_on_done
-
-		self.env = {}
-		for k,v in env.items():
-			self.env[k] = str(v)
-
-		if not gs.is_a(cmd, []):
-			cmd = [cmd]
-
-		self.shell = False
-		if shell:
-			cmd_str = ' '.join(cmd)
-			sh = gs.setting('shell')
-			if sh:
-				cmd = []
-				for v in sh:
-					if v == '$CMD':
-						cmd.append(cmd_str)
-					elif v:
-						cmd.append(v)
-			else:
-				self.shell = True
-
-		self.cmd = [str(v) for v in cmd]
+		self.env = fix_env(env)
+		self.shell, self.cmd = fix_shell_cmd(shell, cmd)
 		self.message = str(self.cmd)
-
-		if cwd:
-			self.cwd = cwd
-		else:
-			try:
-				self.cwd = gs.basedir_or_cwd(sublime.active_window().active_view().file_name())
-			except Exception:
-				self.cwd = None
+		self.cwd = cwd if cwd else None
 
 	def outq(self):
 		return self.q
@@ -309,7 +323,7 @@ class Command(threading.Thread):
 					if not self.output_started:
 						self.output_started = time.time()
 
-					self.on_output(self, line.rstrip('\r\n'))
+					self.on_output(self, line.rstrip('\r\n').decode('utf-8'))
 			except Exception as ex:
 				self.x = ex
 			finally:
@@ -327,6 +341,12 @@ class ViewCommand(Command):
 	def __init__(self, cmd=[], shell=False, env={}, cwd='', view=None):
 		self.view = view
 		super(ViewCommand, self).__init__(cmd=cmd, shell=shell, env=env, cwd=cwd)
+
+		if not self.cwd and view is not None:
+			try:
+				self.cwd = gs.basedir_or_cwd(view.file_name())
+			except Exception:
+				self.cwd = None
 
 	def poll_output(self):
 		l = []
@@ -371,28 +391,3 @@ class ViewCommand(Command):
 	def run(self):
 		sublime.set_timeout(self.poll_output, 0)
 		super(ViewCommand, self).run()
-
-class CommandKLineCountPrinter(object):
-	def __init__(self):
-		self.lc = 0
-
-	def printer(self, c, line):
-		self.lc += 1
-		if self.lc > 100:
-			if self.lc % 1000 == 0:
-				print self.lc
-		else:
-			print self.lc, line
-
-def test_command(cmd=[], shell=False):
-	def on_done(c):
-		print '\ndone: elapsed: %0.3fs, startup: %0.3fs\n' % (max(0, c.ended - c.started), max(0, c.output_started - c.started))
-
-	c = Command(cmd=(cmd or ['find', '/']), shell=shell)
-	c.on_done = on_done
-	c.on_output = CommandKLineCountPrinter().printer
-	return c
-
-def test_view_command(cmd=[], shell=False, view=None):
-	c = ViewCommand(cmd=(cmd or ['find', '/']), shell=shell, view=view)
-	return c
