@@ -168,6 +168,13 @@ class GsShellCommand(sublime_plugin.WindowCommand):
 		else:
 			p.panel = self.window.show_input_panel("GsShell", prompt, p.on_done, p.on_change, None)
 
+
+def command_on_output(c, line):
+	c.outq().put(line)
+
+def command_on_done(c):
+	pass
+
 class Command(threading.Thread):
 	def __init__(self, cmd=[], shell=False, env={}, cwd=''):
 		super(Command, self).__init__()
@@ -182,6 +189,9 @@ class Command(threading.Thread):
 		self.started = 0
 		self.output_started = 0
 		self.ended = 0
+
+		self.on_output = command_on_output
+		self.on_done = command_on_done
 
 		cmd_is_list = isinstance(cmd, type([]))
 		if cmd_is_list:
@@ -215,9 +225,6 @@ class Command(threading.Thread):
 	def return_code(self):
 		return self.rcode
 
-	def on_output(self, c, line):
-		c.outq().put(line)
-
 	def consume_outq(self):
 		l = []
 		try:
@@ -226,9 +233,6 @@ class Command(threading.Thread):
 		except Queue.Empty:
 			pass
 		return l
-
-	def on_done(self, c):
-		pass
 
 	def poll(self):
 		with self.lck:
