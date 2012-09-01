@@ -40,7 +40,7 @@ class Prompt(object):
 			s = s.strip()
 			if s and s.lower() != "go" and self.change_history:
 				hist = self.settings.get('cmd_hist')
-				if not isinstance(hist, dict):
+				if not gs.is_a(hist, {}):
 					hist = {}
 				basedir = gs.basedir_or_cwd(file_name)
 				hist[basedir] = [s] # todo: store a list of historical commands
@@ -56,9 +56,7 @@ class Prompt(object):
 
 				try:
 					c = httplib.HTTPConnection(host)
-					src = self.view.substr(sublime.Region(0, self.view.size()))
-					if isinstance(src, unicode):
-						src = src.encode('utf-8')
+					src = self.view.substr(sublime.Region(0, self.view.size())).encode('utf-8')
 					c.request('POST', '/share', src, {'User-Agent': 'GoSublime'})
 					s = 'http://%s/p/%s' % (host, c.getresponse().read())
 				except Exception as ex:
@@ -76,9 +74,7 @@ class Prompt(object):
 					file_name = os.path.join(tdir, ('%s.go' % file_name))
 					try:
 						with open(file_name, 'w') as f:
-							src = self.view.substr(sublime.Region(0, self.view.size()))
-							if isinstance(src, unicode):
-								src = src.encode('utf-8')
+							src = self.view.substr(sublime.Region(0, self.view.size())).encode('utf-8')
 							f.write(src)
 					except Exception as ex:
 						err = str(ex)
@@ -90,7 +86,7 @@ class Prompt(object):
 				s = ['go', 'run', file_name]
 
 			self.view.window().run_command("exec", { 'kill': True })
-			if isinstance(s, list):
+			if gs.is_a(s, []):
 				use_shell = False
 			else:
 				use_shell = True
@@ -130,9 +126,9 @@ class Prompt(object):
 				basedir = gs.basedir_or_cwd(self.view.file_name())
 				lc = 'go '
 				hist = self.settings.get('cmd_hist')
-				if isinstance(hist, dict):
+				if gs.is_a(hist, {}):
 					hist = hist.get(basedir)
-					if hist and isinstance(hist, list):
+					if hist and gs.is_a(hist, []):
 						lc = hist[-1]
 				s = s.strip()
 				if s and s not in ('', 'go'):
@@ -193,17 +189,25 @@ class Command(threading.Thread):
 		self.on_output = command_on_output
 		self.on_done = command_on_done
 
-		cmd_is_list = isinstance(cmd, type([]))
-		if cmd_is_list:
-			self.message = ' '.join(cmd)
-		else:
-			self.message = str(cmd)
+		if not gs.is_a(cmd, []):
+			cmd = [cmd]
 
-		self.shell = shell
-		if shell and cmd_is_list:
-			self.cmd = ' '.join(cmd)
-		else:
-			self.cmd = str(cmd)
+		self.shell = False
+		if shell:
+			cmd_str = ' '.join(cmd)
+			sh = gs.setting('shell')
+			if sh:
+				cmd = []
+				for v in sh:
+					if v == '$CMD':
+						cmd.append(cmd_str)
+					elif v:
+						cmd.append(v)
+			else:
+				self.shell = True
+
+		self.cmd = [str(v) for v in cmd]
+		self.message = str(self.cmd)
 
 		if cwd:
 			self.cwd = cwd
