@@ -263,13 +263,20 @@ def env():
 	if os.name == "nt":
 		l = ['C:\\Go\\bin']
 	else:
-		l = ['/usr/bin', '/usr/local/go/bin']
+		l = ['/usr/local/go/bin', '/usr/bin']
 
 	for s in l:
 		if s not in add_path:
 			add_path.append(s)
 
 	e['PATH'] = os.pathsep.join(add_path)
+
+	for k,v in e.items():
+		try:
+			e[k] = str(v)
+		except Exception as ex:
+			println('%s: Bad env: ' % (NAME, ex))
+
 	return e
 
 def sync_settings():
