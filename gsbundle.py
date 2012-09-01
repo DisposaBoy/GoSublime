@@ -22,7 +22,7 @@ def print_install_log(c, s):
 	if not e.get('GOROOT'):
 		unset.append('GOROOT')
 	if not e.get('GOPATH'):
-		unset.append('GOROOT')
+		unset.append('GOPATH')
 	if unset:
 		tpl = 'check the console for error messages: the following environment variables are not set: %s'
 		gs.notice(DOMAIN, tpl % ', '.join(unset))
