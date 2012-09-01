@@ -1,2 +1,3 @@
-.git
-_testing
+.git/
+_testing/
+bin/
