@@ -1,5 +1,5 @@
 import sublime
-import subprocess, re, os, threading, tempfile, datetime, uuid
+import subprocess, re, os, threading, tempfile, datetime, uuid, traceback as tbck
 from subprocess import Popen, PIPE
 
 try:
@@ -172,10 +172,15 @@ def notice_undo(domain, txt, view, should_undo):
 		notice(domain, txt)
 	sublime.set_timeout(cb, 0)
 
-def show_output(panel_name, s, print_output=True, syntax_file=''):
-	def cb(panel_name, s, print_output, win):
-		if print_output:
-			print('%s output: %s' % (panel_name, s))
+def show_output(domain, s, print_output=True, syntax_file='', replace=True, merge_domain=False):
+	def cb(domain, s, print_output, win):
+		panel_name = '%s-output' % domain
+		if merge_domain:
+			s = '%s: %s' % (domain, s)
+			if print_output:
+				println(s)
+		elif print_output:
+			println('%s: %s' % (domain, s))
 
 		win = sublime.active_window()
 		if win:
@@ -184,7 +189,10 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 			panel.set_read_only(False)
 
 			try:
-				panel.replace(edit, sublime.Region(0, panel.size()), s)
+				if replace:
+					panel.replace(edit, sublime.Region(0, panel.size()), s)
+				else:
+					panel.insert(edit, panel.size(), s+'\n')
 			finally:
 				panel.end_edit(edit)
 
@@ -203,7 +211,8 @@ def show_output(panel_name, s, print_output=True, syntax_file=''):
 					panel.set_syntax_file(syntax_file)
 			panel.set_read_only(True)
 			win.run_command("show_panel", {"panel": "output.%s" % panel_name})
-	sublime.set_timeout(lambda: cb(panel_name, s, print_output, syntax_file), 0)
+			panel.show(panel.size())
+	sublime.set_timeout(lambda: cb(domain, s, print_output, syntax_file), 0)
 
 def is_pkg_view(view=None):
 	# todo implement this fully
@@ -469,6 +478,11 @@ def list_dir_tree(dirname, filter, exclude_prefix=('.', '_')):
 
 	return lst
 
+def traceback(domain='GoSublime'):
+	return '%s: %s' % (domain, tbck.format_exc())
+
+def show_traceback(domain):
+	show_output(domain, traceback(), replace=False, merge_domain=False)
 
 try:
 	st2_status_message
