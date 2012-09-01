@@ -60,6 +60,22 @@ def do_install():
 	c.on_done = on_install_done
 	c.start()
 
+def on_gocode_done(c):
+	s = '\n'.join(c.consume_outq())
+	x = c.exception()
+	if x:
+		gs.notice(DOMAIN, 'Gocode Error: %s\nOutput: %s' % (x, s))
+	else:
+		gsshell.Command(cmd=['gocode'])
+
+def on_margo_done(c):
+	s = '\n'.join(c.consume_outq())
+	x = c.exception()
+	if x:
+		gs.notice(DOMAIN, 'MarGo Error: %s\nOutput: %s' % (x, s))
+	else:
+		gs.println('%s: MarGo: %s' % (DOMAIN, s))
+
 def on_install_done(c):
 	s = output_str(c)
 	x = c.exception()
@@ -67,6 +83,19 @@ def on_install_done(c):
 		tpl = 'Error while installing MarGo and Gocode\nCommand: %s\nException: %s\nOutput: %s'
 		gs.show_output(DOMAIN, tpl % (c.cmd, x, s), merge_domain=True)
 	print_install_log(c, s)
+
+	c = gsshell.Command(cmd=[
+		"margo",
+		"-d",
+		"-call", "replace",
+		"-addr", gs.setting('margo_addr', '')
+	])
+	c.on_done = on_margo_done
+	c.start()
+
+	c = gsshell.Command(cmd=['gocode', 'close'])
+	c.on_done = on_gocode_done
+	c.start()
 
 enabled = False
 
