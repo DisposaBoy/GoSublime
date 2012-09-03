@@ -289,7 +289,7 @@ def env():
 	# take bytestrings as environment variables in the "env" parameter. Make
 	# sure no unicode objects leak through.
 	# https://github.com/DisposaBoy/GoSublime/issues/112
-	# http://stackoverflow.com/questions/12253014/why-does-popen-fail-on-windows-if-the-env-parameter-contains-a-unicode-object
+	# http://stackoverflow.com/q/3744568/1670
 	if os_is_windows():
 		for k,v in e.iteritems():
 			try:
