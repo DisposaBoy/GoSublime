@@ -285,17 +285,18 @@ def env():
 
 	e['PATH'] = os.pathsep.join(add_path)
 
-	# On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen can only
-	# take bytestrings as environment variables in the "env" parameter. Make
-	# sure no unicode objects leak through.
-	# https://github.com/DisposaBoy/GoSublime/issues/112
-	# http://stackoverflow.com/q/12253014/1670
-	if os_is_windows():
-		for k,v in e.iteritems():
-			try:
-				e[k] = str(v)
-			except Exception as ex:
-				println('%s: Bad env: ' % (NAME, ex))
+	# Ensure no unicode objects leak through. The reason is twofold:
+	# 	* On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen
+	# 	  can only take bytestrings as environment variables in the
+	#	  "env"	parameter. Reference:
+	# 	  https://github.com/DisposaBoy/GoSublime/issues/112
+	# 	  http://stackoverflow.com/q/12253014/1670
+	#   * Avoids issues with networking too.
+	for k, v in e.iteritems():
+		try:
+			e[k] = str(v)
+		except Exception as ex:
+			println('%s: Bad env: ' % (NAME, ex))
 
 	return e
 
