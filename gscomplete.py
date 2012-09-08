@@ -10,6 +10,41 @@ END_SELECTOR_PAT = re.compile(r'.*?((?:[\w.]+\.)?(\w+))$')
 START_SELECTOR_PAT = re.compile(r'^([\w.]+)')
 DOMAIN = 'GsComplete'
 
+def snippet_match(ctx, m):
+	try:
+		for k,p in m.get('match', {}).iteritems():
+			q = ctx.get(k, '')
+			if gs.is_a_string(p):
+				if not re.search(p, q):
+					return False
+			elif p != q:
+				return False
+	except:
+		gs.notice(DOMAIN, gs.traceback())
+	return True
+
+def resolve_snippets(ctx):
+	cl = []
+
+	if ctx.get('global'):
+		cl.extend(gs.GLOBAL_SNIPPETS)
+	if ctx.get('local'):
+		cl.extend(gs.LOCAL_SNIPPETS)
+
+	try:
+		for m in gs.setting('snippets', []):
+			try:
+				if snippet_match(ctx, m):
+					for ent in m.get('snippets', []):
+						a = u'%s\t%s \u0282' % (ent.get('text', ''), ent.get('title', ''))
+						b = ent.get('value', '')
+						cl.append((a, b))
+			except:
+				gs.notice(DOMAIN, gs.traceback())
+	except:
+		gs.notice(DOMAIN, gs.traceback())
+	return cl
+
 class GoSublime(sublime_plugin.EventListener):
 	gocode_set = False
 	def on_query_completions(self, view, prefix, locations):
@@ -21,11 +56,14 @@ class GoSublime(sublime_plugin.EventListener):
 		if gs.IGNORED_SCOPES.intersection(scopes):
 			return ([], AC_OPTS)
 
+		ctx = {}
+
 		show_snippets = gs.setting('autocomplete_snippets', True) is True
 
 		package_end_pt = self.find_end_pt(view, 'package', 0, pos)
 		if package_end_pt < 0:
-			return (gs.GLOBAL_SNIPPET_PACKAGE, AC_OPTS) if show_snippets else ([], AC_OPTS)
+			ctx['global'] = True
+			return (resolve_snippets(ctx), AC_OPTS) if show_snippets else ([], AC_OPTS)
 
 		# gocode is case-sesitive so push the location back to the 'dot' so it gives
 		# gives us everything then st2 can pick the matches for us
@@ -42,9 +80,11 @@ class GoSublime(sublime_plugin.EventListener):
 		pc = view.substr(sublime.Region(pos-1, pos))
 		if show_snippets and (pc.isspace() or pc.isalpha()):
 			if scopes[-1] == 'source.go':
-				cl.extend(gs.GLOBAL_SNIPPETS)
+				ctx['global'] = True
+				cl.extend(resolve_snippets(ctx))
 			elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
-				cl.extend(gs.LOCAL_SNIPPETS)
+				ctx['local'] = True
+				cl.extend(resolve_snippets(ctx))
 		return (cl, AC_OPTS)
 
 	def find_end_pt(self, view, pat, start, end, flags=sublime.LITERAL):
