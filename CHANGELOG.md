@@ -1,3 +1,19 @@
+## r12.09.08-2
+	* add new setting `comp_lint_commands` that allows you specify what commands comp-lint should run
+	    e.g to run `go vet` followed by `go install`, add the following to your user settings.
+	    by default the only command run for comp-lint is `go install`
+
+		"comp_lint_enabled": true, // enable comp-lint
+		"comp_lint_commands": [
+			{"cmd": ["go", "install"]}, // first run go install
+			{"cmd": ["go", "vet"]}      // followed by go vet,
+		],
+		"on_save": [
+			{"cmd": "gs_comp_lint"} // setup comp-lint to run after you save a file
+		],
+
+	    see `Package/GoSublime/GoSublime.sublime-settings` for details
+
 ## r12.09.08-1
 	* add support snippets (an alternative to Sublime Text's Native snippets)
 	    see `Package/GoSublime/GoSublime.sublime-settings` for details
