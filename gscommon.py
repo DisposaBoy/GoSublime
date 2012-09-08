@@ -19,6 +19,7 @@ _settings = {
 	"fmt_tab_width": 8,
 	"gslint_enabled": False,
 	"comp_lint_enabled": False,
+	"comp_lint_commands": [],
 	"gslint_timeout": 0,
 	"autocomplete_snippets": False,
 	"autocomplete_tests": False,
@@ -180,7 +181,7 @@ def notice_undo(domain, txt, view, should_undo):
 		notice(domain, txt)
 	sublime.set_timeout(cb, 0)
 
-def show_output(domain, s, print_output=True, syntax_file='', replace=True, merge_domain=False):
+def show_output(domain, s, print_output=True, syntax_file='', replace=True, merge_domain=False, scroll_end=False):
 	def cb(domain, s, print_output, win):
 		panel_name = '%s-output' % domain
 		if merge_domain:
@@ -219,7 +220,8 @@ def show_output(domain, s, print_output=True, syntax_file='', replace=True, merg
 					panel.set_syntax_file(syntax_file)
 			panel.set_read_only(True)
 			win.run_command("show_panel", {"panel": "output.%s" % panel_name})
-			panel.show(panel.size())
+			if scroll_end:
+				panel.show(panel.size())
 	sublime.set_timeout(lambda: cb(domain, s, print_output, syntax_file), 0)
 
 def is_pkg_view(view=None):
