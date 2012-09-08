@@ -30,11 +30,17 @@ class GsCommentForwardCommand(sublime_plugin.TextCommand):
 		self.view.run_command("move", {"by": "lines", "forward": True})
 
 class GsFmtSaveCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		return gs.is_go_source_view(self.view)
+
 	def run(self, edit):
 		self.view.run_command("gs_fmt")
 		sublime.set_timeout(lambda: self.view.run_command("save"), 0)
 
 class GsFmtPromptSaveAsCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		return gs.is_go_source_view(self.view)
+		
 	def run(self, edit):
 		self.view.run_command("gs_fmt")
 		sublime.set_timeout(lambda: self.view.run_command("prompt_save_as"), 0)
