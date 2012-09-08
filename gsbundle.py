@@ -11,11 +11,13 @@ def print_install_log(c, s):
 	dur = c.ended - c.started
 	gs.println(
 		'GoSublime: %s done %0.3fs' % (DOMAIN, dur),
-		'| Bundle GOPATH: %s' % BUNDLE_GOPATH,
-		'|  Bundle GOBIN: %s' % BUNDLE_GOBIN,
-		'|   User GOROOT: %s' % e.get('GOROOT', '(NOT SET)'),
-		'|   User GOPATH: %s' % e.get('GOPATH', '(NOT SET)'),
-		'|    User GOBIN: %s (should usually be `NOT SET\')' % e.get('GOBIN', '(NOT SET)'),
+		'|  Bundle GOPATH: %s' % BUNDLE_GOPATH,
+		'|   Bundle GOBIN: %s' % BUNDLE_GOBIN,
+		'|  Bundle Gocode: %s (exists: %s)' % (BUNDLE_GOCODE, os.path.exists(BUNDLE_GOCODE)),
+		'|   Bundle MarGo: %s (exists: %s)' % (BUNDLE_MARGO, os.path.exists(BUNDLE_MARGO)),
+		'|    User GOROOT: %s' % e.get('GOROOT', '(NOT SET)'),
+		'|    User GOPATH: %s' % e.get('GOPATH', '(NOT SET)'),
+		'|     User GOBIN: %s (should usually be `NOT SET\')' % e.get('GOBIN', '(NOT SET)'),
 		'| Output:\n%s\n' % s
 	)
 
@@ -69,7 +71,7 @@ def on_gocode_done(c):
 	if x:
 		gs.notice(DOMAIN, 'Gocode Error: %s\nOutput: %s' % (x, s))
 	else:
-		gsshell.Command(cmd=['gocode'], cwd=BUNDLE_GOBIN).start()
+		gsshell.Command(cmd=[BUNDLE_GOCODE], cwd=BUNDLE_GOBIN).start()
 
 def on_margo_done(c):
 	s = '\n'.join(c.consume_outq())
@@ -88,7 +90,7 @@ def on_install_done(c):
 	print_install_log(c, s)
 
 	c = gsshell.Command(cmd=[
-		"margo",
+		BUNDLE_MARGO,
 		"-d",
 		"-call", "replace",
 		"-addr", gs.setting('margo_addr', '')
@@ -96,7 +98,7 @@ def on_install_done(c):
 	c.on_done = on_margo_done
 	c.start()
 
-	c = gsshell.Command(cmd=['gocode', 'close'])
+	c = gsshell.Command(cmd=[BUNDLE_GOCODE, 'close'])
 	c.on_done = on_gocode_done
 	c.start()
 
@@ -105,6 +107,11 @@ enabled = False
 try:
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')
 	BUNDLE_GOBIN = os.path.join(BUNDLE_GOPATH, 'bin')
+	BUNDLE_GOCODE = os.path.join(BUNDLE_GOBIN, 'gocode')
+	BUNDLE_MARGO = os.path.join(BUNDLE_GOBIN, 'margo')
+	if gs.os_is_windows():
+		BUNDLE_GOCODE = '%s.exe' % BUNDLE_GOCODE
+		BUNDLE_MARGO = '%s.exe' % BUNDLE_MARGO
 	os.environ['PATH'] = '%s%s%s' % (BUNDLE_GOBIN, os.pathsep, os.environ.get('PATH', ''))
 
 	if enabled:
