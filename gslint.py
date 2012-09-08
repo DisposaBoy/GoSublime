@@ -1,11 +1,11 @@
-import gscommon as gs, margo, gsq
+import gscommon as gs, margo, gsq, gsshell
 import sublime, sublime_plugin
 import threading, Queue, time, os, re
 
 DOMAIN = 'GsLint'
 CL_DOMAIN = 'GsCompLint'
 
-CL_PAT = re.compile(r'(.+?)[:](\d+)(?:[:](\d+)?)(.+)')
+CL_PAT = re.compile(r'(\S+?.go)[:](\d+)(?:[:](\d+)?)(.+)', re.IGNORECASE)
 
 class FileRef(object):
 	def __init__(self, view):
@@ -192,25 +192,40 @@ def do_comp_lint(dirname, fn):
 	if not fr:
 		return
 
+	fn = gs.apath(fn, dirname)
 	bindir, _ = gs.temp_dir('bin')
-	os.chdir(dirname)
-	out, err, _ = gs.runcmd(['go', 'install'], shell=False, environ={'GOBIN': bindir})
-
-	for m in CL_PAT.findall('%s\n%s' % (out, err)):
+	local_env = {
+		'GOBIN': bindir,
+	}
+	for c in gs.setting('comp_lint_commands'):
 		try:
-			efn, row, col, msg = m
-			row = int(row)-1
-			col = int(col)-1 if col else 0
-			msg = msg.strip()
-			if row >= 0 and msg:
-				efn = os.path.abspath(efn)
-				if fn == efn:
-					if reports.get(row):
-						reports[row].msg = '%s. %s' % (reports[row].msg, msg)
-					else:
-						reports[row] = Report(row, col, msg)
-		except Exception:
-			pass
+			cmd = c.get('cmd')
+			if not cmd:
+				continue
+
+			shell = c.get('shell') is True
+			env = {} if c.get('global') is True else local_env
+			out, err, _ = gsshell.run(cmd=cmd, shell=shell, cwd=dirname, env=env)
+			if err:
+				gs.notice(DOMAIN, err)
+
+			for m in CL_PAT.findall(out):
+				try:
+					efn, row, col, msg = m
+					row = int(row)-1
+					col = int(col)-1 if col else 0
+					msg = msg.strip()
+					if row >= 0 and msg:
+						efn = gs.apath(efn, dirname)
+						if fn == efn:
+							if reports.get(row):
+								reports[row].msg = '%s. %s' % (reports[row].msg, msg)
+							else:
+								reports[row] = Report(row, col, msg)
+				except:
+					pass
+		except:
+			gs.notice(DOMAIN, gs.traceback())
 
 	def cb():
 		fr.reports = reports
