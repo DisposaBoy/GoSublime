@@ -149,6 +149,9 @@ def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}, 
 def is_a(v, base):
 	return isinstance(v, type(base))
 
+def is_a_string(v):
+	return isinstance(v, basestring)
+
 def settings_obj():
 	return sublime.load_settings("GoSublime.sublime-settings")
 
