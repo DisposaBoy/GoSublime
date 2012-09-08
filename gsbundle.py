@@ -1,9 +1,10 @@
 import gsshell, gscommon as gs
-import os
+import os, re
 import sublime
 
 DOMAIN = 'GsBundle'
 INSTALL_CMD = ['go', 'install', '-v','margo', 'gocode']
+ENV_PATH = re.compile(r'(\w+)=["\']?(.+?)["\']?$')
 
 def print_install_log(c, s):
 	e = gs.env()
@@ -31,9 +32,11 @@ def on_env_done(c):
 	l = c.consume_outq()
 	e = {}
 	for i in l:
-		i = i.strip().split('=', 2)
-		if len(i) == 2 and i[0] in ('GOROOT', 'GOPATH'):
-			e[str(i[0])] = str(i[1].strip('\'"'))
+		m = ENV_PATH.search(i)
+		if m:
+			k, v = str(m.group(1)), str(m.group(2))
+			if k in ('GOROOT', 'GOPATH'):
+				e[k] = v
 
 	os.environ.update(e)
 
