@@ -100,7 +100,7 @@ def on_install_done(c):
 	c.on_done = on_gocode_done
 	c.start()
 
-enabled = True
+enabled = False
 
 try:
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')
