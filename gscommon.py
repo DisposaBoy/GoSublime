@@ -296,7 +296,7 @@ def env():
 		try:
 			e[k] = str(v)
 		except Exception as ex:
-			println('%s: Bad env: ' % (NAME, ex))
+			println('%s: Bad env: %s' % (NAME, ex))
 
 	return e
 
