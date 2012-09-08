@@ -1,3 +1,6 @@
+# Sublime modelines - https://github.com/SublimeText/Modelines
+# sublime: translate_tabs_to_spaces false; rulers [100,120]
+
 import gsshell, gscommon as gs
 import os
 import sublime
@@ -97,7 +100,7 @@ def on_install_done(c):
 	c.on_done = on_gocode_done
 	c.start()
 
-enabled = False
+enabled = True
 
 try:
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')

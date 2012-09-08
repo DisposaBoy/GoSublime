@@ -1,3 +1,6 @@
+# Sublime modelines - https://github.com/SublimeText/Modelines
+# sublime: translate_tabs_to_spaces false; rulers [100,120]
+
 import sublime
 import subprocess, re, os, threading, tempfile, datetime, uuid, traceback as tbck
 from subprocess import Popen, PIPE
@@ -279,6 +282,10 @@ def env():
 				add_path.append(s)
 
 	if os_is_windows():
+		# On Windows, Go assumes %GOROOT% is C:\Go if undefined, so let's mimic that here.
+		# See: http://golang.org/doc/install#windows
+		# todo(guillermooo): what happens if Go is not installed at all?
+		e['GOROOT'] = e.get('GOROOT', '') or 'C:\\Go'
 		l = ['C:\\Go\\bin']
 	else:
 		l = ['/usr/local/go/bin', '/usr/bin']
