@@ -255,11 +255,18 @@ def getenv(name, default=''):
 	return env().get(name, default)
 
 def env():
+	"""
+	Assamble environment information needed for correct operation. In particular,
+	ensure that directories containing binaries are included in PATH.
+	"""
 	e = os.environ.copy()
 	e.update(setting('env', {}))
 	roots = e.get('GOPATH', '').split(os.pathsep)
 	roots.append(e.get('GOROOT', ''))
 
+	# For custom values of GOPATH, installed binaries via go install
+	# will go into the "bin" dir of the corresponding GOPATH path.
+	# Therefore, make sure these paths are included in PATH.
 	add_path = e.get('PATH', '').split(os.pathsep)
 	for s in roots:
 		if s:
@@ -278,7 +285,14 @@ def env():
 
 	e['PATH'] = os.pathsep.join(add_path)
 
-	for k,v in e.items():
+	# Ensure no unicode objects leak through. The reason is twofold:
+	# 	* On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen
+	# 	  can only take bytestrings as environment variables in the
+	#	  "env"	parameter. Reference:
+	# 	  https://github.com/DisposaBoy/GoSublime/issues/112
+	# 	  http://stackoverflow.com/q/12253014/1670
+	#   * Avoids issues with networking too.
+	for k, v in e.iteritems():
 		try:
 			e[k] = str(v)
 		except Exception as ex:
