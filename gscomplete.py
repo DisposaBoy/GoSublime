@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import json, os, re
-import gscommon as gs
+import gscommon as gs, gsshell, gsbundle
 from os.path import basename
 
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
@@ -55,18 +55,18 @@ class GoSublime(sublime_plugin.EventListener):
 		global last_gopath
 		gopath = gs.env().get('GOPATH')
 		if gopath and gopath != last_gopath:
-			out, _, _ = gs.runcmd(['go', 'env', 'GOOS', 'GOARCH'])
+			out, _, _ = gsshell.run(cmd=['go', 'env', 'GOOS', 'GOARCH'])
 			vars = out.strip().split()
 			if len(vars) == 2:
 				last_gopath = gopath
 				fn =  os.path.join(gopath, 'pkg', '_'.join(vars))
-				gs.runcmd(['gocode', 'set', 'lib-path', fn])
+				gsshell.run(cmd=['gocode', 'set', 'lib-path', fn], cwd=gsbundle.BUNDLE_GOBIN)
 
 		comps = []
 		cmd = gs.setting('gocode_cmd', 'gocode')
 		offset = 'c%s' % offset
 		args = [cmd, "-f=json", "autocomplete", fn, offset]
-		js, err, _ = gs.runcmd(args, src)
+		js, err, _ = gsshell.run(cmd=args, input=src)
 		if err:
 			gs.notice(DOMAIN, err)
 		else:
