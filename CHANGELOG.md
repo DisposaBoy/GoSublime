@@ -1,3 +1,7 @@
+## r12.09.08-1
+	* add support snippets (an alternative to Sublime Text's Native snippets)
+	    see `Package/GoSublime/GoSublime.sublime-settings` for details
+
 ## r12.08.26-1
 	* make gs_browse_files (`ctrl+dot`,`ctrl+m`) act more like a file browser.
 	    it now lists all files in the current directory tree excluding known binary files:
