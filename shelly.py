@@ -85,18 +85,19 @@ class EV(sublime_plugin.EventListener):
 		return (cl, AC_OPTS)
 
 class ShellyViewCommand(gsshell.ViewCommand):
-	def __init__(self, cmd=[], shell=False, env={}, cwd='', view=None):
+	def __init__(self, cmd=[], shell=False, env={}, cwd=None, view=None):
 		super(ShellyViewCommand, self).__init__(cmd=cmd, shell=shell, env=env, cwd=cwd, view=view)
+		self._on_output = self.on_output
+		def op(c, ln):
+			self._on_output(c, '\t'+ln)
+		self.on_output = op
 
 	def run(self):
 		if not self.cmd:
 			return
 
-		super(ShellyViewCommand, self).on_output(self, ('\n[run `%s`]' % self.cmd))
+		self._on_output(self, ('\n[run `%s`]' % self.cmd))
 		super(ShellyViewCommand, self).run()
-
-	def on_output(self, c, line):
-		super(ShellyViewCommand, self).on_output(c, '\t'+line)
 
 def settings():
 	return sublime.load_settings('GoSublime-GsShell.sublime-settings')
