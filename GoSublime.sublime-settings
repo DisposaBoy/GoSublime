@@ -38,6 +38,21 @@
 	// Whether or not comp lint is enabled (this might conflict with gslint)
 	"comp_lint_enabled": false,
 
+	// The list of commands that comp-lint will run (in the order specified)
+	// each entry contains a map of:
+	//    cmd: a list containing the command and its args
+	//    shell: whether or not use the $shell to run this command
+	//        if you don't need $shell features then don't set this.
+	//    global: whether or not commands like go install should affect the system globally
+	//        by default the environment variable GOBIN is set to ($TEMPDIR/GoSublime/bin
+	//        which in the installation of commands via comp-lint going there instead of into
+	//        one of your GOPATHs.
+	//        setting this to true, you can e.g automate the actual installation of your commands
+	// additionally, for `shell` and `global` if the value is not `true` then it's assumed to be false
+	"comp_lint_commands": [
+		{"cmd": ["go", "install"]}
+	],
+
 	// how long to wait after the last keystroke before the gslint_cmd command is run (in milliseconds)
 	"gslint_timeout": 100,
 
