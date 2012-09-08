@@ -58,5 +58,29 @@
 	//     gs_comp_lint - compile the pkg and report any errors
 	"on_save": [],
 
+	// as an alternative to Sublime Text's snippet system you may add snippets to GoSublime's
+	// code-completion by adding them to your user settings in the same format as bellow.
+	//
+	// "snippets": [
+	//     {
+	//         "match": {"global": true}, // these snippets will only be presented in the global scope
+	//         "snippets": [
+	//             {"text": "init", "title": "func init()", "value": "func init() {\n\t$1\n}"}
+	//         ]
+	//     },
+	//     {
+	//         "match": {"local": true}, // these snippets will only be present in a function scope
+	//         "snippets": [
+	//             {"text": "print", "title": "print(...)", "value": "print($1)"},
+	//             {"text": "println", "title": "println(...)", "value": "println($1)"}
+	//         ]
+	//     }
+	// ]
+	//
+	// you maybe add field markers ($1, $2, etc) to the `value` string to dictate where the cursor is place
+	// once a completion is expanded and where it's placed once you press tab afterwards.
+	// duplicate markers e.g f("...", $1, $1) will result in multiple cursors, one for each duplication.
+	"snippets": [],
+
 	"auto_complete_triggers": [ {"selector": "source.go", "characters": "."} ]
 }
