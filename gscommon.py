@@ -96,6 +96,13 @@ IGNORED_SCOPES = frozenset([
 	'comment.block.go'
 ])
 
+def apath(fn, cwd=None):
+	if not os.path.isabs(fn):
+		if not cwd:
+			cwd = os.getcwd()
+		fn = os.path.join(cwd, fn)
+	return os.path.normcase(os.path.normpath(fn))
+
 def temp_dir(subdir=''):
 	tmpdir = os.path.join(tempfile.gettempdir(), NAME, subdir)
 	err = ''
