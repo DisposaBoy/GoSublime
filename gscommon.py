@@ -49,6 +49,7 @@ GLOBAL_SNIPPETS = [
 LOCAL_SNIPPETS = [
 	(u'func\tfunc{...}() \u0282', 'func($1) {\n\t$0\n}($2)'),
 	(u'var\tvar [name] [type] \u0282', 'var ${1:name} ${2:type}'),
+	(u'nilerr\tif err != nil {...} \u0282', 'if err != nil {\n\t$0\n}'),
 ]
 
 CLASS_PREFIXES = {
