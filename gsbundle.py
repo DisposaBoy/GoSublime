@@ -108,6 +108,11 @@ def on_install_done(c):
 enabled = False
 
 try:
+	# We have to build absolute paths so that some os/exec.Command calls work as expected on
+	# Windows. When calling subprocesses, Go always completes partial names with PATHEXT values
+	# (unlike CreateProcess). If there is a margo.* executable in the current directory and it isn't
+	# the expected margo.exe binary, MarGo.exe will throw an error or behave unexpectedly.
+	# See: https://github.com/DisposaBoy/GoSublime/issues/126 (#126)
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')
 	BUNDLE_GOBIN = os.path.join(BUNDLE_GOPATH, 'bin')
 	BUNDLE_GOCODE = os.path.join(BUNDLE_GOBIN, 'gocode')
