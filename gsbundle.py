@@ -102,7 +102,7 @@ def on_install_done(c):
 	c.on_done = on_gocode_done
 	c.start()
 
-enabled = True
+enabled = False
 
 try:
 	# We have to build absolute paths so that some os/exec.Command calls work as expected on
