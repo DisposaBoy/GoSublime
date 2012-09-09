@@ -1,3 +1,6 @@
+# Sublime modelines - https://github.com/SublimeText/Modelines
+# sublime: translate_tabs_to_spaces false; rulers [100,120]
+
 import gsshell, gscommon as gs
 import os, re
 import sublime
