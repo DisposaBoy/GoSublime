@@ -7,11 +7,11 @@ import sublime
 
 DOMAIN = 'GsBundle'
 INSTALL_CMD = ['go', 'install', '-v','margo', 'gocode']
-ENV_PATH = re.compile(r'(\w+)=["\']?(.+?)["\']?$')
+ENV_PATH = re.compile(r'(?P<name>\w+)=["\']?(?P<value>.+?)["\']?$')
 
-def print_install_log(c, s):
+def print_install_log(cmd, s):
 	e = gs.env()
-	dur = c.ended - c.started
+	dur = cmd.ended - cmd.started
 	gs.println(
 		'GoSublime: %s done %0.3fs' % (DOMAIN, dur),
 		'|  Bundle GOPATH: %s' % BUNDLE_GOPATH,
@@ -24,33 +24,30 @@ def print_install_log(c, s):
 		'| Output:\n%s\n' % s
 	)
 
-	unset = []
-	if not e.get('GOROOT'):
-		unset.append('GOROOT')
-	if not e.get('GOPATH'):
-		unset.append('GOPATH')
-	if unset:
+	CRITICAL_ENV_VARS = ('GOROOT', 'GOPATH')
+	unset_vars = [var for var in CRITICAL_ENV_VARS if not e.get(var)]
+	if unset_vars:
 		tpl = 'check the console for error messages: the following environment variables are not set: %s'
-		gs.notice(DOMAIN, tpl % ', '.join(unset))
+		gs.notice(DOMAIN, tpl % ', '.join(unset_vars))
 
-def on_env_done(c):
-	l = c.consume_outq()
+def on_env_done(cmd):
+	l = cmd.consume_outq()
 	e = {}
 	for i in l:
-		m = ENV_PATH.search(i)
-		if m:
-			k, v = str(m.group(1)), str(m.group(2))
+		pair = getattr(ENV_PATH.search(i), "groupdict", dict)()
+		if pair:
+			k, v = str(pair['name']), str(pair['value'])
 			if k in ('GOROOT', 'GOPATH'):
 				e[k] = v
 
 	os.environ.update(e)
 
-	x = c.exception()
+	x = cmd.exception()
 	if x or not e:
 		s = '\n>    '.join(l)
 		heading = 'Possible error while attempting to get environment variables:'
 		tpl = '%s\n|    Command: %s\n|    Exception: %s\n|    Output:\n>    %s'
-		gs.show_output(DOMAIN, tpl % (heading, c.cmd, x, s), merge_domain=True)
+		gs.show_output(DOMAIN, tpl % (heading, cmd.cmd, x, s), merge_domain=True)
 
 	do_install()
 
@@ -105,7 +102,7 @@ def on_install_done(c):
 	c.on_done = on_gocode_done
 	c.start()
 
-enabled = False
+enabled = True
 
 try:
 	# We have to build absolute paths so that some os/exec.Command calls work as expected on
