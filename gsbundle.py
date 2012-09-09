@@ -35,10 +35,8 @@ def on_env_done(cmd):
 	e = {}
 	for i in l:
 		pair = getattr(ENV_PATH.search(i), "groupdict", dict)()
-		if pair:
-			k, v = str(pair['name']), str(pair['value'])
-			if k in ('GOROOT', 'GOPATH'):
-				e[k] = v
+		if pair and pair["name"] in ('GOROOT', 'GOPATH'):
+				e[pair["name"]] = pair["value"]
 
 	os.environ.update(e)
 
