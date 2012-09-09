@@ -5,8 +5,6 @@ import threading, Queue, time, os, re
 DOMAIN = 'GsLint'
 CL_DOMAIN = 'GsCompLint'
 
-CL_PAT = re.compile(r'(\S+?.go)[:](\d+)(?:[:](\d+)?)(.+)', re.IGNORECASE)
-
 class FileRef(object):
 	def __init__(self, view):
 		self.view = view
@@ -197,6 +195,9 @@ def do_comp_lint(dirname, fn):
 	local_env = {
 		'GOBIN': bindir,
 	}
+
+	pat = r'%s:(\d+)(?:[:](\d+))?(.+)' % re.escape(os.path.basename(fn))
+	pat = re.compile(pat, re.IGNORECASE)
 	for c in gs.setting('comp_lint_commands'):
 		try:
 			cmd = c.get('cmd')
@@ -209,19 +210,18 @@ def do_comp_lint(dirname, fn):
 			if err:
 				gs.notice(DOMAIN, err)
 
-			for m in CL_PAT.findall(out):
+			for m in pat.findall(out):
 				try:
-					efn, row, col, msg = m
+					row, col, msg = m
 					row = int(row)-1
 					col = int(col)-1 if col else 0
-					msg = msg.strip()
+					msg = msg.strip(': ')
 					if row >= 0 and msg:
-						efn = gs.apath(efn, dirname)
-						if fn == efn:
-							if reports.get(row):
-								reports[row].msg = '%s. %s' % (reports[row].msg, msg)
-							else:
-								reports[row] = Report(row, col, msg)
+						if reports.get(row):
+							reports[row].msg = '%s\n%s' % (reports[row].msg, msg)
+							reports[row].col = max(reports[row].col, col)
+						else:
+							reports[row] = Report(row, col, msg)
 				except:
 					pass
 		except:
