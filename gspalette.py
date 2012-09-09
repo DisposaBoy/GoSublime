@@ -156,7 +156,18 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			for k in keys:
 				r = reps[k]
 				loc = Loc(view.file_name(), r.row, r.col)
-				m = "%sline %d: %s" % (indent, r.row+1, r.msg)
+				m = []
+				m.append("%sline %d:" % (indent, r.row+1))
+				lc = 0
+				for ln in r.msg.split('\n'):
+					if ln:
+						lc += 1
+						if len(ln) > 50:
+							m.append('\t%d: %s -' % (lc, ln[:50]))
+							m.append('\t  %s' % ln[50:])
+						else:
+							m.append('\t%d: %s' % (lc, ln))
+
 				self.add_item(m, self.jump_to, (view, loc))
 		else:
 			self.add_item(['', 'No errors to report'])
