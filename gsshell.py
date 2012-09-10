@@ -210,7 +210,7 @@ def run(cmd=[], shell=False, env={}, cwd=None, input=None):
 		out = out.decode('utf-8') if out else u''
 		err = err.decode('utf-8') if err else u''
 	except (Exception) as e:
-		err = u'Error while running %s: %s' % (args[0], e)
+		err = u'Error while running %s: %s' % (cmd, e)
 		exc = e
 
 	return (out, err, exc)
