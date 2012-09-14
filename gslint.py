@@ -118,7 +118,7 @@ def watch():
 
 	view = gs.active_valid_go_view()
 
-	if view is not None and gs.setting('comp_lint_enabled') is True:
+	if view is not None and (view.file_name() and gs.setting('comp_lint_enabled') is True):
 		fn = view.file_name()
 		fr = ref(fn)
 		with sem:
