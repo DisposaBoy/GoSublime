@@ -15,7 +15,7 @@ def snippet_match(ctx, m):
 		for k,p in m.get('match', {}).iteritems():
 			q = ctx.get(k, '')
 			if gs.is_a_string(p):
-				if not re.search(p, q):
+				if not re.search(p, str(q)):
 					return False
 			elif p != q:
 				return False
@@ -25,14 +25,11 @@ def snippet_match(ctx, m):
 
 def resolve_snippets(ctx):
 	cl = []
-
-	if ctx.get('global'):
-		cl.extend(gs.GLOBAL_SNIPPETS)
-	if ctx.get('local'):
-		cl.extend(gs.LOCAL_SNIPPETS)
-
 	try:
-		for m in gs.setting('snippets', []):
+		snips = []
+		snips.extend(gs.setting('default_snippets', []))
+		snips.extend(gs.setting('snippets', []))
+		for m in snips:
 			try:
 				if snippet_match(ctx, m):
 					for ent in m.get('snippets', []):
@@ -56,13 +53,15 @@ class GoSublime(sublime_plugin.EventListener):
 		if gs.IGNORED_SCOPES.intersection(scopes):
 			return ([], AC_OPTS)
 
-		ctx = {}
+		r = view.find('package\s+(\w+)', 0)
+		ctx = {
+			'global': True,
+			'pkgname': view.substr(view.word(r.end())) if r else '',
+		}
 
 		show_snippets = gs.setting('autocomplete_snippets', True) is True
 
-		package_end_pt = self.find_end_pt(view, 'package', 0, pos)
-		if package_end_pt < 0:
-			ctx['global'] = True
+		if not ctx.get('pkgname'):
 			return (resolve_snippets(ctx), AC_OPTS) if show_snippets else ([], AC_OPTS)
 
 		# gocode is case-sesitive so push the location back to the 'dot' so it gives
@@ -80,9 +79,9 @@ class GoSublime(sublime_plugin.EventListener):
 		pc = view.substr(sublime.Region(pos-1, pos))
 		if show_snippets and (pc.isspace() or pc.isalpha()):
 			if scopes[-1] == 'source.go':
-				ctx['global'] = True
 				cl.extend(resolve_snippets(ctx))
 			elif scopes[-1] == 'meta.block.go' and ('meta.function.plain.go' in scopes or 'meta.function.receiver.go' in scopes):
+				ctx['global'] = False
 				ctx['local'] = True
 				cl.extend(resolve_snippets(ctx))
 		return (cl, AC_OPTS)

@@ -97,5 +97,42 @@
 	// duplicate markers e.g f("...", $1, $1) will result in multiple cursors, one for each duplication.
 	"snippets": [],
 
+	"default_snippets": [
+		{
+			"match": {
+				"global": true,
+				"pkgname": "^$"
+			},
+			"snippets": [
+				{"text": "package", "title": "package [name]", "value": "package ${1:NAME}"},
+				{"text": "package main", "title": "package main", "value": "package main\n\nfunc main() {\n\t$0\n}\n"}
+			]
+		},
+		{
+			"match": {
+				"global": true,
+				"pkgname": "^.+$"
+			},
+			"snippets": [
+				{"text": "import", "title": "import (...)", "value": "import (\n\t\"$1\"\n)"},
+				{"text": "func", "title": "func {...}", "value": "func ${1:name}($2)$3 {\n\t$0\n}"},
+				{"text": "func", "title": "func ([receiver]) {...}", "value": "func (${1:receiver} ${2:type}) ${3:name}($4)$5 {\n\t$0\n}"},
+				{"text": "func http handler", "title": "func(rw, req)", "value": "func ${1:name}(rw http.ResponseWriter, req *http.Request) {\n\t$0\n}"},
+				{"text": "func main", "title": "func main {...}", "value": "func main() {\n\t$0\n}\n"},
+				{"text": "var", "title": "var (...)", "value": "var (\n\t$1\n)"},
+				{"text": "const", "title": "const (...)", "value": "const (\n\t$1\n)"}
+			]
+		},
+		{
+			"match": {
+				"local": true
+			},
+			"snippets": [
+				{"text": "func", "title": "func{...}()", "value": "func($1) {\n\t$0\n}($2)"},
+				{"text": "var", "title": "var [name] [type]", "value": "var ${1:name} ${2:type}"}
+			]
+		}
+	],
+
 	"auto_complete_triggers": [ {"selector": "source.go", "characters": "."} ]
 }
