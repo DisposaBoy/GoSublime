@@ -7,7 +7,7 @@ import sublime
 
 DOMAIN = 'GsBundle'
 INSTALL_CMD = ['go', 'install', '-v','margo', 'gocode']
-ENV_PATH = re.compile(r'(\w+)=["\']?(.+?)["\']?$')
+ENV_PATH = re.compile(r'(?P<name>\w+)=["\']?(?P<value>.+?)["\']?$')
 
 def print_install_log(c, s):
 	e = gs.env()
@@ -24,24 +24,19 @@ def print_install_log(c, s):
 		'| Output:\n%s\n' % s
 	)
 
-	unset = []
-	if not e.get('GOROOT'):
-		unset.append('GOROOT')
-	if not e.get('GOPATH'):
-		unset.append('GOPATH')
-	if unset:
+	CRITICAL_ENV_VARS = ('GOROOT', 'GOPATH')
+	unset_vars = [var for var in CRITICAL_ENV_VARS if not e.get(var)]
+	if unset_vars:
 		tpl = 'check the console for error messages: the following environment variables are not set: %s'
-		gs.notice(DOMAIN, tpl % ', '.join(unset))
+		gs.notice(DOMAIN, tpl % ', '.join(unset_vars))
 
 def on_env_done(c):
 	l = c.consume_outq()
 	e = {}
 	for i in l:
-		m = ENV_PATH.search(i)
-		if m:
-			k, v = str(m.group(1)), str(m.group(2))
-			if k in ('GOROOT', 'GOPATH'):
-				e[k] = v
+		pair = getattr(ENV_PATH.search(i), "groupdict", dict)()
+		if pair and pair["name"] in ('GOROOT', 'GOPATH'):
+				e[str(pair["name"])] = str(pair["value"])
 
 	os.environ.update(e)
 
