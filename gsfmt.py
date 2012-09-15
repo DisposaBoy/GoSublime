@@ -20,10 +20,12 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 		if err:
 			gs.notice(DOMAIN, "cannot fmt file. error: `%s'" % err)
 			return
+
 		if not src.strip():
 			gs.notice(DOMAIN, "cannot fmt file. it appears to contain syntax errors")
 			return
 
-		dirty, err = gspatch.merge(self.view, vsize, src)
+		_, err = gspatch.merge(self.view, vsize, src)
 		if err:
-			gs.notice_undo(DOMAIN, "cannot fmt file. merge failure: `%s'" % err, self.view, dirty)
+			msg = 'PANIC: Cannot fmt file. Check your source for errors (and maybe undo any changes).'
+			sublime.error_message("%s: %s: Merge failure: `%s'" % (DOMAIN, msg, err))
