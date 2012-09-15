@@ -9,9 +9,9 @@ DOMAIN = 'GsBundle'
 INSTALL_CMD = ['go', 'install', '-v','margo', 'gocode']
 ENV_PATH = re.compile(r'(?P<name>\w+)=["\']?(?P<value>.+?)["\']?$')
 
-def print_install_log(cmd, s):
+def print_install_log(c, s):
 	e = gs.env()
-	dur = cmd.ended - cmd.started
+	dur = c.ended - c.started
 	gs.println(
 		'GoSublime: %s done %0.3fs' % (DOMAIN, dur),
 		'|  Bundle GOPATH: %s' % BUNDLE_GOPATH,
@@ -30,22 +30,22 @@ def print_install_log(cmd, s):
 		tpl = 'check the console for error messages: the following environment variables are not set: %s'
 		gs.notice(DOMAIN, tpl % ', '.join(unset_vars))
 
-def on_env_done(cmd):
-	l = cmd.consume_outq()
+def on_env_done(c):
+	l = c.consume_outq()
 	e = {}
 	for i in l:
 		pair = getattr(ENV_PATH.search(i), "groupdict", dict)()
 		if pair and pair["name"] in ('GOROOT', 'GOPATH'):
-				e[pair["name"]] = pair["value"]
+				e[str(pair["name"])] = str(pair["value"])
 
 	os.environ.update(e)
 
-	x = cmd.exception()
+	x = c.exception()
 	if x or not e:
 		s = '\n>    '.join(l)
 		heading = 'Possible error while attempting to get environment variables:'
 		tpl = '%s\n|    Command: %s\n|    Exception: %s\n|    Output:\n>    %s'
-		gs.show_output(DOMAIN, tpl % (heading, cmd.cmd, x, s), merge_domain=True)
+		gs.show_output(DOMAIN, tpl % (heading, c.cmd, x, s), merge_domain=True)
 
 	do_install()
 
