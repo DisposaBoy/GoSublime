@@ -32,6 +32,7 @@ _settings = {
 	"shell": [],
 	"default_snippets": [],
 	"snippets": [],
+	"gsbundle_enabled": False,
 }
 
 NAME = 'GoSublime'
