@@ -51,7 +51,7 @@ def resolve_snippets(ctx):
 						if text and value:
 							for typename in types:
 								vars['typename'] = typename
-								vars['typename_abbr'] = typename[0].lower()
+								vars['typename_abbr'] = typename[0].lower() if typename else ''
 								txt, ttl, val = expand_snippet_vars(vars, text, title, value)
 								s = u'%s\t%s \u0282' % (txt, ttl)
 								cl.add((s, val))
