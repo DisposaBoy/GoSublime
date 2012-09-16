@@ -225,10 +225,36 @@ def run(cmd=[], shell=False, env={}, cwd=None, input=None):
 
 	return (out, err, exc)
 
+class CommandStdoutReader(threading.Thread):
+	def __init__(self, c, stdout):
+		super(CommandStdoutReader, self).__init__()
+		self.daemon = True
+		self.stdout = stdout
+		self.c = c
+
+	def run(self):
+		try:
+			while True:
+				line = self.stdout.readline()
+
+				if not line:
+					self.c.close_stdout()
+					break
+
+				if not self.c.output_started:
+					self.c.output_started = time.time()
+
+				try:
+					self.c.on_output(self.c, gs.ustr(line.rstrip('\r\n')))
+				except Exception:
+					gs.println(gs.traceback(DOMAIN))
+		except Exception:
+			gs.println(gs.traceback(DOMAIN))
+
+
 class Command(threading.Thread):
 	def __init__(self, cmd=[], shell=False, env={}, cwd=None):
 		super(Command, self).__init__()
-		self.lck = threading.Lock()
 		self.daemon = True
 		self.cancelled = False
 		self.q = Queue.Queue()
@@ -267,9 +293,8 @@ class Command(threading.Thread):
 		return l
 
 	def poll(self):
-		with self.lck:
-			if self.p:
-				return self.p.poll()
+		if self.p:
+			return self.p.poll()
 		return False
 
 	def cancel(self):
@@ -277,21 +302,19 @@ class Command(threading.Thread):
 			try:
 				os.killpg(self.p.pid, signal.SIGTERM)
 			except Exception:
-				with self.lck:
-					self.p.terminate()
+				self.p.terminate()
 
 			time.sleep(0.100)
 			if not self.completed():
 				time.sleep(0.500)
 				if not self.completed():
-					with self.lck:
+					try:
+						os.killpg(self.p.pid, signal.SIGKILL)
+					except Exception:
 						try:
-							os.killpg(self.p.pid, signal.SIGKILL)
+							self.p.kill()
 						except Exception:
-							try:
-								self.p.kill()
-							except Exception:
-								pass
+							pass
 					self.close_stdout()
 
 		discarded = 0
@@ -306,9 +329,8 @@ class Command(threading.Thread):
 
 	def close_stdout(self):
 		try:
-			with self.lck:
-				if self.p:
-					self.p.stdout.close()
+			if self.p:
+				self.p.stdout.close()
 		except Exception:
 			pass
 
@@ -321,27 +343,13 @@ class Command(threading.Thread):
 		try:
 			try:
 				self.p = gs.popen(self.cmd, shell=self.shell, stderr=subprocess.STDOUT,
-					environ=self.env, cwd=self.cwd)
+					environ=self.env, cwd=self.cwd, bufsize=1)
 
-				while True:
-					line = self.p.stdout.readline()
-
-					if not line:
-						self.close_stdout()
-						break
-
-					if not self.output_started:
-						self.output_started = time.time()
-
-					self.on_output(self, line.rstrip('\r\n').decode('utf-8'))
+				CommandStdoutReader(self, self.p.stdout).start()
 			except Exception as ex:
 				self.x = ex
 			finally:
-				if self.p:
-					with self.lck:
-						self.rcode = self.p.wait()
-				else:
-					self.rcode = False
+				self.rcode = self.p.wait()
 		finally:
 			gs.end(tid)
 			self.ended = time.time()
