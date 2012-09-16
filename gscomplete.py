@@ -9,12 +9,13 @@ last_gopath = ''
 END_SELECTOR_PAT = re.compile(r'.*?((?:[\w.]+\.)?(\w+))$')
 START_SELECTOR_PAT = re.compile(r'^([\w.]+)')
 DOMAIN = 'GsComplete'
+SNIPPET_VAR_PAT = re.compile(r'\$\{([a-zA-Z]\w*)\}')
 
 def snippet_match(ctx, m):
 	try:
 		for k,p in m.get('match', {}).iteritems():
 			q = ctx.get(k, '')
-			if gs.is_a_string(p):
+			if p and gs.is_a_string(p):
 				if not re.search(p, str(q)):
 					return False
 			elif p != q:
@@ -23,8 +24,19 @@ def snippet_match(ctx, m):
 		gs.notice(DOMAIN, gs.traceback())
 	return True
 
+def expand_snippet_vars(vars, text, title, value):
+	sub = lambda m: vars.get(m.group(1), '')
+	return (
+		SNIPPET_VAR_PAT.sub(sub, text),
+		SNIPPET_VAR_PAT.sub(sub, title),
+		SNIPPET_VAR_PAT.sub(sub, value)
+	)
+
 def resolve_snippets(ctx):
-	cl = []
+	cl = set()
+	types = [''] if ctx.get('local') else ctx.get('types')
+	vars = ctx.get('vars')
+
 	try:
 		snips = []
 		snips.extend(gs.setting('default_snippets', []))
@@ -33,14 +45,21 @@ def resolve_snippets(ctx):
 			try:
 				if snippet_match(ctx, m):
 					for ent in m.get('snippets', []):
-						a = u'%s\t%s \u0282' % (ent.get('text', ''), ent.get('title', ''))
-						b = ent.get('value', '')
-						cl.append((a, b))
+						text = ent.get('text', '')
+						title = ent.get('title', '')
+						value = ent.get('value', '')
+						if text and value:
+							for typename in types:
+								vars['typename'] = typename
+								vars['typename_abbr'] = typename[0].lower()
+								txt, ttl, val = expand_snippet_vars(vars, text, title, value)
+								s = u'%s\t%s \u0282' % (txt, ttl)
+								cl.add((s, val))
 			except:
 				gs.notice(DOMAIN, gs.traceback())
 	except:
 		gs.notice(DOMAIN, gs.traceback())
-	return cl
+	return list(cl)
 
 class GoSublime(sublime_plugin.EventListener):
 	gocode_set = False
@@ -53,10 +72,21 @@ class GoSublime(sublime_plugin.EventListener):
 		if gs.IGNORED_SCOPES.intersection(scopes):
 			return ([], AC_OPTS)
 
+		types = []
+		for r in view.find_by_selector('source.go keyword.control.go'):
+			if view.substr(r) == 'type':
+				end = r.end()
+				r = view.find(r'\s+(\w+)', end)
+				if r.begin() == end:
+					types.append(view.substr(r).lstrip())
+
 		r = view.find('package\s+(\w+)', 0)
 		ctx = {
 			'global': True,
 			'pkgname': view.substr(view.word(r.end())) if r else '',
+			'vars': {},
+			'types': types or [''],
+			'has_types': len(types) > 0,
 		}
 
 		show_snippets = gs.setting('autocomplete_snippets', True) is True
