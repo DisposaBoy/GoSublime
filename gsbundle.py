@@ -1,8 +1,10 @@
 # Sublime modelines - https://github.com/SublimeText/Modelines
 # sublime: translate_tabs_to_spaces false; rulers [100,120]
 
-import gsshell, gscommon as gs
-import os, re
+import gsshell
+import gscommon as gs
+import os
+import re
 import sublime
 
 DOMAIN = 'GsBundle'
@@ -94,11 +96,31 @@ def on_install_done(c):
 		"-addr", gs.setting('margo_addr', '')
 	])
 	c.on_done = on_margo_done
+
 	c.start()
 
 	c = gsshell.Command(cmd=[BUNDLE_GOCODE, 'close'])
 	c.on_done = on_gocode_done
 	c.start()
+
+def init():
+	try:
+		if gs.settings_obj().get('gsbundle_enabled') is True:
+			e = gs.env()
+			if e.get('GOROOT') and e.get('GOPATH'):
+				do_install()
+			else:
+				gs.println('%s: attempting to set GOROOT and/or GOPATH' % DOMAIN)
+				if gs.os_is_windows():
+					cmd = 'go env & echo GOPATH=%GOPATH%'
+				else:
+					cmd = 'go env; echo GOPATH=$GOPATH'
+				c = gsshell.Command(cmd=cmd, shell=True)
+				c.on_done = on_env_done
+				c.start()
+	except Exception:
+		gs.show_traceback(DOMAIN)
+
 
 try:
 	# We have to build absolute paths so that some os/exec.Command calls work as expected on
@@ -115,18 +137,6 @@ try:
 		BUNDLE_MARGO = '%s.exe' % BUNDLE_MARGO
 	os.environ['PATH'] = '%s%s%s' % (BUNDLE_GOBIN, os.pathsep, os.environ.get('PATH', ''))
 
-	if gs.setting('gsbundle_enabled') is True:
-		e = gs.env()
-		if e.get('GOROOT') and e.get('GOPATH'):
-			do_install()
-		else:
-			gs.println('%s: attempting to set GOROOT and/or GOPATH' % DOMAIN)
-			if gs.os_is_windows():
-				cmd = 'go env & echo GOPATH=%GOPATH%'
-			else:
-				cmd = 'go env; echo GOPATH=$GOPATH'
-			c = gsshell.Command(cmd=cmd, shell=True)
-			c.on_done = on_env_done
-			c.start()
+	sublime.set_timeout(init, 1000)
 except Exception:
 	gs.show_traceback(DOMAIN)
