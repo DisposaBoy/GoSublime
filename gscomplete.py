@@ -128,8 +128,8 @@ class GoSublime(sublime_plugin.EventListener):
 			vars = out.strip().split()
 			if len(vars) == 2:
 				last_gopath = gopath
-				fn =  os.path.join(gopath, 'pkg', '_'.join(vars))
-				gsshell.run(cmd=['gocode', 'set', 'lib-path', fn], cwd=gsbundle.BUNDLE_GOBIN)
+				libpath =  os.path.join(gopath, 'pkg', '_'.join(vars))
+				gsshell.run(cmd=['gocode', 'set', 'lib-path', libpath], cwd=gsbundle.BUNDLE_GOBIN)
 
 		comps = []
 		cmd = gs.setting('gocode_cmd', 'gocode')
