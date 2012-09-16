@@ -66,7 +66,7 @@ class Prompt(object):
 
 				try:
 					c = httplib.HTTPConnection(host)
-					src = self.view.substr(sublime.Region(0, self.view.size())).encode('utf-8')
+					src = gs.astr(self.view.substr(sublime.Region(0, self.view.size())))
 					c.request('POST', '/share', src, {'User-Agent': 'GoSublime'})
 					s = 'http://%s/p/%s' % (host, c.getresponse().read())
 				except Exception as ex:
@@ -84,7 +84,7 @@ class Prompt(object):
 					file_name = os.path.join(tdir, ('%s.go' % file_name))
 					try:
 						with open(file_name, 'w') as f:
-							src = self.view.substr(sublime.Region(0, self.view.size())).encode('utf-8')
+							src = gs.astr(self.view.substr(sublime.Region(0, self.view.size())))
 							f.write(src)
 					except Exception as ex:
 						err = str(ex)
@@ -203,7 +203,7 @@ def fix_shell_cmd(shell, cmd):
 		else:
 			cmd = [cmd_str]
 
-	return (shell, [str(v) for v in cmd])
+	return (shell, [gs.astr(v) for v in cmd])
 
 def run(cmd=[], shell=False, env={}, cwd=None, input=None):
 	out = u""
@@ -215,13 +215,12 @@ def run(cmd=[], shell=False, env={}, cwd=None, input=None):
 		shell, cmd = fix_shell_cmd(shell, cmd)
 		p = gs.popen(cmd, shell=shell, stderr=subprocess.STDOUT, environ=env, cwd=cwd)
 		if input is not None:
-			input = input.encode('utf-8')
-		out, err = p.communicate(input=input)
-		out = out.decode('utf-8') if out else u''
-		err = err.decode('utf-8') if err else u''
-	except (Exception) as e:
-		err = u'Error while running %s: %s' % (cmd, e)
-		exc = e
+			input = gs.astr(input)
+		out, _ = p.communicate(input=input)
+		out = gs.ustr(out) if out else u''
+	except Exception as ex:
+		err = u'Error while running %s: %s' % (cmd, gs.traceback())
+		exc = ex
 
 	return (out, err, exc)
 
@@ -390,7 +389,7 @@ class ViewCommand(Command):
 
 	def write_lines(self, view, edit, lines):
 		for ln in lines:
-			view.insert(edit, view.size(), u'%s\n' % ln.decode('utf-8'))
+			view.insert(edit, view.size(), u'%s\n' % ln)
 		view.show(view.line(view.size() - 1).begin())
 
 	def on_done(self, c):
