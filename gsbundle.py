@@ -100,8 +100,6 @@ def on_install_done(c):
 	c.on_done = on_gocode_done
 	c.start()
 
-enabled = gs.setting('gsbundle_enabled') is True
-
 try:
 	# We have to build absolute paths so that some os/exec.Command calls work as expected on
 	# Windows. When calling subprocesses, Go always completes partial names with PATHEXT values
@@ -117,7 +115,7 @@ try:
 		BUNDLE_MARGO = '%s.exe' % BUNDLE_MARGO
 	os.environ['PATH'] = '%s%s%s' % (BUNDLE_GOBIN, os.pathsep, os.environ.get('PATH', ''))
 
-	if enabled:
+	if gs.setting('gsbundle_enabled') is True:
 		e = gs.env()
 		if e.get('GOROOT') and e.get('GOPATH'):
 			do_install()
