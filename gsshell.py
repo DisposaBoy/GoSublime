@@ -1,6 +1,16 @@
-import sublime, sublime_plugin
+import sublime
+import sublime_plugin
 import gscommon as gs
-import re, os, httplib, hashlib, threading, Queue, traceback, subprocess, time, signal
+import re
+import os
+import httplib
+import hashlib
+import threading
+import Queue
+import traceback
+import subprocess
+import time
+import signal
 
 DOMAIN = "GsShell"
 GO_RUN_PAT = re.compile(r'^go\s+(run|play)$', re.IGNORECASE)
