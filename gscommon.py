@@ -514,7 +514,7 @@ def ustr(s):
 		return s
 	return str(s).decode('utf-8')
 
-def str(s):
+def astr(s):
 	if isinstance(s, unicode):
 		return s.encode('utf-8')
 	return str(s)
