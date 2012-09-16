@@ -108,7 +108,7 @@ def basedir_or_cwd(fn):
 		return os.path.dirname(fn)
 	return os.getcwd()
 
-def popen(args, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None):
+def popen(args, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None, bufsize=0):
 	ev = os.environ.copy()
 	ev.update(env())
 	ev.update(environ)
@@ -119,7 +119,7 @@ def popen(args, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None):
 		setsid = None
 
 	return Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE, startupinfo=STARTUP_INFO,
-		shell=shell, env=ev, cwd=cwd, preexec_fn=setsid)
+		shell=shell, env=ev, cwd=cwd, preexec_fn=setsid, bufsize=bufsize)
 
 def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None):
 	out = ""
