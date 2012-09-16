@@ -1,3 +1,6 @@
+## r12.09.16-1
+	* add typename-aware method definition snippets for types declared in the current file
+
 ## r12.09.08-2
 	* add new setting `comp_lint_commands` that allows you specify what commands comp-lint should run
 	    e.g to run `go vet` followed by `go install`, add the following to your user settings.
