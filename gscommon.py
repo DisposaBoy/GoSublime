@@ -509,6 +509,16 @@ def traceback(domain='GoSublime'):
 def show_traceback(domain):
 	show_output(domain, traceback(), replace=False, merge_domain=False)
 
+def ustr(s):
+	if isinstance(s, unicode):
+		return s
+	return str(s).decode('utf-8')
+
+def str(s):
+	if isinstance(s, unicode):
+		return s.encode('utf-8')
+	return str(s)
+
 try:
 	st2_status_message
 except:
