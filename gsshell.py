@@ -389,7 +389,10 @@ class ViewCommand(Command):
 
 	def write_lines(self, view, edit, lines):
 		for ln in lines:
-			view.insert(edit, view.size(), u'%s\n' % ln)
+			try:
+				view.insert(edit, view.size(), u'%s\n' % ln)
+			except Exception:
+				gs.println(gs.traceback(DOMAIN))
 		view.show(view.line(view.size() - 1).begin())
 
 	def on_done(self, c):
