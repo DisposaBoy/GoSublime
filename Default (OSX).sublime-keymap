@@ -97,7 +97,7 @@
 		"command": "gs_browse_packages"
 	},
 	{
-		"keys": ["supe+.", "supe+m"],
+		"keys": ["super+.", "super+m"],
 		"command": "gs_browse_files"
 	},
 	{
