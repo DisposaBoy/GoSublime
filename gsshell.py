@@ -54,7 +54,11 @@ class Prompt(object):
 					hist = {}
 				basedir = gs.basedir_or_cwd(file_name)
 				hist[basedir] = [s] # todo: store a list of historical commands
-				self.settings.set('cmd_hist', hist)
+				hst = {}
+				for k in hist:
+					# :|
+					hst[gs.ustr(k)] = gs.ustr(hist[k])
+				self.settings.set('cmd_hist', hst)
 				sublime.save_settings('GoSublime-GsShell.sublime-settings')
 
 			if GO_SHARE_PAT.match(s):
