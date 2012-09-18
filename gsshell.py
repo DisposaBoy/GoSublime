@@ -359,7 +359,7 @@ class Command(threading.Thread):
 			self.on_done(self)
 
 class ViewCommand(Command):
-	def __init__(self, cmd=[], shell=False, env={}, cwd='', view=None):
+	def __init__(self, cmd=[], shell=False, env={}, cwd=None, view=None):
 		self.view = view
 		super(ViewCommand, self).__init__(cmd=cmd, shell=shell, env=env, cwd=cwd)
 
