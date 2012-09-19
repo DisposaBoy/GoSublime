@@ -28,7 +28,7 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 				if av is not None:
 					wd = gs.basedir_or_cwd(av.file_name())
 
-		v.insert(edit, v.size(), ('[  wd: %s ]\n# \n' % wd))
+		v.insert(edit, v.size(), ('\n[  wd: %s ]\n# \n' % wd))
 
 		v.sel().clear()
 		n = v.size()-1
@@ -75,6 +75,15 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		cmd = v.substr(line).lstrip()
 		if cmd.startswith('#'):
 			cmd = cmd.strip('# ')
+			if not cmd:
+				v.run_command('gs_commander_init')
+				return
+
+			f = globals().get('cmd_%s' % cmd)
+			if f:
+				f(v, edit)
+				return
+
 			wd = v.settings().get('gscommander.wd')
 			v.replace(edit, line, ('[ run: %s ]' % cmd))
 			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=v, cwd=wd)
@@ -93,3 +102,10 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 			c.on_output = on_output
 			c.output_done.append(on_output_done)
 			c.start()
+
+def cmd_reset(view, edit):
+	view.erase(edit, sublime.Region(0, view.size()))
+	view.run_command('gs_commander_init')
+
+def cmd_clear(view, edit):
+	cmd_reset(view, edit)
