@@ -1,0 +1,19 @@
+{
+	"name": "GoSublime Commander",
+	"scopeName": "text.gscommander",
+	"fileTypes": [""],
+	"repository": {
+		"path": {
+			"name": "path.gscommander storage.type.class.gscommander",
+			"match": "((?:[.]*|\\w+:)[\\\\/]\\S+|\\b\\w[.]\\w+\\b)"
+		}
+	},
+	"patterns": [
+		{"include":"#path"},
+		{
+			"name": "prompt.gscommander storage.type.class.gscommander",
+			"match": "(^\\s*#.*)"
+		}
+	],
+	"uuid": "78c486ec-0101-11e2-a85a-00262d996a67"
+}

@@ -268,11 +268,11 @@ class Command(threading.Thread):
 		self.output_started = 0
 		self.ended = 0
 		self.on_output = command_on_output
-		self.on_done = command_on_done
 		self.env = fix_env(env)
 		self.shell, self.cmd = fix_shell_cmd(shell, cmd)
 		self.message = str(self.cmd)
 		self.cwd = cwd if cwd else None
+		self.done = []
 
 	def outq(self):
 		return self.q
@@ -357,6 +357,12 @@ class Command(threading.Thread):
 			gs.end(tid)
 			self.ended = time.time()
 			self.on_done(self)
+
+			for f in self.done:
+				try:
+					f(self)
+				except Exception:
+					gs.notice(DOMAIN, gs.traceback())
 
 class ViewCommand(Command):
 	def __init__(self, cmd=[], shell=False, env={}, cwd=None, view=None):
