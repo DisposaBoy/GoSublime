@@ -272,6 +272,7 @@ class Command(threading.Thread):
 		self.shell, self.cmd = fix_shell_cmd(shell, cmd)
 		self.message = str(self.cmd)
 		self.cwd = cwd if cwd else None
+		self.on_done = command_on_done
 		self.done = []
 
 	def outq(self):
