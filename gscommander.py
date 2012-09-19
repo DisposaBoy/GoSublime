@@ -19,12 +19,7 @@ class EV(sublime_plugin.EventListener):
 class GsCommanderInitCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None):
 		v = self.view
-
-		n = v.size()
-		if n > 0 and v.substr(sublime.Region(n, n)) != '\n':
-			v.insert(edit, n, '\n# ')
-		else:
-			v.insert(edit, n, '# ')
+		vs = v.settings()
 
 		if not wd:
 			win = self.view.window()
@@ -33,18 +28,24 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 				if av is not None:
 					wd = gs.basedir_or_cwd(av.file_name())
 
+		v.insert(edit, v.size(), ('[  wd: %s ]\n# \n' % wd))
+
 		v.sel().clear()
-		n = v.size()
+		n = v.size()-1
 		v.sel().add(sublime.Region(n, n))
-		vs = v.settings()
 		vs.set("gscommander.wd", wd)
 		vs.set("rulers", [])
 		vs.set("fold_buttons", True)
 		vs.set("fade_fold_buttons", False)
-		vs.set("gutter", False)
+		vs.set("gutter", True)
+		vs.set("margin", 0)
+		vs.set("tab_size", 2)
 		vs.set("word_wrap", True)
 		vs.set("indent_subsequent_lines", True)
 		vs.set("line_numbers", False)
+		vs.set("highlight_line", True)
+		vs.set("draw_indent_guides", True)
+		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
 		v.set_syntax_file('Packages/GoSublime/GsCommander.tmLanguage')
 		v.show(v.size()-1)
 
@@ -73,16 +74,22 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		line = v.line(pos)
 		cmd = v.substr(line).lstrip()
 		if cmd.startswith('#'):
-			cmd = cmd.lstrip('#')
-			out, err, _ = gsshell.run(cmd, shell=True)
+			cmd = cmd.strip('# ')
 			wd = v.settings().get('gscommander.wd')
+			v.replace(edit, line, ('[ run: %s ]' % cmd))
 			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=v, cwd=wd)
-			def on_done(c):
+
+			def on_output_done(c):
 				def cb():
 					win = sublime.active_window()
 					if win is not None:
 						win.run_command("gs_commander_open")
 				sublime.set_timeout(cb, 0)
 
-			c.done.append(on_done)
+			oo = c.on_output
+			def on_output(c, ln):
+				oo(c, '\t'+ln)
+
+			c.on_output = on_output
+			c.output_done.append(on_output_done)
 			c.start()
