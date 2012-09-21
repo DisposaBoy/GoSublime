@@ -2,7 +2,6 @@ import sublime
 import sublime_plugin
 import gscommon as gs
 import gsshell
-import uuid
 
 DOMAIN = "GsCommander"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
@@ -11,6 +10,13 @@ try:
 	stash
 except:
 	stash = {}
+
+def active_wd(win=None):
+	_, v = gs.win_view(win=win)
+	return gs.basedir_or_cwd(v.file_name() if v else '')
+
+def wdid(wd):
+	return 'gscommander://%s' % wd
 
 class EV(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
@@ -22,13 +28,15 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		vs = v.settings()
 
 		if not wd:
-			win = self.view.window()
-			if win is not None:
-				av = win.active_view()
-				if av is not None:
-					wd = gs.basedir_or_cwd(av.file_name())
+			wd = vs.get('gscommander.wd', active_wd(win=v.window()))
 
-		v.insert(edit, v.size(), ('\n[  wd: %s ]\n# \n' % wd))
+		was_empty = v.size() == 0
+		s = '[  %s ]\n# \n' % wd
+
+		if was_empty:
+			v.insert(edit, v.size(), s)
+		else:
+			v.insert(edit, v.size(), '\n'+s)
 
 		v.sel().clear()
 		n = v.size()-1
@@ -47,26 +55,32 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		vs.set("draw_indent_guides", True)
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
 		v.set_syntax_file('Packages/GoSublime/GsCommander.tmLanguage')
-		v.show(v.size()-1)
 
+		if not was_empty:
+			v.show(v.size()-1)
 
 class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
-	def run(self):
+	def run(self, wd=None):
 		win = self.window
 		wid = win.id()
-		v = stash.get(wid)
-		if v is None:
-			v = win.get_output_panel('gscommander')
-			stash[wid] = v
+		if not wd:
+			wd = active_wd(win=win)
 
-		win.run_command("show_panel", {"panel": "output.gscommander"})
+		id = wdid(wd)
+		st = stash.setdefault(wid, {})
+		v = st.get(id)
+		if v is None:
+			v = win.get_output_panel(id)
+			st[id] = v
+
+		win.run_command("show_panel", {"panel": ("output.%s" % id)})
 		win.focus_view(v)
-		v.run_command('gs_commander_init')
+		v.run_command('gs_commander_init', {'wd': wd})
 
 class GsCommanderExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
-		v = self.view
-		return v is not None and v.score_selector(v.sel()[0].begin(), 'text.gscommander') > 0
+		pos = self.view.sel()[0].begin()
+		return self.view.score_selector(pos, 'text.gscommander') > 0
 
 	def run(self, edit):
 		v = self.view
@@ -85,7 +99,7 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 				return
 
 			wd = v.settings().get('gscommander.wd')
-			v.replace(edit, line, ('[ run: %s ]' % cmd))
+			v.replace(edit, line, ('[ %s ]' % cmd))
 			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=v, cwd=wd)
 
 			def on_output_done(c):
@@ -102,6 +116,8 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 			c.on_output = on_output
 			c.output_done.append(on_output_done)
 			c.start()
+		else:
+			v.insert(edit, v.sel()[0].begin(), '\n')
 
 def cmd_reset(view, edit):
 	view.erase(edit, sublime.Region(0, view.size()))
