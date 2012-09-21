@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 import gscommon as gs
 import gsshell
+import os
 
 DOMAIN = "GsCommander"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
@@ -76,6 +77,22 @@ class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
 		win.run_command("show_panel", {"panel": ("output.%s" % id)})
 		win.focus_view(v)
 		v.run_command('gs_commander_init', {'wd': wd})
+
+class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		pos = self.view.sel()[0].begin()
+		return self.view.score_selector(pos, 'path.gscommander') > 0
+
+	def run(self, edit):
+		v = self.view
+		pos = v.sel()[0].begin()
+		wd = v.settings().get('gscommander.wd') or active_wd()
+		fn = v.substr(v.extract_scope(pos))
+		fn = gs.apath(fn, wd)
+		if os.path.exists(fn):
+			self.view.window().open_file(fn, sublime.ENCODED_POSITION)
+		else:
+			gs.notice(DOMAIN, "Invalid path `%s'" % fn)
 
 class GsCommanderExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
