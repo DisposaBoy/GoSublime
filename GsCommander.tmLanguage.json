@@ -5,7 +5,7 @@
 	"repository": {
 		"path": {
 			"name": "path.gscommander storage.type.class.gscommander",
-			"match": "((?:[.]*|\\w+:)[\\\\/]\\S+|\\b\\w[.]\\w+\\b)"
+			"match": "((?:\\w+:|[.]*)?[\\\\/].+?[.][-~\\w]+)|(\\S+[.][-~\\w]+)|(\\w+://\\S+)"
 		}
 	},
 	"patterns": [
