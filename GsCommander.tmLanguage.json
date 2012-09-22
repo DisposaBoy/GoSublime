@@ -4,8 +4,8 @@
 	"fileTypes": [""],
 	"patterns": [
 		{
-			"name": "url.gscommander storage.type.class.gscommander",
-			"match": "(\\w+://\\S+)"
+			"name": "path.gscommander storage.type.class.gscommander",
+			"match": "((?:\\w+://)\\S+)"
 		},
 		{
 			"name": "path.gscommander storage.type.class.gscommander",

@@ -12,9 +12,9 @@
 	<array>
 		<dict>
 			<key>match</key>
-			<string>(\w+://\S+)</string>
+			<string>((?:\w+://)\S+)</string>
 			<key>name</key>
-			<string>url.gscommander storage.type.class.gscommander</string>
+			<string>path.gscommander storage.type.class.gscommander</string>
 		</dict>
 		<dict>
 			<key>match</key>
