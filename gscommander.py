@@ -110,7 +110,7 @@ class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 		v = self.view
 		pos = v.sel()[0].begin()
 		inscope = lambda p: v.score_selector(p, 'path.gscommander') > 0
-		if inscope(pos):
+		if not inscope(pos):
 			if inscope(pos - 1):
 				pos -= 1
 			else:
