@@ -99,12 +99,20 @@
 		"args": {"panel": "output.exec"}
 	},
 	{
-		"caption": "GoSublime: Show pending tasks",
+		"caption": "GoSublime: Show/Cancel pending tasks",
 		"command": "gs_show_tasks"
 	},
 	{
 		"caption": "GoSublime: Cancel the currently executing command",
 		"command": "exec",
 		"args": { "kill": true }
+	},
+	{
+		"caption": "GoSublime: Activate GsCommander",
+		"command": "gs_commander_open"
+	},
+	{
+		"caption": "GoSublime: (GsCommander) open file/url",
+		"command": "gs_commander_open_selection"
 	}
 ]
