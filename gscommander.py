@@ -4,10 +4,13 @@ import gscommon as gs
 import gsshell
 import os
 import re
+import webbrowser
 
 DOMAIN = "GsCommander"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
 SPLIT_FN_POS_PAT = re.compile(r'(.+?)(?:[:](\d+))?(?:[:](\d+))?$')
+URL_SCHEME_PAT = re.compile(r'^\w+://')
+URL_PATH_PAT = re.compile(r'^(?:\w+://|(?:www|(?:\w+\.)*(?:golang|pkgdoc|gosublime)\.org))')
 
 try:
 	stash
@@ -88,18 +91,26 @@ class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		v = self.view
 		pos = v.sel()[0].begin()
-		wd = v.settings().get('gscommander.wd') or active_wd()
-		fn = v.substr(v.extract_scope(pos))
-		m = SPLIT_FN_POS_PAT.match(fn)
-		print m, gs.apath((m.group(1) if m else fn), wd), m.group(1)
-		fn = gs.apath((m.group(1) if m else fn), wd)
-		row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
-		col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
-
-		if os.path.exists(fn):
-			gs.focus(fn, row, col, win=self.view.window())
+		path = v.substr(v.extract_scope(pos))
+		if URL_PATH_PAT.match(path):
+			try:
+				if not URL_SCHEME_PAT.match(path):
+					path = 'http://%s' % path
+				gs.notice(DOMAIN, 'open url: %s' % path)
+				webbrowser.open_new_tab(path)
+			except Exception:
+				gs.notice(DOMAIN, gs.traceback())
 		else:
-			gs.notice(DOMAIN, "Invalid path `%s'" % fn)
+			wd = v.settings().get('gscommander.wd') or active_wd()
+			m = SPLIT_FN_POS_PAT.match(path)
+			path = gs.apath((m.group(1) if m else path), wd)
+			row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
+			col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
+
+			if os.path.exists(path):
+				gs.focus(path, row, col, win=self.view.window())
+			else:
+				gs.notice(DOMAIN, "Invalid path `%s'" % path)
 
 class GsCommanderExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
