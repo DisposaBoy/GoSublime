@@ -58,9 +58,8 @@
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+g"],
-		"command": "gs_doc",
-		"args": {"mode": "goto"},
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "gs_commander_open_selection",
+		"context": [{ "key": "selector", "operator": "equal", "operand": "text.gscommander" }]
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+h"],
