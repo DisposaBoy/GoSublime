@@ -86,11 +86,14 @@ class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
 class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		pos = self.view.sel()[0].begin()
-		return self.view.score_selector(pos, 'path.gscommander') > 0
+		return self.view.score_selector(pos, 'text.gscommander') > 0
 
 	def run(self, edit):
 		v = self.view
 		pos = v.sel()[0].begin()
+		if v.score_selector(pos, 'path.gscommander') == 0:
+			return
+
 		path = v.substr(v.extract_scope(pos))
 		if URL_PATH_PAT.match(path):
 			try:
