@@ -11,26 +11,24 @@
 	<key>patterns</key>
 	<array>
 		<dict>
-			<key>include</key>
-			<string>#path</string>
+			<key>match</key>
+			<string>(\w+://\S+)</string>
+			<key>name</key>
+			<string>url.gscommander storage.type.class.gscommander</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>((?:(?:\w+:|[.]*)?[\\/].+?|(\S+))[.][^\d][-~\w]*(?:[:]\d+){0,2})</string>
+			<key>name</key>
+			<string>path.gscommander storage.type.class.gscommander</string>
 		</dict>
 		<dict>
 			<key>match</key>
 			<string>(^\s*#.*)</string>
 			<key>name</key>
-			<string>prompt.gscommander storage.type.class.gscommander</string>
+			<string>prompt.gscommander string.gscommander</string>
 		</dict>
 	</array>
-	<key>repository</key>
-	<dict>
-		<key>path</key>
-		<dict>
-			<key>match</key>
-			<string>((?:\w+:|[.]*)?[\\/].+?[.][-~\w]+)|(\S+[.][-~\w]+)|(\w+://\S+)</string>
-			<key>name</key>
-			<string>path.gscommander storage.type.class.gscommander</string>
-		</dict>
-	</dict>
 	<key>scopeName</key>
 	<string>text.gscommander</string>
 	<key>uuid</key>

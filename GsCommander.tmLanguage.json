@@ -2,16 +2,17 @@
 	"name": "GoSublime Commander",
 	"scopeName": "text.gscommander",
 	"fileTypes": [""],
-	"repository": {
-		"path": {
-			"name": "path.gscommander storage.type.class.gscommander",
-			"match": "((?:\\w+:|[.]*)?[\\\\/].+?[.][-~\\w]+)|(\\S+[.][-~\\w]+)|(\\w+://\\S+)"
-		}
-	},
 	"patterns": [
-		{"include":"#path"},
 		{
-			"name": "prompt.gscommander storage.type.class.gscommander",
+			"name": "url.gscommander storage.type.class.gscommander",
+			"match": "(\\w+://\\S+)"
+		},
+		{
+			"name": "path.gscommander storage.type.class.gscommander",
+			"match": "((?:(?:\\w+:|[.]*)?[\\\\/].+?|(\\S+))[.][^\\d][-~\\w]*(?:[:]\\d+){0,2})"
+		},
+		{
+			"name": "prompt.gscommander string.gscommander",
 			"match": "(^\\s*#.*)"
 		}
 	],
