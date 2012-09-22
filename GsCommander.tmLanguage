@@ -18,7 +18,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>((?:(?:\w+:|[.]*)?[\\/].+?|(\S+))[.][^\d][-~\w]*(?:[:]\d+){0,2})</string>
+			<string>((?:(?:\w+:|[.]*)?[\\/].+?|(\S+))(?:[.][^\d][-~\w]*)+(?:[:]\d+){0,2})</string>
 			<key>name</key>
 			<string>path.gscommander storage.type.class.gscommander</string>
 		</dict>
