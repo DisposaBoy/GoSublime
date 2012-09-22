@@ -203,6 +203,7 @@ def do_comp_lint(dirname, fn):
 			cmd = c.get('cmd')
 			if not cmd:
 				continue
+			cmd_domain = ' '.join(cmd)
 
 			shell = c.get('shell') is True
 			env = {} if c.get('global') is True else local_env
@@ -218,6 +219,7 @@ def do_comp_lint(dirname, fn):
 					col = int(col)-1 if col else 0
 					msg = msg.replace('\\n', '\n').strip()
 					if row >= 0 and msg:
+						msg = '%s: %s' % (cmd_domain, msg)
 						if reports.get(row):
 							reports[row].msg = '%s\n%s' % (reports[row].msg, msg)
 							reports[row].col = max(reports[row].col, col)
