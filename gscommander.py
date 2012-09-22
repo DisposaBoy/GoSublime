@@ -26,7 +26,23 @@ def wdid(wd):
 
 class EV(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
+		pos = view.sel()[0].begin()
+		if view.score_selector(pos, 'text.gscommander') == 0:
 			return []
+
+		return ([], AC_OPTS)
+
+class GsCommanderInsertLineCommand(sublime_plugin.TextCommand):
+	def run(self, edit, after=True):
+		insln = lambda: self.view.insert(edit, self.view.sel()[0].begin(), "\n")
+		if after:
+			self.view.run_command("move_to", {"to": "hardeol"})
+			insln()
+		else:
+			self.view.run_command("move_to", {"to": "hardbol"})
+			insln()
+			self.view.run_command("move", {"by": "lines", "forward": False})
+
 
 class GsCommanderInitCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None):
@@ -37,9 +53,9 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 			wd = vs.get('gscommander.wd', active_wd(win=v.window()))
 
 		was_empty = v.size() == 0
-		s = '[  %s ]\n# \n' % wd
+		s = '[ %s ] # \n' % wd
 
-		if was_empty:
+		if v.size() == 0 or v.substr(v.size()-1) == '\n':
 			v.insert(edit, v.size(), s)
 		else:
 			v.insert(edit, v.size(), '\n'+s)
@@ -57,6 +73,8 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		vs.set("word_wrap", True)
 		vs.set("indent_subsequent_lines", True)
 		vs.set("line_numbers", False)
+		vs.set("auto_complete", True)
+		vs.set("auto_complete_selector", "text")
 		vs.set("highlight_line", True)
 		vs.set("draw_indent_guides", True)
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
@@ -91,8 +109,12 @@ class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		v = self.view
 		pos = v.sel()[0].begin()
-		if v.score_selector(pos, 'path.gscommander') == 0:
-			return
+		inscope = lambda p: v.score_selector(p, 'path.gscommander') > 0
+		if inscope(pos):
+			if inscope(pos - 1):
+				pos -= 1
+			else:
+				return
 
 		path = v.substr(v.extract_scope(pos))
 		if URL_PATH_PAT.match(path):
@@ -124,9 +146,9 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		v = self.view
 		pos = v.sel()[0].begin()
 		line = v.line(pos)
-		cmd = v.substr(line).lstrip()
-		if cmd.startswith('#'):
-			cmd = cmd.strip('# ')
+		cmd = v.substr(line).split('#', 2)
+		if len(cmd) == 2:
+			cmd = cmd[1].strip()
 			if not cmd:
 				v.run_command('gs_commander_init')
 				return
