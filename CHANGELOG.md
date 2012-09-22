@@ -1,3 +1,19 @@
+## r12.09.22-1
+	* the experimental gsshell replacement codename shelly is no more.
+	    it has been replaced with gscommander which operates from within the output panel
+	    a separate instance per directory
+
+	    to activate it press `ctrl+#` or `super+#`
+	    proper documentation will appear as things progress but for now it works as follows:
+	        paths are highlighted(usually bold), pressing `ctrl+shift+[left click]` will open it.
+	        if the path is a file it will open in ST2 otherwise if it's a url it will be opened
+	        in your web browser
+
+	        typing `#` followed by a command and pressing `enter` will run that command
+
+	        auto-completion and implementation of common commands such as `cd` and `go play` will follow soon
+
+
 ## r12.09.16-1
 	* add typename-aware method definition snippets for types declared in the current file
 
