@@ -196,7 +196,7 @@ def do_comp_lint(dirname, fn):
 		'GOBIN': bindir,
 	}
 
-	pat = r'%s:(\d+)(?:[:](\d+))?\W+(.+?)\s*$' % re.escape(os.path.basename(fn))
+	pat = r'%s:(\d+)(?:[:](\d+))?\W+(.+)\s*' % re.escape(os.path.basename(fn))
 	pat = re.compile(pat, re.IGNORECASE)
 	for c in gs.setting('comp_lint_commands'):
 		try:
@@ -210,7 +210,7 @@ def do_comp_lint(dirname, fn):
 			if err:
 				gs.notice(DOMAIN, err)
 
-			out = out.replace('\r', '').replace('\n ', '\\n').replace('\n\t', '\\n')
+			out = out.replace('\r', '').replace('\n ', '\\n ').replace('\n\t', '\\n\t')
 			for m in pat.findall(out):
 				try:
 					row, col, msg = m
