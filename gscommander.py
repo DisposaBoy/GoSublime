@@ -3,9 +3,11 @@ import sublime_plugin
 import gscommon as gs
 import gsshell
 import os
+import re
 
 DOMAIN = "GsCommander"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
+SPLIT_FN_POS_PAT = re.compile(r'(.+?)(?:[:](\d+))?(?:[:](\d+))?$')
 
 try:
 	stash
@@ -88,9 +90,14 @@ class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 		pos = v.sel()[0].begin()
 		wd = v.settings().get('gscommander.wd') or active_wd()
 		fn = v.substr(v.extract_scope(pos))
-		fn = gs.apath(fn, wd)
+		m = SPLIT_FN_POS_PAT.match(fn)
+		print m, gs.apath((m.group(1) if m else fn), wd), m.group(1)
+		fn = gs.apath((m.group(1) if m else fn), wd)
+		row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
+		col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
+
 		if os.path.exists(fn):
-			self.view.window().open_file(fn, sublime.ENCODED_POSITION)
+			gs.focus(fn, row, col, win=self.view.window())
 		else:
 			gs.notice(DOMAIN, "Invalid path `%s'" % fn)
 
