@@ -14,7 +14,7 @@
 		"args": {"mode": "hint"}
 	},
 	{
-		"button": "button2",
+		"button": "button1",
 		"modifiers": ["super", "shift"],
 		"press_command": "drag_select",
 		"command": "gs_commander_open_selection"
