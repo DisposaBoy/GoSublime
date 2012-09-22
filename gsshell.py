@@ -416,7 +416,7 @@ class ViewCommand(Command):
 			self.on_output(self, 'Error: ' % ex)
 
 		t = (max(0, self.ended - self.started), max(0, self.output_started - self.started))
-		self.do_insert(['[done: elapsed: %0.3fs, startup: %0.3fs]' % t])
+		self.do_insert(['[ elapsed: %0.3fs, startup: %0.3fs]\n' % t])
 
 		for f in self.output_done:
 			try:
