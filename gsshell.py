@@ -353,7 +353,7 @@ class Command(threading.Thread):
 			except Exception as ex:
 				self.x = ex
 			finally:
-				self.rcode = self.p.wait()
+				self.rcode = self.p.wait() if self.p else False
 		finally:
 			gs.end(tid)
 			self.ended = time.time()
