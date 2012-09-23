@@ -12,6 +12,7 @@ try:
 except (AttributeError):
 	STARTUP_INFO = None
 
+environ9 = {}
 _sem = threading.Semaphore()
 _settings = {
 	"env": {},
@@ -156,7 +157,7 @@ def setting(key, default=None):
 def println(*a):
 	print('\n** %s **:' % datetime.datetime.now())
 	for s in a:
-		print(str(s).strip())
+		print(ustr(s).strip())
 	print('--------------------------------')
 
 debug = println
@@ -258,6 +259,7 @@ def env():
 	ensure that directories containing binaries are included in PATH.
 	"""
 	e = os.environ.copy()
+	e.update(environ9)
 	e.update(setting('env', {}))
 	roots = e.get('GOPATH', '').split(os.pathsep)
 	roots.append(e.get('GOROOT', ''))
