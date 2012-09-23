@@ -36,21 +36,6 @@ def print_install_log(c, s):
 		tpl = 'check the console for error messages: the following environment variables are not set: %s'
 		gs.notice(DOMAIN, tpl % ', '.join(unset_vars))
 
-def on_env_done(c):
-	e = json.loads(''.join(c.consume_outq()))
-	for k,v in e.iteritems():
-		if v:
-			gs.environ9[k] = v
-
-	x = c.exception()
-	if x or not e:
-		s = '\n>    '.join(l)
-		heading = 'Possible error while attempting to get environment variables:'
-		tpl = '%s\n|    Command: %s\n|    Exception: %s\n|    Output:\n>    %s'
-		gs.show_output(DOMAIN, tpl % (heading, c.cmd, x, s), merge_domain=True)
-
-	do_install()
-
 def output_str(c):
 	return '\n'.join(['>    %s' % ln for ln in c.consume_outq()])
 
@@ -85,8 +70,15 @@ def on_install_done(c):
 	s = output_str(c)
 	x = c.exception()
 	if x:
-		tpl = 'Error while installing MarGo and Gocode\nCommand: %s\nException: %s\nOutput: %s'
+		tpl = 'Error while installing dependencies\nCommand: %s\nException: %s\nOutput: %s'
 		gs.show_output(DOMAIN, tpl % (c.cmd, x, s), merge_domain=True)
+
+	js, _, _ = gsshell.run(cmd=BUNDLE_GOSUBLIME9, shell=True)
+	js = json.loads(js)
+	for k,v in js.iteritems():
+		if v:
+			gs.environ9[k] = v
+
 	print_install_log(c, s)
 
 	c = gsshell.Command(cmd=[
@@ -96,24 +88,14 @@ def on_install_done(c):
 		"-addr", gs.setting('margo_addr', '')
 	])
 	c.on_done = on_margo_done
-
 	c.start()
 
-	c = gsshell.Command(cmd=[BUNDLE_GOCODE, 'close'])
-	c.on_done = on_gocode_done
-	c.start()
+	gsshell.run(cmd=[BUNDLE_GOCODE, 'close'])
 
 def init():
 	try:
 		if gs.settings_obj().get('gsbundle_enabled') is True:
-			e = gs.env()
-			if e.get('GOROOT') and e.get('GOPATH'):
-				do_install()
-			else:
-				gs.println('%s: attempting to set GOROOT and/or GOPATH' % DOMAIN)
-				c = gsshell.Command(cmd=BUNDLE_GOSUBLIME9, shell=True)
-				c.on_done = on_env_done
-				c.start()
+			do_install()
 	except Exception:
 		gs.show_traceback(DOMAIN)
 
@@ -124,15 +106,12 @@ try:
 	# (unlike CreateProcess). If there is a margo.* executable in the current directory and it isn't
 	# the expected margo.exe binary, MarGo.exe will throw an error or behave unexpectedly.
 	# See: https://github.com/DisposaBoy/GoSublime/issues/126 (#126)
+	ext = '.exe' if gs.os_is_windows() else ''
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')
 	BUNDLE_GOBIN = os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', 'bin')
-	BUNDLE_GOSUBLIME9 = os.path.join(BUNDLE_GOBIN, 'gosublime9')
-	BUNDLE_GOCODE = os.path.join(BUNDLE_GOBIN, 'gocode')
-	BUNDLE_MARGO = os.path.join(BUNDLE_GOBIN, 'margo')
-	if gs.os_is_windows():
-		BUNDLE_GOSUBLIME9 = '%s.exe' % BUNDLE_GOSUBLIME9
-		BUNDLE_GOCODE = '%s.exe' % BUNDLE_GOCODE
-		BUNDLE_MARGO = '%s.exe' % BUNDLE_MARGO
+	BUNDLE_GOSUBLIME9 = os.path.join(BUNDLE_GOBIN, 'gosublime9%s' % ext)
+	BUNDLE_GOCODE = os.path.join(BUNDLE_GOBIN, 'gocode%s' % ext)
+	BUNDLE_MARGO = os.path.join(BUNDLE_GOBIN, 'margo%s' % ext)
 	os.environ['PATH'] = '%s%s%s' % (BUNDLE_GOBIN, os.pathsep, os.environ.get('PATH', ''))
 
 	sublime.set_timeout(init, 1000)
