@@ -129,7 +129,7 @@ try:
 	# the expected margo.exe binary, MarGo.exe will throw an error or behave unexpectedly.
 	# See: https://github.com/DisposaBoy/GoSublime/issues/126 (#126)
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')
-	BUNDLE_GOBIN = os.path.join(BUNDLE_GOPATH, 'bin')
+	BUNDLE_GOBIN = os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', 'bin')
 	BUNDLE_GOCODE = os.path.join(BUNDLE_GOBIN, 'gocode')
 	BUNDLE_MARGO = os.path.join(BUNDLE_GOBIN, 'margo')
 	if gs.os_is_windows():
