@@ -4,12 +4,11 @@
 import gsshell
 import gscommon as gs
 import os
-import re
 import sublime
+import json
 
 DOMAIN = 'GsBundle'
 INSTALL_CMD = ['go', 'install', '-v', 'gosublime9', 'margo', 'gocode']
-ENV_PATH = re.compile(r'(?P<name>\w+)=["\']?(?P<value>.+?)["\']?$')
 
 def print_install_log(c, s):
 	e = gs.env()
@@ -38,14 +37,10 @@ def print_install_log(c, s):
 		gs.notice(DOMAIN, tpl % ', '.join(unset_vars))
 
 def on_env_done(c):
-	l = c.consume_outq()
-	e = {}
-	for i in l:
-		pair = getattr(ENV_PATH.search(i), "groupdict", dict)()
-		if pair and pair["name"] in ('GOROOT', 'GOPATH'):
-				e[str(pair["name"])] = str(pair["value"])
-
-	os.environ.update(e)
+	e = json.loads(''.join(c.consume_outq()))
+	for k,v in e.iteritems():
+		if v:
+			gs.environ9[k] = v
 
 	x = c.exception()
 	if x or not e:
@@ -116,11 +111,7 @@ def init():
 				do_install()
 			else:
 				gs.println('%s: attempting to set GOROOT and/or GOPATH' % DOMAIN)
-				if gs.os_is_windows():
-					cmd = 'go env & echo GOPATH=%GOPATH%'
-				else:
-					cmd = 'go env; echo GOPATH=$GOPATH'
-				c = gsshell.Command(cmd=cmd, shell=True)
+				c = gsshell.Command(cmd=BUNDLE_GOSUBLIME9, shell=True)
 				c.on_done = on_env_done
 				c.start()
 	except Exception:
