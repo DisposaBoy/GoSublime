@@ -8,22 +8,27 @@ import re
 import sublime
 
 DOMAIN = 'GsBundle'
-INSTALL_CMD = ['go', 'install', '-v','margo', 'gocode']
+INSTALL_CMD = ['go', 'install', '-v', 'gosublime9', 'margo', 'gocode']
 ENV_PATH = re.compile(r'(?P<name>\w+)=["\']?(?P<value>.+?)["\']?$')
 
 def print_install_log(c, s):
 	e = gs.env()
 	dur = c.ended - c.started
+	pkgdir = sublime.packages_path()
+	subl9_status = (BUNDLE_GOSUBLIME9.replace(pkgdir, 'Packages'), os.path.exists(BUNDLE_GOSUBLIME9))
+	margo_status = (BUNDLE_GOCODE.replace(pkgdir, 'Packages'), os.path.exists(BUNDLE_GOCODE))
+	gocode_status = (BUNDLE_MARGO.replace(pkgdir, 'Packages'), os.path.exists(BUNDLE_MARGO))
 	gs.println(
 		'GoSublime: %s done %0.3fs' % (DOMAIN, dur),
-		'|  Bundle GOPATH: %s' % BUNDLE_GOPATH,
-		'|   Bundle GOBIN: %s' % BUNDLE_GOBIN,
-		'|  Bundle Gocode: %s (exists: %s)' % (BUNDLE_GOCODE, os.path.exists(BUNDLE_GOCODE)),
-		'|   Bundle MarGo: %s (exists: %s)' % (BUNDLE_MARGO, os.path.exists(BUNDLE_MARGO)),
-		'|    User GOROOT: %s' % e.get('GOROOT', '(NOT SET)'),
-		'|    User GOPATH: %s' % e.get('GOPATH', '(NOT SET)'),
-		'|     User GOBIN: %s (should usually be `NOT SET\')' % e.get('GOBIN', '(NOT SET)'),
-		'| Output:\n%s\n' % s
+		'|      Bundle GOPATH: %s' % BUNDLE_GOPATH.replace(pkgdir, 'Packages'),
+		'|       Bundle GOBIN: %s' % BUNDLE_GOBIN.replace(pkgdir, 'Packages'),
+		'|      Bundle Gocode: %s (exists: %s)' % gocode_status,
+		'|  Bundle GoSublime9: %s (exists: %s)' % subl9_status,
+		'|       Bundle MarGo: %s (exists: %s)' % margo_status,
+		'|        User GOROOT: %s' % e.get('GOROOT', '(NOT SET)'),
+		'|        User GOPATH: %s' % e.get('GOPATH', '(NOT SET)'),
+		'|         User GOBIN: %s (should usually be `NOT SET\')' % e.get('GOBIN', '(NOT SET)'),
+		s
 	)
 
 	CRITICAL_ENV_VARS = ('GOROOT', 'GOPATH')
@@ -130,9 +135,11 @@ try:
 	# See: https://github.com/DisposaBoy/GoSublime/issues/126 (#126)
 	BUNDLE_GOPATH = os.path.join(sublime.packages_path(), 'GoSublime', '9')
 	BUNDLE_GOBIN = os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', 'bin')
+	BUNDLE_GOSUBLIME9 = os.path.join(BUNDLE_GOBIN, 'gosublime9')
 	BUNDLE_GOCODE = os.path.join(BUNDLE_GOBIN, 'gocode')
 	BUNDLE_MARGO = os.path.join(BUNDLE_GOBIN, 'margo')
 	if gs.os_is_windows():
+		BUNDLE_GOSUBLIME9 = '%s.exe' % BUNDLE_GOSUBLIME9
 		BUNDLE_GOCODE = '%s.exe' % BUNDLE_GOCODE
 		BUNDLE_MARGO = '%s.exe' % BUNDLE_MARGO
 	os.environ['PATH'] = '%s%s%s' % (BUNDLE_GOBIN, os.pathsep, os.environ.get('PATH', ''))
