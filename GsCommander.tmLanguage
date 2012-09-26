@@ -4,7 +4,7 @@
 <dict>
 	<key>fileTypes</key>
 	<array>
-		<string></string>
+		<string>gosublime-commander</string>
 	</array>
 	<key>name</key>
 	<string>GoSublime Commander</string>
