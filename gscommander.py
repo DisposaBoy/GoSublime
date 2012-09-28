@@ -90,6 +90,9 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		vs.set("fade_fold_buttons", False)
 		vs.set("gutter", True)
 		vs.set("margin", 0)
+		# pad mostly so the completion menu shows on the first line
+		vs.set("line_padding_top", 1)
+		vs.set("line_padding_bottom", 1)
 		vs.set("tab_size", 2)
 		vs.set("word_wrap", True)
 		vs.set("indent_subsequent_lines", True)
