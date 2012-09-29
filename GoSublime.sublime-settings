@@ -101,18 +101,23 @@
 		{
 			"match": {"global": true, "pkgname": ""},
 			"snippets": [
-				{"text": "package", "title": "package [name]", "value": "package ${1:NAME}"},
-				{"text": "package main", "title": "package main", "value": "package main\n\nfunc main() {\n\t$0\n}\n"}
+				{"text": "package ${default_pkgname}", "title": "", "value": "package ${default_pkgname}$1\n"}
 			]
 		},
 		{
-			"match": {"global": true, "pkgname": "^.+$"},
+			"match": {"global": true, "pkgname": "^main$"},
+			"snippets": [
+				{"text": "func main", "title": "func main {...}", "value": "func main() {\n\t$0\n}\n"}
+			]
+		},
+		{
+			"match": {"global": true, "pkgname": "."},
 			"snippets": [
 				{"text": "import", "title": "import (...)", "value": "import (\n\t\"$1\"\n)"},
 				{"text": "func", "title": "func {...}", "value": "func ${1:name}($2)$3 {\n\t$0\n}"},
-				{"text": "func main", "title": "func main {...}", "value": "func main() {\n\t$0\n}\n"},
 				{"text": "var", "title": "var (...)", "value": "var (\n\t$1\n)"},
 				{"text": "const", "title": "const (...)", "value": "const (\n\t$1\n)"},
+				{"text": "init", "title": "func init()", "value": "func init() {\n\t$1\n}"},
 				{
 					"text": "func http handler",
 					"title": "func(rw, req)",
@@ -121,7 +126,7 @@
 			]
 		},
 		{
-			"match": {"global": true, "pkgname": "^.+$", "has_types": true},
+			"match": {"global": true, "pkgname": ".", "has_types": true},
 			"snippets": [
 				{
 					"text": "func (*${typename})",
