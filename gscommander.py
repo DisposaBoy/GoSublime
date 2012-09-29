@@ -12,6 +12,25 @@ SPLIT_FN_POS_PAT = re.compile(r'(.+?)(?:[:](\d+))?(?:[:](\d+))?$')
 URL_SCHEME_PAT = re.compile(r'^\w+://')
 URL_PATH_PAT = re.compile(r'^(?:\w+://|(?:www|(?:\w+\.)*(?:golang|pkgdoc|gosublime)\.org))')
 
+DEFAULT_COMMANDS = [
+	'go build',
+	'go clean',
+	'go doc',
+	'go env',
+	'go fix',
+	'go fmt',
+	'go get',
+	'go install',
+	'go list',
+	'go run',
+	'go test',
+	'go tool',
+	'go version',
+	'go vet',
+	'go help',
+]
+DEFAULT_CL = [(s, s) for s in DEFAULT_COMMANDS]
+
 try:
 	stash
 except:
@@ -24,13 +43,15 @@ def active_wd(win=None):
 def wdid(wd):
 	return 'gscommander://%s' % wd
 
+
 class EV(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
 		pos = view.sel()[0].begin()
 		if view.score_selector(pos, 'text.gscommander') == 0:
 			return []
-
-		return ([], AC_OPTS)
+		cl = []
+		cl.extend(DEFAULT_CL)
+		return (cl, AC_OPTS)
 
 class GsCommanderInsertLineCommand(sublime_plugin.TextCommand):
 	def run(self, edit, after=True):
@@ -69,6 +90,9 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		vs.set("fade_fold_buttons", False)
 		vs.set("gutter", True)
 		vs.set("margin", 0)
+		# pad mostly so the completion menu shows on the first line
+		vs.set("line_padding_top", 1)
+		vs.set("line_padding_bottom", 1)
 		vs.set("tab_size", 2)
 		vs.set("word_wrap", True)
 		vs.set("indent_subsequent_lines", True)

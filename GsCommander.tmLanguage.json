@@ -1,7 +1,7 @@
 {
 	"name": "GoSublime Commander",
 	"scopeName": "text.gscommander",
-	"fileTypes": [""],
+	"fileTypes": ["gosublime-commander"],
 	"patterns": [
 		{
 			"name": "path.gscommander storage.type.class.gscommander",
