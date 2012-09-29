@@ -10,6 +10,7 @@ from os.path import basename
 from os.path import dirname
 
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
+REASONABLE_PKGNAME_PAT = re.compile(r'^\w+$')
 
 last_gopath = ''
 END_SELECTOR_PAT = re.compile(r'.*?((?:[\w.]+\.)?(\w+))$')
@@ -94,7 +95,9 @@ class GoSublime(sublime_plugin.EventListener):
 			default_pkgname = basename(dirname(view.file_name()))
 		except Exception:
 			default_pkgname = ''
-			pass
+
+		if not REASONABLE_PKGNAME_PAT.match(default_pkgname):
+			default_pkgname = ''
 
 		r = view.find('package\s+(\w+)', 0)
 		ctx = {
@@ -102,7 +105,7 @@ class GoSublime(sublime_plugin.EventListener):
 			'pkgname': view.substr(view.word(r.end())) if r else '',
 			'types': types or [''],
 			'has_types': len(types) > 0,
-			'default_pkgname': default_pkgname or 'main',
+			'default_pkgname': default_pkgname,
 			'fn': view.file_name() or '',
 		}
 		show_snippets = gs.setting('autocomplete_snippets', True) is True

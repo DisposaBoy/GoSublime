@@ -101,7 +101,7 @@
 		{
 			"match": {"global": true, "pkgname": ""},
 			"snippets": [
-				{"text": "package ${default_pkgname}", "title": "", "value": "package ${default_pkgname}$1\n"}
+				{"text": "package ${default_pkgname}", "title": "", "value": "package ${default_pkgname}\n\n$1\n"}
 			]
 		},
 		{
