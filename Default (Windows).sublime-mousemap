@@ -12,11 +12,5 @@
 		"press_command": "drag_select",
 		"command": "gs_doc",
 		"args": {"mode": "hint"}
-	},
-	{
-		"button": "button1",
-		"modifiers": ["ctrl", "shift"],
-		"press_command": "drag_select",
-		"command": "gs_commander_open_selection"
 	}
 ]
