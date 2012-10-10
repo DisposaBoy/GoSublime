@@ -371,6 +371,7 @@ class ViewCommand(Command):
 		super(ViewCommand, self).__init__(cmd=cmd, shell=shell, env=env, cwd=cwd)
 
 		self.output_done = []
+		self.show_summary = False
 
 		if not self.cwd and view is not None:
 			try:
@@ -415,8 +416,9 @@ class ViewCommand(Command):
 		if ex:
 			self.on_output(self, 'Error: ' % ex)
 
-		t = (max(0, self.ended - self.started), max(0, self.output_started - self.started))
-		self.do_insert(['[ elapsed: %0.3fs, startup: %0.3fs]\n' % t])
+		if self.show_summary:
+			t = (max(0, self.ended - self.started), max(0, self.output_started - self.started))
+			self.do_insert(['[ elapsed: %0.3fs, startup: %0.3fs ]\n' % t])
 
 		for f in self.output_done:
 			try:
@@ -427,7 +429,7 @@ class ViewCommand(Command):
 	def cancel(self):
 		discarded = super(ViewCommand, self).cancel()
 		t = ((time.time() - self.started), discarded)
-		self.on_output(self, ('\n[cancelled: elapsed: %0.3fs, discarded %d line(s)]\n' % t))
+		self.on_output(self, ('\n[ cancelled: elapsed: %0.3fs, discarded %d line(s) ]\n' % t))
 
 	def run(self):
 		sublime.set_timeout(self.poll_output, 0)
