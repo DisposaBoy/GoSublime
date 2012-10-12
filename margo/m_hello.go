@@ -9,7 +9,7 @@ func (h *mHello) Call() (interface{}, string) {
 }
 
 func init() {
-	registry.Register("hello", func() Caller {
+	registry.Register("hello", func(_ *Broker) Caller {
 		return &mHello{}
 	})
 }

@@ -98,7 +98,7 @@ func (b *Broker) accept() (stopLooping bool) {
 	}
 
 	req := &Request{}
-	dec := json.NewDecoder(bytes.NewBuffer(line))
+	dec := json.NewDecoder(bytes.NewReader(line))
 	// if this fails, we are unable to return a useful error(no token to send it to)
 	// so we'll simply/implicitly drop the request since it has no method
 	// we can safely assume that all such cases will be empty lines and not an actual request
@@ -123,7 +123,7 @@ func (b *Broker) accept() (stopLooping bool) {
 		return
 	}
 
-	cl := m()
+	cl := m(b)
 	err = dec.Decode(cl)
 	if err != nil {
 		log.Println("broker: Cannot decode arg", err)

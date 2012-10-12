@@ -30,7 +30,7 @@ func (m *mEnv) Call() (interface{}, string) {
 }
 
 func init() {
-	registry.Register("env", func() Caller {
+	registry.Register("env", func(_ *Broker) Caller {
 		return &mEnv{}
 	})
 }

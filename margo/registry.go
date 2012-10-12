@@ -8,7 +8,7 @@ var (
 	registry = &Registry{m: map[string]Method{}}
 )
 
-type Method func() Caller
+type Method func(*Broker) Caller
 
 type Caller interface {
 	Call() (res interface{}, err string)

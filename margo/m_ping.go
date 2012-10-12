@@ -18,7 +18,7 @@ func (m *mPing) Call() (interface{}, string) {
 }
 
 func init() {
-	registry.Register("ping", func() Caller {
+	registry.Register("ping", func(_ *Broker) Caller {
 		return &mPing{}
 	})
 }

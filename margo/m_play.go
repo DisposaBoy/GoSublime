@@ -59,7 +59,7 @@ func (m *mPlay) Call() (interface{}, string) {
 }
 
 func init() {
-	registry.Register("play", func() Caller {
+	registry.Register("play", func(_ *Broker) Caller {
 		return &mPlay{
 			Env: map[string]string{},
 		}
