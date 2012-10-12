@@ -7,9 +7,9 @@ or networks but such a feature is trivial to add so it can be added when needed.
 
 The protocol is line-oriented and all requests are asynchronous.
 
-Requests are a pair of JSON objects separated by a tab (`\t`) and encoded as follows:
+Requests are a pair of JSON objects encoded as follows:
 
-	{"token":"...", "method": "..."}\t{...}
+	{"token":"...", "method": "..."}{...}
 
 The first object specifies what method to call and an optional token. If `method` is omitted,
 the request is ignored. `token` is an optional value the client may use to identify responses.
