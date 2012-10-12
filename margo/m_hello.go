@@ -1,11 +1,9 @@
 package main
 
-type mHello struct {
-	S string `json:"s"`
-}
+type mHello M
 
-func (h *mHello) Call() (interface{}, string) {
-	return h, ""
+func (m mHello) Call() (interface{}, string) {
+	return m, ""
 }
 
 func init() {
