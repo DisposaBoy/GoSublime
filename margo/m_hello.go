@@ -4,10 +4,6 @@ type mHello struct {
 	S string `json:"s"`
 }
 
-func (h *mHello) Arg() interface{} {
-	return h
-}
-
 func (h *mHello) Call() (interface{}, string) {
 	return h, ""
 }

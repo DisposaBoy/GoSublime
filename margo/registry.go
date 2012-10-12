@@ -14,10 +14,6 @@ type Caller interface {
 	Call() (res interface{}, err string)
 }
 
-type Arger interface {
-	Arg() interface{}
-}
-
 type Registry struct {
 	m   map[string]Method
 	lck sync.RWMutex

@@ -8,10 +8,6 @@ type mPing struct {
 	Delay time.Duration `json:"delay"`
 }
 
-func (m *mPing) Arg() interface{} {
-	return m
-}
-
 func (m *mPing) Call() (interface{}, string) {
 	start := time.Now()
 	time.Sleep(m.Delay * time.Millisecond)

@@ -152,16 +152,14 @@ func (b *Broker) accept() (stopLooping bool) {
 	}
 
 	cl := m()
-	if ar, ok := cl.(Arger); ok {
-		err = json.Unmarshal(req.data, ar.Arg())
-		if err != nil {
-			log.Println("broker: Cannot decode arg", err)
-			b.Send(Response{
-				Token: req.Token,
-				Error: err.Error(),
-			})
-			return
-		}
+	err = json.Unmarshal(req.data, cl)
+	if err != nil {
+		log.Println("broker: Cannot decode arg", err)
+		b.Send(Response{
+			Token: req.Token,
+			Error: err.Error(),
+		})
+		return
 	}
 
 	b.wg.Add(1)

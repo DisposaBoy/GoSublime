@@ -13,10 +13,6 @@ type mPlay struct {
 	Env map[string]string `json:"env"`
 }
 
-func (m *mPlay) Arg() interface{} {
-	return m
-}
-
 // todo: send the client output as it comes
 func (m *mPlay) Call() (interface{}, string) {
 	env := []string{}
