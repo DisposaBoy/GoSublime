@@ -16,7 +16,6 @@ type M map[string]interface{}
 type Request struct {
 	Method string
 	Token  string
-	data   []byte
 }
 
 type Response struct {
@@ -45,37 +44,6 @@ func NewBroker(r io.Reader, w io.Writer) *Broker {
 		in:  bufio.NewReader(r),
 		out: json.NewEncoder(w),
 	}
-}
-
-func (b *Broker) Recv() (*Request, error) {
-	b.rLck.Lock()
-	defer b.rLck.Unlock()
-
-	req := &Request{}
-	line, readErr := b.in.ReadBytes('\n')
-
-	// EOF is not an unexpected error
-	if readErr != nil && readErr != io.EOF {
-		return req, readErr
-	}
-
-	i := bytes.IndexByte(line, '\t')
-	if i >= 0 {
-		req.data = line[i:]
-		line = line[:i]
-	}
-
-	// ignore empty lines
-	line = bytes.TrimSpace(line)
-	if len(line) > 0 {
-		decErr := json.Unmarshal(line, req)
-		if decErr != nil {
-			return req, decErr
-		}
-	}
-
-	// return readErr so we can pass back a possible EOF
-	return req, readErr
 }
 
 func (b *Broker) Send(resp Response) error {
@@ -117,20 +85,24 @@ func (b *Broker) call(req *Request, cl Caller) {
 }
 
 func (b *Broker) accept() (stopLooping bool) {
-	req, err := b.Recv()
-	if err != nil {
-		// try to handle the last request before returning
-		if req != nil && err == io.EOF {
-			stopLooping = true
-		} else {
-			log.Println("broker: Cannot read input", err)
-			b.Send(Response{
-				Token: req.Token,
-				Error: err.Error(),
-			})
-			return true
-		}
+	line, err := b.in.ReadBytes('\n')
+
+	if err == io.EOF {
+		stopLooping = true
+	} else if err != nil {
+		log.Println("broker: Cannot read input", err)
+		b.Send(Response{
+			Error: err.Error(),
+		})
+		return
 	}
+
+	req := &Request{}
+	dec := json.NewDecoder(bytes.NewBuffer(line))
+	// if this fails, we are unable to return a useful error(no token to send it to)
+	// so we'll simply/implicitly drop the request since it has no method
+	// we can safely assume that all such cases will be empty lines and not an actual request
+	dec.Decode(&req)
 
 	if req.Method == "" {
 		return
@@ -152,7 +124,7 @@ func (b *Broker) accept() (stopLooping bool) {
 	}
 
 	cl := m()
-	err = json.Unmarshal(req.data, cl)
+	err = dec.Decode(cl)
 	if err != nil {
 		log.Println("broker: Cannot decode arg", err)
 		b.Send(Response{
