@@ -1,9 +1,0 @@
-package main
-
-import "go/ast"
-
-func main() {
-	var gd *ast.GenDecl
-	v := gd.Specs[0].(*ast.ValueSpec)
-	v.
-}

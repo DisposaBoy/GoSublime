@@ -1,8 +1,0 @@
-package main
-
-import "image/png"
-
-func test() {
-	img, err := png.Decode(nil)
-	img.
-}

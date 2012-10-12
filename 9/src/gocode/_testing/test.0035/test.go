@@ -1,9 +1,0 @@
-package main
-
-func main() {
-	var err error
-	s := err.Error()
-	for offset, r := range s {
-		
-	}
-}

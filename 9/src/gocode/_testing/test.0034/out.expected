@@ -1,4 +1,0 @@
-Found 3 candidates:
-  func At(x int, y int) color.Color
-  func Bounds() image.Rectangle
-  func ColorModel() color.Model

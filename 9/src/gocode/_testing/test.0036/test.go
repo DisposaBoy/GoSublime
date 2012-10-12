@@ -1,8 +1,0 @@
-package main
-
-import "debug/elf"
-
-func main() {
-	var f elf.File
-	f.
-}

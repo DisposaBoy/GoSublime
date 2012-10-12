@@ -1,7 +1,0 @@
-Found 6 candidates:
-  func PrettyPrintTypeExpr(out io.Writer, e ast.Expr)
-  package ast 
-  package io 
-  var e ast.Expr
-  var out io.Writer
-  var t ast.Expr

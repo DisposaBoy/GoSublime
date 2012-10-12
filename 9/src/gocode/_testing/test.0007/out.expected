@@ -1,6 +1,0 @@
-Found 5 candidates:
-  var ForkLock sync.RWMutex
-  var SocketDisableIPv6 bool
-  var Stderr int
-  var Stdin int
-  var Stdout int
