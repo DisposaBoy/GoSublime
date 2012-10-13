@@ -6,6 +6,8 @@ import os
 import gsq
 import time
 import hashlib
+import json
+import base64
 
 DOMAIN = 'MarGo9'
 
@@ -43,6 +45,9 @@ def _run(cmd, cwd=None, shell=False):
 	}
 	return gsshell.run(cmd, shell=shell, cwd=cwd, env=nv)
 
+def maybe_install():
+	if not os.path.exists(MARGO9_BIN) or not os.path.exists(GOCODE_BIN):
+		install('', True)
 
 def install(aso_tokens, force_install):
 	init_start = time.time()
@@ -151,6 +156,33 @@ def gocode(args, env={}, input=None):
 
 	return _gocode(args, env=env, input=input)
 
+def do(method, arg, shell=False):
+	maybe_install()
+
+	s = '%s %s' % (json.dumps({'method': method, 'token': 'mg9.call'}), json.dumps(arg))
+	s = 'base64:%s' % base64.b64encode(s)
+	out, err, _ = gsshell.run([MARGO9_BIN, '-do', s], stderr=None, shell=shell)
+	res = {'error': err}
+
+	if out:
+		try:
+			for ln in out.split('\n'):
+				ln = ln.strip()
+				if ln:
+					r = json.loads(ln)
+					if gs.is_a({}, r):
+						if r.get('token') == 'mg9.call':
+							res = r.get('data') or {}
+							if gs.is_a({}, res) and r.get('error'):
+								r['error'] = res['error']
+							return res
+						res = {'error': 'Unexpected response %s' % r}
+					else:
+						res = {'error': 'Invalid response %s' % r}
+		except Exception:
+			res = {'error': gs.traceback()}
+
+	return res
+
 if gs.settings_obj().get('test_mg9_enabled') is True:
 	sublime.set_timeout(do_init, 1000)
-
