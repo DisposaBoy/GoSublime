@@ -150,6 +150,12 @@ def is_a_string(v):
 def settings_obj():
 	return sublime.load_settings("GoSublime.sublime-settings")
 
+def aso():
+	return sublime.load_settings("GoSublime-aux.sublime-settings")
+
+def save_aso():
+	return sublime.save_settings("GoSublime-aux.sublime-settings")
+
 def setting(key, default=None):
 	with _sem:
 		return _settings.get(key, default)
