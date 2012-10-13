@@ -523,6 +523,13 @@ def astr(s):
 		return s.encode('utf-8')
 	return str(s)
 
+
+def dist_path(*a):
+	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
+
+def home_path(*a):
+	return os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', *a)
+
 try:
 	st2_status_message
 except:
