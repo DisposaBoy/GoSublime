@@ -209,7 +209,7 @@ def fix_shell_cmd(shell, cmd):
 
 	return (shell, [gs.astr(v) for v in cmd])
 
-def run(cmd=[], shell=False, env={}, cwd=None, input=None):
+def run(cmd=[], shell=False, env={}, cwd=None, input=None, stderr=subprocess.STDOUT):
 	out = u""
 	err = u""
 	exc = None
@@ -217,7 +217,7 @@ def run(cmd=[], shell=False, env={}, cwd=None, input=None):
 	try:
 		env = fix_env(env)
 		shell, cmd = fix_shell_cmd(shell, cmd)
-		p = gs.popen(cmd, shell=shell, stderr=subprocess.STDOUT, environ=env, cwd=cwd)
+		p = gs.popen(cmd, shell=shell, stderr=stderr, environ=env, cwd=cwd)
 		if input is not None:
 			input = gs.astr(input)
 		out, _ = p.communicate(input=input)
