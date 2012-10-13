@@ -529,6 +529,15 @@ def astr(s):
 		return s.encode('utf-8')
 	return str(s)
 
+def lst(*a):
+	l = []
+	for v in a:
+		if is_a([], v):
+			l.extend(v)
+		else:
+			l.append(v)
+	return l
+
 
 def dist_path(*a):
 	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
