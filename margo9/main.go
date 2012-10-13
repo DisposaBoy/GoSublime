@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"flag"
 	"io"
 	"os"
@@ -8,7 +10,8 @@ import (
 )
 
 func main() {
-	do := flag.String("do", "-", "Process the specified operations(lines) operation and exit. `-` means operate as normal")
+	do := "-"
+	flag.StringVar(&do, "do", "-", "Process the specified operations(lines) operation and exit. `-` means operate as normal")
 	flag.Parse()
 
 	defer os.Stdin.Close()
@@ -16,9 +19,15 @@ func main() {
 	defer os.Stderr.Close()
 
 	var in io.Reader = os.Stdin
-	doCall := *do != "-"
+	doCall := do != "-"
 	if doCall {
-		in = strings.NewReader(*do)
+		b64 := "base64:"
+		if strings.HasPrefix(do, b64) {
+			s, _ := base64.StdEncoding.DecodeString(do[len(b64):])
+			in = bytes.NewReader(s)
+		} else {
+			in = strings.NewReader(do)
+		}
 	}
 
 	broker := NewBroker(in, os.Stdout)
