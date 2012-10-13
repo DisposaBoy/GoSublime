@@ -1,8 +1,27 @@
 import gscommon as gs
-import threading, Queue, traceback
+import threading
+import Queue
 import sublime
 
 DOMAIN = 'GsQ'
+
+class Runner(threading.Thread):
+	def __init__(self, domain, f, msg='', set_status=False):
+		threading.Thread.__init__(self)
+		self.daemon = True
+		self.domain = domain
+		self.f = f
+		self.msg = msg
+		self.set_status = set_status
+
+	def run(self):
+		tid = gs.begin(self.domain, self.msg, self.set_status)
+		try:
+			self.f()
+		except Exception:
+			gs.notice(self.domain, gs.traceback())
+		finally:
+			gs.end(tid)
 
 class GsQ(threading.Thread):
 	def __init__(self, domain):
@@ -14,30 +33,30 @@ class GsQ(threading.Thread):
 	def run(self):
 		while True:
 			try:
-				f, msg = self.q.get()
-				tid = gs.begin(self.domain, msg, False)
+				f, msg, set_status = self.q.get()
+				tid = gs.begin(self.domain, msg, set_status)
 
 				try:
 					f()
 				except Exception:
-					gs.notice(self.domain, traceback.format_exc())
+					gs.notice(self.domain, gs.traceback())
 			except:
 				pass
 
 			gs.end(tid)
 
-	def dispatch(self, f, msg):
+	def dispatch(self, f, msg, set_status=False):
 		try:
-			self.q.put((f, msg))
+			self.q.put((f, msg, set_status))
 		except Exception:
-			gs.notice(self.domain, traceback.format_exc())
+			gs.notice(self.domain, traceback())
 
 try:
 	m
 except:
 	m = {}
 
-def dispatch(domain, f, msg=''):
+def dispatch(domain, f, msg='', set_status=False):
 	global m
 
 	q = m.get(domain, None)
@@ -46,4 +65,8 @@ def dispatch(domain, f, msg=''):
 		q.start()
 		m[domain] = q
 
-	q.dispatch(f, msg)
+	q.dispatch(f, msg, set_status)
+
+def do(domain, f, msg='', set_status=False):
+	t = Runner(domain, f, msg, set_status)
+	t.start()
