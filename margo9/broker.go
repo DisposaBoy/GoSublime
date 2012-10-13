@@ -140,15 +140,17 @@ func (b *Broker) accept() (stopLooping bool) {
 	return
 }
 
-func (b *Broker) Loop() {
+func (b *Broker) Loop(decorate bool) {
 	b.start = time.Now()
 
-	go b.Send(Response{
-		Token: "margo.hello",
-		Data: M{
-			"time": b.start.String(),
-		},
-	})
+	if decorate {
+		go b.Send(Response{
+			Token: "margo.hello",
+			Data: M{
+				"time": b.start.String(),
+			},
+		})
+	}
 
 	for {
 		stopLooping := b.accept()
@@ -159,11 +161,14 @@ func (b *Broker) Loop() {
 	}
 
 	b.wg.Wait()
-	b.Send(Response{
-		Token: "margo.bye-ni",
-		Data: M{
-			"served": b.served,
-			"uptime": time.Now().Sub(b.start).String(),
-		},
-	})
+
+	if decorate {
+		b.Send(Response{
+			Token: "margo.bye-ni",
+			Data: M{
+				"served": b.served,
+				"uptime": time.Now().Sub(b.start).String(),
+			},
+		})
+	}
 }
