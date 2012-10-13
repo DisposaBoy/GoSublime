@@ -4,8 +4,7 @@ import json
 import os
 import re
 import gscommon as gs
-import gsshell
-import gsbundle
+import mg9
 from os.path import basename
 from os.path import dirname
 
@@ -140,21 +139,9 @@ class GoSublime(sublime_plugin.EventListener):
 		return r.end() if r and r.end() < end else -1
 
 	def complete(self, fn, offset, src, func_name_only):
-		global last_gopath
-		gopath = gs.env().get('GOPATH')
-		if gopath and gopath != last_gopath:
-			out, _, _ = gsshell.run(cmd=['go', 'env', 'GOOS', 'GOARCH'])
-			vars = out.strip().split()
-			if len(vars) == 2:
-				last_gopath = gopath
-				libpath =  os.path.join(gopath, 'pkg', '_'.join(vars))
-				gsshell.run(cmd=['gocode', 'set', 'lib-path', libpath], cwd=gsbundle.BUNDLE_GOBIN)
-
 		comps = []
-		cmd = gs.setting('gocode_cmd', 'gocode')
 		offset = 'c%s' % offset
-		args = [cmd, "-f=json", "autocomplete", fn, offset]
-		js, err, _ = gsshell.run(cmd=args, input=src)
+		js, err, _ = mg9.gocode(["-f=json", "autocomplete", fn, offset], input=src)
 		if err:
 			gs.notice(DOMAIN, err)
 		else:
@@ -363,5 +350,4 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 
 		s = '// %s %s\n%s' % (c['name'], c['class'], c['type'])
 		self.show_hint(s)
-
 
