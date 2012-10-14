@@ -2,7 +2,15 @@
 # sublime: translate_tabs_to_spaces false; rulers [100,120]
 
 import sublime
-import subprocess, re, os, threading, tempfile, datetime, uuid, traceback as tbck
+import subprocess
+import re
+import os
+import threading
+import tempfile
+import datetime
+import uuid
+import traceback as tbck
+import json
 from subprocess import Popen, PIPE
 
 try:
