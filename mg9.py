@@ -6,7 +6,6 @@ import os
 import gsq
 import time
 import hashlib
-import json
 import base64
 
 DOMAIN = 'MarGo9'
@@ -154,11 +153,12 @@ def gocode(args, env={}, input=None):
 			_gocode(['set', 'lib-path', os.pathsep.join(libpath)])
 
 	return _gocode(args, env=env, input=input)
-
 def do(method, arg, shell=False):
 	maybe_install()
 
-	s = '%s %s' % (json.dumps({'method': method, 'token': 'mg9.call'}), json.dumps(arg))
+	header, _ = gs.json_encode({'method': method, 'token': 'mg9.call'})
+	body, _ = gs.json_encode(arg)
+	s = '%s %s' % (header, body)
 	s = 'base64:%s' % base64.b64encode(s)
 	out, err, _ = gsshell.run([MARGO9_BIN, '-do', s], stderr=None, shell=shell)
 	res = {'error': err}
@@ -168,16 +168,16 @@ def do(method, arg, shell=False):
 			for ln in out.split('\n'):
 				ln = ln.strip()
 				if ln:
-					r = json.loads(ln)
-					if gs.is_a({}, r):
+					r, err = gs.json_decode(ln, {})
+					if err:
+						res = {'error': 'Invalid response %s' % err}
+					else:
 						if r.get('token') == 'mg9.call':
 							res = r.get('data') or {}
 							if gs.is_a({}, res) and r.get('error'):
 								r['error'] = res['error']
 							return res
 						res = {'error': 'Unexpected response %s' % r}
-					else:
-						res = {'error': 'Invalid response %s' % r}
 		except Exception:
 			res = {'error': gs.traceback()}
 
