@@ -552,6 +552,21 @@ def dist_path(*a):
 def home_path(*a):
 	return os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', *a)
 
+def json_decode(s, default):
+	try:
+		res = json.loads(s)
+		if is_a(res, default):
+			return (res, '')
+		return (res, 'Unexpected value type')
+	except Exception as ex:
+		return (default, 'Decode Error: %s' % ex)
+
+def json_encode(a):
+	try:
+		return (json.dumps(a), '')
+	except Exception as ex:
+		return ('', 'Encode Error: %s' % ex)
+
 try:
 	st2_status_message
 except:
