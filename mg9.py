@@ -57,8 +57,7 @@ def install(aso_tokens, force_install):
 	except:
 		pass
 
-	tokens = _gen_tokens()
-	if aso_tokens == tokens:
+	if not force_install and aso_tokens == _gen_tokens():
 		m_out = 'no'
 		g_out = 'no'
 	else:
