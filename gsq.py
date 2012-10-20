@@ -5,6 +5,19 @@ import sublime
 
 DOMAIN = 'GsQ'
 
+class Launcher(threading.Thread):
+	def __init__(self, domain, f):
+		threading.Thread.__init__(self)
+		self.daemon = True
+		self.domain = domain
+		self.f = f
+
+	def run(self):
+		try:
+			self.f()
+		except Exception:
+			gs.notice(self.domain, gs.traceback())
+
 class Runner(threading.Thread):
 	def __init__(self, domain, f, msg='', set_status=False):
 		threading.Thread.__init__(self)
@@ -68,5 +81,7 @@ def dispatch(domain, f, msg='', set_status=False):
 	q.dispatch(f, msg, set_status)
 
 def do(domain, f, msg='', set_status=False):
-	t = Runner(domain, f, msg, set_status)
-	t.start()
+	Runner(domain, f, msg, set_status).start()
+
+def launch(domain, f):
+	Launcher(domain, f).start()
