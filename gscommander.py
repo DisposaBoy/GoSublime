@@ -172,6 +172,14 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		cmd = v.substr(line).split('#', 2)
 		if len(cmd) == 2:
 			cmd = cmd[1].strip()
+
+			vs = v.settings()
+			lc_key = '%s.last_command' % DOMAIN
+			if cmd == '!!':
+				cmd = vs.get(lc_key, '')
+			else:
+				vs.set(lc_key, cmd)
+
 			if not cmd:
 				v.run_command('gs_commander_init')
 				return
