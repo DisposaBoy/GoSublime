@@ -328,17 +328,17 @@ def sync_settings():
 					if penv:
 						e.update(penv)
 
-		vfn = basedir_or_cwd(vfn)
-		comps = vfn.split(os.sep)
-		gs_gopath = []
-		for i, s in enumerate(comps):
-			if s.lower() == "src":
-				gs_gopath.append(os.sep.join(comps[:i]))
-		gs_gopath.reverse()
-		gs_gopath = str(os.pathsep.join(gs_gopath))
-
-		for k in e:
-			e[k] = e[k].replace('$GS_GOPATH', gs_gopath)
+		# vfn = basedir_or_cwd(vfn)
+		# comps = vfn.split(os.sep)
+		# gs_gopath = []
+		# for i, s in enumerate(comps):
+		# 	if s.lower() == "src":
+		# 		gs_gopath.append(os.sep.join(comps[:i]))
+		# gs_gopath.reverse()
+		# gs_gopath = str(os.pathsep.join(gs_gopath))
+		
+		# for k in e:
+		# 	e[k] = e[k].replace('$GS_GOPATH', gs_gopath)
 		for k in e:
 			e[k] = str(os.path.expandvars(os.path.expanduser(e[k])))
 

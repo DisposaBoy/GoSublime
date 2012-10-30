@@ -141,13 +141,40 @@ class GoSublime(sublime_plugin.EventListener):
 
 	def complete(self, fn, offset, src, func_name_only):
 		global last_gopath
-		gopath = gs.env().get('GOPATH')
-		if gopath and gopath != last_gopath:
+		gopath = gs.env().get('GOPATH')		
+		if gopath and (gopath != last_gopath or '$GS_GOPATH' in gopath):
 			out, _, _ = gsshell.run(cmd=['go', 'env', 'GOOS', 'GOARCH'])
 			vars = out.strip().split()
 			if len(vars) == 2:
 				last_gopath = gopath
-				libpath =  os.path.join(gopath, 'pkg', '_'.join(vars))
+
+				if '$GS_GOPATH' in gopath:
+					win = sublime.active_window()
+					if win:
+						view = win.active_view()
+						if view:
+							vfn = view.file_name()
+							comps = vfn.split(os.sep)
+							gs_gopath = []
+							for i, s in enumerate(comps):						
+								if s.lower() == "src":
+									gs_gopath.append(os.sep.join(comps[:i]))
+							gs_gopath.reverse()
+							gs_gopath = str(os.pathsep.join(gs_gopath))
+
+							gopath = gopath.replace('$GS_GOPATH', gs_gopath)
+
+				libpath = []
+				paths = gopath.split(':')			
+				for path in paths:
+					if path != "":
+						libpath.append(os.path.join(path, 'pkg', '_'.join(vars))) 
+
+				if gs.os_is_windows():
+					libpath = ";".join(libpath)
+				else:
+					libpath = ":".join(libpath)
+
 				gsshell.run(cmd=['gocode', 'set', 'lib-path', libpath], cwd=gsbundle.BUNDLE_GOBIN)
 
 		comps = []
