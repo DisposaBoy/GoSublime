@@ -36,3 +36,10 @@ def do_sync_active_view(view):
 		if fn.lower().endswith('.go'):
 			gs.set_attr('last_active_go_fn', fn)
 
+	if gs.is_pkg_view(view):
+		m = {}
+		psettings = view.settings().get('GoSublime')
+		if psettings and gs.is_a(psettings, {}):
+			m = gs.mirror_settings(psettings)
+		gs.set_attr('last_active_project_settings', gs.dval(m, {}))
+
