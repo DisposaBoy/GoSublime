@@ -1,4 +1,4 @@
-## r12.10.03-1
+## r12.11.03-1
 	* BREAKING CHANGES ARE COMING: in the next GoSublime update support for windows-style
 	    environment variables will be removed.
 	    If you have environment variables that are not expanded before GS sees them and they are
