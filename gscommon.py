@@ -13,6 +13,7 @@ import traceback as tbck
 import json
 from subprocess import Popen, PIPE
 import copy
+import string
 
 try:
 	STARTUP_INFO = subprocess.STARTUPINFO()
@@ -21,74 +22,78 @@ try:
 except (AttributeError):
 	STARTUP_INFO = None
 
-environ9 = {}
-_sem = threading.Semaphore()
-_settings = {
-	"env": {},
-	"gscomplete_enabled": False,
-	"gocode_cmd": "",
-	"fmt_enabled": False,
-	"fmt_tab_indent": True,
-	"fmt_tab_width": 8,
-	"gslint_enabled": False,
-	"comp_lint_enabled": False,
-	"comp_lint_commands": [],
-	"gslint_timeout": 0,
-	"autocomplete_snippets": False,
-	"autocomplete_tests": False,
-	"margo_cmd": [],
-	"margo_addr": "",
-	"on_save": [],
-	"shell": [],
-	"default_snippets": [],
-	"snippets": [],
-}
+try:
+	NAME
+except:
+	NAME = 'GoSublime'
+	environ9 = {}
+	_env_lck = threading.Lock()
+	_default_settings = {
+		"env": {},
+		"gscomplete_enabled": False,
+		"gocode_cmd": "",
+		"fmt_enabled": False,
+		"fmt_tab_indent": True,
+		"fmt_tab_width": 8,
+		"gslint_enabled": False,
+		"comp_lint_enabled": False,
+		"comp_lint_commands": [],
+		"gslint_timeout": 0,
+		"autocomplete_snippets": False,
+		"autocomplete_tests": False,
+		"margo_cmd": [],
+		"margo_addr": "",
+		"on_save": [],
+		"shell": [],
+		"default_snippets": [],
+		"snippets": [],
+	}
+	_settings = copy.copy(_default_settings)
 
-NAME = 'GoSublime'
 
-CLASS_PREFIXES = {
-	'const': u'\u0196',
-	'func': u'\u0192',
-	'type': u'\u0288',
-	'var':  u'\u03BD',
-	'package': u'package \u03C1',
-}
+	CLASS_PREFIXES = {
+		'const': u'\u0196',
+		'func': u'\u0192',
+		'type': u'\u0288',
+		'var':  u'\u03BD',
+		'package': u'package \u03C1',
+	}
 
-NAME_PREFIXES = {
-	'interface': u'\u00A1',
-}
+	NAME_PREFIXES = {
+		'interface': u'\u00A1',
+	}
 
-GOARCHES = [
-	'386',
-	'amd64',
-	'arm',
-]
+	GOARCHES = [
+		'386',
+		'amd64',
+		'arm',
+	]
 
-GOOSES = [
-	'darwin',
-	'freebsd',
-	'linux',
-	'netbsd',
-	'openbsd',
-	'plan9',
-	'windows',
-	'unix',
-]
+	GOOSES = [
+		'darwin',
+		'freebsd',
+		'linux',
+		'netbsd',
+		'openbsd',
+		'plan9',
+		'windows',
+		'unix',
+	]
 
-GOOSARCHES = []
-for s in GOOSES:
-	for arch in GOARCHES:
-		GOOSARCHES.append('%s_%s' % (s, arch))
+	GOOSARCHES = []
+	for s in GOOSES:
+		for arch in GOARCHES:
+			GOOSARCHES.append('%s_%s' % (s, arch))
 
-GOOSARCHES_PAT = re.compile(r'^(.+?)(?:_(%s))?(?:_(%s))?\.go$' % ('|'.join(GOOSES), '|'.join(GOARCHES)))
+	GOOSARCHES_PAT = re.compile(r'^(.+?)(?:_(%s))?(?:_(%s))?\.go$' % ('|'.join(GOOSES), '|'.join(GOARCHES)))
 
-IGNORED_SCOPES = frozenset([
-	'string.quoted.double.go',
-	'string.quoted.single.go',
-	'string.quoted.raw.go',
-	'comment.line.double-slash.go',
-	'comment.block.go'
-])
+	IGNORED_SCOPES = frozenset([
+		'string.quoted.double.go',
+		'string.quoted.single.go',
+		'string.quoted.raw.go',
+		'comment.line.double-slash.go',
+		'comment.block.go'
+	])
 
 def apath(fn, cwd=None):
 	if not os.path.isabs(fn):
@@ -164,9 +169,18 @@ def aso():
 def save_aso():
 	return sublime.save_settings("GoSublime-aux.sublime-settings")
 
-def setting(key, default=None):
-	with _sem:
-		return _settings.get(key, default)
+def setting(k, d=None):
+	if k == 'env':
+		nv = dval(copy.copy(_settings.get('env')), {})
+		lpe = dval(attr('last_active_project_settings', {}).get('env'), {})
+		nv.update(lpe)
+		return nv
+
+	v = attr(k, None)
+	if v is not None:
+		return v
+
+	return copy.copy(_settings.get(k, d))
 
 def println(*a):
 	print('\n** %s **:' % datetime.datetime.now())
@@ -269,14 +283,27 @@ def getenv(name, default=''):
 
 def env():
 	"""
-	Assamble environment information needed for correct operation. In particular,
+	Assemble environment information needed for correct operation. In particular,
 	ensure that directories containing binaries are included in PATH.
 	"""
 	e = os.environ.copy()
 	e.update(environ9)
 	e.update(setting('env', {}))
+
 	roots = e.get('GOPATH', '').split(os.pathsep)
 	roots.append(e.get('GOROOT', ''))
+
+	lfn = attr('last_active_go_fn', '')
+	comps = lfn.split(os.sep)
+	gs_gopath = []
+	for i, s in enumerate(comps):
+		if s.lower() == "src":
+			p = os.sep.join(comps[:i])
+			if p not in roots:
+				gs_gopath.append(p)
+	gs_gopath.reverse()
+	e['GS_GOPATH'] = os.pathsep.join(gs_gopath)
+
 
 	# For custom values of GOPATH, installed binaries via go install
 	# will go into the "bin" dir of the corresponding GOPATH path.
@@ -299,6 +326,12 @@ def env():
 
 	e['PATH'] = os.pathsep.join(add_path)
 
+	for k in e:
+		try:
+			e[k] = string.Template(e[k]).safe_substitute(e)
+		except Exception as ex:
+			println('%s: Cannot expand env var `%s`: %s' % (NAME, k, ex))
+
 	# Ensure no unicode objects leak through. The reason is twofold:
 	# 	* On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen
 	# 	  can only take bytestrings as environment variables in the
@@ -315,59 +348,28 @@ def env():
 
 	return clean_env
 
-def sync_settings():
-	global _settings
-	so = settings_obj()
-	with _sem:
-		for k in _settings:
-			v = so.get(k, None)
-			if v is not None:
-				ok = False
-				d = _settings[k]
+def mirror_settings(so):
+	m = {}
+	for k in _default_settings:
+		v = so.get(k, None)
+		if v is not None:
+			ok = False
+			d = _default_settings[k]
 
-				if is_a(d, []):
-					if is_a(v, []):
-						ok = True
-				elif is_a(d, {}):
-					if is_a(v, []):
-						ok = True
-				else:
+			if is_a(d, []):
+				if is_a(v, []):
 					ok = True
+			elif is_a(d, {}):
+				if is_a(v, []):
+					ok = True
+			else:
+				ok = True
 
-				_settings[k] = copy.copy(v)
+			m[k] = copy.copy(v)
+	return m
 
-		e = _settings.get('env', {})
-		vfn = ''
-		win = sublime.active_window()
-		if win:
-			view = win.active_view()
-			if view:
-				vfn = view.file_name()
-				psettings = view.settings().get(NAME)
-				if psettings:
-					for k in _settings:
-						v = psettings.get(k, None)
-						if v is not None and k != "env":
-							_settings[k] = v
-					penv = psettings.get('env')
-					if penv:
-						e.update(penv)
-
-		vfn = basedir_or_cwd(vfn)
-		comps = vfn.split(os.sep)
-		gs_gopath = []
-		for i, s in enumerate(comps):
-			if s.lower() == "src":
-				gs_gopath.append(os.sep.join(comps[:i]))
-		gs_gopath.reverse()
-		gs_gopath = str(os.pathsep.join(gs_gopath))
-
-		for k in e:
-			e[k] = e[k].replace('$GS_GOPATH', gs_gopath)
-		for k in e:
-			e[k] = str(os.path.expandvars(os.path.expanduser(e[k])))
-
-		_settings['env'] = e
+def sync_settings():
+	_settings.update(mirror_settings(settings_obj()))
 
 def view_fn(view):
 	if view is not None:
@@ -557,6 +559,15 @@ def lst(*a):
 			l.append(v)
 	return l
 
+def dval(v, d):
+	if v is not None:
+		if is_a_string(d) and is_a_string(v):
+			return v
+
+		if is_a(v, d):
+			return v
+
+	return d
 
 def dist_path(*a):
 	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
@@ -582,7 +593,7 @@ def json_encode(a):
 def attr(k, d=None):
 	with _attr_lck:
 		v = _attr.get(k, None)
-	return d if v is None else v
+	return d if v is None else copy.copy(v)
 
 def set_attr(k, v):
 	with _attr_lck:
