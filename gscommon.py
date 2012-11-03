@@ -567,6 +567,14 @@ def json_encode(a):
 	except Exception as ex:
 		return ('', 'Encode Error: %s' % ex)
 
+def attr(k, d=None):
+	with _attr_lck:
+		return _attr_lck.get(k, d)
+
+def set_attr(k, v):
+	with _attr_lck:
+		_attr[k] = v
+
 try:
 	st2_status_message
 except:
@@ -587,6 +595,13 @@ except:
 	sublime.status_message = status_message
 
 	sched_sm_cb()
+
+try:
+	_attr_lck
+except:
+	_attr_lck = threading.Lock()
+	_attr = {}
+
 
 # init
 settings_obj().clear_on_change("GoSublime.settings")
