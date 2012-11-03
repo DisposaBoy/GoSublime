@@ -9,6 +9,9 @@ class EV(sublime_plugin.EventListener):
 	def on_post_save(self, view):
 		sublime.set_timeout(lambda: do_post_save(view), 0)
 
+	def on_activated(self, view):
+		sublime.set_timeout(lambda: do_sync_active_view(view), 0)
+
 def do_post_save(view):
 	if not gs.is_pkg_view(view):
 		return
@@ -25,3 +28,9 @@ def do_post_save(view):
 			gs.notice(DOMAIN, 'Error %s' % ex)
 		finally:
 			gs.end(tid)
+
+def do_sync_active_view(view):
+	if not gs.is_pkg_view(view):
+		return
+
+	gs.set_attr('last_active_fn', view.file_name())
