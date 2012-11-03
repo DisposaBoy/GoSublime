@@ -30,7 +30,9 @@ def do_post_save(view):
 			gs.end(tid)
 
 def do_sync_active_view(view):
-	if not gs.is_pkg_view(view):
-		return
+	fn = view.file_name()
+	if fn:
+		gs.set_attr('last_active_fn', fn)
+		if fn.lower().endswith('.go'):
+			gs.set_attr('last_active_go_fn', fn)
 
-	gs.set_attr('last_active_fn', view.file_name())
