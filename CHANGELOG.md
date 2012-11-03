@@ -1,3 +1,12 @@
+## r12.11.03-1
+	* BREAKING CHANGES ARE COMING: in the next GoSublime update support for windows-style
+	    environment variables will be removed.
+	    If you have environment variables that are not expanded before GS sees them and they are
+	    of the form `%HOME%`, `%GOPATH%` etc. they will no longer be expanded.
+	    You should transition to *nix-style env vars.
+
+	    i.e `%GOPATH%` etc. should be changed to `$GOPATH`. `$$` can be used to escape to escape`$` characters
+
 ## r12.09.22-1
 	* the experimental gsshell replacement codename shelly is no more.
 	    it has been replaced with gscommander which operates from within the output panel
