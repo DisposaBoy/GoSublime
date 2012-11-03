@@ -1,28 +1,9 @@
-import sublime, sublime_plugin
-import gscommon as gs, margo, gsq
-import os, datetime
-
-def do_post_save(view):
-	if not gs.is_pkg_view(view):
-		return
-
-	domain = 'GoSublime-On-Save'
-	for c in gs.setting('on_save', []):
-		cmd = c.get('cmd', '')
-		args = c.get('args', {})
-		msg = 'running on_save command %s' % cmd
-		tid = gs.begin(domain, msg, set_status=False)
-		gs.println(msg)
-		try:
-			view.run_command(cmd, args)
-		except Exception as ex:
-			gs.notice(domain, 'Error %s' % ex)
-		finally:
-			gs.end(tid)
-
-class EV(sublime_plugin.EventListener):
-	def on_post_save(self, view):
-		sublime.set_timeout(lambda: do_post_save(view), 0)
+import sublime
+import sublime_plugin
+import gscommon as gs
+import margo
+import os
+import datetime
 
 class GsCommentForwardCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -40,7 +21,7 @@ class GsFmtSaveCommand(sublime_plugin.TextCommand):
 class GsFmtPromptSaveAsCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		return gs.is_go_source_view(self.view)
-		
+
 	def run(self, edit):
 		self.view.run_command("gs_fmt")
 		sublime.set_timeout(lambda: self.view.run_command("prompt_save_as"), 0)
