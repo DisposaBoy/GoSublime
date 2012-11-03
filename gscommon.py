@@ -12,6 +12,7 @@ import uuid
 import traceback as tbck
 import json
 from subprocess import Popen, PIPE
+import copy
 
 try:
 	STARTUP_INFO = subprocess.STARTUPINFO()
@@ -321,8 +322,19 @@ def sync_settings():
 		for k in _settings:
 			v = so.get(k, None)
 			if v is not None:
-				# todo: check the type of `v`
-				_settings[k] = v
+				ok = False
+				d = _settings[k]
+
+				if is_a(d, []):
+					if is_a(v, []):
+						ok = True
+				elif is_a(d, {}):
+					if is_a(v, []):
+						ok = True
+				else:
+					ok = True
+
+				_settings[k] = copy.copy(v)
 
 		e = _settings.get('env', {})
 		vfn = ''
