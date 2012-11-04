@@ -26,6 +26,13 @@ try:
 	NAME
 except:
 	NAME = 'GoSublime'
+
+	_attr_lck = threading.Lock()
+	_attr = {}
+
+	_checked_lck = threading.Lock()
+	_checked = {}
+
 	environ9 = {}
 	_env_lck = threading.Lock()
 	_default_settings = {
@@ -279,10 +286,10 @@ def rowcol(view):
 def os_is_windows():
 	return os.name == "nt"
 
-def getenv(name, default=''):
-	return env().get(name, default)
+def getenv(name, default='', m={}):
+	return env(m).get(name, default)
 
-def env():
+def env(m={}):
 	"""
 	Assemble environment information needed for correct operation. In particular,
 	ensure that directories containing binaries are included in PATH.
@@ -290,6 +297,7 @@ def env():
 	e = os.environ.copy()
 	e.update(environ9)
 	e.update(setting('env', {}))
+	e.update(m)
 
 	roots = e.get('GOPATH', '').split(os.pathsep)
 	roots.append(e.get('GOROOT', ''))
@@ -606,6 +614,15 @@ def set_attr(k, v):
 	with _attr_lck:
 		_attr[k] = v
 
+# note: this functionality should not be used inside this module
+# continue to use the try: X except: X=Y hack
+def checked(domain, k):
+	with _checked_lck:
+		k = 'common.checked.%s.%s' % (domain, k)
+		v = _checked.get(k, False)
+		_checked[k] = True
+	return v
+
 try:
 	st2_status_message
 except:
@@ -626,13 +643,6 @@ except:
 	sublime.status_message = status_message
 
 	sched_sm_cb()
-
-try:
-	_attr_lck
-except:
-	_attr_lck = threading.Lock()
-	_attr = {}
-
 
 # init
 settings_obj().clear_on_change("GoSublime.settings")
