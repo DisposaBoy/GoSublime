@@ -236,6 +236,7 @@ def proc(cmd, shell=False, env={}, cwd=None, input=None, stdout=subprocess.PIPE,
 		'cmd': cmd,
 		'shell': shell,
 		'env': env,
+		'input': input,
 	}
 
 	p = None
@@ -264,7 +265,7 @@ def run(cmd=[], shell=False, env={}, cwd=None, input=None, stderr=subprocess.STD
 	exc = None
 
 	try:
-		p, opts, err = proc(cmd, shell=shell, stderr=stderr, env=env, cwd=cwd)
+		p, opts, err = proc(cmd, input=input, shell=shell, stderr=stderr, env=env, cwd=cwd)
 		if p:
 			out, _ = p.communicate(input=opts.get('input'))
 			out = gs.ustr(out) if out else u''
