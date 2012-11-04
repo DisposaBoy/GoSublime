@@ -8,6 +8,7 @@ import time
 import hashlib
 import base64
 import Queue
+import uuid
 
 DOMAIN = 'MarGo9'
 
@@ -17,6 +18,11 @@ MARGO9_SRC = gs.dist_path('margo9')
 GOCODE_SRC = gs.dist_path('something_borrowed/gocode')
 MARGO9_BIN = gs.home_path('bin', 'gosublime.margo9.exe')
 GOCODE_BIN = gs.home_path('bin', 'gosublime.gocode.exe')
+
+if not gs.checked(DOMAIN, '_vars'):
+	_send_q = Queue.Queue()
+	_recv_q = Queue.Queue()
+	_stash = {}
 
 def _sb(s):
 	bdir = gs.home_path('bin')
@@ -159,7 +165,13 @@ def gocode(args, env={}, input=None):
 
 	return _gocode(args, env=env, input=input)
 
-def do(method, arg, shell=False):
+def acall(method, arg, cb):
+	if not gs.checked(DOMAIN, 'launch _send'):
+		gsq.launch(DOMAIN, _send)
+
+	_send_q.put((method, arg, cb))
+
+def bcall(method, arg, shell=False):
 	maybe_install()
 
 	header, _ = gs.json_encode({'method': method, 'token': 'mg9.call'})
@@ -188,3 +200,87 @@ def do(method, arg, shell=False):
 			res = {'error': gs.traceback()}
 
 	return res
+
+
+def _recv():
+	while True:
+		try:
+			ln = _recv_q.get()
+			try:
+				ln = ln.strip()
+				if ln:
+					r, _ = gs.json_decode(ln, {})
+					token = r.get('token', '')
+					f = _stash.get(token)
+					if f:
+						del _stash[token]
+						f(r.get('data', {}), r.get('error', ''))
+			except Exception:
+				gs.println(gs.traceback())
+		except Exception:
+			gs.println(gs.traceback())
+			break
+
+def _send():
+	while True:
+		try:
+			try:
+				method, arg, cb = _send_q.get()
+
+				proc = gs.attr('mg9.proc')
+				if not proc or proc.poll() is not None:
+					if proc:
+						try:
+							proc.kill()
+							proc.stdout.close()
+						except:
+							pass
+
+					maybe_install()
+
+					if not gs.checked(DOMAIN, 'launch _recv'):
+						gsq.launch(DOMAIN, _recv)
+
+					# idea the env should be setup before-hand with a bcall
+					# so we won't run this through the shell
+					proc, _, err = gsshell.proc([MARGO9_BIN], shell=False, stderr=None, bufsize=1)
+					gs.set_attr('mg9.proc', proc)
+
+					if not proc:
+						gs.notice(DOMAIN, 'Cannot start MarGo9: %s' % err)
+						continue
+
+					gsq.launch(DOMAIN, lambda: _read_stdout(proc))
+
+				token = 'mg9.autoken.%s' % uuid.uuid4()
+				_stash[token] = cb
+
+				header, _ = gs.json_encode({'method': method, 'token': token})
+				body, _ = gs.json_encode(arg)
+				ln = '%s %s\n' % (header, body)
+				proc.stdin.write(ln)
+			except Exception:
+				gs.println(gs.traceback())
+		except Exception:
+			gs.println(gs.traceback())
+			break
+
+def _read_stdout(proc):
+	try:
+		while True:
+			ln = proc.stdout.readline()
+			if not ln:
+				break
+
+			_recv_q.put(ln)
+	except Exception:
+		gs.println(gs.traceback())
+
+		proc.stdout.close()
+		proc.wait()
+		proc = None
+
+if not gs.checked(DOMAIN, 'do_init'):
+	if gs.settings_obj().get('test_mg9_enabled') is True:
+		sublime.set_timeout(do_init, 0)
+
