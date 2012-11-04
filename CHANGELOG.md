@@ -1,4 +1,4 @@
-## r12.11.03-1
+## r12.11.04-1
 	* added new setting `complete_builtins`
 	  set this to `true` to show builtin type and functions in the completion menu
 
