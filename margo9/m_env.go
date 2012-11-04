@@ -16,7 +16,8 @@ var (
 )
 
 type mEnv struct {
-	List []string
+	List   []string
+	Gopath string
 }
 
 func mEnvGetEnv(k string) string {
@@ -60,7 +61,11 @@ func (m *mEnv) Call() (interface{}, string) {
 		p := []string{}
 		sep := string(os.PathListSeparator)
 		osArch := runtime.GOOS + "_" + runtime.GOARCH
-		for _, s := range strings.Split(mEnvGetEnv("GOPATH"), sep) {
+		gpath := m.Gopath
+		if gpath == "" {
+			gpath = mEnvGetEnv("GOPATH")
+		}
+		for _, s := range strings.Split(gpath, sep) {
 			p = append(p, filepath.Join(s, "pkg", osArch))
 		}
 		env["GOSUBLIME_LIBPATH"] = strings.Join(p, sep)
