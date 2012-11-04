@@ -11,6 +11,7 @@ import traceback
 import subprocess
 import time
 import signal
+import string
 
 DOMAIN = "GsShell"
 GO_RUN_PAT = re.compile(r'^go\s+(run|play)$', re.IGNORECASE)
@@ -198,16 +199,64 @@ def fix_shell_cmd(shell, cmd):
 	if shell:
 		sh = gs.setting('shell')
 		cmd_str = ' '.join(cmd)
+		cmd_map = {'CMD': cmd_str}
 		if sh:
 			shell = False
 			cmd = []
 			for v in sh:
 				if v:
-					cmd.append(str(v).replace('$CMD', cmd_str))
+					cmd.append(string.Template(v).safe_substitute(cmd_map))
 		else:
 			cmd = [cmd_str]
 
 	return (shell, [gs.astr(v) for v in cmd])
+
+def proc(cmd, shell=False, env={}, cwd=None, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, bufsize=0):
+	env = gs.env(env)
+	shell, cmd = fix_shell_cmd(shell, cmd)
+
+	if input is not None:
+		input = gs.astr(input)
+
+	if cwd:
+		try:
+			os.makedirs(cwd)
+		except Exception:
+			pass
+	else:
+		# an empty string isn't a valid value so just always set it None
+		cwd = None
+
+	try:
+		setsid = os.setsid
+	except Exception:
+		setsid = None
+
+	opts = {
+		'cmd': cmd,
+		'shell': shell,
+		'env': env,
+	}
+
+	p = None
+	err = ''
+	try:
+		p = subprocess.Popen(
+			cmd,
+			stdout=stdout,
+			stderr=stderr,
+			stdin=stdin,
+			startupinfo=gs.STARTUP_INFO,
+			shell=shell,
+			env=env,
+			cwd=cwd,
+			preexec_fn=setsid,
+			bufsize=bufsize
+		)
+	except Exception as ex:
+		err = 'Error running command %s: %s' % (cmd, ex)
+
+	return (p, opts, err)
 
 def run(cmd=[], shell=False, env={}, cwd=None, input=None, stderr=subprocess.STDOUT):
 	out = u""
@@ -215,15 +264,12 @@ def run(cmd=[], shell=False, env={}, cwd=None, input=None, stderr=subprocess.STD
 	exc = None
 
 	try:
-		env = fix_env(env)
-		shell, cmd = fix_shell_cmd(shell, cmd)
-		p = gs.popen(cmd, shell=shell, stderr=stderr, environ=env, cwd=cwd)
-		if input is not None:
-			input = gs.astr(input)
-		out, _ = p.communicate(input=input)
-		out = gs.ustr(out) if out else u''
+		p, opts, err = proc(cmd, shell=shell, stderr=stderr, env=env, cwd=cwd)
+		if p:
+			out, _ = p.communicate(input=opts.get('input'))
+			out = gs.ustr(out) if out else u''
 	except Exception as ex:
-		err = u'Error while running %s: %s' % (cmd, gs.traceback())
+		err = u'Error communicating with command %s: %s' % (opts.get('cmd'), gs.traceback())
 		exc = ex
 
 	return (out, err, exc)
