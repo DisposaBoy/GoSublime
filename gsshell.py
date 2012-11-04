@@ -253,8 +253,8 @@ def proc(cmd, shell=False, env={}, cwd=None, input=None, stdout=subprocess.PIPE,
 			preexec_fn=setsid,
 			bufsize=bufsize
 		)
-	except Exception as ex:
-		err = 'Error running command %s: %s' % (cmd, ex)
+	except Exception:
+		err = 'Error running command %s: %s' % (cmd, gs.traceback())
 
 	return (p, opts, err)
 
