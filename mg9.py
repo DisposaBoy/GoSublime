@@ -137,13 +137,13 @@ def _gocode(args, env={}, input=None):
 	return gsshell.run(cmd, input=input, env=nv, cwd=home)
 
 def gocode(args, env={}, input=None):
-	last_gopath = gs.attr('last_gopath')
+	last_gopath = gs.attr('gocode.last_gopath')
 	gopath = gs.getenv('GOPATH')
 	if gopath and gopath != last_gopath:
 		out, _, _ = gsshell.run(cmd=['go', 'env', 'GOOS', 'GOARCH'])
 		vars = out.strip().split()
 		if len(vars) == 2:
-			gs.set_attr('last_gopath', gopath)
+			gs.set_attr('gocode.last_gopath', gopath)
 			libpath = []
 			osarch = '_'.join(vars)
 			for p in gopath.split(os.pathsep):
