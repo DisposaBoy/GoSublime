@@ -23,6 +23,9 @@
 	// or absolute path to a binary e.g. `/go/bin/gocode`
 	"gocode_cmd": "gocode",
 
+	// whether or not gocode should show builtin types and functions in the completion
+	"complete_builtins": false,
+
 	// Whether or not gsfmt is enabled
 	"fmt_enabled": true,
 

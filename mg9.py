@@ -137,6 +137,12 @@ def _gocode(args, env={}, input=None):
 	return gsshell.run(cmd, input=input, env=nv, cwd=home)
 
 def gocode(args, env={}, input=None):
+	last_propose = gs.attr('gocode.last_propose_builtins', False)
+	propose = gs.setting('complete_builtins', False)
+	if last_propose != propose:
+		gs.set_attr('gocode.last_propose_builtins', propose)
+		_gocode(['set', 'propose-builtins', 'true' if propose else 'false'])
+
 	last_gopath = gs.attr('gocode.last_gopath')
 	gopath = gs.getenv('GOPATH')
 	if gopath and gopath != last_gopath:
