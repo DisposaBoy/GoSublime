@@ -574,7 +574,13 @@ def dist_path(*a):
 	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
 
 def home_path(*a):
-	return os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', *a)
+	p = os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9')
+	if not os.path.exists(p):
+		try:
+			os.makedirs(p)
+		except:
+			println('Error while creating 9/home dir', traceback())
+	return os.path.join(p, *a)
 
 def json_decode(s, default):
 	try:
