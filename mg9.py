@@ -241,9 +241,9 @@ def _send():
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					# idea the env should be setup before-hand with a bcall
+					# ideally the env should be setup before-hand with a bcall
 					# so we won't run this through the shell
-					proc, _, err = gsshell.proc([MARGO9_BIN], shell=False, stderr=None, bufsize=1)
+					proc, _, err = gsshell.proc([MARGO9_BIN], stderr=open(os.devnull, 'wb'))
 					gs.set_attr('mg9.proc', proc)
 
 					if not proc:
