@@ -7,13 +7,14 @@ import gsq
 import time
 import hashlib
 import base64
+import Queue
 
 DOMAIN = 'MarGo9'
 
 # customization of, or user-owned gocode and margo will no longer be supported
 # so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
 MARGO9_SRC = gs.dist_path('margo9')
-GOCODE_SRC = gs.dist_path('gocode')
+GOCODE_SRC = gs.dist_path('something_borrowed/gocode')
 MARGO9_BIN = gs.home_path('bin', 'gosublime.margo9.exe')
 GOCODE_BIN = gs.home_path('bin', 'gosublime.gocode.exe')
 
@@ -37,10 +38,9 @@ def _so(out, err, start, end):
 	return (out.strip(), ok)
 
 def _run(cmd, cwd=None, shell=False):
-	# we don't want any interference from the user's env so clear all unnecesary vars
 	nv = {
 		'GOBIN': '',
-		'GOPATH': '',
+		'GOPATH': gs.dist_path('something_borrowed'),
 	}
 	return gsshell.run(cmd, shell=shell, cwd=cwd, env=nv)
 
@@ -116,7 +116,7 @@ def _token(head, bin):
 	return token
 
 def _gen_tokens():
-	return '%s\n%s' % (_token('margo9.head', MARGO9_BIN), _token('gocode.head', GOCODE_BIN))
+	return '%s\n%s' % (_token('margo9.head', MARGO9_BIN), _token('something_borrowed/gocode.head', GOCODE_BIN))
 
 def do_init():
 	aso_tokens = gs.aso().get('mg9_install_tokens', '')
@@ -136,15 +136,14 @@ def _gocode(args, env={}, input=None):
 	cmd = gs.lst(bin, args)
 	return gsshell.run(cmd, input=input, env=nv, cwd=home)
 
-last_gopath = ''
 def gocode(args, env={}, input=None):
-	global last_gopath
+	last_gopath = gs.attr('last_gopath')
 	gopath = gs.getenv('GOPATH')
 	if gopath and gopath != last_gopath:
 		out, _, _ = gsshell.run(cmd=['go', 'env', 'GOOS', 'GOARCH'])
 		vars = out.strip().split()
 		if len(vars) == 2:
-			last_gopath = gopath
+			gs.set_attr('last_gopath', gopath)
 			libpath = []
 			osarch = '_'.join(vars)
 			for p in gopath.split(os.pathsep):
@@ -153,6 +152,7 @@ def gocode(args, env={}, input=None):
 			_gocode(['set', 'lib-path', os.pathsep.join(libpath)])
 
 	return _gocode(args, env=env, input=input)
+
 def do(method, arg, shell=False):
 	maybe_install()
 
@@ -182,6 +182,3 @@ def do(method, arg, shell=False):
 			res = {'error': gs.traceback()}
 
 	return res
-
-if gs.settings_obj().get('test_mg9_enabled') is True:
-	sublime.set_timeout(do_init, 1000)
