@@ -5,6 +5,8 @@ import gsshell
 import os
 import re
 import webbrowser
+import mg9
+import shlex
 
 DOMAIN = "GsCommander"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
@@ -23,6 +25,7 @@ DEFAULT_COMMANDS = [
 	'go install',
 	'go list',
 	'go run',
+	'9 play',
 	'go test',
 	'go tool',
 	'go version',
@@ -169,13 +172,19 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		v = self.view
 		pos = v.sel()[0].begin()
 		line = v.line(pos)
-		cmd = v.substr(line).split('#', 2)
-		if len(cmd) == 2:
-			cmd = cmd[1].strip()
+		wd = v.settings().get('gscommander.wd')
 
+		ln = v.substr(line).split('#', 1)
+		if len(ln) == 2:
+			cmd = ln[1].strip()
 			vs = v.settings()
 			lc_key = '%s.last_command' % DOMAIN
-			if cmd == '!!':
+			if cmd[0] == '#':
+				rep = vs.get(lc_key, '')
+				if rep:
+					v.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd[1:])))
+				return
+			elif cmd == '!!':
 				cmd = vs.get(lc_key, '')
 			else:
 				vs.set(lc_key, cmd)
@@ -184,12 +193,13 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 				v.run_command('gs_commander_init')
 				return
 
-			f = globals().get('cmd_%s' % cmd)
+			cli = cmd.split(' ', 1)
+			f = globals().get('cmd_%s' % cli[0])
 			if f:
-				f(v, edit)
+				args = shlex.split(gs.astr(cli[1])) if len(cli) == 2 else []
+				f(v, edit, args, wd, line)
 				return
 
-			wd = v.settings().get('gscommander.wd')
 			v.replace(edit, line, ('[ %s ]' % cmd))
 			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=v, cwd=wd)
 
@@ -210,9 +220,34 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		else:
 			v.insert(edit, v.sel()[0].begin(), '\n')
 
-def cmd_reset(view, edit):
+def cmd_reset(view, edit, args, wd, r):
 	view.erase(edit, sublime.Region(0, view.size()))
 	view.run_command('gs_commander_init')
 
-def cmd_clear(view, edit):
-	cmd_reset(view, edit)
+def cmd_clear(view, edit, args, wd, r):
+	cmd_reset(view, edit, args, wd, r)
+
+def cmd_9(view, edit, args, wd, r):
+	if len(args) == 1 and args[0] == "play":
+		def cb(res, err):
+			out = '\n'.join(s for s in (res.get('out'), res.get('err')) if s)
+			if not out:
+				out = err
+
+			def f():
+				view.insert(edit, r.end(), '\n%s' % out)
+				view.run_command('gs_commander_init')
+			sublime.set_timeout(f, 0)
+
+		a = {
+			'env': gs.env(),
+			'dir': wd,
+		}
+		av = sublime.active_window().active_view()
+		if av and not av.file_name() and gs.is_go_source_view(av, False):
+			a['src'] = av.substr(sublime.Region(0, av.size()))
+
+		mg9.acall('play', a, cb)
+	else:
+		view.insert(edit, r.end(), ('Invalid args %s' % args))
+		view.run_command('gs_commander_init')
