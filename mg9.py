@@ -281,6 +281,5 @@ def _read_stdout(proc):
 		proc = None
 
 if not gs.checked(DOMAIN, 'do_init'):
-	if gs.settings_obj().get('test_mg9_enabled') is True:
-		sublime.set_timeout(do_init, 0)
+	sublime.set_timeout(do_init, 0)
 
