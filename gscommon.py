@@ -644,6 +644,13 @@ except:
 
 	sched_sm_cb()
 
+	DEVNULL = open(os.devnull, 'w')
+	try:
+		LOGFILE = open(home_path('log.txt'), 'a+')
+	except Exception as ex:
+		LOGFILE = DEVNULL
+		notice(NAME, 'Cannot create log file. Remote(margo) and persistent logging will be disabled. Error: %s' % ex)
+
 # init
 settings_obj().clear_on_change("GoSublime.settings")
 settings_obj().add_on_change("GoSublime.settings", sync_settings)
