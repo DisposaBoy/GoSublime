@@ -7,6 +7,7 @@ import re
 import webbrowser
 import mg9
 import shlex
+import uuid
 
 DOMAIN = "GsCommander"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
@@ -229,17 +230,26 @@ def cmd_clear(view, edit, args, wd, r):
 
 def cmd_9(view, edit, args, wd, r):
 	if len(args) == 1 and args[0] == "play":
+		dmn = '%s: 9 play' % DOMAIN
+		cid = '9play-%s' % uuid.uuid4()
+		def cancel():
+			mg9.acall('kill', {'cid': cid}, None)
+
+		tid = gs.begin(dmn, "9 play", set_status=False, cancel=cancel)
+
 		def cb(res, err):
 			out = '\n'.join(s for s in (res.get('out'), res.get('err')) if s)
 			if not out:
 				out = err
 
 			def f():
+				gs.end(tid)
 				view.insert(edit, r.end(), '\n%s' % out)
 				view.run_command('gs_commander_init')
 			sublime.set_timeout(f, 0)
 
 		a = {
+			'cid': cid,
 			'env': gs.env(),
 			'dir': wd,
 		}

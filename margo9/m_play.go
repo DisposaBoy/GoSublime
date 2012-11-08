@@ -13,6 +13,7 @@ type mPlay struct {
 	Src string
 	Env map[string]string `json:"env"`
 	b   *Broker
+	Cid string
 }
 
 // todo: send the client output as it comes
@@ -30,7 +31,7 @@ func (m *mPlay) Call() (interface{}, string) {
 	// if this fails then the next operation fails as well so no point in checking this
 	os.MkdirAll(tmpDir, 0755)
 
-	dir, err := ioutil.TempDir(tmpDir, "run-")
+	dir, err := ioutil.TempDir(tmpDir, "play-")
 	if err != nil {
 		return nil, err.Error()
 	}
@@ -50,7 +51,8 @@ func (m *mPlay) Call() (interface{}, string) {
 
 	stdErr := bytes.NewBuffer(nil)
 	stdOut := bytes.NewBuffer(nil)
-	runCmd := func(name string, args ...string) error {
+	runCmd := func(cid, name string, args ...string) error {
+
 		stdOut.Reset()
 		stdErr.Reset()
 		c := exec.Command(name, args...)
@@ -58,11 +60,15 @@ func (m *mPlay) Call() (interface{}, string) {
 		c.Stderr = stdErr
 		c.Dir = m.Dir
 		c.Env = env
+
+		watchCmd(cid, c)
+		defer unwatchCmd(cid)
+
 		return c.Run()
 	}
 
 	fn := filepath.Join(dir, "a.exe")
-	err = runCmd("go", "build", "-o", fn)
+	err = runCmd("", "go", "build", "-o", fn)
 
 	if err != nil {
 		res := M{
@@ -72,7 +78,7 @@ func (m *mPlay) Call() (interface{}, string) {
 		return res, err.Error()
 	}
 
-	err = runCmd(fn)
+	err = runCmd(m.Cid, fn)
 	res := M{
 		"out": stdOut.String(),
 		"err": stdErr.String(),
