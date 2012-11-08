@@ -178,7 +178,7 @@ def bcall(method, arg, shell=False):
 	body, _ = gs.json_encode(arg)
 	s = '%s %s' % (header, body)
 	s = 'base64:%s' % base64.b64encode(s)
-	out, err, _ = gsshell.run([MARGO9_BIN, '-do', s], stderr=None, shell=shell)
+	out, err, _ = gsshell.run([MARGO9_BIN, '-do', s], stderr=gs.LOGFILE, shell=shell)
 	res = {'error': err}
 
 	if out:
@@ -243,7 +243,7 @@ def _send():
 
 					# ideally the env should be setup before-hand with a bcall
 					# so we won't run this through the shell
-					proc, _, err = gsshell.proc([MARGO9_BIN], stderr=open(os.devnull, 'wb'))
+					proc, _, err = gsshell.proc([MARGO9_BIN], stderr=gs.LOGFILE)
 					gs.set_attr('mg9.proc', proc)
 
 					if not proc:
