@@ -191,10 +191,20 @@ def setting(k, d=None):
 	return copy.copy(_settings.get(k, d))
 
 def println(*a):
-	print('\n** %s **:' % datetime.datetime.now())
+	l = []
+	l.append('\n** %s **:' % datetime.datetime.now())
 	for s in a:
-		print(ustr(s).strip())
-	print('--------------------------------')
+		l.append(ustr(s).strip())
+	l.append('--------------------------------')
+
+	l = '\n'.join(l)
+	print(l)
+	try:
+		LOGFILE.writelines([l, '\n'])
+		LOGFILE.flush()
+	except Exception:
+		pass
+
 
 debug = println
 
