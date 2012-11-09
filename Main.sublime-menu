@@ -89,6 +89,14 @@
 								"args": {
 									"file": "${packages}/GoSublime/LICENSE.md"
 								}
+							},
+							{ "caption": "-" },
+							{
+								"caption": "Open Log File",
+								"command": "open_file",
+								"args": {
+									"file": "${packages}/User/GoSublime/9/log.txt"
+								}
 							}
 						]
 					}
