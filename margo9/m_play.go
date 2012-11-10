@@ -6,14 +6,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 )
 
 type mPlay struct {
-	Dir string `json:"dir"`
-	Src string
-	Env map[string]string `json:"env"`
-	b   *Broker
-	Cid string
+	Dir       string            `json:"dir"`
+	Src       string            `json:"src"`
+	Env       map[string]string `json:"env"`
+	Cid       string            `json:"cid"`
+	BuildOnly bool              `json:"build_only"`
+	b         *Broker
 }
 
 // todo: send the client output as it comes
@@ -55,8 +57,8 @@ func (m *mPlay) Call() (interface{}, string) {
 
 	stdErr := bytes.NewBuffer(nil)
 	stdOut := bytes.NewBuffer(nil)
-	runCmd := func(cid, name string, args ...string) error {
-
+	runCmd := func(name string, args ...string) (M, error) {
+		start := time.Now()
 		stdOut.Reset()
 		stdErr.Reset()
 		c := exec.Command(name, args...)
@@ -65,28 +67,26 @@ func (m *mPlay) Call() (interface{}, string) {
 		c.Dir = m.Dir
 		c.Env = env
 
-		watchCmd(cid, c)
-		defer unwatchCmd(cid)
+		watchCmd(m.Cid, c)
+		defer unwatchCmd(m.Cid)
 
-		return c.Run()
-	}
-
-	fn := filepath.Join(dir, "gosublime.a.exe")
-	err = runCmd(m.Cid, "go", "build", "-o", fn)
-
-	if err != nil {
+		err := c.Run()
 		res := M{
 			"out": stdOut.String(),
 			"err": stdErr.String(),
+			"dur": time.Now().Sub(start).String(),
 		}
+
+		return res, err
+	}
+
+	fn := filepath.Join(dir, "gosublime.a.exe")
+	res, err := runCmd("go", "build", "-o", fn)
+	if m.BuildOnly || err != nil {
 		return res, err.Error()
 	}
 
-	err = runCmd(m.Cid, fn)
-	res := M{
-		"out": stdOut.String(),
-		"err": stdErr.String(),
-	}
+	res, err = runCmd(fn)
 	return res, errStr(err)
 }
 
