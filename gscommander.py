@@ -15,6 +15,8 @@ SPLIT_FN_POS_PAT = re.compile(r'(.+?)(?:[:](\d+))?(?:[:](\d+))?$')
 URL_SCHEME_PAT = re.compile(r'^\w+://')
 URL_PATH_PAT = re.compile(r'^(?:\w+://|(?:www|(?:\w+\.)*(?:golang|pkgdoc|gosublime)\.org))')
 
+HOURGLASS = u'\u231B'
+
 DEFAULT_COMMANDS = [
 	'go build',
 	'go clean',
@@ -112,7 +114,7 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 			v.show(v.size()-1)
 
 class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
-	def run(self, wd=None):
+	def run(self, wd=None, run=[]):
 		win = self.window
 		wid = win.id()
 		if not wd:
@@ -128,6 +130,17 @@ class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
 		win.run_command("show_panel", {"panel": ("output.%s" % id)})
 		win.focus_view(v)
 		v.run_command('gs_commander_init', {'wd': wd})
+
+		if run:
+			cmd = ' '.join(run)
+			edit = v.begin_edit()
+			try:
+				v.insert(edit, v.line(v.size()-1).end(), cmd)
+				v.sel().clear()
+				v.sel().add(v.line(v.size()-1).end())
+				v.run_command('gs_commander_exec')
+			finally:
+				v.end_edit(edit)
 
 class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -194,14 +207,16 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 				v.run_command('gs_commander_init')
 				return
 
+			rkey = 'gscommander.exec.%s' % uuid.uuid4()
+			v.insert(edit, v.size(), (u"\t%s\n" % HOURGLASS))
+			v.add_regions(rkey, [sublime.Region(line.begin(), v.size())], '')
 			cli = cmd.split(' ', 1)
 			f = globals().get('cmd_%s' % cli[0])
 			if f:
 				args = shlex.split(gs.astr(cli[1])) if len(cli) == 2 else []
-				f(v, edit, args, wd, line)
+				f(v, edit, args, wd, rkey)
 				return
 
-			v.replace(edit, line, ('[ %s ]' % cmd))
 			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=v, cwd=wd)
 
 			def on_output_done(c):
@@ -221,30 +236,44 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		else:
 			v.insert(edit, v.sel()[0].begin(), '\n')
 
-def cmd_reset(view, edit, args, wd, r):
+def push_output(view, rkey, out):
+	out = '\t%s' % out.strip().replace('\r', '').replace('\n', '\n\t')
+	edit = view.begin_edit()
+	try:
+		regions = view.get_regions(rkey)
+		if regions:
+			line = view.line(regions[0].end()-1)
+			if view.substr(line).strip() == HOURGLASS:
+				view.replace(edit, line, out)
+			else:
+				view.insert(edit, line.end()-1, '\n%s' % out)
+		else:
+			view.insert(edit, view.size(), out)
+	finally:
+		view.end_edit(edit)
+
+def cmd_reset(view, edit, args, wd, rkey):
 	view.erase(edit, sublime.Region(0, view.size()))
 	view.run_command('gs_commander_init')
 
-def cmd_clear(view, edit, args, wd, r):
-	cmd_reset(view, edit, args, wd, r)
+def cmd_clear(view, edit, args, wd, rkey):
+	cmd_reset(view, edit, args, wd, rkey)
 
-def cmd_9(view, edit, args, wd, r):
+def cmd_9(view, edit, args, wd, rkey):
 	if len(args) == 1 and args[0] == "play":
-		dmn = '%s: 9 play' % DOMAIN
-		cid = '9play-%s' % uuid.uuid4()
+		dmn = '%s: 9 %s' % (DOMAIN, args[0])
+		msg = '[ %s ] # 9 %s' % (wd, ' '.join(args))
+		cid = '9%s-%s' % (args[0], uuid.uuid4())
 		def cancel():
 			mg9.acall('kill', {'cid': cid}, None)
 
-		tid = gs.begin(dmn, "9 play", set_status=False, cancel=cancel)
+		tid = gs.begin(dmn, msg, set_status=False, cancel=cancel)
 
 		def cb(res, err):
-			out = '\n'.join(s for s in (res.get('out'), res.get('err')) if s)
-			if not out:
-				out = err
-
+			out = '\n'.join(s for s in (res.get('out'), res.get('err'), err) if s)
 			def f():
 				gs.end(tid)
-				view.insert(edit, r.end(), '\n%s' % out)
+				push_output(view, rkey, out)
 				view.run_command('gs_commander_init')
 			sublime.set_timeout(f, 0)
 
