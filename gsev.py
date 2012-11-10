@@ -21,7 +21,6 @@ def do_post_save(view):
 		args = c.get('args', {})
 		msg = 'running on_save command %s' % cmd
 		tid = gs.begin(DOMAIN, msg, set_status=False)
-		gs.println(msg)
 		try:
 			view.run_command(cmd, args)
 		except Exception as ex:
