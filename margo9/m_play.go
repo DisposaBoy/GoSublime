@@ -83,7 +83,7 @@ func (m *mPlay) Call() (interface{}, string) {
 	fn := filepath.Join(dir, "gosublime.a.exe")
 	res, err := runCmd("go", "build", "-o", fn)
 	if m.BuildOnly || err != nil {
-		return res, err.Error()
+		return res, errStr(err)
 	}
 
 	res, err = runCmd(fn)
