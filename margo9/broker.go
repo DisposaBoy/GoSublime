@@ -67,6 +67,7 @@ func (b *Broker) SendNoLog(resp Response) error {
 	// the only expected write failure are due to broken pipes
 	// which usually means the client has gone away so just ignore the error
 	b.w.Write(s)
+	b.w.Write([]byte{'\n'})
 	return nil
 }
 
