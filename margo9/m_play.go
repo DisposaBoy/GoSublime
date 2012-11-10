@@ -49,6 +49,10 @@ func (m *mPlay) Call() (interface{}, string) {
 		return nil, "missing directory"
 	}
 
+	if m.Cid == "" {
+		m.Cid = "play.auto." + numbers.nextString()
+	}
+
 	stdErr := bytes.NewBuffer(nil)
 	stdOut := bytes.NewBuffer(nil)
 	runCmd := func(cid, name string, args ...string) error {
@@ -67,8 +71,8 @@ func (m *mPlay) Call() (interface{}, string) {
 		return c.Run()
 	}
 
-	fn := filepath.Join(dir, "a.exe")
-	err = runCmd("", "go", "build", "-o", fn)
+	fn := filepath.Join(dir, "gosublime.a.exe")
+	err = runCmd(m.Cid, "go", "build", "-o", fn)
 
 	if err != nil {
 		res := M{

@@ -63,13 +63,24 @@ func killCmd(id string) bool {
 		// the primary use-case for these functions are remote requests to cancel the proces
 		// so we won't remove it from the map
 		c.Process.Kill()
+		// neither wait nor release are called because the cmd owner should be waiting on it
 		return true
 	}
 	return false
 }
 
 func init() {
+	byeDefer(func() {
+		cmdWatchLck.Lock()
+		defer cmdWatchLck.Unlock()
+		for _, c := range cmdWatchlist {
+			c.Process.Kill()
+			c.Process.Release()
+		}
+	})
+
 	registry.Register("kill", func(b *Broker) Caller {
 		return &mKill{}
 	})
+
 }

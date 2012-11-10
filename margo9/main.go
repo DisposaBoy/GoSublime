@@ -4,13 +4,59 @@ import (
 	"bytes"
 	"encoding/base64"
 	"flag"
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
+	"sync"
+	"time"
 )
+
+var (
+	byeLck            = sync.Mutex{}
+	byeFuncs *byeFunc = nil
+	numbers           = &counter{}
+	logger            = log.New(os.Stderr, "margo: ", log.Ldate|log.Ltime|log.Lshortfile)
+)
+
+type counter struct {
+	lck sync.Mutex
+	n   uint64
+}
+
+func (c *counter) next() uint64 {
+	c.lck.Lock()
+	defer c.lck.Unlock()
+	c.n += 1
+	return c.n
+}
+
+func (c *counter) nextString() string {
+	c.lck.Lock()
+	defer c.lck.Unlock()
+	c.n += 1
+	return fmt.Sprint(c.n)
+}
+
+type byeFunc struct {
+	prev *byeFunc
+	f    func()
+}
+
+func byeDefer(f func()) {
+	byeLck.Lock()
+	defer byeLck.Unlock()
+	byeFuncs = &byeFunc{
+		prev: byeFuncs,
+		f:    f,
+	}
+}
 
 func main() {
 	do := "-"
+	poll := 0
+	flag.IntVar(&poll, "poll", poll, "If N is greater than zero, send a response every N seconds. The token will be `margo.poll`")
 	flag.StringVar(&do, "do", "-", "Process the specified operations(lines) operation and exit. `-` means operate as normal")
 	flag.Parse()
 
@@ -31,5 +77,29 @@ func main() {
 	}
 
 	broker := NewBroker(in, os.Stdout)
+	if poll > 0 {
+		pollSeconds := time.Second * time.Duration(poll)
+		pollCounter := &counter{}
+		go func() {
+			for {
+				time.Sleep(pollSeconds)
+				broker.Send(Response{
+					Token: "margo.poll",
+					Data: M{
+						"time": time.Now().String(),
+						"seq":  pollCounter.nextString(),
+					},
+				})
+			}
+		}()
+	}
 	broker.Loop(!doCall)
+
+	byeLck.Lock()
+	defer byeLck.Unlock() // keep this here for the sake of code correctness
+	for b := byeFuncs; b != nil; b = b.prev {
+		b.f()
+	}
+
+	os.Exit(0)
 }

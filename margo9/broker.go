@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"runtime"
 	"sync"
 	"time"
@@ -29,7 +28,6 @@ type Broker struct {
 	start  time.Time
 	rLck   sync.Mutex
 	wLck   sync.Mutex
-	wg     *sync.WaitGroup
 	r      io.Reader
 	w      io.Writer
 	in     *bufio.Reader
@@ -38,7 +36,6 @@ type Broker struct {
 
 func NewBroker(r io.Reader, w io.Writer) *Broker {
 	return &Broker{
-		wg:  &sync.WaitGroup{},
 		r:   r,
 		w:   w,
 		in:  bufio.NewReader(r),
@@ -47,6 +44,14 @@ func NewBroker(r io.Reader, w io.Writer) *Broker {
 }
 
 func (b *Broker) Send(resp Response) error {
+	err := b.SendNoLog(resp)
+	if err != nil {
+		logger.Println("Cannot send result", err)
+	}
+	return err
+}
+
+func (b *Broker) SendNoLog(resp Response) error {
 	b.wLck.Lock()
 	defer b.wLck.Unlock()
 
@@ -54,21 +59,24 @@ func (b *Broker) Send(resp Response) error {
 		resp.Data = M{}
 	}
 
-	err := b.out.Encode(resp)
+	s, err := json.Marshal(resp)
 	if err != nil {
-		log.Println("broker: Cannot send result", err)
+		return err
 	}
-	return err
+
+	// the only expected write failure are due to broken pipes
+	// which usually means the client has gone away so just ignore the error
+	b.w.Write(s)
+	return nil
 }
 
 func (b *Broker) call(req *Request, cl Caller) {
-	defer b.wg.Done()
 	b.served++
 
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Printf("broker: %v#%v PANIC: %v\n", req.Method, req.Token, err)
+			logger.Printf("%v#%v PANIC: %v\n", req.Method, req.Token, err)
 			b.Send(Response{
 				Token: req.Token,
 				Error: "broker: " + req.Method + "#" + req.Token + " PANIC",
@@ -90,7 +98,7 @@ func (b *Broker) accept() (stopLooping bool) {
 	if err == io.EOF {
 		stopLooping = true
 	} else if err != nil {
-		log.Println("broker: Cannot read input", err)
+		logger.Println("Cannot read input", err)
 		b.Send(Response{
 			Error: err.Error(),
 		})
@@ -115,7 +123,7 @@ func (b *Broker) accept() (stopLooping bool) {
 	m := registry.Lookup(req.Method)
 	if m == nil {
 		e := "Invalid method " + req.Method
-		log.Println("broker:", e)
+		logger.Println(e)
 		b.Send(Response{
 			Token: req.Token,
 			Error: e,
@@ -126,7 +134,7 @@ func (b *Broker) accept() (stopLooping bool) {
 	cl := m(b)
 	err = dec.Decode(cl)
 	if err != nil {
-		log.Println("broker: Cannot decode arg", err)
+		logger.Println("Cannot decode arg", err)
 		b.Send(Response{
 			Token: req.Token,
 			Error: err.Error(),
@@ -134,7 +142,6 @@ func (b *Broker) accept() (stopLooping bool) {
 		return
 	}
 
-	b.wg.Add(1)
 	go b.call(req, cl)
 
 	return
@@ -144,7 +151,7 @@ func (b *Broker) Loop(decorate bool) {
 	b.start = time.Now()
 
 	if decorate {
-		go b.Send(Response{
+		go b.SendNoLog(Response{
 			Token: "margo.hello",
 			Data: M{
 				"time": b.start.String(),
@@ -160,10 +167,8 @@ func (b *Broker) Loop(decorate bool) {
 		runtime.Gosched()
 	}
 
-	b.wg.Wait()
-
 	if decorate {
-		b.Send(Response{
+		b.SendNoLog(Response{
 			Token: "margo.bye-ni",
 			Data: M{
 				"served": b.served,
