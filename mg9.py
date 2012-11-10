@@ -243,7 +243,7 @@ def _send():
 
 					# ideally the env should be setup before-hand with a bcall
 					# so we won't run this through the shell
-					proc, _, err = gsshell.proc([MARGO9_BIN], stderr=gs.LOGFILE)
+					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=5'], stderr=gs.LOGFILE)
 					gs.set_attr('mg9.proc', proc)
 
 					if not proc:
