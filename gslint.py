@@ -63,7 +63,7 @@ class GsLintThread(threading.Thread):
 						file_refs[fn] = fr
 
 def highlight(fr):
-	sel = fr.view.sel()[0].begin()
+	sel = gs.sel(fr.view).begin()
 	row, _ = fr.view.rowcol(sel)
 
 	if fr.state == 1:

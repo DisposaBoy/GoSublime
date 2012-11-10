@@ -24,7 +24,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 		if (not gs.is_go_source_view(view)) or (mode not in ['goto', 'hint']):
 			return
 
-		pt = view.sel()[0].begin()
+		pt = gs.sel(view).begin()
 		src = view.substr(sublime.Region(0, view.size()))
 		def f(docs, err):
 			doc = ''

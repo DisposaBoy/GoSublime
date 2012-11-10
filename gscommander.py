@@ -52,7 +52,7 @@ def wdid(wd):
 
 class EV(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
-		pos = view.sel()[0].begin()
+		pos = gs.sel(view).begin()
 		if view.score_selector(pos, 'text.gscommander') == 0:
 			return []
 		cl = []
@@ -61,7 +61,7 @@ class EV(sublime_plugin.EventListener):
 
 class GsCommanderInsertLineCommand(sublime_plugin.TextCommand):
 	def run(self, edit, after=True):
-		insln = lambda: self.view.insert(edit, self.view.sel()[0].begin(), "\n")
+		insln = lambda: self.view.insert(edit, gs.sel(self.view).begin(), "\n")
 		if after:
 			self.view.run_command("move_to", {"to": "hardeol"})
 			insln()
@@ -144,12 +144,12 @@ class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
 
 class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
-		pos = self.view.sel()[0].begin()
+		pos = gs.sel(self.view).begin()
 		return self.view.score_selector(pos, 'text.gscommander') > 0
 
 	def run(self, edit):
 		v = self.view
-		pos = v.sel()[0].begin()
+		pos = gs.sel(v).begin()
 		inscope = lambda p: v.score_selector(p, 'path.gscommander') > 0
 		if not inscope(pos):
 			pos -= 1
@@ -179,12 +179,12 @@ class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 
 class GsCommanderExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
-		pos = self.view.sel()[0].begin()
+		pos = gs.sel(self.view).begin()
 		return self.view.score_selector(pos, 'text.gscommander') > 0
 
 	def run(self, edit):
 		v = self.view
-		pos = v.sel()[0].begin()
+		pos = gs.sel(v).begin()
 		line = v.line(pos)
 		wd = v.settings().get('gscommander.wd')
 
@@ -234,7 +234,7 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 			c.output_done.append(on_output_done)
 			c.start()
 		else:
-			v.insert(edit, v.sel()[0].begin(), '\n')
+			v.insert(edit, gs.sel(v).begin(), '\n')
 
 def push_output(view, rkey, out):
 	out = '\t%s' % out.strip().replace('\r', '').replace('\n', '\n\t')

@@ -271,7 +271,7 @@ def is_go_source_view(view=None, strict=True):
 	if view is None:
 		return False
 
-	selector_match = view.score_selector(view.sel()[0].begin(), 'source.go') > 0
+	selector_match = view.score_selector(sel(view).begin(), 'source.go') > 0
 	if selector_match:
 		return True
 
@@ -291,7 +291,7 @@ def active_valid_go_view(win=None, strict=True):
 	return None
 
 def rowcol(view):
-	return view.rowcol(view.sel()[0].begin())
+	return view.rowcol(sel(view).begin())
 
 def os_is_windows():
 	return os.name == "nt"
@@ -632,6 +632,14 @@ def checked(domain, k):
 		v = _checked.get(k, False)
 		_checked[k] = True
 	return v
+
+def sel(view, i=0):
+	try:
+		# view.sel() is a sublime.RegionSet. we want actual a python list behaviour :|
+		l = [r for r in view.sel()]
+		return l[i]
+	except Exception:
+		return sublime.Region(0, 0)
 
 try:
 	st2_status_message

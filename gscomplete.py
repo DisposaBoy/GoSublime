@@ -226,7 +226,7 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 
 	def run(self, edit):
 		view = self.view
-		pt = view.sel()[0].begin()
+		pt = gs.sel(view).begin()
 		if view.substr(sublime.Region(pt-1, pt)) == '(':
 			depth = 1
 		else:
