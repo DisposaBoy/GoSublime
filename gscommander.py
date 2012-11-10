@@ -215,6 +215,7 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 			if f:
 				args = shlex.split(gs.astr(cli[1])) if len(cli) == 2 else []
 				f(v, edit, args, wd, rkey)
+				v.run_command('gs_commander_init')
 				return
 
 			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=v, cwd=wd)
@@ -274,7 +275,6 @@ def cmd_9(view, edit, args, wd, rkey):
 			def f():
 				gs.end(tid)
 				push_output(view, rkey, out)
-				view.run_command('gs_commander_init')
 			sublime.set_timeout(f, 0)
 
 		a = {
@@ -289,4 +289,3 @@ def cmd_9(view, edit, args, wd, rkey):
 		mg9.acall('play', a, cb)
 	else:
 		view.insert(edit, r.end(), ('Invalid args %s' % args))
-		view.run_command('gs_commander_init')
