@@ -60,10 +60,6 @@ func main() {
 	flag.StringVar(&do, "do", "-", "Process the specified operations(lines) operation and exit. `-` means operate as normal")
 	flag.Parse()
 
-	defer os.Stdin.Close()
-	defer os.Stdout.Close()
-	defer os.Stderr.Close()
-
 	var in io.Reader = os.Stdin
 	doCall := do != "-"
 	if doCall {
@@ -83,7 +79,7 @@ func main() {
 		go func() {
 			for {
 				time.Sleep(pollSeconds)
-				broker.Send(Response{
+				broker.SendNoLog(Response{
 					Token: "margo.poll",
 					Data: M{
 						"time": time.Now().String(),
