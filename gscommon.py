@@ -197,20 +197,23 @@ def println(*a):
 		l.append(ustr(s).strip())
 	l.append('--------------------------------')
 
-	l = '\n'.join(l)
+	l = '%s\n' % '\n'.join(l)
 	print(l)
+	return l
+
+def log(*a):
 	try:
-		LOGFILE.writelines([l, '\n'])
+		LOGFILE.write(println(*a))
 		LOGFILE.flush()
 	except Exception:
 		pass
 
 
-debug = println
+debug = log
 
 def notice(domain, txt):
 	txt = "%s: %s" % (domain, txt)
-	println(txt)
+	log(txt)
 	status_message(txt)
 
 def notice_undo(domain, txt, view, should_undo):
