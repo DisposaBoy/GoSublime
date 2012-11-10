@@ -183,20 +183,20 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		return self.view.score_selector(pos, 'text.gscommander') > 0
 
 	def run(self, edit):
-		v = self.view
-		pos = gs.sel(v).begin()
-		line = v.line(pos)
-		wd = v.settings().get('gscommander.wd')
+		view = self.view
+		pos = gs.sel(view).begin()
+		line = view.line(pos)
+		wd = view.settings().get('gscommander.wd')
 
-		ln = v.substr(line).split('#', 1)
+		ln = view.substr(line).split('#', 1)
 		if len(ln) == 2:
 			cmd = ln[1].strip()
-			vs = v.settings()
+			vs = view.settings()
 			lc_key = '%s.last_command' % DOMAIN
 			if cmd[0] == '#':
 				rep = vs.get(lc_key, '')
 				if rep:
-					v.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd[1:])))
+					view.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd[1:])))
 				return
 			elif cmd == '!!':
 				cmd = vs.get(lc_key, '')
@@ -204,21 +204,22 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 				vs.set(lc_key, cmd)
 
 			if not cmd:
-				v.run_command('gs_commander_init')
+				view.run_command('gs_commander_init')
 				return
 
+			view.replace(edit, line, ('[ %s ]' % cmd))
 			rkey = 'gscommander.exec.%s' % uuid.uuid4()
-			v.insert(edit, v.size(), (u"\t%s\n" % HOURGLASS))
-			v.add_regions(rkey, [sublime.Region(line.begin(), v.size())], '')
+			view.insert(edit, view.size(), (u"\t%s\n" % HOURGLASS))
+			view.add_regions(rkey, [sublime.Region(line.begin(), view.size())], '')
 			cli = cmd.split(' ', 1)
 			f = globals().get('cmd_%s' % cli[0])
 			if f:
 				args = shlex.split(gs.astr(cli[1])) if len(cli) == 2 else []
-				f(v, edit, args, wd, rkey)
-				v.run_command('gs_commander_init')
+				view.run_command('gs_commander_init')
+				f(view, edit, args, wd, rkey)
 				return
 
-			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=v, cwd=wd)
+			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=view, cwd=wd)
 
 			def on_output_done(c):
 				def cb():
@@ -235,7 +236,7 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 			c.output_done.append(on_output_done)
 			c.start()
 		else:
-			v.insert(edit, gs.sel(v).begin(), '\n')
+			view.insert(edit, gs.sel(view).begin(), '\n')
 
 def push_output(view, rkey, out):
 	out = '\t%s' % out.strip().replace('\r', '').replace('\n', '\n\t')
@@ -261,31 +262,47 @@ def cmd_clear(view, edit, args, wd, rkey):
 	cmd_reset(view, edit, args, wd, rkey)
 
 def cmd_9(view, edit, args, wd, rkey):
-	if len(args) == 1 and args[0] == "play":
-		dmn = '%s: 9 %s' % (DOMAIN, args[0])
-		msg = '[ %s ] # 9 %s' % (wd, ' '.join(args))
-		cid = '9%s-%s' % (args[0], uuid.uuid4())
-		def cancel():
-			mg9.acall('kill', {'cid': cid}, None)
+	if len(args) == 0 or args[0] not in ('play', 'build'):
+		push_output(view, rkey, ('9: invalid args %s' % args))
+		return
 
-		tid = gs.begin(dmn, msg, set_status=False, cancel=cancel)
+	subcmd = args[0]
+	dmn = '%s: 9 %s' % (DOMAIN, subcmd)
+	msg = '[ %s ] # 9 %s' % (wd, ' '.join(args))
+	cid = '9%s-%s' % (subcmd, uuid.uuid4())
+	tid = gs.begin(dmn, msg, set_status=False, cancel=lambda: mg9.acall('kill', {'cid': cid}, None))
 
-		def cb(res, err):
-			out = '\n'.join(s for s in (res.get('out'), res.get('err'), err) if s)
-			def f():
-				gs.end(tid)
-				push_output(view, rkey, out)
-			sublime.set_timeout(f, 0)
+	def cb(res, err):
+		out = '\n'.join(s for s in (res.get('out'), res.get('err'), err) if s)
+		def f():
+			gs.end(tid)
+			push_output(view, rkey, out)
+		sublime.set_timeout(f, 0)
 
-		a = {
-			'cid': cid,
-			'env': gs.env(),
-			'dir': wd,
-		}
-		av = sublime.active_window().active_view()
-		if av and not av.file_name() and gs.is_go_source_view(av, False):
-			a['src'] = av.substr(sublime.Region(0, av.size()))
+	a = {
+		'cid': cid,
+		'env': gs.env(),
+		'dir': wd,
+		'args': args[1:],
+		'build_only': (subcmd == 'build'),
+	}
 
-		mg9.acall('play', a, cb)
-	else:
-		view.insert(edit, r.end(), ('Invalid args %s' % args))
+	win = view.window()
+	if win is not None:
+		av = win.active_view()
+		if av is not None:
+			fn = av.file_name()
+			if fn:
+				basedir = gs.basedir_or_cwd(fn)
+				for v in win.views():
+					try:
+						fn = v.file_name()
+						if fn and v.is_dirty() and fn.endswith('.go') and os.path.dirname(fn) == basedir:
+							v.run_command('gs_fmt_save')
+					except Exception:
+						gs.println(gs.traceback())
+			else:
+				if gs.is_go_source_view(av, False):
+					a['src'] = av.substr(sublime.Region(0, av.size()))
+
+	mg9.acall('play', a, cb)
