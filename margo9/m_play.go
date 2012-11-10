@@ -10,6 +10,7 @@ import (
 )
 
 type mPlay struct {
+	Args      []string          `json:"args"`
 	Dir       string            `json:"dir"`
 	Src       string            `json:"src"`
 	Env       map[string]string `json:"env"`
@@ -45,6 +46,10 @@ func (m *mPlay) Call() (interface{}, string) {
 			return nil, err.Error()
 		}
 		m.Dir = dir
+	}
+
+	if m.Args == nil {
+		m.Args = []string{}
 	}
 
 	if m.Dir == "" {
@@ -86,7 +91,7 @@ func (m *mPlay) Call() (interface{}, string) {
 		return res, errStr(err)
 	}
 
-	res, err = runCmd(fn)
+	res, err = runCmd(fn, m.Args...)
 	return res, errStr(err)
 }
 
