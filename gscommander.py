@@ -191,17 +191,18 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 		ln = view.substr(line).split('#', 1)
 		if len(ln) == 2:
 			cmd = ln[1].strip()
-			vs = view.settings()
-			lc_key = '%s.last_command' % DOMAIN
-			if cmd[0] == '#':
-				rep = vs.get(lc_key, '')
-				if rep:
-					view.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd[1:])))
-				return
-			elif cmd == '!!':
-				cmd = vs.get(lc_key, '')
-			else:
-				vs.set(lc_key, cmd)
+			if cmd:
+				vs = view.settings()
+				lc_key = '%s.last_command' % DOMAIN
+				if cmd[0] == '#':
+					rep = vs.get(lc_key, '')
+					if rep:
+						view.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd[1:])))
+					return
+				elif cmd == '!!':
+					cmd = vs.get(lc_key, '')
+				else:
+					vs.set(lc_key, cmd)
 
 			if not cmd:
 				view.run_command('gs_commander_init')
@@ -211,30 +212,27 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 			rkey = 'gscommander.exec.%s' % uuid.uuid4()
 			view.insert(edit, view.size(), (u"\t%s\n" % HOURGLASS))
 			view.add_regions(rkey, [sublime.Region(line.begin(), view.size())], '')
+			view.run_command('gs_commander_init')
+
 			cli = cmd.split(' ', 1)
+
+			# todo: move this into margo
+			if cli[0] == 'sh':
+				def on_done(c):
+					out = gs.ustr('\n'.join(c.consume_outq()))
+					sublime.set_timeout(lambda: push_output(view, rkey, out), 0)
+
+				c = gsshell.Command(cmd=cli[1], shell=True, cwd=wd)
+				c.on_done = on_done
+				c.start()
+				return
+
 			f = globals().get('cmd_%s' % cli[0])
 			if f:
 				args = shlex.split(gs.astr(cli[1])) if len(cli) == 2 else []
-				view.run_command('gs_commander_init')
 				f(view, edit, args, wd, rkey)
-				return
-
-			c = gsshell.ViewCommand(cmd=cmd, shell=True, view=view, cwd=wd)
-
-			def on_output_done(c):
-				def cb():
-					win = sublime.active_window()
-					if win is not None:
-						win.run_command("gs_commander_open")
-				sublime.set_timeout(cb, 0)
-
-			oo = c.on_output
-			def on_output(c, ln):
-				oo(c, '\t'+ln)
-
-			c.on_output = on_output
-			c.output_done.append(on_output_done)
-			c.start()
+			else:
+				push_output(view, rkey, 'Invalid command %s' % cli)
 		else:
 			view.insert(edit, gs.sel(view).begin(), '\n')
 
