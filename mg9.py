@@ -9,6 +9,7 @@ import hashlib
 import base64
 import Queue
 import uuid
+import margo
 
 DOMAIN = 'MarGo9'
 
@@ -74,7 +75,10 @@ def install(aso_tokens, force_install):
 	else:
 		start = time.time()
 		m0_out, err, _ = _run(['go', 'build', '-o', MARGO0_BIN], cwd=MARGO0_SRC)
-		m0_out, m_ok = _so(m0_out, err, start, time.time())
+		m0_out, m0_ok = _so(m0_out, err, start, time.time())
+
+		if os.path.exists(GOCODE_BIN):
+			margo.bye_ni()
 
 		start = time.time()
 		m_out, err, _ = _run(['go', 'build', '-o', MARGO9_BIN], cwd=MARGO9_SRC)
@@ -90,7 +94,7 @@ def install(aso_tokens, force_install):
 		g_out, err, _ = _run(['go', 'build', '-o', GOCODE_BIN], cwd=GOCODE_SRC)
 		g_out, g_ok = _so(g_out, err, start, time.time())
 
-		if m_ok and g_ok:
+		if m_ok and m0_ok and g_ok:
 			def f():
 				gs.aso().set('mg9_install_tokens', _gen_tokens())
 				gs.save_aso()
