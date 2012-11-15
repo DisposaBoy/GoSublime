@@ -23,20 +23,6 @@ Features
 * go to definition of a package function or constant, etc.
 * show the source(and thus documentation) of a variable without needing change views
 
-MarGo & Gocode
------
-
-Some features such as goto definition, fmt, package imports, etc. are provided by MarGo.
-Most of the code completion(non-snippet) is provided by Gocode [Gocode](https://github.com/nsf/gocode).
-
-It's therefore recommended to allow GoSublime to install MarGo and Gocode.
-
-If either of MarGo or Gocode cannot be found, you will be prompted to install it.
-This is an automated install done with `go get`. You can always run this command manually from the
-command palette: `ctrl+shift+p` and typing `GoSublime: Install`.
-
-If this doesn't work, or other errors are reported, please discuss it here: https://github.com/DisposaBoy/GoSublime/issues/44.
-
 Demo
 ----
 
