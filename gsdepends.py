@@ -113,8 +113,8 @@ def check_depends():
 				gs.save_aso()
 
 				new_changes = [
-					'GoSublime: Recent Updates',
-					'-------------------------',
+					'GoSublime: Recent Updates (you may need to restart Sublime Text for changes to take effect)',
+					'------------------------------------------------------------------------------------------',
 				]
 
 				for change in changes:
