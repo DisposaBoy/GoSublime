@@ -1,6 +1,13 @@
-import gscommon as gs, margo, gsq
-import threading, traceback, os, re
-import sublime, sublime_plugin
+import gscommon as gs
+import margo
+import gsq
+import threading
+import traceback
+import os
+import re
+import sublime
+import sublime_plugin
+import mg9
 
 DOMAIN = 'GsDepends'
 CHANGES_SPLIT_PAT = re.compile(r'^##', re.MULTILINE)
@@ -18,17 +25,13 @@ class GsDependsOnLoad(sublime_plugin.EventListener):
 			dep_check_done = True
 			margo.dispatch(check_depends, 'checking dependencies')
 
-class GsUpdateDeps(sublime_plugin.TextCommand):
-	def run(self, edit):
-		run_go_get()
-
 def split_changes(s):
 	changes = []
 	for m in CHANGES_SPLIT_PAT.split(s):
 		m = CHANGES_MATCH_PAT.match(m)
 		if m:
 			changes.append((m.group(1), m.group(2)))
-	changes.sort()
+	changes.sort(reverse=True)
 	return changes
 
 def call_cmd(cmd):
@@ -42,32 +45,28 @@ def do_hello():
 	hello_sarting = True
 
 	tid = gs.begin(DOMAIN, 'Starting Gocode', False)
-	call_cmd(['gocode'])
+	call_cmd([mg9.GOCODE_BIN])
 	gs.end(tid)
 
 	margo_cmd = list(gs.setting('margo_cmd', []))
-	if margo_cmd:
-		margo_cmd.extend([
-			"-d",
-			"-call", "replace",
-			"-addr", gs.setting('margo_addr', '')
-		])
+	margo_cmd = [
+		mg9.MARGO0_BIN,
+		"-d",
+		"-call", "replace",
+		"-addr", gs.setting('margo_addr', '')
+	]
 
-		tid = gs.begin(DOMAIN, 'Starting MarGo', False)
-		out, err, _ = gs.runcmd(margo_cmd)
-		gs.end(tid)
+	tid = gs.begin(DOMAIN, 'Starting MarGo', False)
+	out, err, _ = gs.runcmd(margo_cmd)
+	gs.end(tid)
 
-		out = out.strip()
-		err = err.strip()
-		if err:
-			gs.notice(DOMAIN, err)
-		elif out:
-			gs.notice(DOMAIN, 'MarGo started %s' % out)
-		hello_sarting = False
-	else:
-		err = 'Missing `margo_cmd`'
-		gs.notice("MarGo", err)
-		hello_sarting = False
+	out = out.strip()
+	err = err.strip()
+	if err:
+		gs.notice(DOMAIN, err)
+	elif out:
+		gs.notice(DOMAIN, 'MarGo started %s' % out)
+	hello_sarting = False
 
 hello_sarting = False
 def hello():
@@ -75,18 +74,7 @@ def hello():
 	if err:
 		dispatch(do_hello, 'Starting MarGo and gocode...')
 	else:
-		call_cmd(['gocode'])
-
-def run_go_get():
-	msg = 'Installing/updating gocode and MarGo...'
-	def f():
-		out, err, _ = gs.runcmd(['go', 'get', '-u', '-v', GOCODE_REPO, MARGO_REPO])
-		margo.bye_ni()
-		call_cmd(['gocode', 'close'])
-		gs.notice(DOMAIN, '%s done' % msg)
-		gs.println(DOMAIN, '%s done\n%s%s' % (msg, out, err))
-		do_hello()
-	dispatch(f, msg)
+		call_cmd([mg9.GOCODE_BIN])
 
 def check_depends():
 	gr = gs.go_env_goroot()
@@ -106,28 +94,7 @@ def check_depends():
 		('\tGOPATH is: %s' % e.get('GOPATH', ''))
 	)
 
-	missing = []
-	for cmd in ('gocode', 'MarGo'):
-		if not call_cmd([cmd, '--help']):
-			missing.append(cmd)
-
-	if missing:
-		def cb(i, _):
-			if i == 0:
-				run_go_get()
-
-		items = [[
-			'GoSublime depends on gocode and MarGo',
-			'Install %s (using `go get`)' % ', '.join(missing),
-			'gocode repo: %s' % GOCODE_REPO,
-			'MarGo repo: %s' % MARGO_REPO,
-		]]
-
-		gs.show_quick_panel(items, cb)
-		gs.println(DOMAIN, '\n'.join(items[0]))
-		return
-
-	changelog_fn = os.path.join(sublime.packages_path(), 'GoSublime', "CHANGELOG.md")
+	changelog_fn = gs.dist_path("CHANGELOG.md")
 	try:
 		with open(changelog_fn) as f:
 			s = f.read()
@@ -138,38 +105,28 @@ def check_depends():
 	changes = split_changes(s)
 	if changes:
 		def cb():
-			settings_fn = 'GoSublime-GsDepends.sublime-settings'
-			settings = sublime.load_settings(settings_fn)
-			new_rev = changes[-1][0]
-			old_rev = settings.get('tracking_rev', '')
-
-			def on_panel_close(i, win):
-				if i > 0:
-					settings.set('tracking_rev', new_rev)
-					sublime.save_settings(settings_fn)
-					win.open_file(changelog_fn)
-					if i == 1:
-						run_go_get()
-
+			aso = gs.aso()
+			old_rev = aso.get('changelog.rev', '')
+			new_rev = changes[0][0]
 			if new_rev > old_rev:
-				items = [
-					[
-						" ",
-						"GoSublime updated to %s" % new_rev,
-						" ",
-					],
-					[
-						"Install/Update dependencies: Gocode, MarGo",
-						"go get -u %s" % GOCODE_REPO,
-						"go get -u %s" % MARGO_REPO,
-					],
-					[
-						"View changelog",
-						"Packages/GoSublime/CHANGELOG.md"
-						" ",
-					]
+				aso.set('changelog.rev', new_rev)
+				gs.save_aso()
+
+				new_changes = [
+					'GoSublime: Recent Updates',
+					'-------------------------',
 				]
-				gs.show_quick_panel(items, on_panel_close)
+
+				for change in changes:
+					rev, msg = change
+					if rev > old_rev:
+						new_changes.append('\n%s\n\t%s' % (rev, msg))
+					else:
+						break
+
+				new_changes.append('\nSee %s for the full CHANGELOG\n' % changelog_fn)
+				new_changes = '\n'.join(new_changes)
+				gs.show_output(DOMAIN, new_changes, print_output=False)
 		sublime.set_timeout(cb, 0)
 	else:
 		margo.call(
@@ -177,8 +134,6 @@ def check_depends():
 			args='hello',
 			message='hello MarGo'
 		)
-
-
 
 def dispatch(f, msg=''):
 	gsq.dispatch(DOMAIN, f, msg)
