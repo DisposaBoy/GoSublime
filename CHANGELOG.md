@@ -1,4 +1,9 @@
-## r12.11.04-1
+## r12.11.15-1
+	* MarGo (margo0) and gocode are now bundled with GoSublime and should be in active use.
+	    Feel free to remove any old source from $GOPATH*/github.com/{nsf/gocode,DisposaBoy/MarGo}
+	    if you have no use for them in additiion to their respective binaries
+
+## r12.11.03-2
 	* added new setting `complete_builtins`
 	  set this to `true` to show builtin type and functions in the completion menu
 
