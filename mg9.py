@@ -14,8 +14,10 @@ DOMAIN = 'MarGo9'
 
 # customization of, or user-owned gocode and margo will no longer be supported
 # so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
+MARGO0_SRC = gs.dist_path('something_borrowed/margo0')
 MARGO9_SRC = gs.dist_path('margo9')
 GOCODE_SRC = gs.dist_path('something_borrowed/gocode')
+MARGO0_BIN = gs.home_path('bin', 'gosublime.margo0.exe')
 MARGO9_BIN = gs.home_path('bin', 'gosublime.margo9.exe')
 GOCODE_BIN = gs.home_path('bin', 'gosublime.gocode.exe')
 
@@ -50,8 +52,11 @@ def _run(cmd, cwd=None, shell=False):
 	}
 	return gsshell.run(cmd, shell=shell, cwd=cwd, env=nv)
 
+def _bins_exist():
+	return os.path.exists(MARGO9_BIN) and os.path.exists(MARGO0_BIN) and os.path.exists(GOCODE_BIN)
+
 def maybe_install():
-	if not os.path.exists(MARGO9_BIN) or not os.path.exists(GOCODE_BIN):
+	if not _bins_exist():
 		install('', True)
 
 def install(aso_tokens, force_install):
@@ -62,10 +67,15 @@ def install(aso_tokens, force_install):
 	except:
 		pass
 
-	if not force_install and aso_tokens == _gen_tokens():
+	if not force_install and _bins_exist() and aso_tokens == _gen_tokens():
+		m0_out = 'no'
 		m_out = 'no'
 		g_out = 'no'
 	else:
+		start = time.time()
+		m0_out, err, _ = _run(['go', 'build', '-o', MARGO0_BIN], cwd=MARGO0_SRC)
+		m0_out, m_ok = _so(m0_out, err, start, time.time())
+
 		start = time.time()
 		m_out, err, _ = _run(['go', 'build', '-o', MARGO9_BIN], cwd=MARGO9_SRC)
 		m_out, m_ok = _so(m_out, err, start, time.time())
@@ -89,9 +99,11 @@ def install(aso_tokens, force_install):
 
 	a = (
 		'GoSublime init (%0.3fs)' % (time.time() - init_start),
+		'| install margo0: %s' % m0_out,
 		'| install margo9: %s' % m_out,
 		'| install gocode: %s' % g_out,
 		'|           ~bin: %s' % gs.home_path('bin'),
+		'|         margo0: %s (%s)' % _tp(MARGO0_BIN),
 		'|         margo9: %s (%s)' % _tp(MARGO9_BIN),
 		'|         gocode: %s (%s)' % _tp(GOCODE_BIN),
 	)
@@ -122,7 +134,11 @@ def _token(head, bin):
 	return token
 
 def _gen_tokens():
-	return '%s\n%s' % (_token('margo9.head', MARGO9_BIN), _token('something_borrowed/gocode.head', GOCODE_BIN))
+	return '\n'.join([
+		_token('something_borrowed/margo0.head', MARGO9_BIN),
+		_token('margo9.head', MARGO9_BIN),
+		_token('something_borrowed/gocode.head', GOCODE_BIN),
+	])
 
 def do_init():
 	aso_tokens = gs.aso().get('mg9_install_tokens', '')
