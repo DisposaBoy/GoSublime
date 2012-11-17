@@ -309,12 +309,9 @@ def env(m={}):
 	"""
 	e = os.environ.copy()
 	e.update(environ9)
-	e.update(setting('env', {}))
 	e.update(m)
 
-	roots = e.get('GOPATH', '').split(os.pathsep)
-	roots.append(e.get('GOROOT', ''))
-
+	roots = lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))
 	lfn = attr('last_active_go_fn', '')
 	comps = lfn.split(os.sep)
 	gs_gopath = []
@@ -326,10 +323,22 @@ def env(m={}):
 	gs_gopath.reverse()
 	e['GS_GOPATH'] = os.pathsep.join(gs_gopath)
 
+	uenv = setting('env', {})
+	for k in uenv:
+		try:
+			uenv[k] = string.Template(uenv[k]).safe_substitute(e)
+		except Exception as ex:
+			println('%s: Cannot expand env var `%s`: %s' % (NAME, k, ex))
+
+	e.update(uenv)
+	e.update(m)
 
 	# For custom values of GOPATH, installed binaries via go install
 	# will go into the "bin" dir of the corresponding GOPATH path.
 	# Therefore, make sure these paths are included in PATH.
+
+	# do this again based on updated vars
+	roots = lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))
 	add_path = e.get('PATH', '').split(os.pathsep)
 	for s in roots:
 		if s:
@@ -347,12 +356,6 @@ def env(m={}):
 			add_path.append(s)
 
 	e['PATH'] = os.pathsep.join(add_path)
-
-	for k in e:
-		try:
-			e[k] = string.Template(e[k]).safe_substitute(e)
-		except Exception as ex:
-			println('%s: Cannot expand env var `%s`: %s' % (NAME, k, ex))
 
 	# Ensure no unicode objects leak through. The reason is twofold:
 	# 	* On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen
