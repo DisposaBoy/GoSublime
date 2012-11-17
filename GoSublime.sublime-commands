@@ -110,5 +110,61 @@
 	{
 		"caption": "GoSublime: (GsCommander) open file/url",
 		"command": "gs_commander_open_selection"
+	},
+	{
+		"caption": "GoSublime: Settings – Default",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/GoSublime/GoSublime.sublime-settings"
+		}
+	},
+	{
+		"caption": "GoSublime: Settings – User",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/User/GoSublime.sublime-settings"
+		}
+	},
+	{
+		"caption": "GoSublime: Changes & Announcements",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/GoSublime/CHANGELOG.md"
+		}
+	},
+	{
+		"caption": "GoSublime: Read Me",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/GoSublime/README.md"
+		}
+	},
+	{
+		"caption": "GoSublime: Usage & Tips",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/GoSublime/USAGE.md"
+		}
+	},
+	{
+		"caption": "GoSublime: Authors & Contributors",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/GoSublime/AUTHORS.md"
+		}
+	},
+	{
+		"caption": "GoSublime: License (MIT)",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/GoSublime/LICENSE.md"
+		}
+	},
+	{
+		"caption": "GoSublime: Open Log File",
+		"command": "open_file",
+		"args": {
+			"file": "${packages}/User/GoSublime/9/log.txt"
+		}
 	}
 ]
