@@ -54,7 +54,7 @@
 							},
 							{ "caption": "-" },
 							{
-								"caption": "Changes & Announcement",
+								"caption": "Changes & Announcements",
 								"command": "open_file",
 								"args": {
 									"file": "${packages}/GoSublime/CHANGELOG.md"
