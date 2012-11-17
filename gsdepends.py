@@ -65,7 +65,7 @@ def do_hello():
 	if err:
 		gs.notice(DOMAIN, err)
 	elif out:
-		gs.notice(DOMAIN, 'MarGo started %s' % out)
+		gs.println(DOMAIN, 'MarGo started %s' % out)
 	hello_sarting = False
 
 hello_sarting = False

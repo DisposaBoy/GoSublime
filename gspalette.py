@@ -245,7 +245,6 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 					last_import_path[view.file_name()] = decl.get('path')
 				else:
 					last_import_path[view.file_name()] = ''
-				gs.notice(DOMAIN, 'imports updated...')
 
 	def jump_to(self, a):
 		view, loc = a
