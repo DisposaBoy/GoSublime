@@ -25,6 +25,9 @@ func (m *mPlay) Call() (interface{}, string) {
 	for k, v := range m.Env {
 		env = append(env, k+"="+v)
 	}
+	if len(env) == 0 {
+		env = os.Environ()
+	}
 
 	tmpDir := m.Env["TMP"]
 	if tmpDir == "" {
