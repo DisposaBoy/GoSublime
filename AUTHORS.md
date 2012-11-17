@@ -7,4 +7,5 @@ This is the official list of GoSublime authors for copyright purposes.
 * DisposaBoy `https://github.com/DisposaBoy`
 * guillermooo `https://github.com/guillermooo`
 * igm `https://github.com/igm`
+* John Asmuth `https://github.com/skelterjohn`
 * teejae `https://github.com/teejae`
