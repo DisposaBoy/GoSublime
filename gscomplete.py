@@ -141,6 +141,8 @@ class GoSublime(sublime_plugin.EventListener):
 	def complete(self, fn, offset, src, func_name_only):
 		comps = []
 		offset = 'c%s' % offset
+		autocomplete_tests = gs.setting('autocomplete_tests', False)
+		autocomplete_closures = gs.setting('autocomplete_closures', False)
 		js, err, _ = mg9.gocode(["-f=json", "autocomplete", fn, offset], input=src)
 		if err:
 			gs.notice(DOMAIN, err)
@@ -152,29 +154,57 @@ class GoSublime(sublime_plugin.EventListener):
 						tn = ent['type']
 						cn = ent['class']
 						nm = ent['name']
-						sfx = self.typeclass_prefix(cn, tn)
-						if cn == 'func':
+						is_func = (cn == 'func')
+						is_func_type = (cn == 'type' and tn.startswith('func('))
+
+						if is_func:
 							if nm in ('main', 'init'):
 								continue
-							act = gs.setting('autocomplete_tests', False)
-							if not act and nm.startswith(('Test', 'Benchmark', 'Example')):
+
+							if not autocomplete_tests and nm.startswith(('Test', 'Benchmark', 'Example')):
 								continue
 
+						if is_func or is_func_type:
+							s_sfx = u'\u0282'
+							t_sfx = gs.CLASS_PREFIXES.get('type', '')
+							f_sfx = gs.CLASS_PREFIXES.get('func', '')
 							params, ret = declex(tn)
+							decl = []
+							for i, p in enumerate(params):
+								n, t = p
+								if t.startswith('...'):
+									n = '...'
+								decl.append('${%d:%s}' % (i+1, n))
+							decl = ', '.join(decl)
 							ret = ret.strip('() ')
-							if func_name_only:
-								a = nm
+
+							if is_func:
+								if func_name_only:
+									comps.append((
+										'%s\t%s %s' % (nm, ret, f_sfx),
+										nm,
+									))
+								else:
+									comps.append((
+										'%s\t%s %s' % (nm, ret, f_sfx),
+										'%s(%s)' % (nm, decl),
+									))
 							else:
-								a = []
-								for i, p in enumerate(params):
-									n, t = p
-									if t.startswith('...'):
-										n = '...'
-									a.append('${%d:%s}' % (i+1, n))
-								a = '%s(%s)' % (nm, ', '.join(a))
-							comps.append(('%s\t%s %s' % (nm, ret, sfx), a))
+								comps.append((
+									'%s\t%s %s' % (nm, tn, t_sfx),
+									nm,
+								))
+
+								if autocomplete_closures:
+									comps.append((
+										'%s {}\tfunc() {...} %s' % (nm, s_sfx),
+										'%s {\n\t${0}\n}' % tn,
+									))
 						elif cn != 'PANIC':
-							comps.append(('%s\t%s %s' % (nm, tn, sfx), nm))
+							comps.append((
+								'%s\t%s %s' % (nm, tn, self.typeclass_prefix(cn, tn)),
+								nm,
+							))
 			except KeyError as e:
 				gs.notice(DOMAIN, 'Error while running gocode, possibly malformed data returned: %s' % e)
 			except ValueError as e:
