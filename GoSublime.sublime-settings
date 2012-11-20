@@ -68,7 +68,7 @@
 	// whether or not to show an expanded version of closure types in the auto-completion list
 	// e.g. `type Fun func(i int)`
 	// will result in two entries `Fun` and `Fun {}`
-	// expanding to `Fun(i)` and `func(i) {...}` respectively
+	// expanding to `Fun` and `func(i) {...}` respectively
 	"autocomplete_closures": false,
 
 	"margo_cmd": ["MarGo"],
