@@ -49,6 +49,7 @@ except:
 		"gslint_timeout": 0,
 		"autocomplete_snippets": False,
 		"autocomplete_tests": False,
+		"autocomplete_closures": False,
 		"margo_cmd": [],
 		"margo_addr": "",
 		"on_save": [],
