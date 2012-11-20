@@ -70,6 +70,7 @@ except:
 
 	NAME_PREFIXES = {
 		'interface': u'\u00A1',
+		'func(': u'\u0192',
 	}
 
 	GOARCHES = [

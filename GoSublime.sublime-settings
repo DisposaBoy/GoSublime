@@ -65,7 +65,7 @@
 	// whether or not to include Test*, Benchmark* and Example* functions in the auto-completion list
 	"autocomplete_tests": false,
 
-	// whether or not to show an expanded version of closure types in the auto-completion list
+	// whether or not to show an expanded(closure) version of func types in the auto-completion list
 	// e.g. `type Fun func(i int)`
 	// will result in two entries `Fun` and `Fun {}`
 	// expanding to `Fun` and `func(i) {...}` respectively
