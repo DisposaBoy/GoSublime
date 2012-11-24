@@ -32,6 +32,7 @@ type Broker struct {
 	w      io.Writer
 	in     *bufio.Reader
 	out    *json.Encoder
+	Wg     *sync.WaitGroup
 }
 
 func NewBroker(r io.Reader, w io.Writer) *Broker {
@@ -40,6 +41,7 @@ func NewBroker(r io.Reader, w io.Writer) *Broker {
 		w:   w,
 		in:  bufio.NewReader(r),
 		out: json.NewEncoder(w),
+		Wg:  &sync.WaitGroup{},
 	}
 }
 
@@ -72,6 +74,7 @@ func (b *Broker) SendNoLog(resp Response) error {
 }
 
 func (b *Broker) call(req *Request, cl Caller) {
+	defer b.Wg.Done()
 	b.served++
 
 	defer func() {
@@ -143,6 +146,7 @@ func (b *Broker) accept() (stopLooping bool) {
 		return
 	}
 
+	b.Wg.Add(1)
 	go b.call(req, cl)
 
 	return
