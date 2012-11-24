@@ -104,7 +104,7 @@ func main() {
 			defer func() {
 				err := recover()
 				if err != nil {
-					log.Println("PANIC defer:", err)
+					logger.Println("PANIC defer:", err)
 				}
 			}()
 
