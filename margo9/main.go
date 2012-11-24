@@ -94,7 +94,16 @@ func main() {
 	byeLck.Lock()
 	defer byeLck.Unlock() // keep this here for the sake of code correctness
 	for b := byeFuncs; b != nil; b = b.prev {
-		b.f()
+		func() {
+			defer func() {
+				err := recover()
+				if err != nil {
+					log.Println("PANIC defer:", err)
+				}
+			}()
+
+			b.f()
+		}()
 	}
 
 	os.Exit(0)
