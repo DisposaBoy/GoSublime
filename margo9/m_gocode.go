@@ -85,7 +85,7 @@ func init() {
 }
 
 func mGocodeServe(m *mGocode) error {
-	argv := []string{os.Args[0], "-s", "-sock", "tcp", "-addr", mGocodeAddr}
+	argv := []string{m.Bin, "-s", "-sock", "tcp", "-addr", mGocodeAddr}
 	attr := os.ProcAttr{
 		Dir:   m.Home,
 		Env:   envSlice(m.Env),
