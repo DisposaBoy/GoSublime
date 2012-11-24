@@ -89,6 +89,12 @@ func (b *Broker) call(req *Request, cl Caller) {
 	}()
 
 	res, err := cl.Call()
+	if res == nil {
+		res = M{}
+	} else if v, ok := res.(M); ok && v == nil {
+		res = M{}
+	}
+
 	b.Send(Response{
 		Token: req.Token,
 		Error: err,
