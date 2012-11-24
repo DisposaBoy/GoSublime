@@ -21,13 +21,7 @@ type mPlay struct {
 
 // todo: send the client output as it comes
 func (m *mPlay) Call() (interface{}, string) {
-	env := []string{}
-	for k, v := range m.Env {
-		env = append(env, k+"="+v)
-	}
-	if len(env) == 0 {
-		env = os.Environ()
-	}
+	env := envSlice(m.Env)
 
 	tmpDir := m.Env["TMP"]
 	if tmpDir == "" {
