@@ -16,7 +16,7 @@ type mGocode struct {
 	Bin      string
 	Env      map[string]string
 	Home     string
-	Cmd      string
+	cmd      string
 	Set      map[string]string
 	Complete struct {
 		Fn  string
@@ -45,7 +45,7 @@ func (m *mGocode) Call() (interface{}, string) {
 	}
 	defer c.Close()
 
-	switch m.Cmd {
+	switch m.cmd {
 	case "set":
 		for k, v := range m.Set {
 			mGocodeCmdSet(c, k, v)
@@ -68,18 +68,19 @@ func (m *mGocode) Call() (interface{}, string) {
 		}
 		res, e = mGocodeCmdComplete(c, m.Complete.Fn, []byte(m.Complete.Src), pos)
 	default:
-		e = "Unsupported command: " + m.Cmd
+		panic("Unsupported command: gocode: " + m.cmd)
 	}
 
 	return res, e
 }
 
 func init() {
-	registry.Register("gocode", func(b *Broker) Caller {
-		return &mGocode{
-			Bin: "/sublime-packages/User/GoSublime/9/bin/gosublime.gocode.exe",
-			Env: map[string]string{},
-		}
+	registry.Register("gocode_set", func(b *Broker) Caller {
+		return &mGocode{cmd: "set"}
+	})
+
+	registry.Register("gocode_complete", func(b *Broker) Caller {
+		return &mGocode{cmd: "complete"}
 	})
 }
 
