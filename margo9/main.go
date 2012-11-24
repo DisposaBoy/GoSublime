@@ -56,6 +56,8 @@ func byeDefer(f func()) {
 func main() {
 	do := "-"
 	poll := 0
+	wait := false
+	flag.BoolVar(&wait, "wait", wait, "Whether or not to wait for outstanding requests (which may be hanging forever) when exiting")
 	flag.IntVar(&poll, "poll", poll, "If N is greater than zero, send a response every N seconds. The token will be `margo.poll`")
 	flag.StringVar(&do, "do", "-", "Process the specified operations(lines) operation and exit. `-` means operate as normal")
 	flag.Parse()
@@ -90,6 +92,10 @@ func main() {
 		}()
 	}
 	broker.Loop(!doCall)
+
+	if wait || doCall {
+		broker.Wg.Wait()
+	}
 
 	byeLck.Lock()
 	defer byeLck.Unlock() // keep this here for the sake of code correctness
