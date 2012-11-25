@@ -114,7 +114,7 @@ def install(aso_tokens, force_install):
 	)
 	gs.println(*a)
 
-	out, err, _ = gsshell.run([MARGO9_BIN, '-env'], shell=True, stderr=gs.LOGFILE)
+	out, err, _ = gsshell.run([MARGO9_BIN, '-env'], shell=(not gs.os_is_windows()), stderr=gs.LOGFILE)
 	if err:
 		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (os.path.basename(MARGO9_BIN), err))
 	else:
