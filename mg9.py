@@ -114,6 +114,16 @@ def install(aso_tokens, force_install):
 	)
 	gs.println(*a)
 
+	out, err, _ = gsshell.run([MARGO9_BIN, '-env'], shell=True, stderr=gs.LOGFILE)
+	if err:
+		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (os.path.basename(MARGO9_BIN), err))
+	else:
+		env, err = gs.json_decode(out, {})
+		if err:
+			gs.notice(DOMAIN, 'Cannot load env vars: %s' % err)
+		else:
+			gs.environ9.update(env)
+
 def _fasthash(fn):
 	try:
 		with open(fn) as f:
@@ -192,36 +202,14 @@ def acall(method, arg, cb):
 
 	_send_q.put((method, arg, cb))
 
-def bcall(method, arg, shell=False):
-	maybe_install()
-
-	header, _ = gs.json_encode({'method': method, 'token': 'mg9.call'})
-	body, _ = gs.json_encode(arg)
-	s = '%s %s' % (header, body)
-	s = 'base64:%s' % base64.b64encode(s)
-	out, err, _ = gsshell.run([MARGO9_BIN, '-do', s], stderr=gs.LOGFILE, shell=shell)
-	res = {'error': err}
-
-	if out:
-		try:
-			for ln in out.split('\n'):
-				ln = ln.strip()
-				if ln:
-					r, err = gs.json_decode(ln, {})
-					if err:
-						res = {'error': 'Invalid response %s' % err}
-					else:
-						if r.get('token') == 'mg9.call':
-							res = r.get('data') or {}
-							if gs.is_a({}, res) and r.get('error'):
-								r['error'] = res['error']
-							return res
-						res = {'error': 'Unexpected response %s' % r}
-		except Exception:
-			res = {'error': gs.traceback()}
-
-	return res
-
+def bcall(method, arg):
+	q = Queue.Queue()
+	acall(method, arg, lambda r,e: q.put((r, e)))
+	try:
+		res, err = q.get(True, 1)
+		return res, err
+	except:
+		return {}, 'Blocking Call: Timeout'
 
 def _recv():
 	while True:
@@ -262,8 +250,6 @@ def _send():
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					# ideally the env should be setup before-hand with a bcall
-					# so we won't run this through the shell
 					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=5'], stderr=gs.LOGFILE)
 					gs.set_attr('mg9.proc', proc)
 
@@ -309,4 +295,3 @@ def _dump(res, err):
 
 if not gs.checked(DOMAIN, 'do_init'):
 	sublime.set_timeout(do_init, 0)
-
