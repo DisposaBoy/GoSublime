@@ -10,6 +10,7 @@ import base64
 import Queue
 import uuid
 import margo
+import json
 
 DOMAIN = 'MarGo9'
 
@@ -299,6 +300,12 @@ def _read_stdout(proc):
 		proc.stdout.close()
 		proc.wait()
 		proc = None
+
+def _dump(res, err):
+	gs.println(json.dumps({
+		'res': res,
+		'err': err,
+	}, sort_keys=True, indent=2))
 
 if not gs.checked(DOMAIN, 'do_init'):
 	sublime.set_timeout(do_init, 0)
