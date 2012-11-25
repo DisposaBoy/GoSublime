@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -57,10 +58,26 @@ func main() {
 	do := "-"
 	poll := 0
 	wait := false
+	dump_env := false
+	flag.BoolVar(&dump_env, "env", dump_env, "if true, dump all environment variables as a json map to stdout and exit")
 	flag.BoolVar(&wait, "wait", wait, "Whether or not to wait for outstanding requests (which may be hanging forever) when exiting")
 	flag.IntVar(&poll, "poll", poll, "If N is greater than zero, send a response every N seconds. The token will be `margo.poll`")
 	flag.StringVar(&do, "do", "-", "Process the specified operations(lines) operation and exit. `-` means operate as normal")
 	flag.Parse()
+
+	if dump_env {
+		m := defaultEnv()
+		for _, s := range os.Environ() {
+			p := strings.SplitN(s, "=", 2)
+			if len(p) == 2 {
+				m[p[0]] = p[1]
+			} else {
+				m[p[0]] = ""
+			}
+		}
+		json.NewEncoder(os.Stdout).Encode(m)
+		os.Exit(0)
+	}
 
 	var in io.Reader = os.Stdin
 	doCall := do != "-"
