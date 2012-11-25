@@ -120,7 +120,7 @@ def install(aso_tokens, force_install):
 	else:
 		env, err = gs.json_decode(out, {})
 		if err:
-			gs.notice(DOMAIN, 'Cannot load env vars: %s' % err)
+			gs.notice(DOMAIN, 'Cannot load env vars: %s\nenv output: %s' % (err, out))
 		else:
 			gs.environ9.update(env)
 
