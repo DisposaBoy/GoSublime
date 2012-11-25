@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"runtime"
 )
 
 func errStr(err error) string {
@@ -20,4 +21,12 @@ func envSlice(envMap map[string]string) []string {
 		env = os.Environ()
 	}
 	return env
+}
+
+func defaultEnv() map[string]string {
+	return map[string]string{
+		"GOROOT": runtime.GOROOT(),
+		"GOARCH": runtime.GOARCH,
+		"GOOS":   runtime.GOOS,
+	}
 }

@@ -8,11 +8,7 @@ import (
 )
 
 var (
-	mEnvVars = map[string]string{
-		"GOROOT": runtime.GOROOT(),
-		"GOARCH": runtime.GOARCH,
-		"GOOS":   runtime.GOOS,
-	}
+	mEnvVars = defaultEnv()
 )
 
 type mEnv struct {
