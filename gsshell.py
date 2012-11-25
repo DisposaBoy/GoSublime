@@ -198,7 +198,7 @@ def fix_shell_cmd(shell, cmd):
 
 	if shell:
 		sh = gs.setting('shell')
-		cmd_str = ' '.join(cmd)
+		cmd_str = subprocess.list2cmdline(cmd)
 		cmd_map = {'CMD': cmd_str}
 		if sh:
 			shell = False
