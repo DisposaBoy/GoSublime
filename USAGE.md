@@ -20,7 +20,8 @@ In some system environment variables are not passed around as expected.
 The result of which is that some commands e.g `go build` doesn't work
 as the command cannot be found or `GOPATH` is not set. To get around this
 the simplest thing to do is to set these variables in the settings file.
-See the documention for the `env` setting in the file `GoSublime.sublime-settings`
+See the documention for the `env` and/or `shell` setting, both documented in the default
+settings file `Packages/User/GoSublime.sublime-settings`
 
 Code Completion
 ---------------
