@@ -19,9 +19,12 @@ DOMAIN = 'MarGo9'
 MARGO0_SRC = gs.dist_path('something_borrowed/margo0')
 MARGO9_SRC = gs.dist_path('margo9')
 GOCODE_SRC = gs.dist_path('something_borrowed/gocode')
-MARGO0_BIN = gs.home_path('bin', 'gosublime.margo0.exe')
-MARGO9_BIN = gs.home_path('bin', 'gosublime.margo9.exe')
-GOCODE_BIN = gs.home_path('bin', 'gosublime.gocode.exe')
+MARGO0_EXE = 'gosublime.margo0.exe'
+MARGO9_EXE = 'gosublime.margo9.exe'
+GOCODE_EXE = 'gosublime.gocode.exe'
+MARGO0_BIN = gs.home_path('bin', MARGO0_EXE)
+MARGO9_BIN = gs.home_path('bin', MARGO9_EXE)
+GOCODE_BIN = gs.home_path('bin', GOCODE_EXE)
 
 if not gs.checked(DOMAIN, '_vars'):
 	_send_q = Queue.Queue()
@@ -102,6 +105,17 @@ def install(aso_tokens, force_install):
 
 			sublime.set_timeout(f, 0)
 
+	out, err, _ = gsshell.run([MARGO9_EXE, '-env'], cwd=gs.home_path(), shell=True)
+	if err:
+		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (MARGO9_EXE, err))
+	else:
+		env, err = gs.json_decode(out, {})
+		if err:
+			gs.notice(DOMAIN, 'Cannot load env vars: %s\nenv output: %s' % (err, out))
+		else:
+			gs.environ9.update(env)
+
+	e = gs.env()
 	a = (
 		'GoSublime init (%0.3fs)' % (time.time() - init_start),
 		'| install margo0: %s' % m0_out,
@@ -111,18 +125,16 @@ def install(aso_tokens, force_install):
 		'|         margo0: %s (%s)' % _tp(MARGO0_BIN),
 		'|         margo9: %s (%s)' % _tp(MARGO9_BIN),
 		'|         gocode: %s (%s)' % _tp(GOCODE_BIN),
+		'|         GOROOT: %s' % e.get('GOROOT', '(not set)'),
+		'|         GOPATH: %s' % e.get('GOPATH', '(not set)'),
+		'|          GOBIN: %s (should usually be (not set))' % e.get('GOBIN', '(not set)'),
 	)
 	gs.println(*a)
 
-	out, err, _ = gsshell.run([MARGO9_BIN, '-env'], shell=(not gs.os_is_windows()), stderr=gs.LOGFILE)
-	if err:
-		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (os.path.basename(MARGO9_BIN), err))
-	else:
-		env, err = gs.json_decode(out, {})
-		if err:
-			gs.notice(DOMAIN, 'Cannot load env vars: %s\nenv output: %s' % (err, out))
-		else:
-			gs.environ9.update(env)
+	missing = [k for k in ('GOROOT', 'GOPATH') if not e.get(k)]
+	if missing:
+		gs.notice(DOMAIN, "Missing environment variable(s): %s" % ', '.join(missing))
+
 
 def _fasthash(fn):
 	try:
