@@ -340,7 +340,8 @@ def env(m={}):
 
 	# do this again based on updated vars
 	roots = lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))
-	add_path = e.get('PATH', '').split(os.pathsep)
+	add_path = [home_path('bin')]
+	add_path.extend(e.get('PATH', '').split(os.pathsep))
 	for s in roots:
 		if s:
 			s = os.path.join(s, 'bin')
