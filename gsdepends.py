@@ -77,23 +77,6 @@ def hello():
 		call_cmd([mg9.GOCODE_BIN])
 
 def check_depends():
-	gr = gs.go_env_goroot()
-	if not gr:
-		gs.notice(DOMAIN, 'The `go` command cannot be found')
-		return
-
-	e = gs.env()
-	if not e.get('GOROOT'):
-		os.environ['GOROOT'] = gr
-	elif not e.get('GOPATH'):
-		gs.notice(DOMAIN, "GOPATH and/or GOROOT appear to be unset")
-
-	gs.println(
-		'GoSublime: checking dependencies',
-		('\tGOROOT is: %s' % e.get('GOROOT', gr)),
-		('\tGOPATH is: %s' % e.get('GOPATH', ''))
-	)
-
 	changelog_fn = gs.dist_path("CHANGELOG.md")
 	try:
 		with open(changelog_fn) as f:
