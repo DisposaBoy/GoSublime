@@ -1,3 +1,7 @@
+## r12.11.28-1
+	* If you have issues with env vars, particularly on OS X, consider setting the
+	`shell` setting. See `Packages/User/GoSublime.sublime-settings` for more details
+
 ## r12.11.15-1
 	* MarGo (margo0) and gocode are now bundled with GoSublime and should be in active use.
 	    Feel free to remove any old source from $GOPATH*/github.com/{nsf/gocode,DisposaBoy/MarGo}
