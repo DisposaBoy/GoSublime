@@ -52,16 +52,16 @@ func (m *mGocode) Call() (interface{}, string) {
 		}
 		res, e = mGocodeCmdSet(c, "\x00", "\x00")
 	case "complete":
-		pos := 0
 		if m.Complete.Src == "" {
 			// this is here for testing, the client should always send the src
 			s, _ := ioutil.ReadFile(m.Complete.Fn)
 			m.Complete.Src = string(s)
 		}
 
+		pos := 0
 		for i, _ := range m.Complete.Src {
 			pos += 1
-			if pos >= m.Complete.Pos {
+			if pos > m.Complete.Pos {
 				pos = i
 				break
 			}
