@@ -39,7 +39,6 @@ except:
 		"_debug": False,
 		"env": {},
 		"gscomplete_enabled": False,
-		"gocode_cmd": "",
 		"complete_builtins": False,
 		"autocomplete_builtins": False,
 		"fmt_enabled": False,

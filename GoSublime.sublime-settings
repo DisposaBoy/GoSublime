@@ -19,10 +19,6 @@
 	// Whether or not gscomplete(gocode) is enabled
 	"gscomplete_enabled": true,
 
-	// the command that shall be called for gocode, this can be the command name
-	// or absolute path to a binary e.g. `/go/bin/gocode`
-	"gocode_cmd": "gocode",
-
 	// Whether or not gsfmt is enabled
 	"fmt_enabled": true,
 
