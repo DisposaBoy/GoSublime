@@ -67,7 +67,6 @@
 	// expanding to `Fun` and `func(i) {...}` respectively
 	"autocomplete_closures": false,
 
-	"margo_cmd": ["MarGo"],
 	// the tcp address on which MarGo listen/should listen
 	// if GoSublime can't connect to `margo_addr` it attempts to start MarGo
 	// with `margo_cmd` passing `margo_addr`
