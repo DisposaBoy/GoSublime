@@ -215,7 +215,7 @@ def completion_options(m={}):
 	return res, err
 
 def complete(fn, src, pos):
-	builtins =  (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
+	builtins = (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
 	res, err = _gocode_call('gocode_complete', {
 		'Dir': gs.basedir_or_cwd(fn),
 		'Complete': {
