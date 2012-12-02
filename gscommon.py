@@ -41,6 +41,7 @@ except:
 		"gscomplete_enabled": False,
 		"gocode_cmd": "",
 		"complete_builtins": False,
+		"autocomplete_builtins": False,
 		"fmt_enabled": False,
 		"fmt_tab_indent": True,
 		"fmt_tab_width": 8,
