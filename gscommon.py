@@ -36,6 +36,7 @@ except:
 	environ9 = {}
 	_env_lck = threading.Lock()
 	_default_settings = {
+		"_debug": False,
 		"env": {},
 		"gscomplete_enabled": False,
 		"gocode_cmd": "",
@@ -202,15 +203,19 @@ def println(*a):
 	print(l)
 	return l
 
+def debug(domain, *a):
+	if setting('_debug') is True:
+		print('\n** DEBUG ** %s ** %s **:' % (domain, datetime.datetime.now()))
+		for s in a:
+			print(ustr(s).strip())
+		print('--------------------------------')
+
 def log(*a):
 	try:
 		LOGFILE.write(println(*a))
 		LOGFILE.flush()
 	except Exception:
 		pass
-
-
-debug = log
 
 def notice(domain, txt):
 	txt = "%s: %s" % (domain, txt)
