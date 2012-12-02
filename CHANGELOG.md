@@ -1,3 +1,6 @@
+## r12.12.2-2
+	* setting `gocode_cmd` has been removed
+
 ## r12.12.2-1
 	* setting `complete_builtins` has been renamed to `autocomplete_builtins`
 
