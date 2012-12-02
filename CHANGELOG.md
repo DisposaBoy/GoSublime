@@ -1,3 +1,6 @@
+## r12.12.2-3
+	* setting `margo_cmd` has been removed
+
 ## r12.12.2-2
 	* setting `gocode_cmd` has been removed
 
