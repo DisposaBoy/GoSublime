@@ -637,6 +637,14 @@ def set_attr(k, v):
 	with _attr_lck:
 		_attr[k] = v
 
+def del_attr(k):
+	with _attr_lck:
+		try:
+			del _attr[k]
+			return True
+		except:
+			return False
+
 # note: this functionality should not be used inside this module
 # continue to use the try: X except: X=Y hack
 def checked(domain, k):
