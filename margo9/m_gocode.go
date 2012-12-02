@@ -19,7 +19,7 @@ var (
 	mGocodeVars = struct {
 		lck          sync.Mutex
 		lastGopath   string
-		lastBuiltins bool
+		lastBuiltins string
 	}{}
 )
 
@@ -92,15 +92,15 @@ func (m *mGocode) Call() (interface{}, string) {
 		mGocodeVars.lck.Lock()
 		defer mGocodeVars.lck.Unlock()
 
-		if m.Complete.Builtins != mGocodeVars.lastBuiltins {
-			builtins := "false"
-			if m.Complete.Builtins {
-				builtins = "true"
-			}
+		builtins := "false"
+		if m.Complete.Builtins {
+			builtins = "true"
+		}
+		if mGocodeVars.lastBuiltins != builtins {
 			if _, e := mGocodeCmdSet(c, "propose-builtins", builtins); e != "" {
 				logger.Print(e)
 			} else {
-				mGocodeVars.lastBuiltins = m.Complete.Builtins
+				mGocodeVars.lastBuiltins = builtins
 			}
 		}
 
