@@ -8,6 +8,7 @@ import re
 import sublime
 import sublime_plugin
 import mg9
+import gsshell
 
 DOMAIN = 'GsDepends'
 CHANGES_SPLIT_PAT = re.compile(r'^##', re.MULTILINE)
@@ -35,7 +36,7 @@ def split_changes(s):
 	return changes
 
 def call_cmd(cmd):
-	_, _, exc = gs.runcmd(cmd)
+	_, _, exc = gsshell.run(cmd)
 	return not exc
 
 def do_hello():
@@ -48,7 +49,6 @@ def do_hello():
 	call_cmd([mg9.GOCODE_BIN])
 	gs.end(tid)
 
-	margo_cmd = list(gs.setting('margo_cmd', []))
 	margo_cmd = [
 		mg9.MARGO0_BIN,
 		"-d",
@@ -57,7 +57,7 @@ def do_hello():
 	]
 
 	tid = gs.begin(DOMAIN, 'Starting MarGo', False)
-	out, err, _ = gs.runcmd(margo_cmd)
+	out, err, _ = gsshell.run(margo_cmd)
 	gs.end(tid)
 
 	out = out.strip()
