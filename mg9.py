@@ -13,6 +13,7 @@ import margo
 import json
 
 DOMAIN = 'MarGo9'
+REQUEST_PREFIX = '%s.rqst.' % DOMAIN
 
 # customization of, or user-owned gocode and margo will no longer be supported
 # so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
@@ -29,7 +30,16 @@ GOCODE_BIN = gs.home_path('bin', GOCODE_EXE)
 if not gs.checked(DOMAIN, '_vars'):
 	_send_q = Queue.Queue()
 	_recv_q = Queue.Queue()
-	_stash = {}
+
+class Request(object):
+	def __init__(self, f, method='', token=''):
+		self.f = f
+		self.tm = time.time()
+		self.method = method
+		if token:
+			self.token = token
+		else:
+			self.token = 'mg9.autoken.%s' % uuid.uuid4()
 
 def _sb(s):
 	bdir = gs.home_path('bin')
@@ -185,6 +195,39 @@ def _gocode(args, env={}, input=None):
 	cmd = gs.lst(bin, args)
 	return gsshell.run(cmd, input=input, env=nv, cwd=home)
 
+def _gocode_call(method, args):
+	home = gs.home_path()
+	args.update({
+		'Home': home,
+		'Bin': GOCODE_BIN,
+		'Env': gs.env({
+			'XDG_CONFIG_HOME': home,
+		}),
+	})
+
+	return bcall(method, args)
+
+def completion_options(m={}):
+	res, err = _gocode_call('gocode_set', {
+		'Set': m,
+	})
+	res = gs.dval(res.get('options'), {})
+	return res, err
+
+def complete(fn, src, pos):
+	builtins =  (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
+	res, err = _gocode_call('gocode_complete', {
+		'Dir': gs.basedir_or_cwd(fn),
+		'Complete': {
+			'Builtins': builtins,
+			'Fn':  fn or '',
+			'Src': src or '',
+			'Pos': pos or 0,
+		},
+	})
+	res = gs.dval(res.get('completions'), [])
+	return res, err
+
 def gocode(args, env={}, input=None):
 	last_propose = gs.attr('gocode.last_propose_builtins', False)
 	propose = gs.setting('complete_builtins', False)
@@ -232,10 +275,23 @@ def _recv():
 				if ln:
 					r, _ = gs.json_decode(ln, {})
 					token = r.get('token', '')
-					f = _stash.get(token)
-					if f:
-						del _stash[token]
-						f(r.get('data', {}), r.get('error', ''))
+					k = REQUEST_PREFIX+token
+					req = gs.attr(k)
+					gs.del_attr(k)
+					if req and req.f:
+						gs.debug(DOMAIN, "margo response: method: %s, token: %s, dur: %0.3f, err: `%s'" % (
+							req.method,
+							req.token,
+							(time.time() - req.tm),
+							r.get('error', ''),
+						))
+						keep = req.f(r.get('data', {}), r.get('error', '')) is not True
+						if keep:
+							req.tm = time.time()
+							gs.set_attr(k, req)
+					else:
+						gs.debug(DOMAIN, 'Ignoring margo: token: %s' % token)
+
 			except Exception:
 				gs.println(gs.traceback())
 		except Exception:
@@ -262,7 +318,7 @@ def _send():
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=5'], stderr=gs.LOGFILE)
+					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=30'], stderr=gs.LOGFILE)
 					gs.set_attr('mg9.proc', proc)
 
 					if not proc:
@@ -271,10 +327,10 @@ def _send():
 
 					gsq.launch(DOMAIN, lambda: _read_stdout(proc))
 
-				token = 'mg9.autoken.%s' % uuid.uuid4()
-				_stash[token] = cb
+				req = Request(f=cb, method=method)
+				gs.set_attr(REQUEST_PREFIX+req.token, req)
 
-				header, _ = gs.json_encode({'method': method, 'token': token})
+				header, _ = gs.json_encode({'method': method, 'token': req.token})
 				body, _ = gs.json_encode(arg)
 				ln = '%s %s\n' % (header, body)
 				proc.stdin.write(ln)
