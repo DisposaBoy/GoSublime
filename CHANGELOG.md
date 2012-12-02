@@ -1,3 +1,6 @@
+## r12.12.2-1
+	* setting `complete_builtins` has been renamed to `autocomplete_builtins`
+
 ## r12.11.28-1
 	* If you have issues with env vars, particularly on OS X, consider setting the
 	`shell` setting. See `Packages/User/GoSublime.sublime-settings` for more details
