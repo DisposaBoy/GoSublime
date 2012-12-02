@@ -30,3 +30,12 @@ func defaultEnv() map[string]string {
 		"GOOS":   runtime.GOOS,
 	}
 }
+
+func orString(a ...string) string {
+	for _, s := range a {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
