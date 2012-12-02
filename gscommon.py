@@ -631,7 +631,7 @@ def json_encode(a):
 def attr(k, d=None):
 	with _attr_lck:
 		v = _attr.get(k, None)
-	return d if v is None else copy.copy(v)
+		return d if v is None else copy.copy(v)
 
 def set_attr(k, v):
 	with _attr_lck:
