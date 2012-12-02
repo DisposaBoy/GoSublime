@@ -347,37 +347,27 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 			return
 
 		offset = (line_start + m.end())
-		coffset = 'c%d' % offset
 		sel = m.group(1)
 		name = m.group(2)
 		candidates = []
 		src = view.substr(sublime.Region(0, view.size()))
-		fn = view.file_name() or '<stdin>'
-		cmd = gs.setting('gocode_cmd', 'gocode')
-		args = [cmd, "-f=json", "autocomplete", fn, coffset]
-		js, err, _ = gs.runcmd(args, src)
+		fn = view.file_name()
+		candidates, err = mg9.complete(fn, src, offset)
 		if err:
 			gs.notice(DOMAIN, err)
 		else:
-			try:
-				js = json.loads(js)
-				if js and js[1]:
-					candidates = js[1]
-			except:
-				pass
+			c = {}
+			for i in candidates:
+				if i['name'] == name:
+					if c:
+						c = None
+						break
+					c = i
 
-		c = {}
-		for i in candidates:
-			if i['name'] == name:
-				if c:
-					c = None
-					break
-				c = i
+			if not c:
+				self.show_hint('// no candidates found')
+				return
 
-		if not c:
-			self.show_hint('// no candidates found')
-			return
-
-		s = '// %s %s\n%s' % (c['name'], c['class'], c['type'])
-		self.show_hint(s)
+			s = '// %s %s\n%s' % (c['name'], c['class'], c['type'])
+			self.show_hint(s)
 
