@@ -4,7 +4,10 @@ import (
 	"io/ioutil"
 	"net/rpc"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -12,16 +15,26 @@ const (
 	mGocodeAddr = "127.0.0.1:57952"
 )
 
+var (
+	mGocodeVars = struct {
+		lck          sync.Mutex
+		lastGopath   string
+		lastBuiltins bool
+	}{}
+)
+
 type mGocode struct {
+	cmd      string
 	Bin      string
 	Env      map[string]string
 	Home     string
-	cmd      string
+	Dir      string
 	Set      map[string]string
 	Complete struct {
-		Fn  string
-		Src string
-		Pos int
+		Builtins bool
+		Fn       string
+		Src      string
+		Pos      int
 	}
 }
 
@@ -45,11 +58,14 @@ func (m *mGocode) Call() (interface{}, string) {
 	}
 	defer c.Close()
 
+	for k, v := range m.Set {
+		if _, e := mGocodeCmdSet(c, k, v); e != "" {
+			logger.Print(e)
+		}
+	}
+
 	switch m.cmd {
 	case "set":
-		for k, v := range m.Set {
-			mGocodeCmdSet(c, k, v)
-		}
 		res, e = mGocodeCmdSet(c, "\x00", "\x00")
 	case "complete":
 		if m.Complete.Src == "" {
@@ -66,7 +82,43 @@ func (m *mGocode) Call() (interface{}, string) {
 				break
 			}
 		}
-		res, e = mGocodeCmdComplete(c, m.Complete.Fn, []byte(m.Complete.Src), pos)
+
+		src := []byte(m.Complete.Src)
+		fn := m.Complete.Fn
+		if !filepath.IsAbs(fn) {
+			fn = filepath.Join(orString(m.Dir, m.Home), orString(fn, "_.go"))
+		}
+
+		mGocodeVars.lck.Lock()
+		defer mGocodeVars.lck.Unlock()
+
+		if m.Complete.Builtins != mGocodeVars.lastBuiltins {
+			builtins := "false"
+			if m.Complete.Builtins {
+				builtins = "true"
+			}
+			if _, e := mGocodeCmdSet(c, "propose-builtins", builtins); e != "" {
+				logger.Print(e)
+			} else {
+				mGocodeVars.lastBuiltins = m.Complete.Builtins
+			}
+		}
+
+		gopath := orString(m.Env["GOPATH"], os.Getenv("GOPATH"))
+		if gopath != mGocodeVars.lastGopath {
+			p := []string{}
+			osArch := runtime.GOOS + "_" + runtime.GOARCH
+			for _, s := range filepath.SplitList(gopath) {
+				p = append(p, filepath.Join(s, "pkg", osArch))
+			}
+			libpath := strings.Join(p, string(filepath.ListSeparator))
+			if _, e := mGocodeCmdSet(c, "lib-path", libpath); e != "" {
+				logger.Print(e)
+			} else {
+				mGocodeVars.lastGopath = gopath
+			}
+		}
+		res, e = mGocodeCmdComplete(c, fn, src, pos)
 	default:
 		panic("Unsupported command: gocode: " + m.cmd)
 	}
