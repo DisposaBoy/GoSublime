@@ -330,6 +330,8 @@ def _send():
 				req = Request(f=cb, method=method)
 				gs.set_attr(REQUEST_PREFIX+req.token, req)
 
+				gs.debug(DOMAIN, 'margo request: method: %s, token: %s' % (req.method, req.token))
+
 				header, _ = gs.json_encode({'method': method, 'token': req.token})
 				body, _ = gs.json_encode(arg)
 				ln = '%s %s\n' % (header, body)
