@@ -56,6 +56,7 @@ except:
 		"shell": [],
 		"default_snippets": [],
 		"snippets": [],
+		"fn_exclude_prefixes": [".", "_"],
 	}
 	_settings = copy.copy(_default_settings)
 
