@@ -80,7 +80,9 @@ func (b *Broker) call(req *Request, cl Caller) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			logger.Printf("%v#%v PANIC: %v\n", req.Method, req.Token, err)
+			buf := make([]byte, 64*1024*1024)
+			n := runtime.Stack(buf, true)
+			logger.Printf("%v#%v PANIC: %v\n%s\n\n", req.Method, req.Token, err, buf[:n])
 			b.Send(Response{
 				Token: req.Token,
 				Error: "broker: " + req.Method + "#" + req.Token + " PANIC",
