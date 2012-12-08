@@ -87,6 +87,7 @@ def install(aso_tokens, force_install):
 		m_out = 'no'
 		g_out = 'no'
 	else:
+		gs.notify('GoSublime', 'Installing MarGo0')
 		start = time.time()
 		m0_out, err, _ = _run(['go', 'build', '-o', MARGO0_BIN], cwd=MARGO0_SRC)
 		m0_out, m0_ok = _so(m0_out, err, start, time.time())
@@ -94,6 +95,7 @@ def install(aso_tokens, force_install):
 		if os.path.exists(GOCODE_BIN):
 			margo.bye_ni()
 
+		gs.notify('GoSublime', 'Installing MarGo9')
 		start = time.time()
 		m_out, err, _ = _run(['go', 'build', '-o', MARGO9_BIN], cwd=MARGO9_SRC)
 		m_out, m_ok = _so(m_out, err, start, time.time())
@@ -105,6 +107,7 @@ def install(aso_tokens, force_install):
 		if os.path.exists(GOCODE_BIN):
 			_run([GOCODE_BIN, 'close'])
 
+		gs.notify('GoSublime', 'Installing Gocode')
 		g_out, err, _ = _run(['go', 'build', '-o', GOCODE_BIN], cwd=GOCODE_SRC)
 		g_out, g_ok = _so(g_out, err, start, time.time())
 
@@ -115,7 +118,12 @@ def install(aso_tokens, force_install):
 
 			sublime.set_timeout(f, 0)
 
+	gs.notify('GoSublime', 'Syncing environment variables')
 	out, err, _ = gsshell.run([MARGO9_EXE, '-env'], cwd=gs.home_path(), shell=True)
+
+	# notify this early so we don't mask any notices below
+	gs.notify('GoSublime', 'Ready')
+
 	if err:
 		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (MARGO9_EXE, err))
 	else:
