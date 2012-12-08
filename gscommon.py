@@ -216,6 +216,10 @@ def log(*a):
 	except Exception:
 		pass
 
+def notify(domain, txt):
+	txt = "%s: %s" % (domain, txt)
+	status_message(txt)
+
 def notice(domain, txt):
 	txt = "%s: %s" % (domain, txt)
 	log(txt)
