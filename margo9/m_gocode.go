@@ -92,7 +92,6 @@ func (m *mGocodeComplete) Call() (interface{}, string) {
 		gocode.GoSublimeGocodeSet("lib-path", libpath)
 		mGocodeVars.lastGopath = gopath
 	}
-	logger.Println("complete", len(src), fn, pos)
 	res["completions"] = gocode.GoSublimeGocodeComplete(src, fn, pos)
 
 	return res, e
