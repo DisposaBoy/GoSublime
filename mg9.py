@@ -203,36 +203,26 @@ def _gocode(args, env={}, input=None):
 	cmd = gs.lst(bin, args)
 	return gsshell.run(cmd, input=input, env=nv, cwd=home)
 
-def _gocode_call(method, args):
+def completion_options(m={}):
+	res, err = bcall('gocode_options', {})
+	res = gs.dval(res.get('options'), {})
+	return res, err
+
+def complete(fn, src, pos):
 	home = gs.home_path()
-	args.update({
+	builtins = (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
+	res, err = bcall('gocode_complete', {
+		'Dir': gs.basedir_or_cwd(fn),
+		'Builtins': builtins,
+		'Fn':  fn or '',
+		'Src': src or '',
+		'Pos': pos or 0,
 		'Home': home,
-		'Bin': GOCODE_BIN,
 		'Env': gs.env({
 			'XDG_CONFIG_HOME': home,
 		}),
 	})
 
-	return bcall(method, args)
-
-def completion_options(m={}):
-	res, err = _gocode_call('gocode_set', {
-		'Set': m,
-	})
-	res = gs.dval(res.get('options'), {})
-	return res, err
-
-def complete(fn, src, pos):
-	builtins = (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
-	res, err = _gocode_call('gocode_complete', {
-		'Dir': gs.basedir_or_cwd(fn),
-		'Complete': {
-			'Builtins': builtins,
-			'Fn':  fn or '',
-			'Src': src or '',
-			'Pos': pos or 0,
-		},
-	})
 	res = gs.dval(res.get('completions'), [])
 	return res, err
 
