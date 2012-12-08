@@ -358,7 +358,7 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 		else:
 			c = {}
 			for i in candidates:
-				if i['name'] == name:
+				if i['Name'] == name:
 					if c:
 						c = None
 						break
@@ -368,6 +368,6 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 				self.show_hint('// no candidates found')
 				return
 
-			s = '// %s %s\n%s' % (c['name'], c['class'], c['type'])
+			s = '// %s %s\n%s' % (c['Name'], c['Class'], c['Type'])
 			self.show_hint(s)
 
