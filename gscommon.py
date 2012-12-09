@@ -644,10 +644,16 @@ def set_attr(k, v):
 def del_attr(k):
 	with _attr_lck:
 		try:
+			v = _attr[k]
+		except Exception:
+			v = None
+
+		try:
 			del _attr[k]
-			return True
-		except:
-			return False
+		except Exception:
+			pass
+
+		return v
 
 # note: this functionality should not be used inside this module
 # continue to use the try: X except: X=Y hack
