@@ -9,9 +9,9 @@ var (
 )
 
 type GoSublimeGocodeCandidate struct {
-	Name  string
-	Type  string
-	Class string
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Class string `json:"class"`
 }
 
 func init() {
