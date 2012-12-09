@@ -1,8 +1,11 @@
 # Sublime modelines - https://github.com/SublimeText/Modelines
 # sublime: translate_tabs_to_spaces false; rulers [100,120]
 
-import sublime, sublime_plugin
-import gscommon as gs, margo, gspatch
+import sublime
+import sublime_plugin
+import gscommon as gs
+import mg9
+import gspatch
 
 DOMAIN = 'GsFmt'
 
@@ -16,13 +19,13 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 		if not src.strip():
 			return
 
-		src, err = margo.fmt(self.view.file_name(), src)
+		src, err = mg9.fmt(self.view.file_name(), src)
 		if err:
 			gs.println(DOMAIN, "cannot fmt file. error: `%s'" % err)
 			return
 
 		if not src.strip():
-			gs.println(DOMAIN, "cannot fmt file. it appears to contain syntax errors")
+			gs.println(DOMAIN, "cannot fmt file. it appears to be empty")
 			return
 
 		_, err = gspatch.merge(self.view, vsize, src)
