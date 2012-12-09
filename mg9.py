@@ -228,6 +228,15 @@ def complete(fn, src, pos):
 	res = gs.dval(res.get('completions'), [])
 	return res, err
 
+def fmt(fn, src):
+	res, err = bcall('fmt', {
+		'fn': fn or '',
+		'src': src or '',
+		'tabIndent': gs.setting('fmt_tab_indent'),
+		'tabWidth': gs.setting('fmt_tab_width'),
+	})
+	return res.get('src', ''), err
+
 def gocode(args, env={}, input=None):
 	last_propose = gs.attr('gocode.last_propose_builtins', False)
 	propose = gs.setting('complete_builtins', False)
