@@ -45,10 +45,6 @@ def do_hello():
 		return
 	hello_sarting = True
 
-	tid = gs.begin(DOMAIN, 'Starting Gocode', False)
-	call_cmd([mg9.GOCODE_BIN])
-	gs.end(tid)
-
 	margo_cmd = [
 		mg9.MARGO0_BIN,
 		"-d",
@@ -73,8 +69,6 @@ def hello():
 	_, err = margo.post('/', 'hello', {}, True, False)
 	if err:
 		dispatch(do_hello, 'Starting MarGo and gocode...')
-	else:
-		call_cmd([mg9.GOCODE_BIN])
 
 def check_depends():
 	changelog_fn = gs.dist_path("CHANGELOG.md")
