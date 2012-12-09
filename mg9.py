@@ -11,9 +11,11 @@ import Queue
 import uuid
 import margo
 import json
+import atexit
 
 DOMAIN = 'MarGo9'
 REQUEST_PREFIX = '%s.rqst.' % DOMAIN
+PROC_ATTR_NAME = 'mg9.proc'
 
 # customization of, or user-owned gocode and margo will no longer be supported
 # so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
@@ -302,7 +304,7 @@ def _send():
 			try:
 				method, arg, cb = _send_q.get()
 
-				proc = gs.attr('mg9.proc')
+				proc = gs.attr(PROC_ATTR_NAME)
 				if not proc or proc.poll() is not None:
 					if proc:
 						try:
@@ -317,7 +319,7 @@ def _send():
 						gsq.launch(DOMAIN, _recv)
 
 					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=30'], stderr=gs.LOGFILE)
-					gs.set_attr('mg9.proc', proc)
+					gs.set_attr(PROC_ATTR_NAME, proc)
 
 					if not proc:
 						gs.notice(DOMAIN, 'Cannot start MarGo9: %s' % err)
@@ -355,6 +357,25 @@ def _read_stdout(proc):
 		proc.wait()
 		proc = None
 
+def killSrv():
+	p = gs.del_attr(PROC_ATTR_NAME)
+	if p:
+		print p
+		try:
+			p.stdout.close()
+		except Exception:
+			pass
+
+		try:
+			p.stdin.close()
+		except Exception:
+			pass
+
+		try:
+			p.kill()
+		except Exception:
+			pass
+
 def _dump(res, err):
 	gs.println(json.dumps({
 		'res': res,
@@ -362,4 +383,5 @@ def _dump(res, err):
 	}, sort_keys=True, indent=2))
 
 if not gs.checked(DOMAIN, 'do_init'):
+	atexit.register(killSrv)
 	sublime.set_timeout(do_init, 0)
