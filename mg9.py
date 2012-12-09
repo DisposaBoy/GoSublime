@@ -109,11 +109,7 @@ def install(aso_tokens, force_install):
 		if os.path.exists(GOCODE_BIN):
 			_run([GOCODE_BIN, 'close'])
 
-		gs.notify('GoSublime', 'Installing Gocode')
-		g_out, err, _ = _run(['go', 'build', '-o', GOCODE_BIN], cwd=GOCODE_SRC)
-		g_out, g_ok = _so(g_out, err, start, time.time())
-
-		if m_ok and m0_ok and g_ok:
+		if m_ok and m0_ok:
 			def f():
 				gs.aso().set('mg9_install_tokens', _gen_tokens())
 				gs.save_aso()
@@ -192,19 +188,6 @@ def do_init():
 	f = lambda: install(aso_tokens, False)
 	gsq.do('GoSublime', f, msg='Installing MarGo9 and Gocode', set_status=True)
 
-def _gocode(args, env={}, input=None):
-	home = gs.home_path()
-	# gocode should store its settings here
-	nv = {
-		'XDG_CONFIG_HOME': home,
-	}
-	nv.update(env)
-
-	# until mg9 is in active use we'll fallback to existing gocode
-	bin = GOCODE_BIN if os.path.exists(GOCODE_BIN) else 'gocode'
-	cmd = gs.lst(bin, args)
-	return gsshell.run(cmd, input=input, env=nv, cwd=home)
-
 def completion_options(m={}):
 	res, err = bcall('gocode_options', {})
 	res = gs.dval(res.get('options'), {})
@@ -236,29 +219,6 @@ def fmt(fn, src):
 		'tabWidth': gs.setting('fmt_tab_width'),
 	})
 	return res.get('src', ''), err
-
-def gocode(args, env={}, input=None):
-	last_propose = gs.attr('gocode.last_propose_builtins', False)
-	propose = gs.setting('complete_builtins', False)
-	if last_propose != propose:
-		gs.set_attr('gocode.last_propose_builtins', propose)
-		_gocode(['set', 'propose-builtins', 'true' if propose else 'false'])
-
-	last_gopath = gs.attr('gocode.last_gopath')
-	gopath = gs.getenv('GOPATH')
-	if gopath and gopath != last_gopath:
-		out, _, _ = gsshell.run(cmd=['go', 'env', 'GOOS', 'GOARCH'])
-		vars = out.strip().split()
-		if len(vars) == 2:
-			gs.set_attr('gocode.last_gopath', gopath)
-			libpath = []
-			osarch = '_'.join(vars)
-			for p in gopath.split(os.pathsep):
-				if p:
-					libpath.append(os.path.join(p, 'pkg', osarch))
-			_gocode(['set', 'lib-path', os.pathsep.join(libpath)])
-
-	return _gocode(args, env=env, input=input)
 
 def acall(method, arg, cb):
 	if not gs.checked(DOMAIN, 'launch _send'):
