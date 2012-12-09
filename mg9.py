@@ -138,6 +138,9 @@ def install(aso_tokens, force_install):
 	if missing:
 		gs.notice(DOMAIN, "Missing environment variable(s): %s" % ', '.join(missing))
 
+	killSrv()
+	start = time.time()
+	acall('ping', {}, lambda res, err: gs.println('MarGo Ready %0.3fs' % (time.time() - start)))
 
 def _fasthash(fn):
 	try:
@@ -234,7 +237,7 @@ def _recv():
 					req = gs.attr(k)
 					gs.del_attr(k)
 					if req and req.f:
-						gs.debug(DOMAIN, "margo response: method: %s, token: %s, dur: %0.3f, err: `%s'" % (
+						gs.debug(DOMAIN, "margo response: method: %s, token: %s, dur: %0.3fs, err: `%s'" % (
 							req.method,
 							req.token,
 							(time.time() - req.tm),
