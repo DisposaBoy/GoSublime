@@ -1,9 +1,0 @@
-package main
-
-// Simple check for unicode awareness
-
-import ъ "fmt"
-
-func main() {
-	ъ.
-}

@@ -1,8 +1,0 @@
-package main
-
-import "go/ast"
-
-func main() {
-	var test *ast.ImportSpec
-	test.Name.
-}
