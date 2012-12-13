@@ -51,6 +51,7 @@ except:
 		"autocomplete_snippets": False,
 		"autocomplete_tests": False,
 		"autocomplete_closures": False,
+		"autocomplete_filter_name": "",
 		"margo_addr": "",
 		"on_save": [],
 		"shell": [],

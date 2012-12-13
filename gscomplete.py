@@ -146,7 +146,18 @@ class GoSublime(sublime_plugin.EventListener):
 		if err:
 			gs.notice(DOMAIN, err)
 
+		name_fx = None
+		name_fx_pat = gs.setting('autocomplete_filter_name')
+		if name_fx_pat:
+			try:
+				name_fx = re.compile(name_fx_pat)
+			except Exception as ex:
+				gs.notice(DOMAIN, 'Cannot filter completions: %s' % ex)
+
 		for ent in ents:
+			if name_fx and name_fx.search(ent['name']):
+				continue
+
 			tn = ent['type']
 			cn = ent['class']
 			nm = ent['name']
