@@ -329,11 +329,6 @@ def killSrv():
 		except Exception:
 			pass
 
-		try:
-			p.kill()
-		except Exception:
-			pass
-
 def _dump(res, err):
 	gs.println(json.dumps({
 		'res': res,
