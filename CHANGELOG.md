@@ -1,3 +1,15 @@
+## r12.12.13-1
+	* implement `9 replay` command that will `9 play` (build + run) the current package, after killing any previous instances.
+	Until it goes live, you can override the existing `ctrl+dot`,`ctrl+r` binding or bind it to something else by adding
+	the following key binding to your user key bindings via menu `Preferences > Key Bindings - User`
+
+	{
+		"keys": ["ctrl+.", "ctrl+r"],
+		"command": "gs_commander_open",
+		"args": {"run": ["9", "replay"]},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	}
+
 ## r12.12.2-3
 	* setting `margo_cmd` has been removed
 
