@@ -55,6 +55,8 @@ func (m *mPlay) Call() (interface{}, string) {
 
 	if m.Cid == "" {
 		m.Cid = "play.auto." + numbers.nextString()
+	} else {
+		killCmd(m.Cid)
 	}
 
 	stdErr := bytes.NewBuffer(nil)
