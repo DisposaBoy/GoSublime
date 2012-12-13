@@ -114,6 +114,10 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		if not was_empty:
 			v.show(v.size()-1)
 
+class GsCommanderOpenV(sublime_plugin.TextCommand):
+	def run(self, edit, wd=None, run=[]):
+		self.view.window().run_command('gs_commander_open', {'wd': wd, 'run': run})
+
 class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
 	def run(self, wd=None, run=[]):
 		win = self.window
