@@ -140,7 +140,7 @@ def install(aso_tokens, force_install):
 
 	killSrv()
 	start = time.time()
-	acall('ping', {}, lambda res, err: gs.println('MarGo Ready %0.3fs' % (time.time() - start)))
+	# acall('ping', {}, lambda res, err: gs.println('MarGo Ready %0.3fs' % (time.time() - start)))
 
 def _fasthash(fn):
 	try:
