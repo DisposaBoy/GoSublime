@@ -29,6 +29,7 @@ DEFAULT_COMMANDS = [
 	'go list',
 	'go run',
 	'9 play',
+	'9 replay',
 	'go test',
 	'go tool',
 	'go version',
@@ -252,10 +253,11 @@ def push_output(view, rkey, out, hourglass_repl=''):
 	finally:
 		view.end_edit(edit)
 
-def _9_begin_call(name, view, edit, args, wd, rkey):
+def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 	dmn = '%s: 9 %s' % (DOMAIN, name)
 	msg = '[ %s ] # 9 %s' % (wd, ' '.join(args))
-	cid = '9%s-%s' % (name, uuid.uuid4())
+	if not cid:
+		cid = '9%s-%s' % (name, uuid.uuid4())
 	tid = gs.begin(dmn, msg, set_status=False, cancel=lambda: mg9.acall('kill', {'cid': cid}, None))
 
 	def cb(res, err):
@@ -276,7 +278,7 @@ def cmd_clear(view, edit, args, wd, rkey):
 	cmd_reset(view, edit, args, wd, rkey)
 
 def cmd_go(view, edit, args, wd, rkey):
-	cid, cb = _9_begin_call('go', view, edit, args, wd, rkey)
+	cid, cb = _9_begin_call('go', view, edit, args, wd, rkey, '')
 	a = {
 		'cid': cid,
 		'env': gs.env(),
@@ -289,12 +291,16 @@ def cmd_go(view, edit, args, wd, rkey):
 	mg9.acall('sh', a, cb)
 
 def cmd_9(view, edit, args, wd, rkey):
-	if len(args) == 0 or args[0] not in ('play', 'build'):
+	if len(args) == 0 or args[0] not in ('play', 'replay', 'build'):
 		push_output(view, rkey, ('9: invalid args %s' % args))
 		return
 
 	subcmd = args[0]
-	cid, cb = _9_begin_call(subcmd, view, edit, args, wd, rkey)
+	cid = ''
+	if subcmd == 'replay':
+		cid = '9replay-%s' % wd
+	cid, cb = _9_begin_call(subcmd, view, edit, args, wd, rkey, cid)
+
 	a = {
 		'cid': cid,
 		'env': gs.env(),
