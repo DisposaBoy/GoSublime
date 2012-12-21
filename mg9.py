@@ -12,10 +12,25 @@ import uuid
 import margo
 import json
 import atexit
+import re
 
 DOMAIN = 'MarGo9'
 REQUEST_PREFIX = '%s.rqst.' % DOMAIN
 PROC_ATTR_NAME = 'mg9.proc'
+
+CHANGES_SPLIT_PAT = re.compile(r'^##', re.MULTILINE)
+CHANGES_MATCH_PAT = re.compile(r'^\s*(r[\d.]+[-]\d+)\s+(.+?)\s*$', re.DOTALL)
+CHANGES = []
+
+with open(gs.dist_path("CHANGELOG.md")) as f:
+	s = f.read()
+
+for m in CHANGES_SPLIT_PAT.split(s):
+	m = CHANGES_MATCH_PAT.match(m)
+	if m:
+		CHANGES.append((m.group(1), m.group(2)))
+CHANGES.sort(reverse=True)
+REV = CHANGES[0][0]
 
 # customization of, or user-owned margo will no longer be supported
 # so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
@@ -39,6 +54,31 @@ class Request(object):
 			self.token = token
 		else:
 			self.token = 'mg9.autoken.%s' % uuid.uuid4()
+
+def _check_changes():
+	def cb():
+		aso = gs.aso()
+		old_rev = aso.get('changelog.rev', '')
+		if REV > old_rev:
+			aso.set('changelog.rev', REV)
+			gs.save_aso()
+
+			new_changes = [
+				'GoSublime: Recent Updates (you may need to restart Sublime Text for changes to take effect)',
+				'------------------------------------------------------------------------------------------',
+			]
+
+			for change in CHANGES:
+				rev, msg = change
+				if rev > old_rev:
+					new_changes.append('\n%s\n\t%s' % (rev, msg))
+				else:
+					break
+
+			new_changes.append('\nSee %s for the full CHANGELOG\n' % changelog_fn)
+			new_changes = '\n'.join(new_changes)
+			gs.show_output(DOMAIN, new_changes, print_output=False)
+	sublime.set_timeout(cb, 0)
 
 def _sb(s):
 	bdir = gs.home_path('bin')
@@ -110,6 +150,7 @@ def install(aso_tokens, force_install):
 
 	# notify this early so we don't mask any notices below
 	gs.notify('GoSublime', 'Ready')
+	_check_changes()
 
 	if err:
 		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (MARGO9_EXE, err))
