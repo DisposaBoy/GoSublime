@@ -276,7 +276,9 @@ def _send():
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=30'], stderr=gs.LOGFILE)
+					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=30'], stderr=gs.LOGFILE ,env={
+						'XDG_CONFIG_HOME': gs.home_path(),
+					})
 					gs.set_attr(PROC_ATTR_NAME, proc)
 
 					if not proc:
