@@ -195,10 +195,7 @@ def _token(head, bin):
 	return token
 
 def _gen_tokens():
-	return '\n'.join([
-		_token('something_borrowed/margo0.head', MARGO9_BIN),
-		_token('margo9.head', MARGO9_BIN),
-	])
+	return REV
 
 def do_init():
 	aso_tokens = gs.aso().get('mg9_install_tokens', '')
