@@ -1,3 +1,6 @@
+GoSublime Changes
+-----------------
+
 ## r12.12.13-2
 	* add a new setting: `autocomplete_filter_name`
 	you may set this to a regexp which will be used to filter entries in the auto-completion list
