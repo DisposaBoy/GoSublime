@@ -20,9 +20,10 @@ PROC_ATTR_NAME = 'mg9.proc'
 
 CHANGES_SPLIT_PAT = re.compile(r'^##', re.MULTILINE)
 CHANGES_MATCH_PAT = re.compile(r'^\s*(r[\d.]+[-]\d+)\s+(.+?)\s*$', re.DOTALL)
+CHANGELOG_FN = gs.dist_path("CHANGELOG.md")
 CHANGES = []
 
-with open(gs.dist_path("CHANGELOG.md")) as f:
+with open(CHANGELOG_FN) as f:
 	s = f.read()
 
 for m in CHANGES_SPLIT_PAT.split(s):
@@ -62,22 +63,8 @@ def _check_changes():
 		if REV > old_rev:
 			aso.set('changelog.rev', REV)
 			gs.save_aso()
+			gs.focus(CHANGELOG_FN)
 
-			new_changes = [
-				'GoSublime: Recent Updates (you may need to restart Sublime Text for changes to take effect)',
-				'------------------------------------------------------------------------------------------',
-			]
-
-			for change in CHANGES:
-				rev, msg = change
-				if rev > old_rev:
-					new_changes.append('\n%s\n\t%s' % (rev, msg))
-				else:
-					break
-
-			new_changes.append('\nSee %s for the full CHANGELOG\n' % changelog_fn)
-			new_changes = '\n'.join(new_changes)
-			gs.show_output(DOMAIN, new_changes, print_output=False)
 	sublime.set_timeout(cb, 0)
 
 def _sb(s):
