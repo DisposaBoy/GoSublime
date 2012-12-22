@@ -165,7 +165,7 @@
 		"command": "gs_sanity_check"
 	},
 	{
-		"caption": "GoSublime: Open Log File",
+		"caption": "GoSublime: Open Error Log",
 		"command": "open_file",
 		"args": {
 			"file": "${packages}/User/GoSublime/9/log.txt"
