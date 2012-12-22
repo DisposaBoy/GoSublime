@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -9,6 +10,19 @@ import (
 	"os"
 	"runtime"
 )
+
+type jString string
+
+func (s jString) String() string {
+	return string(s)
+}
+
+func (s *jString) UnmarshalJSON(p []byte) error {
+	if bytes.Equal(p, []byte("null")) {
+		return nil
+	}
+	return json.Unmarshal(p, (*string)(s))
+}
 
 func errStr(err error) string {
 	if err != nil {
