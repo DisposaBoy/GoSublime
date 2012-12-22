@@ -1,6 +1,7 @@
 import gscommon as gs
 import gsshell
 import sublime
+import sublime_plugin
 import threading
 import os
 import gsq
@@ -55,6 +56,24 @@ class Request(object):
 			self.token = token
 		else:
 			self.token = 'mg9.autoken.%s' % uuid.uuid4()
+
+class GsSanityCheckCommand(sublime_plugin.WindowCommand):
+	def run(self):
+		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(['%6s: %s' % ln for ln in _sanity_check()])
+		gs.show_output(DOMAIN, s, print_output=False)
+
+def _sanity_check(env={}):
+	if not env:
+		env = gs.env()
+
+	return [
+		('~bin', '%s' % gs.home_path('bin')),
+		('margo0', '%s (%s)' % _tp(MARGO0_BIN)),
+		('margo9', '%s (%s)' % _tp(MARGO9_BIN)),
+		('GOROOT', '%s' % env.get('GOROOT', '(not set)')),
+		('GOPATH', '%s' % env.get('GOPATH', '(not set)')),
+		('GOBIN', '%s (should usually be (not set))' % env.get('GOBIN', '(not set)')),
+	]
 
 def _check_changes():
 	def cb():
@@ -149,17 +168,12 @@ def install(aso_tokens, force_install):
 			gs.environ9.update(env)
 
 	e = gs.env()
-	a = (
+	a = [
 		'GoSublime init (%0.3fs)' % (time.time() - init_start),
 		'| install margo0: %s' % m0_out,
 		'| install margo9: %s' % m_out,
-		'|           ~bin: %s' % gs.home_path('bin'),
-		'|         margo0: %s (%s)' % _tp(MARGO0_BIN),
-		'|         margo9: %s (%s)' % _tp(MARGO9_BIN),
-		'|         GOROOT: %s' % e.get('GOROOT', '(not set)'),
-		'|         GOPATH: %s' % e.get('GOPATH', '(not set)'),
-		'|          GOBIN: %s (should usually be (not set))' % e.get('GOBIN', '(not set)'),
-	)
+	]
+	a.extend(['| %14s: %s' % ln for ln in _sanity_check(e)])
 	gs.println(*a)
 
 	missing = [k for k in ('GOROOT', 'GOPATH') if not e.get(k)]
