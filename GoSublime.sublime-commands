@@ -161,6 +161,10 @@
 		}
 	},
 	{
+		"caption": "GoSublime: Do a sanity check",
+		"command": "gs_sanity_check"
+	},
+	{
 		"caption": "GoSublime: Open Log File",
 		"command": "open_file",
 		"args": {
