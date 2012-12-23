@@ -19,6 +19,11 @@ type mPkgdocDoc struct {
 	Doc  string
 }
 
+func setupReq(req *http.Request) {
+	req.Header.Set("User-Agent", "GoSublime")
+	req.Header.Set("Accept", "text/plain")
+}
+
 func mPkgdocFetchDoc(m *mPkgdoc) (interface{}, string) {
 	res := M{}
 	path := strings.TrimSpace(m.Path.String())
@@ -31,7 +36,7 @@ func mPkgdocFetchDoc(m *mPkgdoc) (interface{}, string) {
 		return res, errStr(err)
 	}
 
-	req.Header.Add("Accept", "text/plain")
+	setupReq(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return res, errStr(err)
@@ -62,8 +67,7 @@ func mPkgdocSearch(m *mPkgdoc) (interface{}, string) {
 		return res, errStr(err)
 	}
 
-	req.Header.Set("User-Agent", "GoSublime")
-	req.Header.Add("Accept", "text/plain")
+	setupReq(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return res, errStr(err)
