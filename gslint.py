@@ -1,6 +1,14 @@
-import gscommon as gs, margo, gsq, gsshell
-import sublime, sublime_plugin
-import threading, Queue, time, os, re
+import gscommon as gs
+import mg9
+import gsq
+import gsshell
+import sublime
+import sublime_plugin
+import threading
+import Queue
+import time
+import os
+import re
 
 DOMAIN = 'GsLint'
 CL_DOMAIN = 'GsCompLint'
@@ -47,11 +55,12 @@ class GsLintThread(threading.Thread):
 			fr = ref(fn, False)
 			if fr:
 				reports = {}
-				resp, _ = margo.lint(fn, fr.src)
-				for r in resp:
+				res, _ = mg9.bcall('lint', {'fn': fn, 'src': fr.src})
+				res = gs.dval(res, {})
+				for r in gs.dval(res.get('reports'), []):
 					row = r.get('row', 0)
 					col = r.get('col', 0)
-					msg = r.get('msg', '')
+					msg = r.get('message', '')
 					if row >= 0 and msg:
 						reports[row] = Report(row, col, msg)
 
