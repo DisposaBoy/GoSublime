@@ -58,6 +58,9 @@ const (
 	// means that the decl is a part of the range statement
 	// its type is inferred in a special way
 	decl_rangevar
+
+	// for preventing infinite recursions and loops in type inference code
+	decl_visited
 )
 
 //-------------------------------------------------------------------------
@@ -346,6 +349,10 @@ func (other *decl) deep_copy() *decl {
 	}
 	d.scope = other.scope
 	return d
+}
+
+func (d *decl) clear_visited() {
+	d.flags &^= decl_visited
 }
 
 func (d *decl) expand_or_replace(other *decl) {
@@ -901,6 +908,13 @@ func (d *decl) infer_type() (ast.Expr, *scope) {
 	if d.typ != nil && d.value == nil {
 		return d.typ, d.scope
 	}
+
+	// prevent loops
+	if d.flags&decl_visited != 0 {
+		return nil, nil
+	}
+	d.flags |= decl_visited
+	defer d.clear_visited()
 
 	var scope *scope
 	d.typ, scope, _ = infer_type(d.value, d.scope, d.value_index)
