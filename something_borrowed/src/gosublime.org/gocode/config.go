@@ -7,14 +7,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 )
-
-func config_file() string {
-	return filepath.Join(xdg_home_dir(), "gocode", "config.json")
-}
 
 //-------------------------------------------------------------------------
 // config
@@ -135,7 +130,7 @@ func (this *config) write() error {
 	}
 
 	// make sure config dir exists
-	dir := filepath.Join(xdg_home_dir(), "gocode")
+	dir := config_dir()
 	if !file_exists(dir) {
 		os.MkdirAll(dir, 0755)
 	}
