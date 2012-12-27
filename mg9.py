@@ -310,13 +310,7 @@ def _send():
 
 				proc = gs.attr(PROC_ATTR_NAME)
 				if not proc or proc.poll() is not None:
-					if proc:
-						try:
-							proc.kill()
-							proc.stdout.close()
-						except:
-							pass
-
+					killSrv()
 					maybe_install()
 
 					if not gs.checked(DOMAIN, 'launch _recv'):
@@ -328,7 +322,11 @@ def _send():
 					gs.set_attr(PROC_ATTR_NAME, proc)
 
 					if not proc:
-						gs.notice(DOMAIN, 'Cannot MarGo: %s' % err)
+						gs.notice(DOMAIN, 'Cannot start MarGo: %s' % err)
+						try:
+							cb({}, 'Abort. Cannot start MarGo')
+						except:
+							pass
 						continue
 
 					gsq.launch(DOMAIN, lambda: _read_stdout(proc))
@@ -343,6 +341,7 @@ def _send():
 				ln = '%s %s\n' % (header, body)
 				proc.stdin.write(ln)
 			except Exception:
+				killSrv()
 				gs.println(gs.traceback())
 		except Exception:
 			gs.println(gs.traceback())
