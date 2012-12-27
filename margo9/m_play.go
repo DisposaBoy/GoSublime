@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"go/build"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -59,6 +60,7 @@ func (m *mPlay) Call() (interface{}, string) {
 		killCmd(m.Cid)
 	}
 
+	res := M{}
 	stdErr := bytes.NewBuffer(nil)
 	stdOut := bytes.NewBuffer(nil)
 	runCmd := func(name string, args ...string) (M, error) {
@@ -84,8 +86,20 @@ func (m *mPlay) Call() (interface{}, string) {
 		return res, err
 	}
 
+	if !m.BuildOnly {
+		pkg, err := build.ImportDir(m.Dir, 0)
+		if err != nil {
+			return res, err.Error()
+		}
+
+		if !pkg.IsCommand() {
+			res, err = runCmd("go", "test")
+			return res, errStr(err)
+		}
+	}
+
 	fn := filepath.Join(dir, "gosublime.a.exe")
-	res, err := runCmd("go", "build", "-o", fn)
+	res, err = runCmd("go", "build", "-o", fn)
 	if m.BuildOnly || err != nil {
 		return res, errStr(err)
 	}
