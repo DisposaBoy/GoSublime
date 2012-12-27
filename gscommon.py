@@ -507,21 +507,22 @@ def status_message(s):
 		sm_tm = datetime.datetime.now()
 
 def begin(domain, message, set_status=True, cancel=None):
+	global sm_task_counter
+
 	if message and set_status:
 		status_message('%s: %s' % (domain, message))
 
-	id = uuid.uuid4()
-	dat = {
-		'start': datetime.datetime.now(),
-		'domain': domain,
-		'message': message,
-		'cancel': cancel,
-	}
-
 	with sm_lck:
-		sm_tasks[id] = dat
+		sm_task_counter += 1
+		tid = sm_task_counter
+		sm_tasks[tid] = {
+			'start': datetime.datetime.now(),
+			'domain': domain,
+			'message': message,
+			'cancel': cancel,
+		}
 
-	return id
+	return tid
 
 def end(task_id):
 	with sm_lck:
@@ -682,6 +683,7 @@ try:
 	st2_status_message
 except:
 	sm_lck = threading.Lock()
+	sm_task_counter = 0
 	sm_tasks = {}
 	sm_frame = 0
 	sm_frames = (
