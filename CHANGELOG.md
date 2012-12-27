@@ -1,6 +1,10 @@
 GoSublime Changes
 -----------------
 
+## r12.12.27-1
+	* introducing 9o, the new command-shell. press `ctrl+9` or `super+9` to activate it.
+	  WARNING: in the near future 9o will replace GsShell
+
 ## r12.12.26-1
 	* sync gocode: Windows-specific config_dir/config_file implementation.
 
