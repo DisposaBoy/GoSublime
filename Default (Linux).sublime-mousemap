@@ -3,14 +3,12 @@
 		"button": "button1",
 		"modifiers": ["ctrl", "shift"],
 		"press_command": "drag_select",
-		"command": "gs_doc",
-		"args": {"mode": "goto"}
+		"command": "gs_on_left_click"
 	},
 	{
 		"button": "button2",
 		"modifiers": ["ctrl", "shift"],
 		"press_command": "drag_select",
-		"command": "gs_doc",
-		"args": {"mode": "hint"}
+		"command": "gs_on_right_click"
 	}
 ]

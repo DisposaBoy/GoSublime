@@ -12,6 +12,16 @@ class EV(sublime_plugin.EventListener):
 	def on_activated(self, view):
 		sublime.set_timeout(lambda: do_sync_active_view(view), 0)
 
+class GsOnLeftClick(sublime_plugin.TextCommand):
+	def run(self, edit):
+		if gs.is_go_source_view(self.view):
+			self.view.run_command('gs_doc', {"mode": "goto"})
+
+class GsOnRightClick(sublime_plugin.TextCommand):
+	def run(self, edit):
+		if gs.is_go_source_view(self.view):
+			self.view.run_command('gs_doc', {"mode": "hint"})
+
 def do_post_save(view):
 	if not gs.is_pkg_view(view):
 		return
