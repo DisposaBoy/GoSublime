@@ -120,6 +120,13 @@ def maybe_install():
 		install('', True)
 
 def install(aso_tokens, force_install):
+	k = 'mg9.install.%s' % REV
+	if gs.attr(k, False):
+		gs.error(DOMAIN, 'Installation aborted. Install command already called for GoSublime %s.' % REV)
+		return
+
+	gs.set_attr(k, True)
+
 	init_start = time.time()
 
 	try:
