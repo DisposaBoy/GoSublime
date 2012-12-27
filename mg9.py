@@ -359,7 +359,6 @@ def _read_stdout(proc):
 def killSrv():
 	p = gs.del_attr(PROC_ATTR_NAME)
 	if p:
-		print p
 		try:
 			p.stdout.close()
 		except Exception:
