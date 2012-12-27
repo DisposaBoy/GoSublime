@@ -223,6 +223,9 @@ def notify(domain, txt):
 	status_message(txt)
 
 def notice(domain, txt):
+	error(domain, txt)
+
+def error(domain, txt):
 	txt = "%s: %s" % (domain, txt)
 	log(txt)
 	status_message(txt)
