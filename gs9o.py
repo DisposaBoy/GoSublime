@@ -28,7 +28,7 @@ DEFAULT_COMMANDS = [
 	'go install',
 	'go list',
 	'go run',
-	'9 play',
+	'9 run',
 	'9 replay',
 	'go test',
 	'go tool',
@@ -295,7 +295,7 @@ def cmd_go(view, edit, args, wd, rkey):
 	mg9.acall('sh', a, cb)
 
 def cmd_9(view, edit, args, wd, rkey):
-	if len(args) == 0 or args[0] not in ('play', 'replay', 'build'):
+	if len(args) == 0 or args[0] not in ('run', 'replay', 'build'):
 		push_output(view, rkey, ('9: invalid args %s' % args))
 		return
 
