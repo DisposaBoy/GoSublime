@@ -1,6 +1,9 @@
 GoSublime Changes
 -----------------
 
+## r12.12.27-2
+	* impl `go test` in 9o run and replay
+
 ## r12.12.27-1
 	* introducing 9o, the new command-shell. press `ctrl+9` or `super+9` to activate it.
 	  WARNING: in the near future 9o will replace GsShell
