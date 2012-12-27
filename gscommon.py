@@ -230,6 +230,21 @@ def error(domain, txt):
 	log(txt)
 	status_message(txt)
 
+def error_traceback(domain, status_txt=''):
+	tb = traceback().strip()
+	if status_txt:
+		prefix = '%s\n' % status_txt
+	else:
+		prefix = ''
+		i = tb.rfind('\n')
+		if i > 0:
+			status_txt = tb[i:].strip()
+		else:
+			status_txt = tb
+
+	log("%s: %s%s" % (domain, prefix, tb))
+	status_message("%s: %s" % (domain, status_txt))
+
 def notice_undo(domain, txt, view, should_undo):
 	def cb():
 		if should_undo:
