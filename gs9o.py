@@ -18,6 +18,11 @@ URL_PATH_PAT = re.compile(r'^(?:\w+://|(?:www|(?:\w+\.)*(?:golang|pkgdoc|gosubli
 HOURGLASS = u'\u231B'
 
 DEFAULT_COMMANDS = [
+	'help',
+	'run',
+	'build',
+	'replay',
+	'clear',
 	'go build',
 	'go clean',
 	'go doc',
@@ -28,8 +33,6 @@ DEFAULT_COMMANDS = [
 	'go install',
 	'go list',
 	'go run',
-	'9 run',
-	'9 replay',
 	'go test',
 	'go tool',
 	'go version',
@@ -83,7 +86,10 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		was_empty = v.size() == 0
 		s = '[ %s ] # \n' % wd
 
-		if v.size() == 0 or v.substr(v.size()-1) == '\n':
+		if was_empty:
+			v.insert(edit, 0, 'GoSublime %s 9o: type `9 help` for help and command documentation\n\n' % mg9.REV)
+
+		if was_empty or v.substr(v.size()-1) == '\n':
 			v.insert(edit, v.size(), s)
 		else:
 			v.insert(edit, v.size(), '\n'+s)
@@ -293,6 +299,19 @@ def cmd_go(view, edit, args, wd, rkey):
 		}
 	}
 	mg9.acall('sh', a, cb)
+
+def cmd_help(view, edit, args, wd, rkey):
+	gs.focus(gs.dist_path('9o.md'))
+	push_output(view, rkey, '')
+
+def cmd_run(view, edit, args, wd, rkey):
+	cmd_9(view, edit, gs.lst('run', args), wd, rkey)
+
+def cmd_replay(view, edit, args, wd, rkey):
+	cmd_9(view, edit, gs.lst('replay', args), wd, rkey)
+
+def cmd_build(view, edit, args, wd, rkey):
+	cmd_9(view, edit, gs.lst('build', args), wd, rkey)
 
 def cmd_9(view, edit, args, wd, rkey):
 	if len(args) == 0 or args[0] not in ('run', 'replay', 'build'):
