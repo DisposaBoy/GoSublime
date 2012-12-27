@@ -15,8 +15,8 @@ type mPkgdoc struct {
 }
 
 type mPkgdocDoc struct {
-	Path string
-	Doc  string
+	Path string `json:"path"`
+	Doc  string `json:"doc"`
 }
 
 func setupReq(req *http.Request) {
@@ -74,7 +74,7 @@ func mPkgdocSearch(m *mPkgdoc) (interface{}, string) {
 	}
 	defer resp.Body.Close()
 
-	packages := []mPkgdocDoc{}
+	results := []mPkgdocDoc{}
 	rd := bufio.NewReader(resp.Body)
 	for {
 		s, err := rd.ReadBytes('\n')
@@ -92,11 +92,11 @@ func mPkgdocSearch(m *mPkgdoc) (interface{}, string) {
 			if len(l) == 2 {
 				v.Doc = string(l[1])
 			}
-			packages = append(packages, v)
+			results = append(results, v)
 		}
 	}
 
-	res["packages"] = packages
+	res["results"] = results
 	return res, ""
 }
 
