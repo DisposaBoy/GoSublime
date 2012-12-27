@@ -199,10 +199,10 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			if cmd:
 				vs = view.settings()
 				lc_key = '%s.last_command' % DOMAIN
-				if cmd[0] == '#':
+				if cmd.startswith('#'):
 					rep = vs.get(lc_key, '')
 					if rep:
-						view.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd[1:])))
+						view.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd.lstrip('# \t'))))
 					return
 				elif cmd == '!!':
 					cmd = vs.get(lc_key, '')
