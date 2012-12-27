@@ -7,30 +7,30 @@
 		<string>gosublime-commander</string>
 	</array>
 	<key>name</key>
-	<string>GoSublime Commander</string>
+	<string>GoSublime 9o</string>
 	<key>patterns</key>
 	<array>
 		<dict>
 			<key>match</key>
 			<string>((?:\w+://)\S+)</string>
 			<key>name</key>
-			<string>path.gscommander storage.type.class.gscommander</string>
+			<string>path.9o storage.type.class.9o</string>
 		</dict>
 		<dict>
 			<key>match</key>
 			<string>((?:(?:\w+:|[.]*)?[\\/].+?|(\S+))(?:[.][^\d][-~\w]*)+(?:[:]\d+){0,2})</string>
 			<key>name</key>
-			<string>path.gscommander storage.type.class.gscommander</string>
+			<string>path.9o storage.type.class.9o</string>
 		</dict>
 		<dict>
 			<key>match</key>
 			<string>(#.+)</string>
 			<key>name</key>
-			<string>prompt.gscommander string.gscommander</string>
+			<string>prompt.9o string.9o</string>
 		</dict>
 	</array>
 	<key>scopeName</key>
-	<string>text.gscommander</string>
+	<string>text.9o</string>
 	<key>uuid</key>
 	<string>78c486ec-0101-11e2-a85a-00262d996a67</string>
 </dict>

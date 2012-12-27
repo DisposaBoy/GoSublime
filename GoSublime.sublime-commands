@@ -104,12 +104,12 @@
 		"args": { "kill": true }
 	},
 	{
-		"caption": "GoSublime: Activate GsCommander",
-		"command": "gs_commander_open"
+		"caption": "GoSublime: Activate 9o",
+		"command": "gs9o_open"
 	},
 	{
-		"caption": "GoSublime: (GsCommander) open file/url",
-		"command": "gs_commander_open_selection"
+		"caption": "GoSublime: (9o) open file/url",
+		"command": "gs9o_open_selection"
 	},
 	{
 		"caption": "GoSublime: Default Settings",

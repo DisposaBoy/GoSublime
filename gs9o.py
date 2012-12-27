@@ -9,7 +9,7 @@ import mg9
 import shlex
 import uuid
 
-DOMAIN = "GsCommander"
+DOMAIN = "9o"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
 SPLIT_FN_POS_PAT = re.compile(r'(.+?)(?:[:](\d+))?(?:[:](\d+))?$')
 URL_SCHEME_PAT = re.compile(r'^\w+://')
@@ -48,19 +48,19 @@ def active_wd(win=None):
 	return gs.basedir_or_cwd(v.file_name() if v else '')
 
 def wdid(wd):
-	return 'gscommander://%s' % wd
+	return '9o://%s' % wd
 
 
 class EV(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
 		pos = gs.sel(view).begin()
-		if view.score_selector(pos, 'text.gscommander') == 0:
+		if view.score_selector(pos, 'text.9o') == 0:
 			return []
 		cl = []
 		cl.extend(DEFAULT_CL)
 		return (cl, AC_OPTS)
 
-class GsCommanderInsertLineCommand(sublime_plugin.TextCommand):
+class Gs9oInsertLineCommand(sublime_plugin.TextCommand):
 	def run(self, edit, after=True):
 		insln = lambda: self.view.insert(edit, gs.sel(self.view).begin(), "\n")
 		if after:
@@ -72,13 +72,13 @@ class GsCommanderInsertLineCommand(sublime_plugin.TextCommand):
 			self.view.run_command("move", {"by": "lines", "forward": False})
 
 
-class GsCommanderInitCommand(sublime_plugin.TextCommand):
+class Gs9oInitCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None):
 		v = self.view
 		vs = v.settings()
 
 		if not wd:
-			wd = vs.get('gscommander.wd', active_wd(win=v.window()))
+			wd = vs.get('9o.wd', active_wd(win=v.window()))
 
 		was_empty = v.size() == 0
 		s = '[ %s ] # \n' % wd
@@ -91,7 +91,7 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		v.sel().clear()
 		n = v.size()-1
 		v.sel().add(sublime.Region(n, n))
-		vs.set("gscommander.wd", wd)
+		vs.set("9o.wd", wd)
 		vs.set("rulers", [])
 		vs.set("fold_buttons", True)
 		vs.set("fade_fold_buttons", False)
@@ -109,16 +109,16 @@ class GsCommanderInitCommand(sublime_plugin.TextCommand):
 		vs.set("highlight_line", True)
 		vs.set("draw_indent_guides", True)
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
-		v.set_syntax_file('Packages/GoSublime/GsCommander.tmLanguage')
+		v.set_syntax_file('Packages/GoSublime/9o.tmLanguage')
 
 		if not was_empty:
 			v.show(v.size()-1)
 
-class GsCommanderOpenV(sublime_plugin.TextCommand):
+class Gs9oOpenV(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None, run=[]):
-		self.view.window().run_command('gs_commander_open', {'wd': wd, 'run': run})
+		self.view.window().run_command('gs9o_open', {'wd': wd, 'run': run})
 
-class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
+class Gs9oOpenCommand(sublime_plugin.WindowCommand):
 	def run(self, wd=None, run=[]):
 		win = self.window
 		wid = win.id()
@@ -134,7 +134,7 @@ class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
 
 		win.run_command("show_panel", {"panel": ("output.%s" % id)})
 		win.focus_view(v)
-		v.run_command('gs_commander_init', {'wd': wd})
+		v.run_command('gs9o_init', {'wd': wd})
 
 		if run:
 			cmd = ' '.join(run)
@@ -143,19 +143,19 @@ class GsCommanderOpenCommand(sublime_plugin.WindowCommand):
 				v.insert(edit, v.line(v.size()-1).end(), cmd)
 				v.sel().clear()
 				v.sel().add(v.line(v.size()-1).end())
-				v.run_command('gs_commander_exec')
+				v.run_command('gs9o_exec')
 			finally:
 				v.end_edit(edit)
 
-class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
+class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		pos = gs.sel(self.view).begin()
-		return self.view.score_selector(pos, 'text.gscommander') > 0
+		return self.view.score_selector(pos, 'text.9o') > 0
 
 	def run(self, edit):
 		v = self.view
 		pos = gs.sel(v).begin()
-		inscope = lambda p: v.score_selector(p, 'path.gscommander') > 0
+		inscope = lambda p: v.score_selector(p, 'path.9o') > 0
 		if not inscope(pos):
 			pos -= 1
 			if not inscope(pos):
@@ -171,7 +171,7 @@ class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 			except Exception:
 				gs.notice(DOMAIN, gs.traceback())
 		else:
-			wd = v.settings().get('gscommander.wd') or active_wd()
+			wd = v.settings().get('9o.wd') or active_wd()
 			m = SPLIT_FN_POS_PAT.match(path)
 			path = gs.apath((m.group(1) if m else path), wd)
 			row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
@@ -182,16 +182,16 @@ class GsCommanderOpenSelectionCommand(sublime_plugin.TextCommand):
 			else:
 				gs.notice(DOMAIN, "Invalid path `%s'" % path)
 
-class GsCommanderExecCommand(sublime_plugin.TextCommand):
+class Gs9oExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		pos = gs.sel(self.view).begin()
-		return self.view.score_selector(pos, 'text.gscommander') > 0
+		return self.view.score_selector(pos, 'text.9o') > 0
 
 	def run(self, edit):
 		view = self.view
 		pos = gs.sel(view).begin()
 		line = view.line(pos)
-		wd = view.settings().get('gscommander.wd')
+		wd = view.settings().get('9o.wd')
 
 		ln = view.substr(line).split('#', 1)
 		if len(ln) == 2:
@@ -210,13 +210,13 @@ class GsCommanderExecCommand(sublime_plugin.TextCommand):
 					vs.set(lc_key, cmd)
 
 			if not cmd:
-				view.run_command('gs_commander_init')
+				view.run_command('gs9o_init')
 				return
 
 			view.replace(edit, line, (u'[ %s %s ]' % (cmd, HOURGLASS)))
-			rkey = 'gscommander.exec.%s' % uuid.uuid4()
+			rkey = '9o.exec.%s' % uuid.uuid4()
 			view.add_regions(rkey, [sublime.Region(line.begin(), view.size())], '')
-			view.run_command('gs_commander_init')
+			view.run_command('gs9o_init')
 
 			cli = cmd.split(' ', 1)
 
@@ -276,7 +276,7 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 
 def cmd_reset(view, edit, args, wd, rkey):
 	view.erase(edit, sublime.Region(0, view.size()))
-	view.run_command('gs_commander_init')
+	view.run_command('gs9o_init')
 
 def cmd_clear(view, edit, args, wd, rkey):
 	cmd_reset(view, edit, args, wd, rkey)
