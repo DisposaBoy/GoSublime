@@ -97,7 +97,7 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 					m[len(ents)] = tid
 
 				ents.append([
-					'%s%s' % (t['domain'], cancel_text),
+					'#%s %s%s' % (tid, t['domain'], cancel_text),
 					t['message'],
 					'started: %s' % t['start'],
 					'elapsed: %s' % delta
