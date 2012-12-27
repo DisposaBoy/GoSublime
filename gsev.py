@@ -16,6 +16,8 @@ class GsOnLeftClick(sublime_plugin.TextCommand):
 	def run(self, edit):
 		if gs.is_go_source_view(self.view):
 			self.view.run_command('gs_doc', {"mode": "goto"})
+		elif self.view.score_selector(gs.sel(self.view).begin(), "text.9o") > 0:
+			self.view.window().run_command("gs9o_open_selection")
 
 class GsOnRightClick(sublime_plugin.TextCommand):
 	def run(self, edit):
