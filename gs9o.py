@@ -87,7 +87,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		s = '[ %s ] # \n' % wd
 
 		if was_empty:
-			v.insert(edit, 0, 'GoSublime %s 9o: type `9 help` for help and command documentation\n\n' % mg9.REV)
+			v.insert(edit, 0, 'GoSublime %s 9o: type `help` for help and command documentation\n\n' % mg9.REV)
 
 		if was_empty or v.substr(v.size()-1) == '\n':
 			v.insert(edit, v.size(), s)
