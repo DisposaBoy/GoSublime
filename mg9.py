@@ -59,7 +59,7 @@ class Request(object):
 
 class GsSanityCheckCommand(sublime_plugin.WindowCommand):
 	def run(self):
-		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(['%6s: %s' % ln for ln in _sanity_check()])
+		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(['%7s: %s' % ln for ln in _sanity_check()])
 		gs.show_output(DOMAIN, s, print_output=False)
 
 def _sanity_check(env={}):
@@ -67,6 +67,7 @@ def _sanity_check(env={}):
 		env = gs.env()
 
 	return [
+		('version', REV),
 		('~bin', '%s' % gs.home_path('bin')),
 		('margo0', '%s (%s)' % _tp(MARGO0_BIN)),
 		('margo9', '%s (%s)' % _tp(MARGO9_BIN)),
