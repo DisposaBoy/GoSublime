@@ -76,21 +76,11 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		ents = []
 		now = datetime.datetime.now()
-		with gs.sm_lck:
-			tasks = gs.sm_tasks.values()
-
 		m = {}
 		try:
-			tasks = []
-
-			for tid, t in gs.sm_tasks.items():
-				tasks.append((tid, t))
-			tasks.sort(key=lambda a: a[1]['start'], reverse=True)
-
+			tasks = gs.task_list()
 			ents.insert(0, ['', '%d active task(s)' % len(tasks)])
-			for a in tasks:
-				tid, t = a
-				delta = (now - t['start'])
+			for tid, t in tasks:
 				cancel_text = ''
 				if t['cancel']:
 					cancel_text = ' (cancel task)'
@@ -100,16 +90,12 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 					'#%s %s%s' % (tid, t['domain'], cancel_text),
 					t['message'],
 					'started: %s' % t['start'],
-					'elapsed: %s' % delta
+					'elapsed: %s' % (now - t['start']),
 				])
 		except:
 			ents = [['', 'Failed to gather active tasks']]
 
 		def cb(i):
-			t = gs.task(m.get(i, ''))
-			if t and t['cancel']:
-				s = 'are you sure you want to end task: %s: %s' % (t['domain'], t['message'])
-				if sublime.ok_cancel_dialog(s):
-					t['cancel']()
+			gs.cancel_task(m.get(i, ''))
 
 		self.window.show_quick_panel(ents, cb)
