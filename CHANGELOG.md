@@ -1,6 +1,9 @@
 GoSublime Changes
 -----------------
 
+## r12.12.29-1
+	* impl 9o tskill command. see 9o(ctrl+9) "help" for more info
+
 ## r12.12.27-2
 	* impl `go test` in 9o run and replay
 
