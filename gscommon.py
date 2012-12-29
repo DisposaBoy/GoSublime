@@ -532,7 +532,7 @@ def begin(domain, message, set_status=True, cancel=None):
 
 	with sm_lck:
 		sm_task_counter += 1
-		tid = sm_task_counter
+		tid = 't%d' % sm_task_counter
 		sm_tasks[tid] = {
 			'start': datetime.datetime.now(),
 			'domain': domain,
