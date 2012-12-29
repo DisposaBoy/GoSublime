@@ -557,6 +557,20 @@ def clear_tasks():
 	with sm_lck:
 		sm_tasks = {}
 
+def task_list():
+	with sm_lck:
+		return sorted(sm_tasks.iteritems())
+
+def cancel_task(tid):
+	t = task(tid)
+	if t and t['cancel']:
+		s = 'are you sure you want to end task: #%s %s: %s' % (tid, t['domain'], t['message'])
+		if sublime.ok_cancel_dialog(s):
+			t['cancel']()
+
+		return True
+	return False
+
 def show_quick_panel(items, cb=None):
 	def f():
 		win = sublime.active_window()
