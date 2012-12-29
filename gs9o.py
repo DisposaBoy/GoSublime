@@ -8,6 +8,7 @@ import webbrowser
 import mg9
 import shlex
 import uuid
+import datetime
 
 DOMAIN = "9o"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
@@ -23,6 +24,7 @@ DEFAULT_COMMANDS = [
 	'build',
 	'replay',
 	'clear',
+	'tskill',
 	'go build',
 	'go clean',
 	'go doc',
@@ -351,3 +353,34 @@ def cmd_9(view, edit, args, wd, rkey):
 					a['src'] = av.substr(sublime.Region(0, av.size()))
 
 	mg9.acall('play', a, cb)
+
+def cmd_tskill(view, edit, args, wd, rkey):
+	if len(args) > 0:
+		l = []
+		for tid in args:
+			tid = tid.lstrip('#')
+			l.append('kill %s: %s' % (tid, ('yes' if gs.cancel_task(tid) else 'no')))
+
+		push_output(view, rkey, '\n'.join(l))
+		return
+
+	try:
+		now = datetime.datetime.now().replace(microsecond=0)
+		with gs.sm_lck:
+			tasks = sorted(gs.sm_tasks.iteritems())
+
+		l = []
+		for tid, t in tasks:
+			if t['cancel']:
+				pfx = '#%s' % tid
+			else:
+				pfx = '(uninterruptible)'
+
+			l.append('%s %s %s: %s' % (pfx, (now - t['start'].replace(microsecond=0)), t['domain'], t['message']))
+
+		s = '\n'.join(l)
+	except Exception as ex:
+		gs.error_traceback(DOMAIN)
+		s = 'Error: %s' % ex
+	push_output(view, rkey, s)
+
