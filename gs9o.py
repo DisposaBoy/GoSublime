@@ -25,6 +25,8 @@ DEFAULT_COMMANDS = [
 	'replay',
 	'clear',
 	'tskill',
+	'tskill replay',
+	'tskill go',
 	'go build',
 	'go clean',
 	'go doc',
@@ -43,10 +45,9 @@ DEFAULT_COMMANDS = [
 ]
 DEFAULT_CL = [(s, s) for s in DEFAULT_COMMANDS]
 
-try:
-	stash
-except:
+if not gs.checked(DOMAIN, '_vars'):
 	stash = {}
+	tid_alias = {}
 
 def active_wd(win=None):
 	_, v = gs.win_view(win=win)
@@ -269,6 +270,7 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 	if not cid:
 		cid = '9%s-%s' % (name, uuid.uuid4())
 	tid = gs.begin(dmn, msg, set_status=False, cancel=lambda: mg9.acall('kill', {'cid': cid}, None))
+	tid_alias['%s-%s' % (name, wd)] = tid
 
 	def cb(res, err):
 		out = '\n'.join(s for s in (res.get('out'), res.get('err'), err) if s)
@@ -288,7 +290,7 @@ def cmd_clear(view, edit, args, wd, rkey):
 	cmd_reset(view, edit, args, wd, rkey)
 
 def cmd_go(view, edit, args, wd, rkey):
-	cid, cb = _9_begin_call('go', view, edit, args, wd, rkey, '')
+	cid, cb, tid = _9_begin_call('go', view, edit, args, wd, rkey, '9go-%s' % wd)
 	a = {
 		'cid': cid,
 		'env': gs.env(),
@@ -357,6 +359,7 @@ def cmd_tskill(view, edit, args, wd, rkey):
 		l = []
 		for tid in args:
 			tid = tid.lstrip('#')
+			tid = tid_alias.get('%s-%s' % (tid, wd), tid)
 			l.append('kill %s: %s' % (tid, ('yes' if gs.cancel_task(tid) else 'no')))
 
 		push_output(view, rkey, '\n'.join(l))
