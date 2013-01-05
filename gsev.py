@@ -1,7 +1,8 @@
-import sublime
-import sublime_plugin
 import gscommands
 import gscommon as gs
+import gstest
+import sublime
+import sublime_plugin
 
 DOMAIN = 'GsEV'
 
@@ -14,15 +15,19 @@ class EV(sublime_plugin.EventListener):
 
 class GsOnLeftClick(sublime_plugin.TextCommand):
 	def run(self, edit):
-		if gs.is_go_source_view(self.view):
-			self.view.run_command('gs_doc', {"mode": "goto"})
-		elif self.view.score_selector(gs.sel(self.view).begin(), "text.9o") > 0:
-			self.view.window().run_command("gs9o_open_selection")
+		view = self.view
+		if gs.is_go_source_view(view):
+			if not gstest.handle_action(view, 'left-click'):
+				view.run_command('gs_doc', {"mode": "goto"})
+		elif view.score_selector(gs.sel(view).begin(), "text.9o") > 0:
+			view.window().run_command("gs9o_open_selection")
 
 class GsOnRightClick(sublime_plugin.TextCommand):
 	def run(self, edit):
-		if gs.is_go_source_view(self.view):
-			self.view.run_command('gs_doc', {"mode": "hint"})
+		view = self.view
+		if gs.is_go_source_view(view):
+			if not gstest.handle_action(view, 'right-click'):
+				view.run_command('gs_doc', {"mode": "hint"})
 
 def do_post_save(view):
 	if not gs.is_pkg_view(view):
