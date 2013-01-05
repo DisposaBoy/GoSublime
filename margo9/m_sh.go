@@ -27,6 +27,8 @@ func (m *mSh) Call() (interface{}, string) {
 
 	if m.Cid == "" {
 		m.Cid = "sh.auto." + numbers.nextString()
+	} else {
+		killCmd(m.Cid)
 	}
 
 	start := time.Now()
