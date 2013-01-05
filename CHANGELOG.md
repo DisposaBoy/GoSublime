@@ -1,6 +1,17 @@
 GoSublime Changes
 -----------------
 
+## r13.01.05-2
+	* added two task aliases to tskill
+		`tskill replay` will kill/cancel the last replay command
+
+		`tskill go` will kill the last go command (go test, etc.). as a consequence,
+			the 9o `go` command now acts like the `replay` command in that kills any previous instance
+
+	* added new setting autosave:
+		controls whether or not pkg files should be automatically saved when necessary
+		(e.g. when running 9o `replay` or `go test` commands)
+
 ## r13.01.05-1
 	* impl click-tests. i.e `ctrl+shift`,`left-click` on words that start with Test,Benchmark or Example
 	will run go corresponding test or bench. `ctrl+shift`,`right-click` will do the same but using only the prefix
