@@ -119,7 +119,9 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
 		v.set_syntax_file('Packages/GoSublime/9o.tmLanguage')
 
-		if not was_empty:
+		if was_empty:
+			v.show(0)
+		else:
 			v.show(v.size()-1)
 
 class Gs9oOpenV(sublime_plugin.TextCommand):
