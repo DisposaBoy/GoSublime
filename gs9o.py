@@ -264,6 +264,16 @@ def push_output(view, rkey, out, hourglass_repl=''):
 	finally:
 		view.end_edit(edit)
 
+def _save_all(win, wd):
+	if gs.setting('autosave') is True and win is not None:
+		for v in win.views():
+			try:
+				fn = v.file_name()
+				if fn and v.is_dirty() and fn.endswith('.go') and os.path.dirname(fn) == wd:
+					v.run_command('gs_fmt_save')
+			except Exception:
+				gs.println(gs.traceback())
+
 def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 	dmn = '%s: 9 %s' % (DOMAIN, name)
 	msg = '[ %s ] # 9 %s' % (wd, ' '.join(args))
@@ -290,7 +300,9 @@ def cmd_clear(view, edit, args, wd, rkey):
 	cmd_reset(view, edit, args, wd, rkey)
 
 def cmd_go(view, edit, args, wd, rkey):
-	cid, cb, tid = _9_begin_call('go', view, edit, args, wd, rkey, '9go-%s' % wd)
+	_save_all(view.window(), wd)
+
+	cid, cb = _9_begin_call('go', view, edit, args, wd, rkey, '9go-%s' % wd)
 	a = {
 		'cid': cid,
 		'env': gs.env(),
@@ -340,14 +352,7 @@ def cmd_9(view, edit, args, wd, rkey):
 		if av is not None:
 			fn = av.file_name()
 			if fn:
-				basedir = gs.basedir_or_cwd(fn)
-				for v in win.views():
-					try:
-						fn = v.file_name()
-						if fn and v.is_dirty() and fn.endswith('.go') and os.path.dirname(fn) == basedir:
-							v.run_command('gs_fmt_save')
-					except Exception:
-						gs.println(gs.traceback())
+				_save_all(win, wd)
 			else:
 				if gs.is_go_source_view(av, False):
 					a['src'] = av.substr(sublime.Region(0, av.size()))
