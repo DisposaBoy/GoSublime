@@ -124,11 +124,11 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 
 class Gs9oOpenV(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None, run=[]):
-		self.view.window().run_command('gs9o_open', {'wd': wd, 'run': run})
+		self.view.run_command('gs9o_open', {'wd': wd, 'run': run})
 
-class Gs9oOpenCommand(sublime_plugin.WindowCommand):
-	def run(self, wd=None, run=[]):
-		win = self.window
+class Gs9oOpenCommand(sublime_plugin.TextCommand):
+	def run(self, edit, wd=None, run=[]):
+		win = self.view.window()
 		wid = win.id()
 		if not wd:
 			wd = active_wd(win=win)
@@ -146,14 +146,10 @@ class Gs9oOpenCommand(sublime_plugin.WindowCommand):
 
 		if run:
 			cmd = ' '.join(run)
-			edit = v.begin_edit()
-			try:
-				v.insert(edit, v.line(v.size()-1).end(), cmd)
-				v.sel().clear()
-				v.sel().add(v.line(v.size()-1).end())
-				v.run_command('gs9o_exec')
-			finally:
-				v.end_edit(edit)
+			v.insert(edit, v.line(v.size()-1).end(), cmd)
+			v.sel().clear()
+			v.sel().add(v.line(v.size()-1).end())
+			v.run_command('gs9o_exec')
 
 class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
