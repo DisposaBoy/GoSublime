@@ -1,6 +1,16 @@
 GoSublime Changes
 -----------------
 
+## r13.01.05-1
+	* impl click-tests. i.e `ctrl+shift`,`left-click` on words that start with Test,Benchmark or Example
+	will run go corresponding test or bench. `ctrl+shift`,`right-click` will do the same but using only the prefix
+	e.g.
+		`ctrl+shift`,`left-click` on `BenchmarkNewFunc` will run only `BenchmarkNew`:
+			`go test -test.run=none -test.bench="^BenchmarkNew$"`
+
+		`ctrl+shift`,`right-click` on `BenchmarkNewFunc` will run all benchmarks:
+			`go test -test.run=none -test.bench="^Benchmark.*"`
+
 ## r12.12.29-1
 	* impl 9o tskill command. see 9o(ctrl+9) "help" for more info
 
