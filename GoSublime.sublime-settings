@@ -16,6 +16,9 @@
 	// the special entry "$CMD" is replaced by the actual command
 	"shell": [],
 
+	// whether or not pkg files should be automatically saved when necessary (e.g. when running 9o `replay` or `go test` commands)
+	"autosave": true,
+
 	// Whether or not gscomplete(gocode) is enabled
 	"gscomplete_enabled": true,
 
