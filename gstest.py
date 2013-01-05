@@ -1,10 +1,14 @@
-import gscommon as gs, margo
-import sublime, sublime_plugin
-import os, re
+import gs9o
+import gscommon as gs
+import margo
+import os
+import re
+import sublime
+import sublime_plugin
 
 DOMAIN = 'GsTest'
 
-TEST_PAT = re.compile(r'^(Test|Example|Benchmark)\w')
+TEST_PAT = re.compile(r'^((Test|Example|Benchmark)\w*)')
 
 class GsTestCommand(sublime_plugin.WindowCommand):
 	def is_enabled(self):
@@ -32,9 +36,9 @@ class GsTestCommand(sublime_plugin.WindowCommand):
 		decls.extend(res.get('pkg_decls', []))
 		for d in decls:
 			name = d['name']
-			m = TEST_PAT.match(name)
-			if m and d['kind'] == 'func' and d['repr'] == '':
-				mats[m.group(1)] = True
+			prefix, _ =  match_prefix_name(name)
+			if prefix and d['kind'] == 'func' and d['repr'] == '':
+				mats[True] = prefix
 				args[name] = name
 
 		names = sorted(args.keys())
@@ -61,4 +65,27 @@ class GsTestCommand(sublime_plugin.WindowCommand):
 				win.run_command('gs_shell', {'run': s})
 
 		win.show_quick_panel(ents, cb)
+
+
+def match_prefix_name(s):
+	m = TEST_PAT.match(s)
+	return (m.group(2), m.group(1)) if m else ('', '')
+
+def handle_action(view, action):
+	prefix, name = match_prefix_name(view.substr(view.word(gs.sel(view))))
+	ok = prefix != ''
+	if ok:
+		if action == 'right-click':
+			pat = '^%s.*' % prefix
+		else:
+			pat = '^%s$' % name
+
+		if prefix == 'Benchmark':
+			cmd = ['go', 'test', '-test.run=none', '-test.bench="%s"' % pat]
+		else:
+			cmd = ['go', 'test', '-test.run="%s"' % pat]
+
+		view.run_command('gs9o_open', {'run': cmd})
+
+	return ok
 
