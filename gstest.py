@@ -72,8 +72,9 @@ def match_prefix_name(s):
 	return (m.group(2), m.group(1)) if m else ('', '')
 
 def handle_action(view, action):
+	fn = view.file_name()
 	prefix, name = match_prefix_name(view.substr(view.word(gs.sel(view))))
-	ok = prefix != ''
+	ok = prefix and fn and fn.endswith('_test.go')
 	if ok:
 		if action == 'right-click':
 			pat = '^%s.*' % prefix
