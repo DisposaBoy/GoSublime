@@ -181,18 +181,23 @@ def aso():
 def save_aso():
 	return sublime.save_settings("GoSublime-aux.sublime-settings")
 
+def settings_dict():
+	m = copy.copy(_settings)
+
+	for k in m:
+		v = attr(k, None)
+		if v is not None:
+			m[k] = v
+
+	nv = dval(copy.copy(_settings.get('env')), {})
+	lpe = dval(attr('last_active_project_settings', {}).get('env'), {})
+	nv.update(lpe)
+	m['env'] = nv
+
+	return m
+
 def setting(k, d=None):
-	if k == 'env':
-		nv = dval(copy.copy(_settings.get('env')), {})
-		lpe = dval(attr('last_active_project_settings', {}).get('env'), {})
-		nv.update(lpe)
-		return nv
-
-	v = attr(k, None)
-	if v is not None:
-		return v
-
-	return copy.copy(_settings.get(k, d))
+	return settings_dict().get(k, d)
 
 def println(*a):
 	l = []
