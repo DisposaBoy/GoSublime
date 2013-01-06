@@ -131,7 +131,7 @@ def temp_file(suffix='', prefix='', delete=True):
 	return (f, '')
 
 def basedir_or_cwd(fn):
-	if fn and not fn.startswith('view://'):
+	if fn and not fn.startswith('gs.view://'):
 		return os.path.dirname(fn)
 	return os.getcwd()
 
@@ -441,7 +441,7 @@ def view_fn(view):
 	if view is not None:
 		if view.file_name():
 			return view.file_name()
-		return 'view://%s' % view.id()
+		return 'gs.view://%s' % view.id()
 	return ''
 
 def view_src(view):
@@ -457,7 +457,7 @@ def win_view(vfn=None, win=None):
 	if win:
 		if not vfn or vfn == "<stdin>":
 			view = win.active_view()
-		elif vfn.startswith("view://"):
+		elif vfn.startswith("gs.view://") or vfn.startswith("view://"):
 			try:
 				vid = int(vfn[7:])
 				for v in win.views():
