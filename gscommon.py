@@ -473,7 +473,7 @@ def win_view(vfn=None, win=None):
 def do_focus(fn, row, col, win=None, focus_pkg=True):
 	win, view = win_view(fn, win)
 	if win is None or view is None:
-		notice(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
+		notify(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
 	elif view.is_loading():
 		focus(fn, row, col, win, focus_pkg)
 	else:
