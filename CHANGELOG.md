@@ -1,6 +1,10 @@
 GoSublime Changes
 -----------------
 
+## r13.01.06-1
+	* add two new 9o command `env` and `settings` see 9o `help` for more details
+	* 9o now supports a new scheme `gs.packages` e.g. `ctrl+shft`, left-click on gs.packages://GoSublime/9o.md will open the 9o docs
+
 ## r13.01.05-2
 	* added two task aliases to tskill
 		`tskill replay` will kill/cancel the last replay command
