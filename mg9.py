@@ -38,8 +38,8 @@ REV = CHANGES[0][0]
 # so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
 MARGO0_SRC = gs.dist_path('something_borrowed/margo0')
 MARGO9_SRC = gs.dist_path('margo9')
-MARGO0_EXE = 'gosublime.margo0.exe'
-MARGO9_EXE = 'gosublime.margo9.exe'
+MARGO0_EXE = 'gosublime.%s.margo0.exe' % REV
+MARGO9_EXE = 'gosublime.%s.margo9.exe' % REV
 MARGO0_BIN = gs.home_path('bin', MARGO0_EXE)
 MARGO9_BIN = gs.home_path('bin', MARGO9_EXE)
 
@@ -191,6 +191,20 @@ def install(aso_tokens, force_install):
 	killSrv()
 	start = time.time()
 	# acall('ping', {}, lambda res, err: gs.println('MarGo Ready %0.3fs' % (time.time() - start)))
+
+	report_x = lambda: gs.println("GoSublime: Exception while cleaning up old binaries", gs.traceback())
+	try:
+		d = gs.home_path('bin')
+		for fn in os.listdir(d):
+			try:
+				if fn not in (MARGO9_EXE, MARGO0_EXE) and fn.startswith(('gosublime', 'gocode', 'margo')):
+					fn = os.path.join(d, fn)
+					gs.println("GoSublime: removing old binary: %s" % fn)
+					os.remove(fn)
+			except Exception:
+				report_x()
+	except Exception:
+		report_x()
 
 def _fasthash(fn):
 	try:
