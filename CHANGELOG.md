@@ -1,6 +1,16 @@
 GoSublime Changes
 -----------------
 
+## r13.01.12-1
+
+	**WARNING**
+
+		GoSublime will soon switch to 9o `ctrl+9` or `super+9`.
+		It will replace GsShell `ctrl+dot`,`ctrl+b` (maybe `ctrl+b`).
+		GsShell has reached its EOL and as a result no GsShell specific bugs will be fixed, old or new.
+		The code (gsshell.py) will remain for a little while so if you use code that interacts
+		with it, now is the time to make let me know so necessary features can implemented in 9o
+
 ## r13.01.06-1
 	* add two new 9o command `env` and `settings` see 9o `help` for more details
 	* 9o now supports a new scheme `gs.packages` e.g. `ctrl+shft`, left-click on gs.packages://GoSublime/9o.md will open the 9o docs
