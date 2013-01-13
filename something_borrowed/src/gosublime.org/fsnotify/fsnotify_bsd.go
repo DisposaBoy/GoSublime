@@ -102,8 +102,6 @@ func (w *Watcher) addWatch(path string, flags uint32) error {
 		return errors.New("kevent instance already closed")
 	}
 
-	watchEntry := &w.kbuf[0]
-	watchEntry.Fflags = flags
 	watchDir := false
 
 	watchfd, found := w.watches[path]
@@ -111,6 +109,11 @@ func (w *Watcher) addWatch(path string, flags uint32) error {
 		fi, errstat := os.Lstat(path)
 		if errstat != nil {
 			return errstat
+		}
+
+		// don't watch socket
+		if fi.Mode()&os.ModeSocket == os.ModeSocket {
+			return nil
 		}
 
 		// Follow Symlinks
@@ -142,12 +145,16 @@ func (w *Watcher) addWatch(path string, flags uint32) error {
 
 		w.finfo[watchfd] = fi
 	}
-
-	if w.finfo[watchfd].IsDir() && (flags&NOTE_WRITE) == NOTE_WRITE {
+	// Watch the directory if it has not been watched before.
+	if w.finfo[watchfd].IsDir() &&
+		(flags&NOTE_WRITE) == NOTE_WRITE &&
+		(!found || (w.enFlags[path]&NOTE_WRITE) != NOTE_WRITE) {
 		watchDir = true
 	}
 
-	w.enFlags[path] = watchEntry.Fflags
+	w.enFlags[path] = flags
+	watchEntry := &w.kbuf[0]
+	watchEntry.Fflags = flags
 	syscall.SetKevent(watchEntry, watchfd, syscall.EVFILT_VNODE, syscall.EV_ADD|syscall.EV_CLEAR)
 
 	wd, errno := syscall.Kevent(w.kq, w.kbuf[:], nil, nil)
@@ -248,7 +255,18 @@ func (w *Watcher) readEvents() {
 			fileEvent.Name = w.paths[int(watchEvent.Ident)]
 
 			fileInfo := w.finfo[int(watchEvent.Ident)]
-			if fileInfo.IsDir() && fileEvent.IsModify() {
+			if fileInfo.IsDir() && !fileEvent.IsDelete() {
+				// Double check to make sure the directory exist. This can happen when
+				// we do a rm -fr on a recursively watched folders and we receive a
+				// modification event first but the folder has been deleted and later
+				// receive the delete event
+				if _, err := os.Lstat(fileEvent.Name); os.IsNotExist(err) {
+					// mark is as delete event
+					fileEvent.mask |= NOTE_DELETE
+				}
+			}
+
+			if fileInfo.IsDir() && fileEvent.IsModify() && !fileEvent.IsDelete() {
 				w.sendDirectoryChangeEvents(fileEvent.Name)
 			} else {
 				// Send the event on the events channel
@@ -265,6 +283,20 @@ func (w *Watcher) readEvents() {
 			if fileEvent.IsDelete() {
 				w.removeWatch(fileEvent.Name)
 				delete(w.fileExists, fileEvent.Name)
+
+				// Look for a file that may have overwritten this
+				// (ie mv f1 f2 will delete f2 then create f2)
+				fileDir, _ := filepath.Split(fileEvent.Name)
+				fileDir = filepath.Clean(fileDir)
+				if _, found := w.watches[fileDir]; found {
+					// make sure the directory exist before we watch for changes. When we
+					// do a recursive watch and perform rm -fr, the parent directory might
+					// have gone missing, ignore the missing directory and let the
+					// upcoming delete event remove the watch form the parent folder
+					if _, err := os.Lstat(fileDir); !os.IsNotExist(err) {
+						w.sendDirectoryChangeEvents(fileDir)
+					}
+				}
 			}
 		}
 	}
