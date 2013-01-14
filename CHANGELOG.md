@@ -1,6 +1,9 @@
 GoSublime Changes
 -----------------
 
+## r13.01.14-1
+	* added pledgie badge http://www.pledgie.com/campaigns/19057
+
 ## r13.01.12-1
 
 	**WARNING**
