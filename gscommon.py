@@ -601,7 +601,7 @@ def list_dir_tree(dirname, filter, exclude_prefix=('.', '_')):
 			fn = os.path.join(dirname, fn)
 
 			if os.path.isdir(fn):
-				lst.extend(list_dir_tree(fn, filter))
+				lst.extend(list_dir_tree(fn, filter, exclude_prefix))
 			else:
 				if filter:
 					pathname = fn.lower()
