@@ -131,6 +131,15 @@
 		"context": [{ "key": "selector", "operator": "equal", "operand": "text.9o" }]
 	},
 	{
+		"keys": ["enter"],
+		"command": "commit_completion",
+		"context": [
+			{ "key": "auto_complete_visible" },
+			{ "key": "setting.auto_complete_commit_on_tab", "operand": false },
+			{ "key": "selector", "operator": "equal", "operand": "text.9o" }
+		]
+	},
+	{
 		"keys": ["ctrl+enter"],
 		"command": "gs9o_insert_line",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "text.9o" }]
