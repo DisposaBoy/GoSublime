@@ -1,6 +1,9 @@
 GoSublime Changes
 -----------------
 
+Note: you may need to restart Sublime Text after GoSublime updates
+
+
 ## r13.01.14-1
 	* added pledgie badge http://www.pledgie.com/campaigns/19057
 
