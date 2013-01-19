@@ -52,8 +52,8 @@
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+r"],
-		"command": "gs_shell",
-		"args": {"run": "go play"},
+		"command": "gs9o_open",
+		"args": {"run": ["replay"]},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
