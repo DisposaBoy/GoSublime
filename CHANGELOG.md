@@ -8,7 +8,7 @@ Note: you may need to restart Sublime Text after GoSublime updates
 	* add keybindings in 9o for committing autocompletion instead of executing the prompt when auto_complete_commit_on_tab is false
 
 ## r13.01.14-1
-	* added pledgie badge http://www.pledgie.com/campaigns/19057
+	* added pledgie badge http://www.pledgie.com/campaigns/19078
 
 ## r13.01.12-1
 

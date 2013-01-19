@@ -1,7 +1,7 @@
 GoSublime
 =========
 
-<a href='http://www.pledgie.com/campaigns/19057'><img alt='Click here to lend your support to: GoSublime and make a donation at www.pledgie.com !' src='http://www.pledgie.com/campaigns/19057.png?skin_name=chrome' border='0' /></a>
+<a href='http://www.pledgie.com/campaigns/19078'><img alt='Click here to lend your support to: GoSublime and make a donation at www.pledgie.com !' src='http://www.pledgie.com/campaigns/19078.png?skin_name=chrome' border='0' /></a>
 
 Intro
 -----
