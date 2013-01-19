@@ -4,6 +4,17 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.19-2
+	**NOTICE**
+	The transition to 9o has begun. press ctrl+9 or super+9 and type `help` for more details on 9o.
+	9o will evntually completely replace all GoSublime's interaction with the OS' shell.
+	This includes GsShell(ctrl+dot,ctrl+b).
+
+	As of this update, `ctrl+dot`,`ctrl+r` and `ctrl+dot`,`ctrl+t` has been remapped
+
+## r13.01.19-1
+	* impl 9o command history
+
 ## r13.01.17-1
 	* add keybindings in 9o for committing autocompletion instead of executing the prompt when auto_complete_commit_on_tab is false
 
