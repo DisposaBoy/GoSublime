@@ -63,8 +63,14 @@ class EV(sublime_plugin.EventListener):
 		pos = gs.sel(view).begin()
 		if view.score_selector(pos, 'text.9o') == 0:
 			return []
+
 		cl = []
+		for i, cmd in enumerate(reversed(gs.dval(gs.aso().get('9o.hist'), []))):
+			if not cmd in cl:
+				cl.append(('#%d %s' % (i+1, cmd), cmd))
+
 		cl.extend(DEFAULT_CL)
+
 		return (cl, AC_OPTS)
 
 class Gs9oInsertLineCommand(sublime_plugin.TextCommand):
@@ -119,6 +125,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		vs.set("highlight_line", True)
 		vs.set("draw_indent_guides", True)
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
+		vs.set("auto_complete_triggers", [ {"selector": "text.9o", "characters": "#1234567890"} ])
 		v.set_syntax_file('Packages/GoSublime/9o.tmLanguage')
 
 		if was_empty:
@@ -211,16 +218,25 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			cmd = ln[1].strip()
 			if cmd:
 				vs = view.settings()
+				aso = gs.aso()
+				hist = gs.dval(aso.get('9o.hist'), [])
 				lc_key = '%s.last_command' % DOMAIN
+
 				if cmd.startswith('#'):
-					rep = vs.get(lc_key, '')
 					if rep:
 						view.replace(edit, line, ('%s# %s %s' % (ln[0], rep, cmd.lstrip('# \t'))))
 					return
 				elif cmd == '!!':
-					cmd = vs.get(lc_key, '')
+					if hist:
+						cmd = hist[-1]
 				else:
-					vs.set(lc_key, cmd)
+					try:
+						hist.remove(cmd)
+					except ValueError:
+						pass
+					hist.append(cmd)
+					aso.set('9o.hist', hist)
+					gs.save_aso()
 
 			if not cmd:
 				view.run_command('gs9o_init')
