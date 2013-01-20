@@ -1,9 +1,9 @@
+import datetime
+import gscommon as gs
+import mg9
+import os
 import sublime
 import sublime_plugin
-import gscommon as gs
-import margo
-import os
-import datetime
 
 class GsCommentForwardCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -54,12 +54,12 @@ class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 			basedir = gs.basedir_or_cwd(view and view.file_name())
 			for fn in os.listdir(basedir):
 				if fn.endswith('.go'):
-					name, _ = margo.package(os.path.join(basedir, fn), '')
-					if name and name.get('Name'):
-						pkg_name = name.get('Name')
+					name, _ = mg9.pkg_name(os.path.join(basedir, fn), '')
+					if name:
+						pkg_name = name
 						break
 		except Exception:
-			pass
+			gs.error_traceback('GsNewGoFile')
 
 		view = self.window.new_file()
 		view.set_name(default_file_name)
