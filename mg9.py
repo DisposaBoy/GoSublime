@@ -270,6 +270,13 @@ def fmt(fn, src):
 	})
 	return res.get('src', ''), err
 
+def import_paths(fn, src, f):
+	acall('import_paths', {
+		'fn': fn or '',
+		'src': src or '',
+		'env': gs.env(),
+	}, f)
+
 def pkg_name(fn, src):
 	res, err = bcall('pkg', {
 		'fn': fn or '',
