@@ -270,6 +270,15 @@ def fmt(fn, src):
 	})
 	return res.get('src', ''), err
 
+def imports(fn, src, toggle):
+	return bcall('imports', {
+		'fn': fn or '',
+		'src': src or '',
+		'toggle': toggle or [],
+		'tabIndent': gs.setting('fmt_tab_indent'),
+		'tabWidth': gs.setting('fmt_tab_width'),
+	})
+
 def acall(method, arg, cb):
 	if not gs.checked(DOMAIN, 'launch _send'):
 		gsq.launch(DOMAIN, _send)
