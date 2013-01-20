@@ -4,6 +4,12 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.20-1
+	**IMPORTANT**
+	this update marks the complete transition of all keybindings away from GsShell.
+	`ctrl+b` `ctrl+dot`,`ctrl+b` `ctrl+dot`,`ctrl+t` and `ctrl+dot`,`ctrl+r`
+	all uses 9o now. for more information about the GsShell replacement 9o please press ctrl+9 and type help
+
 ## r13.01.19-2
 	**NOTICE**
 	The transition to 9o has begun. press ctrl+9 or super+9 and type `help` for more details on 9o.
