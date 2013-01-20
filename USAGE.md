@@ -53,21 +53,31 @@ and be marked as a *delete* operation, so it effect is a toggle. If you want to 
 a database driver: first import the package as normal and then press `ctrl+dot,ctrl+i` to quicky jump
 the last imported package. Once edited you can return to where you were by pressing `ctrl+dot,ctrl+[`
 
-Build System
-------------
+Building, Testing and the Go command
+------------------------------------
 
-A Go build system is provided under the menu `Tools > Build System > GsShell`. If you're using this build system, when you press `ctrl+b` you will get a prompt for the command you want to run. The command can be any valid command e.g `go build && pkill MarGo; ./MarGo` or `go run *.go`. The prompt is automatically filled with `go ` and pressing tab will try to complete some of the common `go` subcommands. So typing `go b` then pressing tab results in `go build`. If the prompt is empty or only contains `go` (ignoring whitespace) then when you press tab, it will instead be replaced with the last command you ran.
+GoSublime comes with partial command/shell integration `9o`. For more information about 9o, see Packages/GoSublime/9o.md
+or from within Sublime Text press `ctrl+9` or `super+9` and type help.
 
-Build/Test/Go Command
----------------------
+To run package tests you have 3 options.
 
-A mini-shell-alike prompt is provided in the form of GsShell. It allows you to type any command your normal SHELL(bash, etc.) will accept.
-Therefore all the normal go tools are available. Some go commands are *enhanced* to provide a more streamlined environment. A command `go play` is added as a direct alias of `go run`. It will run the current file. `*.go` is treated as special and the .go files in the current
-directly that are not _test.go files are passed to the corresponding command. The last command ran is remembered so you don't
-have to type it out again next time. When the promp appears, you may press `tab` to fill out the prompt with the last command.
-Additionally some command alias are available via tabbing e.g typing `go t[tab]` will expand to `go test`, `go b[tab]` expands to `go build` and so on.
+* press `ctrl+dot`,`ctrl+t` to open the testing quick panel. This offers basic/common options such
+as running all benchmark functions or running a single test function.
 
-To access GsShell you can press `ctrl+dot,ctrl+b` or alternatetively access it by setting you Go build system to GsShell at which point it will become available via `ctrl+b` as well. Pressing `ctrl+r` will invoke the `go play`(go run) command via GsShell.
+* inside a `_test.go` file, press `ctrl+shift` and left-click on the name of a Test, Benchmark or Example
+function e.g. `TestAbc` to execute that function only.
+
+* if the above options are too minimalistic or you would otherwise like to call `go test` with your own options,
+open 9o by pressing `ctrl+9` where you have access to the `go` command.
+
+In the case of building a package, 9o provides a replay(run see 9o.md for details) command that will execute
+the command if the pkg is a command pkg (package main) or run all tests if it's a normal pkg.
+The replay command is bound to `ctrl+dot`,`ctrl+r` for easy access.
+
+GoSublime provides an override for the Sublime Text build-system via `ctr+b`. In the menu `Tools > Build System` it's named `GoSublime`.
+ctrl+b is automaticall handled by Sublime Text, so if you have another `Go` build system chosen, `ctrl+b`
+will execute that instead. To access the `GoSublime` build system directly press `ctrl+dot`,`ctrl+b`.
+This build system simply opens 9o and expand the last command. i.e. executes the 9o command `^1`.
 
 Per-project  settings & Project-based GOPATH
 ------------------------------
