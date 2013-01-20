@@ -270,6 +270,13 @@ def fmt(fn, src):
 	})
 	return res.get('src', ''), err
 
+def pkg_name(fn, src):
+	res, err = bcall('pkg', {
+		'fn': fn or '',
+		'src': src or '',
+	})
+	return res.get('name'), err
+
 def imports(fn, src, toggle):
 	return bcall('imports', {
 		'fn': fn or '',
