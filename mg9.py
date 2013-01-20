@@ -284,6 +284,14 @@ def pkg_name(fn, src):
 	})
 	return res.get('name'), err
 
+def declarations(fn, src, pkg_dir):
+	return bcall('declarations', {
+		'fn': fn or '',
+		'src': src,
+		'env': gs.env(),
+		'pkg_dir': pkg_dir,
+	})
+
 def imports(fn, src, toggle):
 	return bcall('imports', {
 		'fn': fn or '',
