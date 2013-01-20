@@ -47,7 +47,8 @@
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+b"],
-		"command": "gs_shell",
+		"command": "gs9o_open",
+		"args": {"run": ["^1"]},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
