@@ -76,14 +76,6 @@ def declarations(filename, src, pkg_dir=''):
 		'pkg_dir': pkg_dir,
 	}, {})
 
-def fmt(filename, src):
-	return post('/fmt', {
-		'fn': filename or '',
-		'src': src,
-		'tab_indent': gs.setting('fmt_tab_indent'),
-		'tab_width': gs.setting('fmt_tab_width'),
-	}, u"")
-
 def hello(motd):
 	return post('/', motd, {})
 
@@ -101,15 +93,6 @@ def lint(filename, src):
 		'fn': filename or '',
 		'src': src
 	}, [])
-
-def imports(filename, src, toggle):
-	return post('/imports', {
-		'fn': filename or '',
-		'src': src,
-		'toggle': toggle,
-		'tab_indent': gs.setting('fmt_tab_indent'),
-		'tab_width': gs.setting('fmt_tab_width'),
-	}, {})
 
 def call(path='/', args={}, default={}, cb=None, message=''):
 	try:
