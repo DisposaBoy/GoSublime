@@ -1,7 +1,12 @@
-import sublime, sublime_plugin
-import gspatch, margo, gscommon as gs, gslint
-from os.path import dirname, relpath, basename
+from os.path import dirname, basename, relpath
+import gscommon as gs
+import gslint
+import gspatch
+import margo
+import mg9
 import re
+import sublime
+import sublime_plugin
 
 DOMAIN = 'GsPalette'
 last_import_path = {}
@@ -223,16 +228,17 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		global last_import_path
 
 		view, decl = a
-		im, err = margo.imports(
+		im, err = mg9.imports(
 			view.file_name(),
 			view.substr(sublime.Region(0, view.size())),
 			[decl]
 		)
+
 		if err:
 			gs.notice(DOMAIN, err)
 		else:
 			src = im.get('src', '')
-			line_ref = im.get('line_ref', 0)
+			line_ref = im.get('lineRef', 0)
 			r = view.full_line(view.text_point(max(0, line_ref-1), 0))
 			if not src or line_ref < 1 or not r:
 				return
