@@ -112,3 +112,53 @@ func parsePkg(fset *token.FileSet, srcDir string, mode parser.Mode) (pkg *ast.Pa
 	}
 	return
 }
+
+func rootDirs(env map[string]string) []string {
+	dirs := []string{}
+	gopath := ""
+	if len(env) == 0 {
+		gopath = os.Getenv("GOPATH")
+	} else {
+		gopath = env["GOPATH"]
+	}
+
+	gorootBase := runtime.GOROOT()
+	if len(env) > 0 && env["GOROOT"] != "" {
+		gorootBase = env["GOROOT"]
+	} else if fn := os.Getenv("GOROOT"); fn != "" {
+		gorootBase = fn
+	}
+	goroot := filepath.Join(gorootBase, "src", "pkg")
+
+	dirsSeen := map[string]bool{}
+	for _, fn := range filepath.SplitList(gopath) {
+		if dirsSeen[fn] {
+			continue
+		}
+		dirsSeen[fn] = true
+
+		// goroot may be a part of gopath and we don't want that
+		if fn != "" && !strings.HasPrefix(fn, gorootBase) {
+			fn := filepath.Join(fn, "src")
+			if fi, err := os.Stat(fn); err == nil && fi.IsDir() {
+				dirs = append(dirs, fn)
+			}
+		}
+	}
+
+	if fi, err := os.Stat(goroot); err == nil && fi.IsDir() {
+		dirs = append(dirs, goroot)
+	}
+
+	return dirs
+}
+
+func findPkg(fset *token.FileSet, importPath string, dirs []string, mode parser.Mode) (pkg *ast.Package, pkgs map[string]*ast.Package, err error) {
+	for _, dir := range dirs {
+		srcDir := filepath.Join(dir, importPath)
+		if pkg, pkgs, err = parsePkg(fset, srcDir, mode); pkg != nil {
+			return
+		}
+	}
+	return
+}
