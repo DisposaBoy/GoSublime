@@ -82,18 +82,6 @@ def hello(motd):
 def bye_ni():
 	return post('/', 'bye ni', {}, True)
 
-def package(filename, src):
-	return post('/package', {
-		'fn': filename or '',
-		'src': src
-	}, {})
-
-def lint(filename, src):
-	return post('/lint', {
-		'fn': filename or '',
-		'src': src
-	}, [])
-
 def call(path='/', args={}, default={}, cb=None, message=''):
 	try:
 		if args is None:
