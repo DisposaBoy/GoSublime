@@ -214,15 +214,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 
 			self.do_show_panel()
 
-		margo.call(
-			path='/import_paths',
-			args={
-				'fn': view.file_name(),
-				'src': src,
-			},
-			cb=f,
-			message='fetching pkg import paths'
-		)
+		mg9.import_paths(view.file_name(), src, f)
 
 	def toggle_import(self, a):
 		global last_import_path
