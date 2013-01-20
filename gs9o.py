@@ -76,6 +76,16 @@ class EV(sublime_plugin.EventListener):
 
 		return (cl, AC_OPTS)
 
+class Gs9oBuildPromptCommand(sublime_plugin.WindowCommand):
+	def is_enabled(self):
+		view = gs.active_valid_go_view(self.window)
+		return view is not None
+
+	def run(self):
+		view = self.window.active_view()
+		args = {'run': '^1'} if gs.is_pkg_view(view) else {}
+		view.run_command('gs9o_open', args)
+
 class Gs9oInsertLineCommand(sublime_plugin.TextCommand):
 	def run(self, edit, after=True):
 		insln = lambda: self.view.insert(edit, gs.sel(self.view).begin(), "\n")
