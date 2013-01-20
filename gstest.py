@@ -1,6 +1,6 @@
 import gs9o
 import gscommon as gs
-import margo
+import mg9
 import os
 import re
 import sublime
@@ -27,9 +27,9 @@ class GsTestCommand(sublime_plugin.WindowCommand):
 		if view.file_name():
 			pkg_dir = os.path.dirname(view.file_name())
 
-		res, err = margo.declarations(vfn, src, pkg_dir)
+		res, err = mg9.declarations(vfn, src, pkg_dir)
 		if err:
-			gs.notice(DOMAIN, err)
+			gs.notify(DOMAIN, err)
 			return
 
 		decls = res.get('file_decls', [])
