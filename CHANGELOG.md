@@ -4,6 +4,15 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.21-1
+	**majour refactoring - watch out for bugs**
+
+	* fix handling of binary data in the run/replay commands
+	* misc tweaks+fixes
+	* remove gsdepends
+	* remove all rpc calls to margo.py
+	* remove margo0
+
 ## r13.01.20-1
 	**IMPORTANT**
 	this update marks the complete transition of all keybindings away from GsShell.
