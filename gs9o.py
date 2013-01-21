@@ -284,7 +284,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			view.insert(edit, gs.sel(view).begin(), '\n')
 
 def push_output(view, rkey, out, hourglass_repl=''):
-	out = '\t%s' % out.strip().replace('\r', '').replace('\n', '\n\t')
+	out = '\t%s' % gs.ustr(out).strip().replace('\r', '').replace('\n', '\n\t')
 	edit = view.begin_edit()
 	try:
 		regions = view.get_regions(rkey)
