@@ -284,6 +284,11 @@ def pkg_name(fn, src):
 	})
 	return res.get('name'), err
 
+def pkg_dirs(f):
+	acall('pkg_dirs', {
+		'env': gs.env(),
+	}, f)
+
 def declarations(fn, src, pkg_dir, f):
 	return acall('declarations', {
 		'fn': fn or '',
