@@ -63,7 +63,18 @@ func (b *Broker) SendNoLog(resp Response) error {
 
 	s, err := json.Marshal(resp)
 	if err != nil {
-		return err
+		// if there is a token, it means the client is waiting for a response
+		// so respond with the json error. cause of json encode failure includes: non-utf8 string
+		if resp.Token == "" {
+			return err
+		}
+
+		s, err = json.Marshal(M{
+			"error": "margo broker: cannot encode json response: " + err.Error(),
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	// the only expected write failure are due to broken pipes
