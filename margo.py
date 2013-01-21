@@ -1,6 +1,6 @@
 import subprocess, httplib, urllib, json, traceback, os
 import sublime
-import gscommon as gs, gsdepends, gsq
+import gscommon as gs, gsq
 
 DOMAIN = 'MarGo'
 
@@ -46,17 +46,7 @@ def post(path, a, default, fail_early=False, can_block=False):
 	try:
 		resp = conn.post(path, params, headers)
 	except Exception as ex:
-		if can_block:
-			gsdepends.do_hello()
-			try:
-				resp = conn.post(path, params, headers)
-			except Exception as ex:
-				return (default, ('MarGo: %s' % ex))
-		else:
-			# gsdepeds.hello calls us...
-			if not fail_early:
-				gsdepends.dispatch(gsdepends.hello)
-			return (default, ('MarGo: %s' % ex))
+		return (default, ('MarGo: %s' % ex))
 
 	if not isinst(resp, {}):
 		resp = {}
