@@ -1,6 +1,11 @@
-import gscommon as gs, margo, gsq
-import sublime, sublime_plugin
-import os, re
+import gscommon as gs
+import gsq
+import margo
+import mg9
+import os
+import re
+import sublime
+import sublime_plugin
 
 DOMAIN = 'GsDoc'
 
@@ -129,7 +134,7 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 
 		def f(res, err):
 			if err:
-				gs.notice(DOMAIN, err)
+				gs.notify(DOMAIN, err)
 				return
 
 			decls = res.get('file_decls', [])
@@ -163,17 +168,7 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 			else:
 				win.show_quick_panel([['', 'No declarations found']], lambda x: None)
 
-		margo.call(
-			path='/declarations',
-			args={
-				'fn': vfn,
-				'src': src,
-				'pkg_dir': pkg_dir,
-			},
-			default={},
-			cb=f,
-			message='fetching pkg declarations'
-		)
+		mg9.declarations(vfn, src, pkg_dir, f)
 
 def handle_pkgdirs_res(res):
 	m = {}
