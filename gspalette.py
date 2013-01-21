@@ -2,7 +2,6 @@ from os.path import dirname, basename, relpath
 import gscommon as gs
 import gslint
 import gspatch
-import margo
 import mg9
 import re
 import sublime
@@ -254,7 +253,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 	def palette_declarations(self, view, direct=False):
 		def f(res, err):
 			if err:
-				gs.notice('GsDeclarations', err)
+				gs.notify('GsDeclarations', err)
 			else:
 				decls = res.get('file_decls', [])
 				decls.sort(key=lambda v: v.get('row', 0))
@@ -270,14 +269,4 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 
 			self.do_show_panel()
 
-		margo.call(
-			path='/declarations',
-			args={
-				'fn': view.file_name(),
-				'src': view.substr(sublime.Region(0, view.size())),
-			},
-			default={},
-			cb=f,
-			message='fetching file declarations'
-		)
-
+		mg9.declarations(view.file_name(), gs.view_src(view), '', f)
