@@ -144,9 +144,6 @@ def install(aso_tokens, force_install):
 		m0_out, err, _ = _run(['go', 'build', '-o', MARGO0_BIN], cwd=MARGO0_SRC)
 		m0_out, m0_ok = _so(m0_out, err, start, time.time())
 
-		if os.path.exists(MARGO0_BIN):
-			margo.bye_ni()
-
 		gs.notify('GoSublime', 'Installing MarGo9')
 		start = time.time()
 		m_out, err, _ = _run(['go', 'build', '-o', MARGO9_BIN], cwd=MARGO9_SRC)
@@ -205,6 +202,8 @@ def install(aso_tokens, force_install):
 				report_x()
 	except Exception:
 		report_x()
+
+	gsq.launch(DOMAIN, margo.bye_ni)
 
 def _fasthash(fn):
 	try:
