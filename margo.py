@@ -68,17 +68,6 @@ def post(path, a, default, fail_early=False, can_block=False):
 			resp["error"] = "Invalid Data"
 	return (resp["data"], resp["error"])
 
-def declarations(filename, src, pkg_dir=''):
-	return post('/declarations', {
-		'fn': filename or '',
-		'src': src,
-		'env': gs.env(),
-		'pkg_dir': pkg_dir,
-	}, {})
-
-def hello(motd):
-	return post('/', motd, {})
-
 def bye_ni():
 	return post('/', 'bye ni', {}, True)
 
