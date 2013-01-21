@@ -78,8 +78,8 @@ func (m *mPlay) Call() (interface{}, string) {
 
 		err := c.Run()
 		res := M{
-			"out": stdOut.String(),
-			"err": stdErr.String(),
+			"out": jData(stdOut.Bytes()),
+			"err": jData(stdErr.Bytes()),
 			"dur": time.Now().Sub(start).String(),
 		}
 
