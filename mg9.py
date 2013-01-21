@@ -15,7 +15,7 @@ import threading
 import time
 import uuid
 
-DOMAIN = 'MarGo9'
+DOMAIN = 'MarGo'
 REQUEST_PREFIX = '%s.rqst.' % DOMAIN
 PROC_ATTR_NAME = 'mg9.proc'
 
@@ -36,12 +36,9 @@ REV = CHANGES[0][0]
 
 # customization of, or user-owned margo will no longer be supported
 # so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
-MARGO0_SRC = gs.dist_path('something_borrowed/margo0')
-MARGO9_SRC = gs.dist_path('margo9')
-MARGO0_EXE = 'gosublime.%s.margo0.exe' % REV
-MARGO9_EXE = 'gosublime.%s.margo9.exe' % REV
-MARGO0_BIN = gs.home_path('bin', MARGO0_EXE)
-MARGO9_BIN = gs.home_path('bin', MARGO9_EXE)
+MARGO_SRC = gs.dist_path('margo9')
+MARGO_EXE = 'gosublime.%s.margo.exe' % REV
+MARGO_BIN = gs.home_path('bin', MARGO_EXE)
 
 if not gs.checked(DOMAIN, '_vars'):
 	_send_q = Queue.Queue()
@@ -69,8 +66,7 @@ def _sanity_check(env={}):
 	return [
 		('version', REV),
 		('~bin', '%s' % gs.home_path('bin')),
-		('margo0', '%s (%s)' % _tp(MARGO0_BIN)),
-		('margo9', '%s (%s)' % _tp(MARGO9_BIN)),
+		('MarGo', '%s (%s)' % _tp(MARGO_BIN)),
 		('GOROOT', '%s' % env.get('GOROOT', '(not set)')),
 		('GOPATH', '%s' % env.get('GOPATH', '(not set)')),
 		('GOBIN', '%s (should usually be (not set))' % env.get('GOBIN', '(not set)')),
@@ -114,7 +110,7 @@ def _run(cmd, cwd=None, shell=False):
 	return gsshell.run(cmd, shell=shell, cwd=cwd, env=nv)
 
 def _bins_exist():
-	return os.path.exists(MARGO9_BIN) and os.path.exists(MARGO0_BIN)
+	return os.path.exists(MARGO_BIN)
 
 def maybe_install():
 	if not _bins_exist():
@@ -136,20 +132,14 @@ def install(aso_tokens, force_install):
 		pass
 
 	if not force_install and _bins_exist() and aso_tokens == _gen_tokens():
-		m0_out = 'no'
 		m_out = 'no'
 	else:
-		gs.notify('GoSublime', 'Installing MarGo0')
+		gs.notify('GoSublime', 'Installing MarGo')
 		start = time.time()
-		m0_out, err, _ = _run(['go', 'build', '-o', MARGO0_BIN], cwd=MARGO0_SRC)
-		m0_out, m0_ok = _so(m0_out, err, start, time.time())
-
-		gs.notify('GoSublime', 'Installing MarGo9')
-		start = time.time()
-		m_out, err, _ = _run(['go', 'build', '-o', MARGO9_BIN], cwd=MARGO9_SRC)
+		m_out, err, _ = _run(['go', 'build', '-o', MARGO_BIN], cwd=MARGO_SRC)
 		m_out, m_ok = _so(m_out, err, start, time.time())
 
-		if m_ok and m0_ok:
+		if m_ok:
 			def f():
 				gs.aso().set('mg9_install_tokens', _gen_tokens())
 				gs.save_aso()
@@ -157,14 +147,14 @@ def install(aso_tokens, force_install):
 			sublime.set_timeout(f, 0)
 
 	gs.notify('GoSublime', 'Syncing environment variables')
-	out, err, _ = gsshell.run([MARGO9_EXE, '-env'], cwd=gs.home_path(), shell=True)
+	out, err, _ = gsshell.run([MARGO_EXE, '-env'], cwd=gs.home_path(), shell=True)
 
 	# notify this early so we don't mask any notices below
 	gs.notify('GoSublime', 'Ready')
 	_check_changes()
 
 	if err:
-		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (MARGO9_EXE, err))
+		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (MARGO_EXE, err))
 	else:
 		env, err = gs.json_decode(out, {})
 		if err:
@@ -175,8 +165,7 @@ def install(aso_tokens, force_install):
 	e = gs.env()
 	a = [
 		'GoSublime init (%0.3fs)' % (time.time() - init_start),
-		'| install margo0: %s' % m0_out,
-		'| install margo9: %s' % m_out,
+		'| install margo: %s' % m_out,
 	]
 	a.extend(['| %14s: %s' % ln for ln in _sanity_check(e)])
 	gs.println(*a)
@@ -194,7 +183,7 @@ def install(aso_tokens, force_install):
 		d = gs.home_path('bin')
 		for fn in os.listdir(d):
 			try:
-				if fn not in (MARGO9_EXE, MARGO0_EXE) and fn.startswith(('gosublime', 'gocode', 'margo')):
+				if fn != MARGO_EXE and fn.startswith(('gosublime', 'gocode', 'margo')):
 					fn = os.path.join(d, fn)
 					gs.println("GoSublime: removing old binary: %s" % fn)
 					os.remove(fn)
@@ -393,7 +382,7 @@ def _send():
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					proc, _, err = gsshell.proc([MARGO9_BIN, '-poll=30'], stderr=gs.LOGFILE ,env={
+					proc, _, err = gsshell.proc([MARGO_BIN, '-poll=30'], stderr=gs.LOGFILE ,env={
 						'XDG_CONFIG_HOME': gs.home_path(),
 					})
 					gs.set_attr(PROC_ATTR_NAME, proc)
