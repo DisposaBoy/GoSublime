@@ -1,6 +1,5 @@
 import gscommon as gs
 import gsq
-import margo
 import mg9
 import os
 import re
@@ -67,18 +66,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 					doc = '\n\n\n'.join(s).strip()
 			self.show_output(doc or "// %s: no docs found" % DOMAIN)
 
-		margo.call(
-			path='/doc',
-			args={
-				'fn': view.file_name(),
-				'src': src,
-				'offset': pt,
-			},
-			default=[],
-			cb=f,
-			message='fetching docs'
-		)
-
+		mg9.doc(view.file_name(), src, pt, f)
 
 class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 	def run(self, dir=''):
