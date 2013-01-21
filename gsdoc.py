@@ -106,13 +106,7 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 				else:
 					gs.show_quick_panel([['', 'No source directories found']])
 
-			margo.call(
-				path='/pkgdirs',
-				args={},
-				default={},
-				cb=f,
-				message='fetching pkg dirs'
-			)
+			mg9.pkg_dirs(f)
 
 	def present_current(self):
 		pkg_dir = ''
@@ -197,13 +191,7 @@ class GsBrowsePackagesCommand(sublime_plugin.WindowCommand):
 			else:
 				gs.show_quick_panel([['', 'No source directories found']])
 
-		margo.call(
-			path='/pkgdirs',
-			args={},
-			default={},
-			cb=f,
-			message='fetching pkg dirs'
-		)
+		mg9.pkg_dirs(f)
 
 def ext_filter(pathname, basename, ext):
 	if not ext:
