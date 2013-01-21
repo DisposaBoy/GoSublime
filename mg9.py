@@ -1,19 +1,19 @@
+import atexit
+import base64
 import gscommon as gs
+import gsq
 import gsshell
+import hashlib
+import json
+import margo
+import os
+import Queue
+import re
 import sublime
 import sublime_plugin
 import threading
-import os
-import gsq
 import time
-import hashlib
-import base64
-import Queue
 import uuid
-import margo
-import json
-import atexit
-import re
 
 DOMAIN = 'MarGo9'
 REQUEST_PREFIX = '%s.rqst.' % DOMAIN
@@ -316,6 +316,18 @@ def bcall(method, arg):
 	except:
 		return {}, 'Blocking Call: Timeout'
 
+def expand_jdata(v):
+	if gs.is_a(v, {}):
+		for k in v:
+			v[k] = expand_jdata(v[k])
+	elif gs.is_a_string(v) and v.startswith('base64:'):
+		try:
+			v = base64.b64decode(v[7:])
+		except Exception:
+			v = ''
+			gs.error_traceback(DOMAIN)
+	return v
+
 def _recv():
 	while True:
 		try:
@@ -335,13 +347,18 @@ def _recv():
 							(time.time() - req.tm),
 							r.get('error', ''),
 						))
-						keep = req.f(r.get('data', {}), r.get('error', '')) is not True
-						if keep:
-							req.tm = time.time()
-							gs.set_attr(k, req)
+
+						dat = expand_jdata(r.get('data', {}))
+						err = r.get('error', '')
+						try:
+							keep = req.f(dat, err) is not True
+							if keep:
+								req.tm = time.time()
+								gs.set_attr(k, req)
+						except Exception:
+							gs.error_traceback(DOMAIN)
 					else:
 						gs.debug(DOMAIN, 'Ignoring margo: token: %s' % token)
-
 			except Exception:
 				gs.println(gs.traceback())
 		except Exception:
