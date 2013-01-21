@@ -101,11 +101,11 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			items.append(item)
 		self.items = []
 
-		def on_done(i):
+		def on_done(i, win):
 			action, args = actions.get(i, (None, None))
 			if i >= 0 and action:
 				action(args)
-		self.window.show_quick_panel(items, on_done)
+		gs.show_quick_panel(items, on_done)
 
 	def add_item(self, item, action=None, args=None):
 		self.items.append((item, action, args))

@@ -140,15 +140,15 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 			for d in decls:
 				ents.append(d['ent'])
 
-			def cb(i):
+			def cb(i, win):
 				if i >= 0:
 					d = decls[i]
 					gs.focus(d['fn'], d['row'], d['col'], win)
 
 			if ents:
-				win.show_quick_panel(ents, cb)
+				gs.show_quick_panel(ents, cb)
 			else:
-				win.show_quick_panel([['', 'No declarations found']], lambda x: None)
+				gs.show_quick_panel([['', 'No declarations found']], lambda x: None)
 
 		mg9.declarations(vfn, src, pkg_dir, f)
 
