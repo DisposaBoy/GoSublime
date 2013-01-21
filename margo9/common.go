@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"go/ast"
 	"go/parser"
@@ -11,6 +12,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unicode/utf8"
+)
+
+var (
+	sRuneError = eRune()
 )
 
 type jString string
@@ -24,6 +30,31 @@ func (s *jString) UnmarshalJSON(p []byte) error {
 		return nil
 	}
 	return json.Unmarshal(p, (*string)(s))
+}
+
+type jData []byte
+
+func (d jData) MarshalJSON() ([]byte, error) {
+	if len(d) == 0 {
+		return []byte(`""`), nil
+	}
+
+	buf := bytes.NewBufferString(`"base64:`)
+	enc := base64.NewEncoder(base64.StdEncoding, buf)
+
+	for len(d) > 0 {
+		r, n := utf8.DecodeRune(d)
+		if r == utf8.RuneError {
+			enc.Write(sRuneError)
+		} else {
+			enc.Write(d[:n])
+		}
+		d = d[n:]
+	}
+
+	enc.Close()
+	buf.WriteByte('"')
+	return buf.Bytes(), nil
 }
 
 func errStr(err error) string {
@@ -161,4 +192,11 @@ func findPkg(fset *token.FileSet, importPath string, dirs []string, mode parser.
 		}
 	}
 	return
+}
+
+func eRune() []byte {
+	s := make([]byte, utf8.RuneLen(utf8.RuneError))
+	n := utf8.EncodeRune(s, utf8.RuneError)
+	s = s[:n]
+	return s
 }
