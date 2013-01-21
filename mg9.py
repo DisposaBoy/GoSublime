@@ -306,6 +306,16 @@ def imports(fn, src, toggle):
 		'tabWidth': gs.setting('fmt_tab_width'),
 	})
 
+def doc(fn, src, offset, f):
+	return acall('doc', {
+		'fn': fn or '',
+		'src': src or '',
+		'offset': offset or 0,
+		'env': gs.env(),
+		'tabIndent': gs.setting('fmt_tab_indent'),
+		'tabWidth': gs.setting('fmt_tab_width'),
+	}, f)
+
 def acall(method, arg, cb):
 	if not gs.checked(DOMAIN, 'launch _send'):
 		gsq.launch(DOMAIN, _send)
