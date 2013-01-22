@@ -269,4 +269,4 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 
 			self.do_show_panel()
 
-		mg9.declarations(view.file_name(), gs.view_src(view), '', f)
+		mg9.declarations(gs.view_fn(view), gs.view_src(view), '', f)
