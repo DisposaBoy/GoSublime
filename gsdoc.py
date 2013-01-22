@@ -148,7 +148,7 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 			if ents:
 				gs.show_quick_panel(ents, cb)
 			else:
-				gs.show_quick_panel([['', 'No declarations found']], lambda x: None)
+				gs.show_quick_panel([['', 'No declarations found']])
 
 		mg9.declarations(vfn, src, pkg_dir, f)
 
