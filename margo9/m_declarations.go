@@ -67,19 +67,8 @@ func init() {
 }
 
 func collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl) []*mDeclarationsDecl {
-	exists := map[string]bool{}
 	for _, fdecl := range af.Decls {
 		if tp := fset.Position(fdecl.Pos()); tp.IsValid() {
-			x, ok := exists[tp.Filename]
-			if !ok {
-				_, err := os.Stat(tp.Filename)
-				x = err == nil
-				exists[tp.Filename] = x
-			}
-			if !x {
-				continue
-			}
-
 			switch n := fdecl.(type) {
 			case *ast.FuncDecl:
 				if n.Name.Name != "_" {
