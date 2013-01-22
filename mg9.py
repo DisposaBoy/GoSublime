@@ -259,11 +259,16 @@ def fmt(fn, src):
 	return res.get('src', ''), err
 
 def import_paths(fn, src, f):
+	tid = gs.begin(DOMAIN, 'Fetching import paths')
+	def cb(res, err):
+		gs.end(tid)
+		f(res, err)
+
 	acall('import_paths', {
 		'fn': fn or '',
 		'src': src or '',
 		'env': gs.env(),
-	}, f)
+	}, cb)
 
 def pkg_name(fn, src):
 	res, err = bcall('pkg', {
@@ -273,17 +278,27 @@ def pkg_name(fn, src):
 	return res.get('name'), err
 
 def pkg_dirs(f):
+	tid = gs.begin(DOMAIN, 'Fetching pkg dirs')
+	def cb(res, err):
+		gs.end(tid)
+		f(res, err)
+
 	acall('pkg_dirs', {
 		'env': gs.env(),
-	}, f)
+	}, cb)
 
 def declarations(fn, src, pkg_dir, f):
+	tid = gs.begin(DOMAIN, 'Fetching declarations')
+	def cb(res, err):
+		gs.end(tid)
+		f(res, err)
+
 	return acall('declarations', {
 		'fn': fn or '',
 		'src': src,
 		'env': gs.env(),
 		'pkgDir': pkg_dir,
-	}, f)
+	}, cb)
 
 def imports(fn, src, toggle):
 	return bcall('imports', {
@@ -295,14 +310,19 @@ def imports(fn, src, toggle):
 	})
 
 def doc(fn, src, offset, f):
-	return acall('doc', {
+	tid = gs.begin(DOMAIN, 'Fetching doc info')
+	def cb(res, err):
+		gs.end(tid)
+		f(res, err)
+
+	acall('doc', {
 		'fn': fn or '',
 		'src': src or '',
 		'offset': offset or 0,
 		'env': gs.env(),
 		'tabIndent': gs.setting('fmt_tab_indent'),
 		'tabWidth': gs.setting('fmt_tab_width'),
-	}, f)
+	}, cb)
 
 def acall(method, arg, cb):
 	if not gs.checked(DOMAIN, 'launch _send'):
