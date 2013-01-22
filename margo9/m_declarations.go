@@ -10,10 +10,10 @@ import (
 )
 
 type mDeclarations struct {
-	Fn     string            `json:"filename"`
-	Src    string            `json:"src"`
-	PkgDir string            `json:"pkg_dir"`
-	Env    map[string]string `json:"env"`
+	Fn     string
+	Src    string
+	PkgDir string
+	Env    map[string]string
 }
 
 type mDeclarationsDecl struct {

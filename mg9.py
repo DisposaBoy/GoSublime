@@ -282,7 +282,7 @@ def declarations(fn, src, pkg_dir, f):
 		'fn': fn or '',
 		'src': src,
 		'env': gs.env(),
-		'pkg_dir': pkg_dir,
+		'pkgDir': pkg_dir,
 	}, f)
 
 def imports(fn, src, toggle):
