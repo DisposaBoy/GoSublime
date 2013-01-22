@@ -108,6 +108,8 @@ except:
 		'comment.block.go'
 	])
 
+	VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)$', re.IGNORECASE)
+
 def apath(fn, cwd=None):
 	if not os.path.isabs(fn):
 		if not cwd:
@@ -456,17 +458,18 @@ def win_view(vfn=None, win=None):
 
 	view = None
 	if win:
-		if not vfn or vfn == "<stdin>":
-			view = win.active_view()
-		elif vfn.startswith("gs.view://") or vfn.startswith("view://"):
+		m = VFN_ID_PAT.match(vfn)
+		if m:
 			try:
-				vid = int(vfn[7:])
+				vid = int(m.group(1))
 				for v in win.views():
 					if v.id() == vid:
 						view = v
 						break
-			except:
-				pass
+			except Exception:
+				gs.error_traceback(NAME)
+		elif not vfn or vfn == "<stdin>":
+			view = win.active_view()
 		else:
 			view = win.open_file(vfn)
 	return (win, view)
