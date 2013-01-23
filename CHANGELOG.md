@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.23-1 
+	* fix broken 9o-related keybindings (ctrl+dot,ctrl+r etc.)
+
 ## r13.01.22-1 
 	* fix missing declarations in unsaved files
 
