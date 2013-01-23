@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.22-1 
+	* fix missing declarations in unsaved files
+
 ## r13.01.21-1
 	**majour refactoring - watch out for bugs**
 
