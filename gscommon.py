@@ -386,9 +386,13 @@ def env(m={}):
 				add_path.append(s)
 
 	if os_is_windows():
-		l = ['C:\\Go\\bin']
+		l = [
+			'~\\bin',
+			'C:\\Go\\bin',
+		]
 	else:
 		l = [
+			'~/bin',
 			'/usr/local/go/bin',
 			'/usr/local/opt/go/bin',
 			'/usr/local/bin',
@@ -396,6 +400,7 @@ def env(m={}):
 		]
 
 	for s in l:
+		s = os.path.expanduser(s)
 		if s not in add_path:
 			add_path.append(s)
 
