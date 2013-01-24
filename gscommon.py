@@ -388,11 +388,13 @@ def env(m={}):
 	if os_is_windows():
 		l = [
 			'~\\bin',
+			'~\\go\\bin',
 			'C:\\Go\\bin',
 		]
 	else:
 		l = [
 			'~/bin',
+			'~/go/bin',
 			'/usr/local/go/bin',
 			'/usr/local/opt/go/bin',
 			'/usr/local/bin',
