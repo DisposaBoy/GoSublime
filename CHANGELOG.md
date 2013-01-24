@@ -4,10 +4,13 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
-## r13.01.23-1 
+## r13.01.24-1
+	* add $HOME/bin to $PATH
+
+## r13.01.23-1
 	* fix broken 9o-related keybindings (ctrl+dot,ctrl+r etc.)
 
-## r13.01.22-1 
+## r13.01.22-1
 	* fix missing declarations in unsaved files
 
 ## r13.01.21-1
