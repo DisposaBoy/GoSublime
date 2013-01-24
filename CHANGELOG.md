@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.24-2
+	* add $HOME/go/bin to $PATH
+
 ## r13.01.24-1
 	* add $HOME/bin to $PATH
 
