@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.25-1
+	* fix 9o command history indexing (caused wrong command to be expanded for ^1, ^2 etc)
+
 ## r13.01.24-2
 	* add $HOME/go/bin to $PATH
 
