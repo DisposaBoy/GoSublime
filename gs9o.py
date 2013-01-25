@@ -238,7 +238,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 				m = HIST_EXPAND_PAT.match(cmd)
 				if m:
 					pfx = m.group(1)
-					idx = int(m.group(2))-1
+					idx = int(m.group(2))
 					cmd = hist[-idx] if idx < len(hist) else ''
 					if pfx == '^' or not cmd:
 						view.replace(edit, line, ('%s# %s' % (ln[0], cmd)))
