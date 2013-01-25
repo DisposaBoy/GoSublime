@@ -63,7 +63,7 @@ class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 
 		view = self.window.new_file()
 		view.set_name(default_file_name)
-		view.set_syntax_file('Packages/Go/Go.tmLanguage')
+		view.set_syntax_file('Packages/GoSublime/GoSublime.tmLanguage')
 		edit = view.begin_edit()
 		try:
 			view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
