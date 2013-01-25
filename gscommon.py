@@ -294,7 +294,7 @@ def show_output(domain, s, print_output=True, syntax_file='', replace=True, merg
 			pst.set("line_numbers", False)
 			if syntax_file:
 				if syntax_file == 'GsDoc':
-					panel.set_syntax_file('Packages/GoSublime/GsDoc.tmLanguage')
+					panel.set_syntax_file('Packages/GoSublime/GsDoc.hidden-tmLanguage')
 					panel.run_command("fold_by_level", { "level": 1 })
 				else:
 					panel.set_syntax_file(syntax_file)

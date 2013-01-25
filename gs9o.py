@@ -139,7 +139,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		vs.set("draw_indent_guides", True)
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
 		vs.set("word_separators", "./\\()\"'-:,.;<>~!@#$%&*|+=[]{}`~?")
-		v.set_syntax_file('Packages/GoSublime/9o.tmLanguage')
+		v.set_syntax_file('Packages/GoSublime/9o.hidden-tmLanguage')
 
 		if was_empty:
 			v.show(0)
