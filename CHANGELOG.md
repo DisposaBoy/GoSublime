@@ -4,6 +4,10 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.25-2
+	* set .go files to use the `GoSublime` syntax definition instead of `Go` as it's more complete
+	* hide GsDoc and 9o sytax definitions from the command palette
+
 ## r13.01.25-1
 	* fix 9o command history indexing (caused wrong command to be expanded for ^1, ^2 etc)
 
