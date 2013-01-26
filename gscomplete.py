@@ -106,9 +106,14 @@ class GoSublime(sublime_plugin.EventListener):
 			default_pkgname = ''
 
 		r = view.find('package\s+(\w+)', 0)
+		pkgname = view.substr(view.word(r.end())) if r else ''
+
+		if not default_pkgname:
+			default_pkgname = pkgname if pkgname else 'main'
+
 		ctx = {
 			'global': True,
-			'pkgname': view.substr(view.word(r.end())) if r else '',
+			'pkgname': pkgname,
 			'types': types or [''],
 			'has_types': len(types) > 0,
 			'default_pkgname': default_pkgname,
@@ -116,7 +121,7 @@ class GoSublime(sublime_plugin.EventListener):
 		}
 		show_snippets = gs.setting('autocomplete_snippets', True) is True
 
-		if not ctx.get('pkgname'):
+		if not pkgname:
 			return (resolve_snippets(ctx), AC_OPTS) if show_snippets else ([], AC_OPTS)
 
 		# gocode is case-sesitive so push the location back to the 'dot' so it gives
