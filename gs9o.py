@@ -147,11 +147,11 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 			v.show(v.size()-1)
 
 class Gs9oOpenV(sublime_plugin.TextCommand):
-	def run(self, edit, wd=None, run=[]):
-		self.view.run_command('gs9o_open', {'wd': wd, 'run': run})
+	def run(self, edit, wd=None, run=[], save_hist=False):
+		self.view.run_command('gs9o_open', {'wd': wd, 'run': run, 'save_hist': save_hist})
 
 class Gs9oOpenCommand(sublime_plugin.TextCommand):
-	def run(self, edit, wd=None, run=[]):
+	def run(self, edit, wd=None, run=[], save_hist=False):
 		win = self.view.window()
 		wid = win.id()
 		if not wd:
@@ -173,7 +173,7 @@ class Gs9oOpenCommand(sublime_plugin.TextCommand):
 			v.insert(edit, v.line(v.size()-1).end(), cmd)
 			v.sel().clear()
 			v.sel().add(v.line(v.size()-1).end())
-			v.run_command('gs9o_exec')
+			v.run_command('gs9o_exec', {'save_hist': save_hist})
 
 class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -220,7 +220,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 		pos = gs.sel(self.view).begin()
 		return self.view.score_selector(pos, 'text.9o') > 0
 
-	def run(self, edit):
+	def run(self, edit, save_hist=False):
 		view = self.view
 		pos = gs.sel(view).begin()
 		line = view.line(pos)
@@ -247,7 +247,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 					if pfx == '^' or not cmd:
 						view.replace(edit, line, ('%s# %s' % (ln[0], cmd)))
 						return
-				else:
+				elif save_hist:
 					try:
 						hist.remove(cmd)
 					except ValueError:

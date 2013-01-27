@@ -129,6 +129,7 @@
 	{
 		"keys": ["enter"],
 		"command": "gs9o_exec",
+		"args": {"save_hist": true},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "text.9o" }]
 	},
 	{
