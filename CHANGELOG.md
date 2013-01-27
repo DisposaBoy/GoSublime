@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.27-2
+	* (by default) only save 9o history if the command was manually executed
+
 ## r13.01.27-1
 	* correctly handle hist indexing when there's only one command in the history (last command not recalled on ctrl+dot,ctrl+b)
 
