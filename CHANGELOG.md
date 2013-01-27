@@ -4,6 +4,12 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.01.27-1
+	* correctly handle hist indexing when there's only one command in the history (last command not recalled on ctrl+dot,ctrl+b)
+
+## r13.01.26-1
+	* fix broken package snippet (inserting blank package name)
+
 ## r13.01.25-2
 	* set .go files to use the `GoSublime` syntax definition instead of `Go` as it's more complete
 	* hide GsDoc and 9o sytax definitions from the command palette
