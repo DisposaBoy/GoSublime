@@ -147,11 +147,11 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 			v.show(v.size()-1)
 
 class Gs9oOpenV(sublime_plugin.TextCommand):
-	def run(self, edit, wd=None, run=[], save_hist=False):
-		self.view.run_command('gs9o_open', {'wd': wd, 'run': run, 'save_hist': save_hist})
+	def run(self, edit, wd=None, run=[], save_hist=False, focus_view=True):
+		self.view.run_command('gs9o_open', {'wd': wd, 'run': run, 'save_hist': save_hist, 'focus_view': focus_view})
 
 class Gs9oOpenCommand(sublime_plugin.TextCommand):
-	def run(self, edit, wd=None, run=[], save_hist=False):
+	def run(self, edit, wd=None, run=[], save_hist=False, focus_view=True):
 		win = self.view.window()
 		wid = win.id()
 		if not wd:
@@ -165,7 +165,10 @@ class Gs9oOpenCommand(sublime_plugin.TextCommand):
 			st[id] = v
 
 		win.run_command("show_panel", {"panel": ("output.%s" % id)})
-		win.focus_view(v)
+
+		if focus_view:
+			win.focus_view(v)
+
 		v.run_command('gs9o_init', {'wd': wd})
 
 		if run:
@@ -450,6 +453,3 @@ def cmd_settings(view, edit, args, wd, rkey):
 
 def cmd_env(view, edit, args, wd, rkey):
 	_env_settings(gs.env(), view, edit, args, wd, rkey)
-
-
-
