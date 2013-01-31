@@ -426,13 +426,13 @@
 			<array>
 				<dict>
 					<key>match</key>
-					<string>\b(s(truct|elect|witch)|c(ontinue|ase)|type|i(nterface|f|mport)|def(er|ault)|package|else|var|f(or|unc|allthrough)|r(eturn|ange)|go(to)?|map|break)\b</string>
+					<string>\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\b</string>
 					<key>name</key>
 					<string>keyword.control.go</string>
 				</dict>
 				<dict>
 					<key>match</key>
-					<string>(\b|(?&lt;=\]))(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|string|error|rune|complex(64|128))\b</string>
+					<string>\b(bool|byte|complex64|complex128|error|float32|float64|int|int8|int16|int32|int64|rune|string|uint|uint8|uint16|uint32|uint64|uintptr)\b</string>
 					<key>name</key>
 					<string>storage.type.go</string>
 				</dict>
@@ -456,7 +456,7 @@
 				</dict>
 				<dict>
 					<key>match</key>
-					<string>(\&lt;\-)|(\-\&gt;)</string>
+					<string>(&lt;-)</string>
 					<key>name</key>
 					<string>support.channel-operator.go</string>
 				</dict>
@@ -465,8 +465,7 @@
 		<key>plain_function_declaration</key>
 		<dict>
 			<key>begin</key>
-			<string>(?x)
-    	            ^[[:blank:]]*(func)\s*
+			<string>(?x)    	            ^[[:blank:]]*(func)\s*
     	            (?: ([[:alpha:]_][[:alnum:]_]*)? )          # name of function is optional
     	            (?: \( ((?:[\[\]\w\d\s\/,._*&amp;&lt;&gt;-]|(?:interface\{\}))*)? \) )             # required braces for parameters (even if empty)
     	            \s*

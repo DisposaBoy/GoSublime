@@ -44,7 +44,7 @@
 					"include": "#function_block"
 				}
 			],
-			"begin": "(?x)\n    \t            ^[[:blank:]]*(func)\\s*\n    \t            (?: ([[:alpha:]_][[:alnum:]_]*)? )          # name of function is optional\n    \t            (?: \\( ((?:[\\[\\]\\w\\d\\s\\/,._*&<>-]|(?:interface\\{\\}))*)? \\) )             # required braces for parameters (even if empty)\n    \t            \\s*\n    \t            (?: \\(? ((?:[\\[\\]\\w\\d\\s,._*&<>-]|(?:interface\\{\\}))*) \\)? )?             # optional return types, optionally within braces\n    \t    ",
+			"begin": "(?x)    \t            ^[[:blank:]]*(func)\\s*\n    \t            (?: ([[:alpha:]_][[:alnum:]_]*)? )          # name of function is optional\n    \t            (?: \\( ((?:[\\[\\]\\w\\d\\s\\/,._*&<>-]|(?:interface\\{\\}))*)? \\) )             # required braces for parameters (even if empty)\n    \t            \\s*\n    \t            (?: \\(? ((?:[\\[\\]\\w\\d\\s,._*&<>-]|(?:interface\\{\\}))*) \\)? )?             # optional return types, optionally within braces\n    \t    ",
 			"end": "(?<=\\})",
 			"name": "meta.function.plain.go",
 			"beginCaptures": {
@@ -237,11 +237,11 @@
 			"patterns": [
 				{
 					"name": "keyword.control.go",
-					"match": "\\b(s(truct|elect|witch)|c(ontinue|ase)|type|i(nterface|f|mport)|def(er|ault)|package|else|var|f(or|unc|allthrough)|r(eturn|ange)|go(to)?|map|break)\\b"
+					"match": "\\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\\b"
 				},
 				{
 					"name": "storage.type.go",
-					"match": "(\\b|(?<=\\]))(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|string|error|rune|complex(64|128))\\b"
+					"match": "\\b(bool|byte|complex64|complex128|error|float32|float64|int|int8|int16|int32|int64|rune|string|uint|uint8|uint16|uint32|uint64|uintptr)\\b"
 				},
 				{
 					"name": "storage.modifier.go",
@@ -257,7 +257,7 @@
 				},
 				{
 					"name": "support.channel-operator.go",
-					"match": "(\\<\\-)|(\\-\\>)"
+					"match": "(<-)"
 				}
 			]
 		},
