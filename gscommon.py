@@ -148,7 +148,7 @@ def basedir_or_cwd(fn):
 
 def popen(args, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None, bufsize=0):
 	ev = env()
-	for k,v in environ.iteritems():
+	for k,v in environ.items():
 		ev[astr(k)] = astr(v)
 
 	try:
@@ -427,7 +427,7 @@ def env(m={}):
 	# 	  http://stackoverflow.com/q/12253014/1670
 	#   * Avoids issues with networking too.
 	clean_env = {}
-	for k, v in e.iteritems():
+	for k, v in e.items():
 		try:
 			clean_env[astr(k)] = astr(v)
 		except Exception as ex:
@@ -587,7 +587,7 @@ def clear_tasks():
 
 def task_list():
 	with sm_lck:
-		return sorted(sm_tasks.iteritems())
+		return sorted(sm_tasks.items())
 
 def cancel_task(tid):
 	t = task(tid)
