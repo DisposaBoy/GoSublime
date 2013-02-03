@@ -5,7 +5,6 @@ import gsshell
 import sublime
 import sublime_plugin
 import threading
-import Queue
 import time
 import os
 import re
@@ -33,7 +32,7 @@ class GsLintThread(threading.Thread):
 		self.daemon = True
 		self.sem = threading.Semaphore()
 		self.s = set()
-		self.q = Queue.Queue()
+		self.q = gs.queue.Queue()
 
 	def putq(self, fn):
 		with self.sem:

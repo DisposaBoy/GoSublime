@@ -16,6 +16,11 @@ import copy
 import string
 
 try:
+	import Queue as queue
+except ImportError:
+	import queue
+
+try:
 	STARTUP_INFO = subprocess.STARTUPINFO()
 	STARTUP_INFO.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 	STARTUP_INFO.wShowWindow = subprocess.SW_HIDE

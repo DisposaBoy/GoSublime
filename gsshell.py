@@ -5,7 +5,6 @@ import re
 import os
 import hashlib
 import threading
-import Queue
 import traceback
 import subprocess
 import time
@@ -288,7 +287,7 @@ class Command(threading.Thread):
 		super(Command, self).__init__()
 		self.daemon = True
 		self.cancelled = False
-		self.q = Queue.Queue()
+		self.q = gs.queue.Queue()
 		self.p = None
 		self.x = None
 		self.rcode = None
@@ -320,7 +319,7 @@ class Command(threading.Thread):
 		try:
 			while True:
 				l.append(self.q.get_nowait())
-		except Queue.Empty:
+		except gs.queue.Empty:
 			pass
 		return l
 
@@ -354,7 +353,7 @@ class Command(threading.Thread):
 			while True:
 				self.q.get_nowait()
 				discarded += 1
-		except Queue.Empty:
+		except gs.queue.Empty:
 			pass
 
 		return discarded
@@ -412,7 +411,7 @@ class ViewCommand(Command):
 		try:
 			for i in range(500):
 				l.append(self.q.get_nowait())
-		except Queue.Empty:
+		except gs.queue.Empty:
 			pass
 
 		if l:

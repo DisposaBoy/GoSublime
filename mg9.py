@@ -6,7 +6,6 @@ import gsshell
 import hashlib
 import json
 import os
-import Queue
 import re
 import sublime
 import sublime_plugin
@@ -40,8 +39,8 @@ MARGO_EXE = 'gosublime.%s.margo.exe' % REV
 MARGO_BIN = gs.home_path('bin', MARGO_EXE)
 
 if not gs.checked(DOMAIN, '_vars'):
-	_send_q = Queue.Queue()
-	_recv_q = Queue.Queue()
+	_send_q = gs.queue.Queue()
+	_recv_q = gs.queue.Queue()
 
 class Request(object):
 	def __init__(self, f, method='', token=''):
@@ -335,7 +334,7 @@ def acall(method, arg, cb):
 	_send_q.put((method, arg, cb))
 
 def bcall(method, arg):
-	q = Queue.Queue()
+	q = gs.queue.Queue()
 	acall(method, arg, lambda r,e: q.put((r, e)))
 	try:
 		res, err = q.get(True, 1)

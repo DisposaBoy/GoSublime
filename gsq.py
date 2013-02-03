@@ -1,6 +1,5 @@
 import gscommon as gs
 import threading
-import Queue
 import sublime
 
 DOMAIN = 'GsQ'
@@ -40,7 +39,7 @@ class GsQ(threading.Thread):
 	def __init__(self, domain):
 		threading.Thread.__init__(self)
 		self.daemon = True
-		self.q = Queue.Queue()
+		self.q = gs.queue.Queue()
 		self.domain = domain
 
 	def run(self):
