@@ -643,13 +643,19 @@ def traceback(domain='GoSublime'):
 def show_traceback(domain):
 	show_output(domain, traceback(), replace=False, merge_domain=False)
 
+def maybe_unicode_str(s):
+	try:
+		return isinstance(s, unicode)
+	except NameError:
+		return isinstance(s, str)
+
 def ustr(s):
-	if isinstance(s, unicode):
+	if maybe_unicode_str(s):
 		return s
 	return str(s).decode('utf-8')
 
 def astr(s):
-	if isinstance(s, unicode):
+	if maybe_unicode_str(s):
 		return s.encode('utf-8')
 	return str(s)
 
