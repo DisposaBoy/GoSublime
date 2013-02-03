@@ -4,6 +4,11 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.02.03-1
+	* fmt verbs are now highlighted in raw strings
+	* fix race between fmt_save and 9o
+	* allow action'ing (super/ctrl+g only) seletions in 9o
+
 ## r13.01.27-2
 	* (by default) only save 9o history if the command was manually executed
 
