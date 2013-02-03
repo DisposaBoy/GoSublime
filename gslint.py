@@ -257,11 +257,7 @@ class GsCompLintCommand(sublime_plugin.TextCommand):
 			gsq.dispatch(CL_DOMAIN, lambda: do_comp_lint(dirname, fn), '')
 
 
-try:
-	init_once
-except:
-	init_once = True
-
+if not gs.checked(DOMAIN, '_vars'):
 	th = None
 	sem = threading.Semaphore()
 	file_refs = {}
