@@ -87,6 +87,7 @@ inside the `GoSublime.sublime-settings` file. As a side-effect you may set a spe
 project.
 
 `my-project.sublime-project`
+
 	{
 	    "settings": {
 	        "GoSublime": {
