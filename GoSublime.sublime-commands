@@ -38,13 +38,13 @@
 		"command": "gs_fmt_prompt_save_as"
 	},
 	{
-		"caption": "GoSublime: Open shell/build prompt",
-		"command": "gs_shell"
+		"caption": "GoSublime: Run build command",
+		"command": "gs9o_build"
 	},
 	{
-		"caption": "GoSublime: Play/Run (current file only)",
-		"command": "gs_shell",
-		"args": {"run": "go play"}
+		"caption": "GoSublime: Replay current package",
+		"command": "gs9o_open",
+		"args": {"run": ["replay"]}
 	},
 	{
 		"caption": "GoSublime: Share (on play.golang.org)",
