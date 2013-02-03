@@ -357,7 +357,7 @@ def cmd_go(view, edit, args, wd, rkey):
 			'args': args,
 		}
 	}
-	mg9.acall('sh', a, cb)
+	sublime.set_timeout(lambda: mg9.acall('sh', a, cb), 0)
 
 def cmd_help(view, edit, args, wd, rkey):
 	gs.focus(gs.dist_path('9o.md'))
@@ -402,7 +402,7 @@ def cmd_9(view, edit, args, wd, rkey):
 				if gs.is_go_source_view(av, False):
 					a['src'] = av.substr(sublime.Region(0, av.size()))
 
-	mg9.acall('play', a, cb)
+	sublime.set_timeout(lambda: mg9.acall('play', a, cb), 0)
 
 def cmd_tskill(view, edit, args, wd, rkey):
 	if len(args) > 0:
