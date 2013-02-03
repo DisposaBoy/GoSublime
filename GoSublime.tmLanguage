@@ -735,6 +735,13 @@
 					</dict>
 					<key>name</key>
 					<string>string.quoted.raw.go</string>
+					<key>patterns</key>
+					<array>
+						<dict>
+							<key>include</key>
+							<string>#string_placeholder</string>
+						</dict>
+					</array>
 				</dict>
 			</array>
 		</dict>

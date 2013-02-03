@@ -350,7 +350,12 @@
 						"0": {
 							"name": "punctuation.definition.string.begin.go"
 						}
-					}
+					},
+					"patterns": [
+						{
+							"include": "#string_placeholder"
+						}
+					]
 				}
 			]
 		},
