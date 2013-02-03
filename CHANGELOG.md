@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.02.03-3
+	* impl `go share` as 9o command `share`. see ctrl+9 "help" for more details
+
 ## r13.02.03-2
 	* add new setting `build_command` to allow changing what command is run when you press ctrl+dot,ctrl+b
 		see the default settings for documentation (ctrl+dot,ctrl+dot "default settings")
