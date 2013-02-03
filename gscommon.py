@@ -60,6 +60,7 @@ except:
 		"snippets": [],
 		"fn_exclude_prefixes": [".", "_"],
 		"autosave": True,
+		"build_command": [],
 	}
 	_settings = copy.copy(_default_settings)
 

@@ -1,4 +1,4 @@
 {
-	"target": "gs9o_build_prompt",
+	"target": "gs9o_build",
 	"selector": "source.go"
 }
