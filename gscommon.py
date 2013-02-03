@@ -181,7 +181,10 @@ def is_a(v, base):
 	return isinstance(v, type(base))
 
 def is_a_string(v):
-	return isinstance(v, basestring)
+	try:
+		return isinstance(v, basestring)
+	except NameError:
+		return isinstance(v, str)
 
 def settings_obj():
 	return sublime.load_settings("GoSublime.sublime-settings")
