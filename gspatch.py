@@ -2,7 +2,7 @@ import gscommon as gs
 import sublime
 import sys
 
-if sys.version_info[0] == 3:
+if gs.PY3K:
 	from something_borrowed.diff_match_patch.python3.diff_match_patch import diff_match_patch
 else:
 	from something_borrowed.diff_match_patch.python2.diff_match_patch import diff_match_patch

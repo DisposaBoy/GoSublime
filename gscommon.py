@@ -1,25 +1,27 @@
 # Sublime modelines - https://github.com/SublimeText/Modelines
 # sublime: translate_tabs_to_spaces false; rulers [100,120]
 
-import sublime
-import subprocess
-import re
-import os
-import threading
-import tempfile
-import datetime
-import uuid
-import traceback as tbck
-import json
 from subprocess import Popen, PIPE
 import copy
+import datetime
+import json
+import os
+import re
 import string
+import sublime
+import subprocess
+import sys
+import tempfile
+import threading
+import traceback as tbck
+import uuid
 
 try:
 	import Queue as queue
 except ImportError:
 	import queue
 
+PY3K = (sys.version_info[0] == 3)
 DIST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 try:
