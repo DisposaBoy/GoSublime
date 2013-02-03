@@ -46,6 +46,7 @@ DEFAULT_COMMANDS = [
 	'go help',
 	'settings',
 	'env',
+	'share',
 ]
 DEFAULT_CL = [(s, s+' ') for s in DEFAULT_COMMANDS]
 
@@ -363,6 +364,18 @@ def cmd_go(view, edit, args, wd, rkey):
 		}
 	}
 	sublime.set_timeout(lambda: mg9.acall('sh', a, cb), 0)
+
+def cmd_share(view, edit, args, wd, rkey):
+	av = gs.active_valid_go_view(win=view.window())
+	if av is None:
+		push_output(view, rkey, 'not sharing non-go src')
+		return
+
+	def f(res, err):
+		s = '%s\n%s' % (err, res.get('url', ''))
+		push_output(view, rkey, s.strip())
+
+	mg9.share(gs.view_src(view.window().active_view()), f)
 
 def cmd_help(view, edit, args, wd, rkey):
 	gs.focus(gs.dist_path('9o.md'))

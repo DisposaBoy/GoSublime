@@ -321,6 +321,13 @@ def doc(fn, src, offset, f):
 		'tabWidth': gs.setting('fmt_tab_width'),
 	}, cb)
 
+def share(src, f):
+	warning = 'Are you sure you want to share this file. It will be public on play.golang.org'
+	if sublime.ok_cancel_dialog(warning):
+		acall('share', {'Src': src or ''}, f)
+	else:
+		f({}, 'Share cancelled')
+
 def acall(method, arg, cb):
 	if not gs.checked(DOMAIN, 'launch _send'):
 		gsq.launch(DOMAIN, _send)

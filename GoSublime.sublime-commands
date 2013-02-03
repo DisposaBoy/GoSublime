@@ -48,8 +48,8 @@
 	},
 	{
 		"caption": "GoSublime: Share (on play.golang.org)",
-		"command": "gs_shell",
-		"args": {"run": "go share"}
+		"command": "gs9o_open",
+		"args": {"run": ["share"]}
 	},
 	{
 		"caption": "GoSublime: Goto Definition",

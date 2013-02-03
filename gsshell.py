@@ -3,7 +3,6 @@ import sublime_plugin
 import gscommon as gs
 import re
 import os
-import httplib
 import hashlib
 import threading
 import Queue
@@ -61,24 +60,6 @@ class Prompt(object):
 					hst[gs.ustr(k)] = gs.ustr(hist[k])
 				self.settings.set('cmd_hist', hst)
 				sublime.save_settings('GoSublime-GsShell.sublime-settings')
-
-			if GO_SHARE_PAT.match(s):
-				s = ''
-				host = "play.golang.org"
-				warning = 'Are you sure you want to share this file. It will be public on %s' % host
-				if not sublime.ok_cancel_dialog(warning):
-					return
-
-				try:
-					c = httplib.HTTPConnection(host)
-					src = gs.astr(self.view.substr(sublime.Region(0, self.view.size())))
-					c.request('POST', '/share', src, {'User-Agent': 'GoSublime'})
-					s = 'http://%s/p/%s' % (host, c.getresponse().read())
-				except Exception as ex:
-					s = 'Error: %s' % ex
-
-				self.show_output(s, focus=True)
-				return
 
 			if GO_RUN_PAT.match(s):
 				if not file_name:
