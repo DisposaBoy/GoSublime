@@ -159,24 +159,6 @@ def popen(args, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None, buf
 	return Popen(args, stdout=stdout, stderr=stderr, stdin=PIPE, startupinfo=STARTUP_INFO,
 		shell=shell, env=ev, cwd=cwd, preexec_fn=setsid, bufsize=bufsize)
 
-def runcmd(args, input=None, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None):
-	out = ""
-	err = ""
-	exc = None
-
-	try:
-		p = popen(args, stdout=stdout, stderr=stderr, shell=shell, environ=environ, cwd=cwd)
-		if input is not None:
-			input = input.encode('utf-8')
-		out, err = p.communicate(input=input)
-		out = out.decode('utf-8') if out else ''
-		err = err.decode('utf-8') if err else ''
-	except (Exception) as e:
-		err = u'Error while running %s: %s' % (args[0], e)
-		exc = e
-
-	return (out, err, exc)
-
 def is_a(v, base):
 	return isinstance(v, type(base))
 
