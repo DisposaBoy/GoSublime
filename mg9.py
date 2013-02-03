@@ -152,7 +152,7 @@ def install(aso_tokens, force_install):
 	_check_changes()
 
 	if err:
-		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (MARGO_EXE, err))
+		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (err))
 	else:
 		env, err = gs.json_decode(out, {})
 		if err:

@@ -154,8 +154,8 @@ class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 
 def handle_pkgdirs_res(res):
 	m = {}
-	for root, dirs in res.iteritems():
-		for dir, fn in dirs.iteritems():
+	for root, dirs in res.items():
+		for dir, fn in dirs.items():
 			if not m.get(dir):
 				m[dir] = fn
 	ents = m.keys()

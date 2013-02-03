@@ -19,7 +19,7 @@ SNIPPET_VAR_PAT = re.compile(r'\$\{([a-zA-Z]\w*)\}')
 
 def snippet_match(ctx, m):
 	try:
-		for k,p in m.get('match', {}).iteritems():
+		for k,p in m.get('match', {}).items():
 			q = ctx.get(k, '')
 			if p and gs.is_a_string(p):
 				if not re.search(p, str(q)):
@@ -42,7 +42,7 @@ def resolve_snippets(ctx):
 	cl = set()
 	types = [''] if ctx.get('local') else ctx.get('types')
 	vars = {}
-	for k,v in ctx.iteritems():
+	for k,v in ctx.items():
 		if gs.is_a_string(v):
 			vars[k] = v
 
