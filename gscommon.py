@@ -20,6 +20,8 @@ try:
 except ImportError:
 	import queue
 
+DIST_DIR = os.path.dirname(os.path.abspath(__file__))
+
 try:
 	STARTUP_INFO = subprocess.STARTUPINFO()
 	STARTUP_INFO.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -668,7 +670,7 @@ def dval(v, d):
 	return d
 
 def dist_path(*a):
-	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
+	return os.path.join(DIST_DIR, *a)
 
 def home_path(*a):
 	p = os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9')
