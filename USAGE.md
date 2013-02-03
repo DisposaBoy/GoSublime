@@ -86,11 +86,28 @@ If you have a settings object called `GoSublime` in your project settings its va
 inside the `GoSublime.sublime-settings` file. As a side-effect you may set a specific GOPATH for a simple
 project.
 
+`my-project.sublime-project`
+	{
+	    "settings": {
+	        "GoSublime": {
+	            "env": {
+	            	"GOPATH": "$HOME/my-project"
+	            }
+	        }
+	    },
+	    "folders": []
+	}
+
 If the only setting you use this functionality to change is the GOPATH, then you may be able to find
 success by adding the string `$GS_GOPATH` to your global `GOPATH` setting e.g.
-`"env": { "GOPATH": "$HOME/go:$GS_GOPATH" }`
-This is a pseudo-environment-variable.
-It's changed to match all a possible GOPATH based on the current file name. e.g. if your file name is
+
+	{
+		"env": { "GOPATH": "$HOME/go:$GS_GOPATH" }
+	}
+
+
+`GS_GOPATH` is a pseudo-environment-variable.
+It's changed to match a possible GOPATH based on the current file's path. e.g. if your file path is
 `/tmp/go/src/hello/main.go` then it will contain the value `/tmp/go`
 
 Lint/Syntax Check
