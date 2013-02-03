@@ -4,6 +4,10 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.02.03-2
+	* add new setting `build_command` to allow changing what command is run when you press ctrl+dot,ctrl+b
+		see the default settings for documentation (ctrl+dot,ctrl+dot "default settings")
+
 ## r13.02.03-1
 	* fmt verbs are now highlighted in raw strings
 	* fix race between fmt_save and 9o
