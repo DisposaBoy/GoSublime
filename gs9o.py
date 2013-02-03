@@ -182,14 +182,19 @@ class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 
 	def run(self, edit):
 		v = self.view
-		pos = gs.sel(v).begin()
-		inscope = lambda p: v.score_selector(p, 'path.9o') > 0
-		if not inscope(pos):
-			pos -= 1
+		sel = gs.sel(v)
+		if (sel.end() - sel.begin()) == 0:
+			pos = sel.begin()
+			inscope = lambda p: v.score_selector(p, 'path.9o') > 0
 			if not inscope(pos):
-				return
+				pos -= 1
+				if not inscope(pos):
+					return
+			r = v.extract_scope(pos)
+		else:
+			r = sel
 
-		path = v.substr(v.extract_scope(pos))
+		path = v.substr(r)
 		if URL_PATH_PAT.match(path):
 			if path.lower().startswith('gs.packages://'):
 				path = os.path.join(sublime.packages_path(), path[14:])
