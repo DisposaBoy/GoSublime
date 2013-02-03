@@ -44,6 +44,8 @@ DEFAULT_COMMANDS = [
 	'go version',
 	'go vet',
 	'go help',
+	'settings',
+	'env',
 ]
 DEFAULT_CL = [(s, s+' ') for s in DEFAULT_COMMANDS]
 
