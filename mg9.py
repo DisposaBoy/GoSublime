@@ -5,7 +5,6 @@ import gsq
 import gsshell
 import hashlib
 import json
-import margo
 import os
 import Queue
 import re
@@ -191,8 +190,6 @@ def install(aso_tokens, force_install):
 				report_x()
 	except Exception:
 		report_x()
-
-	gsq.launch(DOMAIN, margo.bye_ni)
 
 def _fasthash(fn):
 	try:
