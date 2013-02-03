@@ -328,7 +328,7 @@ def acall(method, arg, cb):
 	if not gs.checked(DOMAIN, 'launch _send'):
 		gsq.launch(DOMAIN, _send)
 
-	_send_q.put((method, arg, cb))
+	sublime.set_timeout(lambda: _send_q.put((method, arg, cb)), 0)
 
 def bcall(method, arg):
 	q = Queue.Queue()
