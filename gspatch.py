@@ -50,9 +50,9 @@ def merge(view, size, text):
 		if size < 0:
 			size = view.size()
 		dirty = _merge(view, size, text, edit)
-	except MergeException as (err, d):
+	except MergeException as ex:
 		dirty = True
-		err = "Could not merge changes into the buffer, edit aborted: %s" % err
+		err = "Could not merge changes into the buffer, edit aborted: %s" % ex[0]
 		view.replace(edit, sublime.Region(0, view.size()), origin_src)
 	except Exception as ex:
 		err = "where ma bees at?: %s" % ex
