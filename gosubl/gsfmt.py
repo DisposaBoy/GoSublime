@@ -32,3 +32,7 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 		if err:
 			msg = 'PANIC: Cannot fmt file. Check your source for errors (and maybe undo any changes).'
 			sublime.error_message("%s: %s: Merge failure: `%s'" % (DOMAIN, msg, err))
+
+def gs_init():
+	pass
+

@@ -473,3 +473,7 @@ def _dump(res, err):
 if not gs.checked(DOMAIN, 'do_init'):
 	atexit.register(killSrv)
 	sublime.set_timeout(do_init, 0)
+
+def gs_init():
+	pass
+

@@ -386,3 +386,6 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 			s = '// %s %s\n%s' % (c['name'], c['class'], c['type'])
 			self.show_hint(s)
 
+def gs_init():
+	pass
+

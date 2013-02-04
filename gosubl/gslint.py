@@ -264,3 +264,6 @@ if not gs.checked(DOMAIN, '_vars'):
 
 	watch()
 
+def gs_init():
+	pass
+

@@ -99,3 +99,7 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 			gs.cancel_task(m.get(i, ''))
 
 		self.window.show_quick_panel(ents, cb)
+
+def gs_init():
+	pass
+

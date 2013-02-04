@@ -92,3 +92,6 @@ def handle_action(view, action):
 
 	return ok
 
+def gs_init():
+	pass
+

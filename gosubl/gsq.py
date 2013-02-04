@@ -84,3 +84,7 @@ def do(domain, f, msg='', set_status=False):
 
 def launch(domain, f):
 	Launcher(domain, f).start()
+
+def gs_init():
+	pass
+
