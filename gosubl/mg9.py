@@ -428,7 +428,11 @@ def _send():
 				header, _ = gs.json_encode({'method': method, 'token': req.token})
 				body, _ = gs.json_encode(arg)
 				ln = '%s %s\n' % (header, body)
-				proc.stdin.write(ln)
+
+				if gs.PY3K:
+					proc.stdin.write(bytes(ln, 'UTF-8'))
+				else:
+					proc.stdin.write(ln)
 			except Exception:
 				killSrv()
 				gs.println(gs.traceback())
@@ -443,7 +447,7 @@ def _read_stdout(proc):
 			if not ln:
 				break
 
-			_recv_q.put(ln)
+			_recv_q.put(gs.ustr(ln))
 	except Exception:
 		gs.println(gs.traceback())
 
