@@ -181,7 +181,8 @@ def watch():
 def ref(fn, validate=True):
 	with sem:
 		if validate:
-			for fn, fr in file_refs.items():
+			for fn in list(file_refs.keys()):
+				fr = file_refs[fn]
 				if not fr.view.window() or fn != fr.view.file_name():
 					del file_refs[fn]
 		return file_refs.get(fn)
