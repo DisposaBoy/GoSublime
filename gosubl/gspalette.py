@@ -1,8 +1,8 @@
+from gosubl import gs
+from gosubl import gslint
+from gosubl import gspatch
+from gosubl import mg9
 from os.path import dirname, basename, relpath
-import gscommon as gs
-import gslint
-import gspatch
-import mg9
 import re
 import sublime
 import sublime_plugin

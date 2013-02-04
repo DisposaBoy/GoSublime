@@ -1,13 +1,13 @@
-import gscommon as gs
-import mg9
-import gsq
-import gsshell
+from gosubl import gs
+from gosubl import gsq
+from gosubl import gsshell
+from gosubl import mg9
+import os
+import re
 import sublime
 import sublime_plugin
 import threading
 import time
-import os
-import re
 
 DOMAIN = 'GsLint'
 CL_DOMAIN = 'GsCompLint'

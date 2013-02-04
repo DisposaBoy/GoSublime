@@ -1,4 +1,4 @@
-import gscommon as gs
+from gosubl import gs
 import sublime
 import sys
 

@@ -1,6 +1,6 @@
+from gosubl import gs
+from gosubl import mg9
 import datetime
-import gscommon as gs
-import mg9
 import os
 import sublime
 import sublime_plugin

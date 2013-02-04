@@ -1,6 +1,6 @@
-import gscommon as gs
-import threading
+from gosubl import gs
 import sublime
+import threading
 
 DOMAIN = 'GsQ'
 

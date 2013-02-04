@@ -1,12 +1,12 @@
-import sublime
-import sublime_plugin
+from gosubl import gs
+from gosubl import mg9
+from os.path import basename
+from os.path import dirname
 import json
 import os
 import re
-import gscommon as gs
-import mg9
-from os.path import basename
-from os.path import dirname
+import sublime
+import sublime_plugin
 
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
 REASONABLE_PKGNAME_PAT = re.compile(r'^\w+$')

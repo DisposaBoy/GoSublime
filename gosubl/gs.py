@@ -22,7 +22,6 @@ except ImportError:
 	import queue
 
 PY3K = (sys.version_info[0] == 3)
-DIST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 try:
 	STARTUP_INFO = subprocess.STARTUPINFO()
@@ -663,7 +662,7 @@ def dval(v, d):
 	return d
 
 def dist_path(*a):
-	return os.path.join(DIST_DIR, *a)
+	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
 
 def home_path(*a):
 	p = os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9')

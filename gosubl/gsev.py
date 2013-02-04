@@ -1,6 +1,6 @@
-import gscommands
-import gscommon as gs
-import gstest
+from gosubl import gs
+from gosubl import gscommands
+from gosubl import gstest
 import sublime
 import sublime_plugin
 

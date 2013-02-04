@@ -1,8 +1,8 @@
+from gosubl import gs
+from gosubl import gsq
+from gosubl import gsshell
 import atexit
 import base64
-import gscommon as gs
-import gsq
-import gsshell
 import hashlib
 import json
 import os
