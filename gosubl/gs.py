@@ -635,11 +635,17 @@ def maybe_unicode_str(s):
 def ustr(s):
 	if maybe_unicode_str(s):
 		return s
+
+	if PY3K:
+		return str(s, 'utf-8')
 	return str(s).decode('utf-8')
 
 def astr(s):
 	if maybe_unicode_str(s):
+		if PY3K:
+			return s
 		return s.encode('utf-8')
+
 	return str(s)
 
 def lst(*a):
