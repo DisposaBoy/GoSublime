@@ -441,7 +441,7 @@ def cmd_tskill(view, edit, args, wd, rkey):
 	try:
 		now = datetime.datetime.now().replace(microsecond=0)
 		with gs.sm_lck:
-			tasks = sorted(gs.sm_tasks.iteritems())
+			tasks = sorted(gs.sm_tasks.items())
 
 		l = []
 		for tid, t in tasks:
