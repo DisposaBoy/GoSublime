@@ -298,22 +298,27 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 		else:
 			view.insert(edit, gs.sel(view).begin(), '\n')
 
-def push_output(view, rkey, out, hourglass_repl=''):
-	out = '\t%s' % gs.ustr(out).strip().replace('\r', '').replace('\n', '\n\t')
-	edit = view.begin_edit()
-	try:
+class Gs9oPushOutput(sublime_plugin.TextCommand):
+	def run(self, edit, rkey, output, hourglass_repl=''):
+		view = self.view
+		output = '\t%s' % gs.ustr(output).strip().replace('\r', '').replace('\n', '\n\t')
 		regions = view.get_regions(rkey)
 		if regions:
 			line = view.line(regions[0].begin())
 			lsrc = view.substr(line).replace(HOURGLASS, (hourglass_repl or '| done'))
 			view.replace(edit, line, lsrc)
-			if out.strip():
+			if output.strip():
 				line = view.line(regions[0].begin())
-				view.insert(edit, line.end(), '\n%s' % out)
+				view.insert(edit, line.end(), '\n%s' % output)
 		else:
-			view.insert(edit, view.size(), '\n%s' % out)
-	finally:
-		view.end_edit(edit)
+			view.insert(edit, view.size(), '\n%s' % output)
+
+def push_output(view, rkey, output, hourglass_repl=''):
+	view.run_command('gs9o_push_output', {
+		'rkey': rkey,
+		'output': output,
+		'hourglass_repl': hourglass_repl,
+	})
 
 def _save_all(win, wd):
 	if gs.setting('autosave') is True and win is not None:
