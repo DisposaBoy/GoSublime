@@ -50,9 +50,8 @@ DEFAULT_COMMANDS = [
 ]
 DEFAULT_CL = [(s, s+' ') for s in DEFAULT_COMMANDS]
 
-if not gs.checked(DOMAIN, '_vars'):
-	stash = {}
-	tid_alias = {}
+stash = {}
+tid_alias = {}
 
 def active_wd(win=None):
 	_, v = gs.win_view(win=win)
