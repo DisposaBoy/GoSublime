@@ -346,12 +346,16 @@ def expand_jdata(v):
 	if gs.is_a(v, {}):
 		for k in v:
 			v[k] = expand_jdata(v[k])
-	elif gs.is_a_string(v) and v.startswith('base64:'):
-		try:
-			v = base64.b64decode(v[7:])
-		except Exception:
-			v = ''
-			gs.error_traceback(DOMAIN)
+	else:
+		if gs.PY3K and isinstance(v, bytes):
+			v = gs.ustr(v)
+
+		if gs.is_a_string(v) and v.startswith('base64:'):
+			try:
+				v = gs.ustr(base64.b64decode(v[7:]))
+			except Exception:
+				v = ''
+				gs.error_traceback(DOMAIN)
 	return v
 
 def _recv():
