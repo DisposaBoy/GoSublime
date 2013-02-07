@@ -1,14 +1,13 @@
 from gosubl import gs
-from gosubl import gslint
 from gosubl import gspatch
 from gosubl import mg9
 from os.path import dirname, basename, relpath
+import gslint
 import re
 import sublime
 import sublime_plugin
 
 DOMAIN = 'GsPalette'
-last_import_path = {}
 
 class Loc(object):
 	def __init__(self, fn, row, col=0):
@@ -123,7 +122,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		if not view:
 			return
 
-		last_import = last_import_path.get(view.file_name())
+		last_import = gs.attr('last_import_path.%s' % gs.view_fn(view), '')
 		r = None
 		if last_import:
 			offset = len(last_import) + 2
@@ -216,8 +215,6 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 		mg9.import_paths(view.file_name(), src, f)
 
 	def toggle_import(self, a):
-		global last_import_path
-
 		view, decl = a
 		im, err = mg9.imports(
 			view.file_name(),
@@ -234,14 +231,11 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			if not src or line_ref < 1 or not r:
 				return
 
-			dirty, err = gspatch.merge(view, r.end(), src)
-			if err:
-				gs.notice_undo(DOMAIN, err, view, dirty)
-			elif dirty:
-				if decl.get('add'):
-					last_import_path[view.file_name()] = decl.get('path')
-				else:
-					last_import_path[view.file_name()] = ''
+			view.run_command('gs_patch_imports', {
+				'pos': r.end(),
+				'content': src,
+				'added_path': (decl.get('path') if decl.get('add') else '')
+			})
 
 	def jump_to(self, a):
 		view, loc = a

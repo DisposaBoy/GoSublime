@@ -168,3 +168,16 @@ class GsSetOutputPanelContentCommand(sublime_plugin.TextCommand):
 class GsInsertContentCommand(sublime_plugin.TextCommand):
 	def run(self, edit, pos, content):
 		self.view.insert(edit, pos, content)
+
+class GsPatchImportsCommand(sublime_plugin.TextCommand):
+	def run(self, edit, pos, content, added_path=''):
+		view = self.view
+		dirty, err = gspatch.merge(view, pos, content, edit)
+		if err:
+			gs.notice_undo(DOMAIN, err, view, dirty)
+		elif dirty:
+			k = 'last_import_path.%s' % gs.view_fn(self.view)
+			if added_path:
+				gs.set_attr(k, added_path)
+			else:
+				gs.del_attr(k)
