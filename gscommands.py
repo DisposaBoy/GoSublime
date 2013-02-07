@@ -167,10 +167,12 @@ class GsSetOutputPanelContentCommand(sublime_plugin.TextCommand):
 
 class GsInsertContentCommand(sublime_plugin.TextCommand):
 	def run(self, edit, pos, content):
+		pos = int(pos) # un-fucking-believable
 		self.view.insert(edit, pos, content)
 
 class GsPatchImportsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, pos, content, added_path=''):
+		pos = int(pos) # un-fucking-believable
 		view = self.view
 		dirty, err = gspatch.merge(view, pos, content, edit)
 		if err:
