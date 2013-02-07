@@ -128,6 +128,11 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 
 		self.window.show_quick_panel(ents, cb)
 
+class GsSanityCheckCommand(sublime_plugin.WindowCommand):
+	def run(self):
+		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(['%7s: %s' % ln for ln in mg9.sanity_check()])
+		gs.show_output('GoSublime', s)
+
 def gs_init():
 	pass
 
