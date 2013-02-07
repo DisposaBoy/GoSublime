@@ -1,4 +1,5 @@
 from gosubl import gs
+from gosubl import gspatch
 from gosubl import mg9
 import datetime
 import os
@@ -9,6 +10,33 @@ class GsCommentForwardCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command("toggle_comment", {"block": False})
 		self.view.run_command("move", {"by": "lines", "forward": True})
+
+
+class GsFmtCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		return gs.setting('fmt_enabled', False) is True and gs.is_go_source_view(self.view)
+
+	def run(self, edit):
+		domain = 'GsFmt'
+
+		vsize = self.view.size()
+		src = self.view.substr(sublime.Region(0, vsize))
+		if not src.strip():
+			return
+
+		src, err = mg9.fmt(self.view.file_name(), src)
+		if err:
+			gs.println(domain, "cannot fmt file. error: `%s'" % err)
+			return
+
+		if not src.strip():
+			gs.println(domain, "cannot fmt file. it appears to be empty")
+			return
+
+		_, err = gspatch.merge(self.view, vsize, src, edit)
+		if err:
+			msg = 'PANIC: Cannot fmt file. Check your source for errors (and maybe undo any changes).'
+			sublime.error_message("%s: %s: Merge failure: `%s'" % (domain, msg, err))
 
 class GsFmtSaveCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
