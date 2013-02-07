@@ -30,94 +30,94 @@ try:
 except (AttributeError):
 	STARTUP_INFO = None
 
-try:
-	NAME
-except:
-	NAME = 'GoSublime'
+NAME = 'GoSublime'
 
-	_attr_lck = threading.Lock()
-	_attr = {}
+mg9_send_q = queue.Queue()
+mg9_recv_q = queue.Queue()
 
-	_checked_lck = threading.Lock()
-	_checked = {}
+_attr_lck = threading.Lock()
+_attr = {}
 
-	environ9 = {}
-	_env_lck = threading.Lock()
-	_default_settings = {
-		"_debug": False,
-		"env": {},
-		"gscomplete_enabled": False,
-		"complete_builtins": False,
-		"autocomplete_builtins": False,
-		"fmt_enabled": False,
-		"fmt_tab_indent": True,
-		"fmt_tab_width": 8,
-		"gslint_enabled": False,
-		"comp_lint_enabled": False,
-		"comp_lint_commands": [],
-		"gslint_timeout": 0,
-		"autocomplete_snippets": False,
-		"autocomplete_tests": False,
-		"autocomplete_closures": False,
-		"autocomplete_filter_name": "",
-		"autocomplete_suggest_imports": False,
-		"margo_addr": "",
-		"on_save": [],
-		"shell": [],
-		"default_snippets": [],
-		"snippets": [],
-		"fn_exclude_prefixes": [".", "_"],
-		"autosave": True,
-		"build_command": [],
-	}
-	_settings = copy.copy(_default_settings)
+_checked_lck = threading.Lock()
+_checked = {}
+
+environ9 = {}
+_env_lck = threading.Lock()
+_default_settings = {
+	"_debug": False,
+	"env": {},
+	"gscomplete_enabled": False,
+	"complete_builtins": False,
+	"autocomplete_builtins": False,
+	"fmt_enabled": False,
+	"fmt_tab_indent": True,
+	"fmt_tab_width": 8,
+	"gslint_enabled": False,
+	"comp_lint_enabled": False,
+	"comp_lint_commands": [],
+	"gslint_timeout": 0,
+	"autocomplete_snippets": False,
+	"autocomplete_tests": False,
+	"autocomplete_closures": False,
+	"autocomplete_filter_name": "",
+	"autocomplete_suggest_imports": False,
+	"margo_addr": "",
+	"on_save": [],
+	"shell": [],
+	"default_snippets": [],
+	"snippets": [],
+	"fn_exclude_prefixes": [".", "_"],
+	"autosave": True,
+	"build_command": [],
+}
+_settings = copy.copy(_default_settings)
 
 
-	CLASS_PREFIXES = {
-		'const': u'\u0196',
-		'func': u'\u0192',
-		'type': u'\u0288',
-		'var':  u'\u03BD',
-		'package': u'package \u03C1',
-	}
+CLASS_PREFIXES = {
+	'const': u'\u0196',
+	'func': u'\u0192',
+	'type': u'\u0288',
+	'var':  u'\u03BD',
+	'package': u'package \u03C1',
+}
 
-	NAME_PREFIXES = {
-		'interface': u'\u00A1',
-	}
+NAME_PREFIXES = {
+	'interface': u'\u00A1',
+}
 
-	GOARCHES = [
-		'386',
-		'amd64',
-		'arm',
-	]
+GOARCHES = [
+	'386',
+	'amd64',
+	'arm',
+]
 
-	GOOSES = [
-		'darwin',
-		'freebsd',
-		'linux',
-		'netbsd',
-		'openbsd',
-		'plan9',
-		'windows',
-		'unix',
-	]
+GOOSES = [
+	'darwin',
+	'freebsd',
+	'linux',
+	'netbsd',
+	'openbsd',
+	'plan9',
+	'windows',
+	'unix',
+]
 
-	GOOSARCHES = []
-	for s in GOOSES:
-		for arch in GOARCHES:
-			GOOSARCHES.append('%s_%s' % (s, arch))
+GOOSARCHES = []
+for s in GOOSES:
+	for arch in GOARCHES:
+		GOOSARCHES.append('%s_%s' % (s, arch))
 
-	GOOSARCHES_PAT = re.compile(r'^(.+?)(?:_(%s))?(?:_(%s))?\.go$' % ('|'.join(GOOSES), '|'.join(GOARCHES)))
+GOOSARCHES_PAT = re.compile(r'^(.+?)(?:_(%s))?(?:_(%s))?\.go$' % ('|'.join(GOOSES), '|'.join(GOARCHES)))
 
-	IGNORED_SCOPES = frozenset([
-		'string.quoted.double.go',
-		'string.quoted.single.go',
-		'string.quoted.raw.go',
-		'comment.line.double-slash.go',
-		'comment.block.go'
-	])
+IGNORED_SCOPES = frozenset([
+	'string.quoted.double.go',
+	'string.quoted.single.go',
+	'string.quoted.raw.go',
+	'comment.line.double-slash.go',
+	'comment.block.go'
+])
 
-	VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)$', re.IGNORECASE)
+VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)$', re.IGNORECASE)
 
 def apath(fn, cwd=None):
 	if not os.path.isabs(fn):
