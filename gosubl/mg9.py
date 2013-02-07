@@ -1,3 +1,4 @@
+from gosubl import about
 from gosubl import gs
 from gosubl import gsq
 from gosubl import gsshell
@@ -8,7 +9,6 @@ import json
 import os
 import re
 import sublime
-import sublime_plugin
 import threading
 import time
 import uuid
@@ -17,30 +17,12 @@ DOMAIN = 'MarGo'
 REQUEST_PREFIX = '%s.rqst.' % DOMAIN
 PROC_ATTR_NAME = 'mg9.proc'
 
-CHANGES_SPLIT_PAT = re.compile(r'^##', re.MULTILINE)
-CHANGES_MATCH_PAT = re.compile(r'^\s*(r[\d.]+[-]\d+)\s+(.+?)\s*$', re.DOTALL)
-CHANGELOG_FN = gs.dist_path("CHANGELOG.md")
-CHANGES = []
+def gs_init():
+	atexit.register(killSrv)
 
-with open(CHANGELOG_FN) as f:
-	s = f.read()
-
-for m in CHANGES_SPLIT_PAT.split(s):
-	m = CHANGES_MATCH_PAT.match(m)
-	if m:
-		CHANGES.append((m.group(1), m.group(2)))
-CHANGES.sort(reverse=True)
-REV = CHANGES[0][0]
-
-# customization of, or user-owned margo will no longer be supported
-# so we'll hardcode the relevant paths and refer to them directly instead of relying on PATH
-MARGO_SRC = gs.dist_path('margo9')
-MARGO_EXE = 'gosublime.%s.margo.exe' % REV
-MARGO_BIN = gs.home_path('bin', MARGO_EXE)
-
-if not gs.checked(DOMAIN, '_vars'):
-	_send_q = gs.queue.Queue()
-	_recv_q = gs.queue.Queue()
+	aso_tokens = gs.aso().get('mg9_install_tokens', '')
+	f = lambda: install(aso_tokens, False)
+	gsq.do('GoSublime', f, msg='Installing MarGo', set_status=True)
 
 class Request(object):
 	def __init__(self, f, method='', token=''):
@@ -52,32 +34,35 @@ class Request(object):
 		else:
 			self.token = 'mg9.autoken.%s' % uuid.uuid4()
 
-class GsSanityCheckCommand(sublime_plugin.WindowCommand):
-	def run(self):
-		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(['%7s: %s' % ln for ln in _sanity_check()])
-		gs.show_output(DOMAIN, s, print_output=False)
+def _margo_src():
+	return gs.dist_path('margo9')
 
-def _sanity_check(env={}):
+def _margo_bin():
+	return gs.home_path('bin', about.MARGO_EXE)
+
+def sanity_check(env={}):
 	if not env:
 		env = gs.env()
 
+	ns = '(not set)'
+
 	return [
-		('version', REV),
+		('version', about.VERSION),
 		('~bin', '%s' % gs.home_path('bin')),
-		('MarGo', '%s (%s)' % _tp(MARGO_BIN)),
-		('GOROOT', '%s' % env.get('GOROOT', '(not set)')),
-		('GOPATH', '%s' % env.get('GOPATH', '(not set)')),
-		('GOBIN', '%s (should usually be (not set))' % env.get('GOBIN', '(not set)')),
+		('MarGo', '%s (%s)' % _tp(_margo_bin())),
+		('GOROOT', '%s' % env.get('GOROOT', ns)),
+		('GOPATH', '%s' % env.get('GOPATH', ns)),
+		('GOBIN', '%s (should usually be `%s`)' % (env.get('GOBIN', ns), ns)),
 	]
 
 def _check_changes():
 	def cb():
 		aso = gs.aso()
-		old_rev = aso.get('changelog.rev', '')
-		if REV > old_rev:
-			aso.set('changelog.rev', REV)
+		old_version = aso.get('version', '')
+		if about.VERSION > old_version:
+			aso.set('version', about.VERSION)
 			gs.save_aso()
-			gs.focus(CHANGELOG_FN)
+			gs.focus(gs.dist_path('CHANGELOG.md'))
 
 	sublime.set_timeout(cb, 0)
 
@@ -108,16 +93,16 @@ def _run(cmd, cwd=None, shell=False):
 	return gsshell.run(cmd, shell=shell, cwd=cwd, env=nv)
 
 def _bins_exist():
-	return os.path.exists(MARGO_BIN)
+	return os.path.exists(_margo_bin())
 
 def maybe_install():
 	if not _bins_exist():
 		install('', True)
 
 def install(aso_tokens, force_install):
-	k = 'mg9.install.%s' % REV
+	k = 'mg9.install.%s' % about.VERSION
 	if gs.attr(k, False):
-		gs.error(DOMAIN, 'Installation aborted. Install command already called for GoSublime %s.' % REV)
+		gs.error(DOMAIN, 'Installation aborted. Install command already called for GoSublime %s.' % about.VERSION)
 		return
 
 	gs.set_attr(k, True)
@@ -134,7 +119,7 @@ def install(aso_tokens, force_install):
 	else:
 		gs.notify('GoSublime', 'Installing MarGo')
 		start = time.time()
-		m_out, err, _ = _run(['go', 'build', '-o', MARGO_BIN], cwd=MARGO_SRC)
+		m_out, err, _ = _run(['go', 'build', '-o', _margo_bin()], cwd=_margo_src())
 		m_out, m_ok = _so(m_out, err, start, time.time())
 
 		if m_ok:
@@ -145,7 +130,7 @@ def install(aso_tokens, force_install):
 			sublime.set_timeout(f, 0)
 
 	gs.notify('GoSublime', 'Syncing environment variables')
-	out, err, _ = gsshell.run([MARGO_EXE, '-env'], cwd=gs.home_path(), shell=True)
+	out, err, _ = gsshell.run([about.MARGO_EXE, '-env'], cwd=gs.home_path(), shell=True)
 
 	# notify this early so we don't mask any notices below
 	gs.notify('GoSublime', 'Ready')
@@ -165,7 +150,7 @@ def install(aso_tokens, force_install):
 		'GoSublime init (%0.3fs)' % (time.time() - init_start),
 		'| install margo: %s' % m_out,
 	]
-	a.extend(['| %14s: %s' % ln for ln in _sanity_check(e)])
+	a.extend(['| %14s: %s' % ln for ln in sanity_check(e)])
 	gs.println(*a)
 
 	missing = [k for k in ('GOROOT', 'GOPATH') if not e.get(k)]
@@ -181,7 +166,7 @@ def install(aso_tokens, force_install):
 		d = gs.home_path('bin')
 		for fn in os.listdir(d):
 			try:
-				if fn != MARGO_EXE and fn.startswith(('gosublime', 'gocode', 'margo')):
+				if fn != about.MARGO_EXE and fn.startswith(('gosublime', 'gocode', 'margo')):
 					fn = os.path.join(d, fn)
 					gs.println("GoSublime: removing old binary: %s" % fn)
 					os.remove(fn)
@@ -190,37 +175,8 @@ def install(aso_tokens, force_install):
 	except Exception:
 		report_x()
 
-def _fasthash(fn):
-	try:
-		with open(fn) as f:
-			chunk = f.read(1024*8)
-		st = os.stat(fn)
-		return '%s:%d' % (hashlib.sha1(chunk).hexdigest(), st.st_size)
-	except Exception:
-		pass
-	return ''
-
-def _read(fn):
-	s = ''
-	try:
-		with open(fn) as f:
-			s = f.read()
-	except Exception:
-		pass
-	return s
-
-def _token(head, bin):
-	head = _read(gs.dist_path(head))
-	token = '%s %s' % (head.strip(), _fasthash(bin))
-	return token
-
 def _gen_tokens():
-	return REV
-
-def do_init():
-	aso_tokens = gs.aso().get('mg9_install_tokens', '')
-	f = lambda: install(aso_tokens, False)
-	gsq.do('GoSublime', f, msg='Installing MarGo', set_status=True)
+	return about.VERSION
 
 def completion_options(m={}):
 	res, err = bcall('gocode_options', {})
@@ -331,7 +287,7 @@ def acall(method, arg, cb):
 	if not gs.checked(DOMAIN, 'launch _send'):
 		gsq.launch(DOMAIN, _send)
 
-	_send_q.put((method, arg, cb))
+	gs.mg9_send_q.put((method, arg, cb))
 
 def bcall(method, arg):
 	q = gs.queue.Queue()
@@ -361,7 +317,7 @@ def expand_jdata(v):
 def _recv():
 	while True:
 		try:
-			ln = _recv_q.get()
+			ln = gs.mg9_recv_q.get()
 			try:
 				ln = ln.strip()
 				if ln:
@@ -399,7 +355,7 @@ def _send():
 	while True:
 		try:
 			try:
-				method, arg, cb = _send_q.get()
+				method, arg, cb = gs.mg9_send_q.get()
 
 				proc = gs.attr(PROC_ATTR_NAME)
 				if not proc or proc.poll() is not None:
@@ -409,7 +365,7 @@ def _send():
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					proc, _, err = gsshell.proc([MARGO_BIN, '-poll=30'], stderr=gs.LOGFILE ,env={
+					proc, _, err = gsshell.proc([_margo_bin(), '-poll=30'], stderr=gs.LOGFILE ,env={
 						'XDG_CONFIG_HOME': gs.home_path(),
 					})
 					gs.set_attr(PROC_ATTR_NAME, proc)
@@ -451,7 +407,7 @@ def _read_stdout(proc):
 			if not ln:
 				break
 
-			_recv_q.put(gs.ustr(ln))
+			gs.mg9_recv_q.put(gs.ustr(ln))
 	except Exception:
 		gs.println(gs.traceback())
 
@@ -477,11 +433,3 @@ def _dump(res, err):
 		'res': res,
 		'err': err,
 	}, sort_keys=True, indent=2))
-
-if not gs.checked(DOMAIN, 'do_init'):
-	atexit.register(killSrv)
-	sublime.set_timeout(do_init, 0)
-
-def gs_init():
-	pass
-
