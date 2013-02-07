@@ -256,7 +256,7 @@ def notice_undo(domain, txt, view, should_undo):
 	sublime.set_timeout(cb, 0)
 
 def show_output(domain, s, print_output=True, syntax_file='', replace=True, merge_domain=False, scroll_end=False):
-	def cb(domain, s, print_output, win):
+	def cb(domain, s, print_output, syntax_file):
 		panel_name = '%s-output' % domain
 		if merge_domain:
 			s = '%s: %s' % (domain, s)
@@ -267,35 +267,14 @@ def show_output(domain, s, print_output=True, syntax_file='', replace=True, merg
 
 		win = sublime.active_window()
 		if win:
-			panel = win.get_output_panel(panel_name)
-			edit = panel.begin_edit()
-			panel.set_read_only(False)
-
-			try:
-				if replace:
-					panel.replace(edit, sublime.Region(0, panel.size()), s)
-				else:
-					panel.insert(edit, panel.size(), s+'\n')
-			finally:
-				panel.end_edit(edit)
-
-			panel.sel().clear()
-			pst = panel.settings()
-			pst.set("rulers", [])
-			pst.set("fold_buttons", True)
-			pst.set("fade_fold_buttons", False)
-			pst.set("gutter", False)
-			pst.set("line_numbers", False)
-			if syntax_file:
-				if syntax_file == 'GsDoc':
-					panel.set_syntax_file('Packages/GoSublime/GsDoc.hidden-tmLanguage')
-					panel.run_command("fold_by_level", { "level": 1 })
-				else:
-					panel.set_syntax_file(syntax_file)
-			panel.set_read_only(True)
+			win.get_output_panel(panel_name).run_command('gs_set_output_panel_content', {
+				'content': s,
+				'syntax_file': syntax_file,
+				'scroll_end': scroll_end,
+				'replace': replace,
+			})
 			win.run_command("show_panel", {"panel": "output.%s" % panel_name})
-			if scroll_end:
-				panel.show(panel.size())
+
 	sublime.set_timeout(lambda: cb(domain, s, print_output, syntax_file), 0)
 
 def is_pkg_view(view=None):

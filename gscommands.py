@@ -135,6 +135,34 @@ class GsSanityCheckCommand(sublime_plugin.WindowCommand):
 		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(['%7s: %s' % ln for ln in mg9.sanity_check()])
 		gs.show_output('GoSublime', s)
 
-def gs_init():
-	pass
+class GsSetOutputPanelContentCommand(sublime_plugin.TextCommand):
+	def run(self, edit, content, syntax_file, scroll_end, replace):
+		panel = self.view
+		panel.set_read_only(False)
+
+		if replace:
+			panel.replace(edit, sublime.Region(0, panel.size()), content)
+		else:
+			panel.insert(edit, panel.size(), content+'\n')
+
+		panel.sel().clear()
+		pst = panel.settings()
+		pst.set("rulers", [])
+		pst.set("fold_buttons", True)
+		pst.set("fade_fold_buttons", False)
+		pst.set("gutter", False)
+		pst.set("line_numbers", False)
+
+		if syntax_file:
+			if syntax_file == 'GsDoc':
+				panel.set_syntax_file('Packages/GoSublime/GsDoc.hidden-tmLanguage')
+				panel.run_command("fold_by_level", { "level": 1 })
+			else:
+				panel.set_syntax_file(syntax_file)
+
+		panel.set_read_only(True)
+
+		if scroll_end:
+			panel.show(panel.size())
+
 
