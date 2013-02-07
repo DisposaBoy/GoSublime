@@ -6,6 +6,8 @@ import os
 import sublime
 import sublime_plugin
 
+DOMAIN = 'GoSublime'
+
 class GsCommentForwardCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command("toggle_comment", {"block": False})
@@ -17,8 +19,6 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 		return gs.setting('fmt_enabled', False) is True and gs.is_go_source_view(self.view)
 
 	def run(self, edit):
-		domain = 'GsFmt'
-
 		vsize = self.view.size()
 		src = self.view.substr(sublime.Region(0, vsize))
 		if not src.strip():
@@ -26,17 +26,17 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 
 		src, err = mg9.fmt(self.view.file_name(), src)
 		if err:
-			gs.println(domain, "cannot fmt file. error: `%s'" % err)
+			gs.println(DOMAIN, "cannot fmt file. error: `%s'" % err)
 			return
 
 		if not src.strip():
-			gs.println(domain, "cannot fmt file. it appears to be empty")
+			gs.println(DOMAIN, "cannot fmt file. it appears to be empty")
 			return
 
 		_, err = gspatch.merge(self.view, vsize, src, edit)
 		if err:
 			msg = 'PANIC: Cannot fmt file. Check your source for errors (and maybe undo any changes).'
-			sublime.error_message("%s: %s: Merge failure: `%s'" % (domain, msg, err))
+			sublime.error_message("%s: %s: Merge failure: `%s'" % (DOMAIN, msg, err))
 
 class GsFmtSaveCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -75,7 +75,6 @@ class GsGotoRowColCommand(sublime_plugin.TextCommand):
 
 class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 	def run(self):
-		default_file_name = 'untitled.go'
 		pkg_name = 'main'
 		view = gs.active_valid_go_view()
 		try:
@@ -89,16 +88,19 @@ class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 		except Exception:
 			gs.error_traceback('GsNewGoFile')
 
-		view = self.window.new_file()
-		view.set_name(default_file_name)
+		self.window.new_file().run_command('gs_create_new_go_file', {
+			'pkg_name': pkg_name,
+			'file_name': 'main.go',
+		})
+
+class GsCreateNewGoFileCommand(sublime_plugin.TextCommand):
+	def run(self, edit, pkg_name, file_name):
+		view = self.view
+		view.set_name(file_name)
 		view.set_syntax_file('Packages/GoSublime/GoSublime.tmLanguage')
-		edit = view.begin_edit()
-		try:
-			view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
-			view.sel().clear()
-			view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
-		finally:
-			view.end_edit(edit)
+		view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
+		view.sel().clear()
+		view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
 
 class GsShowTasksCommand(sublime_plugin.WindowCommand):
 	def run(self):
