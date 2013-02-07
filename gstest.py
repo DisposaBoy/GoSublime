@@ -90,7 +90,3 @@ def handle_action(view, action):
 		view.run_command('gs9o_open', {'run': cmd})
 
 	return ok
-
-def gs_init():
-	pass
-

@@ -318,7 +318,3 @@ class ViewCommand(Command):
 	def run(self):
 		sublime.set_timeout(self.poll_output, 0)
 		super(ViewCommand, self).run()
-
-def gs_init():
-	pass
-

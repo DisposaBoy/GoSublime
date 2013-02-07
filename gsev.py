@@ -57,7 +57,3 @@ def do_sync_active_view(view):
 		if psettings and gs.is_a(psettings, {}):
 			m = gs.mirror_settings(psettings)
 		gs.set_attr('last_active_project_settings', gs.dval(m, {}))
-
-def gs_init():
-	pass
-

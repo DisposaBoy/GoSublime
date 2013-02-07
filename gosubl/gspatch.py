@@ -63,7 +63,3 @@ def merge(view, size, text, edit):
 	finally:
 		vs.set("translate_tabs_to_spaces", ttts)
 		return (dirty, err)
-
-def gs_init():
-	pass
-

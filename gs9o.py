@@ -479,6 +479,3 @@ def cmd_settings(view, edit, args, wd, rkey):
 def cmd_env(view, edit, args, wd, rkey):
 	_env_settings(gs.env(), view, edit, args, wd, rkey)
 
-def gs_init():
-	pass
-

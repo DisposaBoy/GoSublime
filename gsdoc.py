@@ -233,7 +233,3 @@ class GsBrowseFilesCommand(sublime_plugin.WindowCommand):
 			view = self.window.active_view()
 			dir = gs.basedir_or_cwd(view.file_name() if view is not None else None)
 		gsq.dispatch('*', lambda: show_pkgfiles(dir), 'scanning directory for package files')
-
-def gs_init():
-	pass
-
