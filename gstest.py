@@ -1,5 +1,4 @@
 from gosubl import gs
-from gosubl import gs9o
 from gosubl import mg9
 import os
 import re
