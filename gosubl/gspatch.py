@@ -40,8 +40,7 @@ def _merge(view, size, text, edit):
 				view.erase(edit, sublime.Region(i, i+l))
 	return dirty
 
-def merge(view, size, text):
-	edit = view.begin_edit()
+def merge(view, size, text, edit):
 	vs = view.settings()
 	ttts = vs.get("translate_tabs_to_spaces")
 	vs.set("translate_tabs_to_spaces", False)
@@ -62,7 +61,6 @@ def merge(view, size, text):
 	except Exception as ex:
 		err = "where ma bees at?: %s" % ex
 	finally:
-		view.end_edit(edit)
 		vs.set("translate_tabs_to_spaces", ttts)
 		return (dirty, err)
 
