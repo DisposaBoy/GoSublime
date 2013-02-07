@@ -165,4 +165,6 @@ class GsSetOutputPanelContentCommand(sublime_plugin.TextCommand):
 		if scroll_end:
 			panel.show(panel.size())
 
-
+class GsInsertContentCommand(sublime_plugin.TextCommand):
+	def run(self, edit, pos, content):
+		self.view.insert(edit, pos, content)

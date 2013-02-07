@@ -285,12 +285,14 @@ class ViewCommand(Command):
 			finally:
 				self.view.end_edit(edit)
 
-	def write_lines(self, view, edit, lines):
-		for ln in lines:
-			try:
-				view.insert(edit, view.size(), u'%s\n' % ln)
-			except Exception:
-				gs.println(gs.traceback(DOMAIN))
+	def write_lines(self, view, lines):
+		try:
+			view.run_command('gs_insert_content', {
+				'content': '\n'.join(lines),
+				'pos': view.size(),
+			})
+		except Exception:
+			gs.println(gs.traceback(DOMAIN))
 		view.show(view.line(view.size() - 1).begin())
 
 	def on_output_done(self):
