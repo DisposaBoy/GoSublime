@@ -3,6 +3,6 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 
 (If you donated anonymously and would like to be added, please contact me)
 
+* Hans Stimer
 * quarnster `http://pledgie.com/accounts/quarnster`
 * Yves Junqueira `http://pledgie.com/accounts/@cetico`
-* Hans Stimer
