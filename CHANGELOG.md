@@ -4,6 +4,11 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.02.08-2
+	* add THANKS.md there are several other donors who weren't added since your donations were
+		done anonymously. I'd like to add you as well :) if you want your name added please let me know
+		either thank you all!
+
 ## r13.02.08-1
 	* initial(incomplete) Sublime Text 3 support
 	* gsshell ui and gs_shell command removed
