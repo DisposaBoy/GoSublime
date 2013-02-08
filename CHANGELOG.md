@@ -4,6 +4,11 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.02.08-1
+	* initial(incomplete) Sublime Text 3 support
+	* gsshell ui and gs_shell command removed
+	* anything that imported or used gs* commands is probably broken
+
 ## r13.02.03-3
 	* impl `go share` as 9o command `share`. see ctrl+9 "help" for more details
 
