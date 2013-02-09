@@ -30,6 +30,7 @@ DEFAULT_COMMANDS = [
 	'tskill',
 	'tskill replay',
 	'tskill go',
+	'go',
 	'go build',
 	'go clean',
 	'go doc',
@@ -48,6 +49,8 @@ DEFAULT_COMMANDS = [
 	'settings',
 	'env',
 	'share',
+	'hist',
+	'hist erase',
 ]
 DEFAULT_CL = [(s, s+' ') for s in DEFAULT_COMMANDS]
 
@@ -479,3 +482,21 @@ def cmd_settings(view, edit, args, wd, rkey):
 def cmd_env(view, edit, args, wd, rkey):
 	_env_settings(gs.env(), view, edit, args, wd, rkey)
 
+def cmd_hist(view, edit, args, wd, rkey):
+	aso = gs.aso()
+	hkey = '9o.hist.%s' % wd
+
+	s = 'hist: invalid args: %s' % args
+
+	if len(args) == 0:
+		hist = gs.dval(aso.get(hkey), [])
+		hist.reverse()
+		hlen = len(hist)
+		s = '\n'.join('^%d: %s' % (i+1, v) for i,v in enumerate(hist))
+	elif len(args) == 1:
+		if args[0] == 'erase':
+			aso.erase(hkey)
+			gs.save_aso()
+			s = ''
+
+	push_output(view, rkey, s)
