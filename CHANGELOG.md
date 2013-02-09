@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## r13.02.09-1
+	*impl 9o `hist` command
+
 ## r13.02.08-2
 	* add THANKS.md there are several other donors who weren't added since your donations were
 		done anonymously. I'd like to add you as well :) if you want your name added please let me know
