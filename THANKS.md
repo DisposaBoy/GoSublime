@@ -5,6 +5,7 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 
 * AlekSi `https://github.com/AlekSi`
 * AmandaC `https://github.com/AmandaCameron`
+* Fredrik Ehnbom `http://pledgie.com/accounts/quarnster`
+* guillermooo `https://github.com/guillermooo`
 * Hans Stimer
-* quarnster `http://pledgie.com/accounts/quarnster`
 * Yves Junqueira `http://pledgie.com/accounts/@cetico`
