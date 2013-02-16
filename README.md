@@ -47,7 +47,7 @@ Sublime Package Control allows you to easily install or remove GoSublime(and man
 Usage
 -----
 
-Please see USAGE.md and 9o.md for general usage and other tips for effective usage of GoSublime
+Please see [USAGE.md]() and [9o.md]() for general usage and other tips for effective usage of GoSublime
 
 **NOTE** GoCode is entirely integrated into GoSublime/MarGo. If you see any bugs related to completion,
 assume they are GoSublime's bugs and I will forward bug reports as necessary.
@@ -76,4 +76,18 @@ The following letters are used as suffix for entries in the completion list.
 
 * ρ - Packages
 
+
+Copyright, License & Contributors
+=================================
+
+GoSublime and MarGo are released under the MIT license. See [LICENSE.md]()
+
+GoSublime is the copyrighted work of *The GoSublime Authors* i.e me ([https://github.com/DisposaBoy/GoSublime](DisposaBoy)) and *all* contributors. If you submit a change, be it documentation or code, so long as it's committed to GoSublime's history I consider you a contributor. See [AUTHORS.md]() for a list of all the GoSublime authors/contributors.
+
+GoSublime bundles several dependencies, these all reside under the diriectory tree [something_borrowed]() and are the copyright of their respective authors.
+
+Supporters
+==========
+
+GoSublime has received support from many kind individuals and as a thank you I've added most to [THANKS.md]() file as a way of saying *Thank You*. Some donors donated anonymously and so are not listed, however, if you donated and either I have not yet sent you an email personally thanking you or you would otherwise like to be added, please don't hesitate to contact me disposaboy@dby.me
 
