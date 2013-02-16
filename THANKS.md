@@ -8,4 +8,6 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Fredrik Ehnbom `http://pledgie.com/accounts/quarnster`
 * guillermooo `https://github.com/guillermooo`
 * Hans Stimer
+* Joe Farro `http://jf.io/`
+* Tom Westberg
 * Yves Junqueira `http://pledgie.com/accounts/@cetico`
