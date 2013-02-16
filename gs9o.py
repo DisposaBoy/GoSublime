@@ -312,8 +312,10 @@ class Gs9oPushOutput(sublime_plugin.TextCommand):
 			view.replace(edit, line, lsrc)
 			if output.strip():
 				line = view.line(regions[0].begin())
+				view.show(line)
 				view.insert(edit, line.end(), '\n%s' % output)
 		else:
+			view.show(view.size())
 			view.insert(edit, view.size(), '\n%s' % output)
 
 def push_output(view, rkey, output, hourglass_repl=''):
