@@ -3,7 +3,7 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 
 (If you donated anonymously and would like to be added, or would otherwise liked your entry to be updated(or removed) please contact me)
 
-* AlekSi `https://github.com/AlekSi`
+* Alexey "AlekSi" Palazhchenko `https://github.com/AlekSi`
 * AmandaC `https://github.com/AmandaCameron`
 * Fredrik Ehnbom `http://pledgie.com/accounts/quarnster`
 * guillermooo `https://github.com/guillermooo`
