@@ -707,9 +707,7 @@ def checked(domain, k):
 
 def sel(view, i=0):
 	try:
-		# view.sel() is a sublime.RegionSet. we want actual a python list behaviour :|
-		l = [r for r in view.sel()]
-		return l[i]
+		return view.sel()[i]
 	except Exception:
 		return sublime.Region(0, 0)
 
