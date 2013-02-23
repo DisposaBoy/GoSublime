@@ -158,7 +158,7 @@ def handle_pkgdirs_res(res):
 		for dir, fn in dirs.items():
 			if not m.get(dir):
 				m[dir] = fn
-	ents = m.keys()
+	ents = list(m.keys())
 	ents.sort(key = lambda a: a.lower())
 	return (ents, m)
 
