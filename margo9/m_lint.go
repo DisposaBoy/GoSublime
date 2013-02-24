@@ -57,7 +57,7 @@ func lintCheckFlagParse(fset *token.FileSet, af *ast.File, res []M) []M {
 								"row":     tp.Line - 1,
 								"col":     tp.Column - 1,
 								"message": "Cannot find corresponding call to flag.Parse()",
-								"kind":    "gs.flag",
+								"kind":    "gs.flag.parse",
 							})
 						}
 					}
