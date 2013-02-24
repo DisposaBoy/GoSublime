@@ -25,7 +25,7 @@ func (m *mLint) Call() (interface{}, string) {
 				"row":     e.Pos.Line - 1,
 				"col":     e.Pos.Column - 1,
 				"message": e.Msg,
-				"kind":    "syntax",
+				"kind":    "gs.syntax",
 			})
 		}
 	}
@@ -57,7 +57,7 @@ func lintCheckFlagParse(fset *token.FileSet, af *ast.File, res []M) []M {
 								"row":     tp.Line - 1,
 								"col":     tp.Column - 1,
 								"message": "Cannot find corresponding call to flag.Parse()",
-								"kind":    "flag",
+								"kind":    "gs.flag",
 							})
 						}
 					}
