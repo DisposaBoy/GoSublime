@@ -3,6 +3,8 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.02.24-1
+	* add new setting `lint_filter`. see the default settings for documentation
 
 ## r13.02.09-1
 	*impl 9o `hist` command
