@@ -69,6 +69,7 @@ _default_settings = {
 	"fn_exclude_prefixes": [".", "_"],
 	"autosave": True,
 	"build_command": [],
+	"lint_filter": [],
 }
 _settings = copy.copy(_default_settings)
 

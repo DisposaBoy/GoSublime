@@ -7,30 +7,59 @@ import (
 	"go/token"
 )
 
-type mLint struct {
-	Fn  jString
-	Src jString
+type mLintReport struct {
+	Fn      string
+	Row     int
+	Col     int
+	Message string
+	Kind    string
 }
 
-func (m *mLint) Call() (interface{}, string) {
-	res := M{}
-	reports := make([]M, 0)
+type mLint struct {
+	Fn     jString
+	Src    jString
+	Filter []string
 
-	fset, af, err := parseAstFile(m.Fn.String(), m.Src.String(), parser.DeclarationErrors)
+	fset    *token.FileSet
+	af      *ast.File
+	reports []mLintReport
+}
+
+var (
+	mLinters = map[string]func(kind string, m *mLint){
+		"gs.flag.parse": mLintCheckFlagParse,
+	}
+)
+
+func (m *mLint) Call() (interface{}, string) {
+	filterKind := map[string]bool{}
+	for _, kind := range m.Filter {
+		filterKind[kind] = true
+	}
+
+	var err error
+	m.reports = []mLintReport{}
+	m.fset, m.af, err = parseAstFile(m.Fn.String(), m.Src.String(), parser.DeclarationErrors)
 	if err == nil {
-		reports = lintCheckFlagParse(fset, af, reports)
-	} else if el, ok := err.(scanner.ErrorList); ok {
+		for kind, f := range mLinters {
+			if !filterKind[kind] {
+				f(kind, m)
+			}
+		}
+	} else if el, ok := err.(scanner.ErrorList); ok && !filterKind["gs.syntax"] {
 		for _, e := range el {
-			reports = append(reports, M{
-				"row":     e.Pos.Line - 1,
-				"col":     e.Pos.Column - 1,
-				"message": e.Msg,
-				"kind":    "gs.syntax",
+			m.reports = append(m.reports, mLintReport{
+				Row:     e.Pos.Line - 1,
+				Col:     e.Pos.Column - 1,
+				Message: e.Msg,
+				Kind:    "gs.syntax",
 			})
 		}
 	}
 
-	res["reports"] = reports
+	res := M{
+		"reports": m.reports,
+	}
 	return res, ""
 }
 
@@ -40,10 +69,10 @@ func init() {
 	})
 }
 
-func lintCheckFlagParse(fset *token.FileSet, af *ast.File, res []M) []M {
-	reps := []M{}
+func mLintCheckFlagParse(kind string, m *mLint) {
+	reps := []mLintReport{}
 	foundParse := false
-	ast.Inspect(af, func(node ast.Node) bool {
+	ast.Inspect(m.af, func(node ast.Node) bool {
 		switch c := node.(type) {
 		case *ast.CallExpr:
 			if sel, ok := c.Fun.(*ast.SelectorExpr); ok {
@@ -51,13 +80,13 @@ func lintCheckFlagParse(fset *token.FileSet, af *ast.File, res []M) []M {
 					if sel.Sel.String() == "Parse" {
 						foundParse = true
 					} else if !foundParse && c != nil {
-						tp := fset.Position(c.Pos())
+						tp := m.fset.Position(c.Pos())
 						if tp.IsValid() {
-							reps = append(reps, M{
-								"row":     tp.Line - 1,
-								"col":     tp.Column - 1,
-								"message": "Cannot find corresponding call to flag.Parse()",
-								"kind":    "gs.flag.parse",
+							reps = append(reps, mLintReport{
+								Row:     tp.Line - 1,
+								Col:     tp.Column - 1,
+								Message: "Cannot find corresponding call to flag.Parse()",
+								Kind:    kind,
 							})
 						}
 					}
@@ -68,8 +97,6 @@ func lintCheckFlagParse(fset *token.FileSet, af *ast.File, res []M) []M {
 	})
 
 	if !foundParse {
-		res = append(res, reps...)
+		m.reports = append(m.reports, reps...)
 	}
-
-	return res
 }
