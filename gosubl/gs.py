@@ -732,8 +732,6 @@ except:
 	st2_status_message = sublime.status_message
 	sublime.status_message = status_message
 
-	sched_sm_cb()
-
 	DEVNULL = open(os.devnull, 'w')
 	LOGFILE = DEVNULL
 
@@ -744,6 +742,8 @@ def gs_init():
 	except Exception as ex:
 		LOGFILE = DEVNULL
 		notice(NAME, 'Cannot create log file. Remote(margo) and persistent logging will be disabled. Error: %s' % ex)
+
+	sched_sm_cb()
 
 	settings_obj().clear_on_change("GoSublime.settings")
 	settings_obj().add_on_change("GoSublime.settings", sync_settings)
