@@ -3,6 +3,11 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.01-1
+	* add go/types (like the old gotype) linter
+	* disable go/types linter by default:
+	    to enabled it, set an empty filter list in your user settings e.g. `"lint_filter": []`
+
 ## r13.02.24-1
 	* add new setting `lint_filter`. see the default settings for documentation
 
