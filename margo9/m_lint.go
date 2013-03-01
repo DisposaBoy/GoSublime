@@ -5,6 +5,9 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
+	"gosublime.org/types"
+	"regexp"
+	"strconv"
 )
 
 type mLintReport struct {
@@ -16,8 +19,14 @@ type mLintReport struct {
 }
 
 type mLint struct {
-	Fn     jString
-	Src    jString
+	Dir jString
+	Fn  jString
+	Src jString
+	v   struct {
+		dir string
+		fn  string
+		src string
+	}
 	Filter []string
 
 	fset    *token.FileSet
@@ -26,12 +35,18 @@ type mLint struct {
 }
 
 var (
-	mLinters = map[string]func(kind string, m *mLint){
+	mLintErrPat = regexp.MustCompile(`(.+?):(\d+):(\d+): (.+)`)
+	mLinters    = map[string]func(kind string, m *mLint){
 		"gs.flag.parse": mLintCheckFlagParse,
+		"gs.types":      mLintCheckTypes,
 	}
 )
 
 func (m *mLint) Call() (interface{}, string) {
+	m.v.fn = m.Fn.String()
+	m.v.dir = m.Dir.String()
+	m.v.src = m.Src.String()
+
 	filterKind := map[string]bool{}
 	for _, kind := range m.Filter {
 		filterKind[kind] = true
@@ -39,7 +54,7 @@ func (m *mLint) Call() (interface{}, string) {
 
 	var err error
 	m.reports = []mLintReport{}
-	m.fset, m.af, err = parseAstFile(m.Fn.String(), m.Src.String(), parser.DeclarationErrors)
+	m.fset, m.af, err = parseAstFile(m.v.fn, m.v.src, parser.DeclarationErrors)
 	if err == nil {
 		for kind, f := range mLinters {
 			if !filterKind[kind] {
@@ -48,7 +63,8 @@ func (m *mLint) Call() (interface{}, string) {
 		}
 	} else if el, ok := err.(scanner.ErrorList); ok && !filterKind["gs.syntax"] {
 		for _, e := range el {
-			m.reports = append(m.reports, mLintReport{
+			m.report(mLintReport{
+				Fn:      m.v.fn,
 				Row:     e.Pos.Line - 1,
 				Col:     e.Pos.Column - 1,
 				Message: e.Msg,
@@ -61,6 +77,10 @@ func (m *mLint) Call() (interface{}, string) {
 		"reports": m.reports,
 	}
 	return res, ""
+}
+
+func (m *mLint) report(reps ...mLintReport) {
+	m.reports = append(m.reports, reps...)
 }
 
 func init() {
@@ -83,6 +103,7 @@ func mLintCheckFlagParse(kind string, m *mLint) {
 						tp := m.fset.Position(c.Pos())
 						if tp.IsValid() {
 							reps = append(reps, mLintReport{
+								Fn:      tp.Filename,
 								Row:     tp.Line - 1,
 								Col:     tp.Column - 1,
 								Message: "Cannot find corresponding call to flag.Parse()",
@@ -97,6 +118,51 @@ func mLintCheckFlagParse(kind string, m *mLint) {
 	})
 
 	if !foundParse {
-		m.reports = append(m.reports, reps...)
+		m.report(reps...)
 	}
+}
+
+func mLintCheckTypes(kind string, m *mLint) {
+	files := []*ast.File{m.af}
+	if m.v.dir != "" {
+		pkg, pkgs, _ := parsePkg(m.fset, m.v.dir, parser.ParseComments)
+		if pkg == nil {
+			for _, p := range pkgs {
+				if f := p.Files[m.v.fn]; f != nil {
+					pkg = p
+					break
+				}
+			}
+
+			if pkg == nil {
+				return
+			}
+		}
+
+		for fn, f := range pkg.Files {
+			if fn != m.v.fn {
+				files = append(files, f)
+			}
+		}
+	}
+
+	ctx := types.Context{
+		Error: func(err error) {
+			s := mLintErrPat.FindStringSubmatch(err.Error())
+			if len(s) == 5 {
+				line, _ := strconv.Atoi(s[2])
+				column, _ := strconv.Atoi(s[3])
+
+				m.report(mLintReport{
+					Fn:      s[1],
+					Row:     line - 1,
+					Col:     column - 1,
+					Message: s[4],
+					Kind:    kind,
+				})
+			}
+		},
+	}
+
+	ctx.Check(m.fset, files)
 }

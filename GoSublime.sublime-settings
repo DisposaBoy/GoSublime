@@ -39,7 +39,11 @@
 	// gs.syntax - parser/syntax errors - it makes no sense to filter this as it will simply
 	//             manifest itself in other checks (which will likely not be done if there are syntax errors)
 	// gs.flag.parse - check for possibly missing calls to flag.Parse()
-	"lint_filter": [],
+	// gs.types - do a typecheck using the go/types package(like the old gotype)
+	//            disabled by default until it's ready(copied from tip)
+	"lint_filter": [
+		"gs.types"
+	],
 
 	// Whether or not comp lint is enabled (this might conflict with gslint)
 	"comp_lint_enabled": false,
