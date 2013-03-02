@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.02-1
+	* cap the number of concurrent requests margo will process
+
 ## r13.03.01-1
 	* add go/types (like the old gotype) linter
 	* disable go/types linter by default:
