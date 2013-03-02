@@ -108,11 +108,7 @@ func main() {
 			}
 		}()
 	}
-	broker.Loop(!doCall)
-
-	if wait || doCall {
-		broker.Wg.Wait()
-	}
+	broker.Loop(!doCall, (wait || doCall))
 
 	byeLck.Lock()
 	defer byeLck.Unlock() // keep this here for the sake of code correctness

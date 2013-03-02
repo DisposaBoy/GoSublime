@@ -23,6 +23,11 @@ type Response struct {
 	Data  interface{} `json:"data"`
 }
 
+type Job struct {
+	Req *Request
+	Cl  Caller
+}
+
 type Broker struct {
 	served uint
 	start  time.Time
@@ -32,7 +37,6 @@ type Broker struct {
 	w      io.Writer
 	in     *bufio.Reader
 	out    *json.Encoder
-	Wg     *sync.WaitGroup
 }
 
 func NewBroker(r io.Reader, w io.Writer) *Broker {
@@ -41,7 +45,6 @@ func NewBroker(r io.Reader, w io.Writer) *Broker {
 		w:   w,
 		in:  bufio.NewReader(r),
 		out: json.NewEncoder(w),
-		Wg:  &sync.WaitGroup{},
 	}
 }
 
@@ -85,7 +88,6 @@ func (b *Broker) SendNoLog(resp Response) error {
 }
 
 func (b *Broker) call(req *Request, cl Caller) {
-	defer b.Wg.Done()
 	b.served++
 
 	defer func() {
@@ -115,7 +117,7 @@ func (b *Broker) call(req *Request, cl Caller) {
 	})
 }
 
-func (b *Broker) accept() (stopLooping bool) {
+func (b *Broker) accept(jobsCh chan Job) (stopLooping bool) {
 	line, err := b.in.ReadBytes('\n')
 
 	if err == io.EOF {
@@ -165,13 +167,22 @@ func (b *Broker) accept() (stopLooping bool) {
 		return
 	}
 
-	b.Wg.Add(1)
-	go b.call(req, cl)
+	jobsCh <- Job{
+		Req: req,
+		Cl:  cl,
+	}
 
 	return
 }
 
-func (b *Broker) Loop(decorate bool) {
+func (b *Broker) worker(wg *sync.WaitGroup, jobsCh chan Job) {
+	defer wg.Done()
+	for job := range jobsCh {
+		b.call(job.Req, job.Cl)
+	}
+}
+
+func (b *Broker) Loop(decorate bool, wait bool) {
 	b.start = time.Now()
 
 	if decorate {
@@ -183,12 +194,25 @@ func (b *Broker) Loop(decorate bool) {
 		})
 	}
 
+	const workers = 20
+	wg := &sync.WaitGroup{}
+	jobsCh := make(chan Job, 1000)
+	for i := 0; i < workers; i += 1 {
+		wg.Add(1)
+		go b.worker(wg, jobsCh)
+	}
+
 	for {
-		stopLooping := b.accept()
+		stopLooping := b.accept(jobsCh)
 		if stopLooping {
 			break
 		}
 		runtime.Gosched()
+	}
+	close(jobsCh)
+
+	if wait {
+		wg.Wait()
 	}
 
 	if decorate {
