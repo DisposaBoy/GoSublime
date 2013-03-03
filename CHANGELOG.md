@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.03-1
+	* reduce false-positives in gs.flag linter
+	* fix margo help/flags (remove gocode flags from the output)
+
 ## r13.03.02-1
 	* cap the number of concurrent requests margo will process
 
