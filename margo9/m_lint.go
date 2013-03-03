@@ -97,18 +97,22 @@ func mLintCheckFlagParse(kind string, m *mLint) {
 		case *ast.CallExpr:
 			if sel, ok := c.Fun.(*ast.SelectorExpr); ok {
 				if id, ok := sel.X.(*ast.Ident); ok && id.Name == "flag" {
-					if sel.Sel.String() == "Parse" {
+					switch sel.Sel.String() {
+					case "Parse":
 						foundParse = true
-					} else if !foundParse && c != nil {
-						tp := m.fset.Position(c.Pos())
-						if tp.IsValid() {
-							reps = append(reps, mLintReport{
-								Fn:      tp.Filename,
-								Row:     tp.Line - 1,
-								Col:     tp.Column - 1,
-								Message: "Cannot find corresponding call to flag.Parse()",
-								Kind:    kind,
-							})
+					case "Var", "Bool", "BoolVar", "String", "StringVar", "Int", "IntVar", "Uint", "UintVar", "Int64", "Int64Var", "Uint64", "Uint64Var", "Duration", "DurationVar", "Float64", "Float64Var":
+
+						if !foundParse && c != nil {
+							tp := m.fset.Position(c.Pos())
+							if tp.IsValid() {
+								reps = append(reps, mLintReport{
+									Fn:      tp.Filename,
+									Row:     tp.Line - 1,
+									Col:     tp.Column - 1,
+									Message: "Cannot find corresponding call to flag.Parse()",
+									Kind:    kind,
+								})
+							}
 						}
 					}
 				}
