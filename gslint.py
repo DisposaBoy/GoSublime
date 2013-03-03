@@ -62,7 +62,7 @@ class GsLintThread(threading.Thread):
 				})
 				res = gs.dval(res, {})
 				for r in gs.dval(res.get('reports'), []):
-					if fn and r.get('Fn') != fn:
+					if fn and fn != '<stdin>' and r.get('Fn') != fn:
 						continue
 
 					kind = r.get('Kind', '')
