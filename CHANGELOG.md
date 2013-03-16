@@ -3,6 +3,11 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.16-2
+	* use the first action on a line if an action is triggered in the wrong place
+		e.g. if there is a filename and an error message, clicking on the error message will
+		9o will now try find the filename
+
 ## r13.03.16-1
 	* add imports to the top of the block. this causes them to be a part of the first group of imports
 		in cases where imports are group by separating them with a space
