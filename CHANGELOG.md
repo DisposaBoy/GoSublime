@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.16-1
+	* add imports to the top of the block. this causes them to be a part of the first group of imports
+		in cases where imports are group by separating them with a space
+
 ## r13.03.03-1
 	* reduce false-positives in gs.flag linter
 	* fix margo help/flags (remove gocode flags from the output)
