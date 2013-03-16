@@ -190,44 +190,62 @@ class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 		return self.view.score_selector(pos, 'text.9o') > 0
 
 	def run(self, edit):
+		actions = []
 		v = self.view
 		sel = gs.sel(v)
 		if (sel.end() - sel.begin()) == 0:
 			pos = sel.begin()
 			inscope = lambda p: v.score_selector(p, 'path.9o') > 0
-			if not inscope(pos):
-				pos -= 1
-				if not inscope(pos):
-					return
-			r = v.extract_scope(pos)
-		else:
-			r = sel
-
-		path = v.substr(r)
-		if URL_PATH_PAT.match(path):
-			if path.lower().startswith('gs.packages://'):
-				path = os.path.join(sublime.packages_path(), path[14:])
+			if inscope(pos):
+				actions.append(v.substr(v.extract_scope(pos)))
 			else:
-				try:
-					if not URL_SCHEME_PAT.match(path):
-						path = 'http://%s' % path
-					gs.notify(DOMAIN, 'open url: %s' % path)
-					webbrowser.open_new_tab(path)
-				except Exception:
-					gs.error_traceback(DOMAIN)
-
-				return
-
-		wd = v.settings().get('9o.wd') or active_wd()
-		m = SPLIT_FN_POS_PAT.match(path)
-		path = gs.apath((m.group(1) if m else path), wd)
-		row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
-		col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
-
-		if os.path.exists(path):
-			gs.focus(path, row, col, win=self.view.window())
+				pos -= 1
+				if inscope(pos):
+					actions.append(v.substr(v.extract_scope(pos)))
+				else:
+					line = v.line(pos)
+					for cr in v.find_by_selector('path.9o'):
+						if line.contains(cr):
+							actions.append(v.substr(cr))
 		else:
-			gs.notify(DOMAIN, "Invalid path `%s'" % path)
+			actions.append(v.substr(sel))
+
+		act_on(v, actions)
+
+def act_on(view, actions):
+	for a in actions:
+		if act_on_path(view, a):
+			break
+
+def act_on_path(view, path):
+	if URL_PATH_PAT.match(path):
+		if path.lower().startswith('gs.packages://'):
+			path = os.path.join(sublime.packages_path(), path[14:])
+		else:
+			try:
+				if not URL_SCHEME_PAT.match(path):
+					path = 'http://%s' % path
+				gs.notify(DOMAIN, 'open url: %s' % path)
+				webbrowser.open_new_tab(path)
+				return True
+			except Exception:
+				gs.error_traceback(DOMAIN)
+
+			return False
+
+	wd = view.settings().get('9o.wd') or active_wd()
+	m = SPLIT_FN_POS_PAT.match(path)
+	path = gs.apath((m.group(1) if m else path), wd)
+	row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
+	col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
+
+	if os.path.exists(path):
+		gs.focus(path, row, col, win=view.window())
+		return True
+	else:
+		gs.notify(DOMAIN, "Invalid path `%s'" % path)
+
+	return False
 
 class Gs9oExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
