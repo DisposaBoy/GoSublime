@@ -148,6 +148,7 @@ func imp(fset *token.FileSet, af *ast.File, toggle []mImportDeclArg) *ast.File {
 			firstDecl.Lparen = 1
 		}
 
+		addSpecs := make([]ast.Spec, 0, len(firstDecl.Specs)+len(add))
 		for sd, _ := range add {
 			if !imports[sd] {
 				ispec := &ast.ImportSpec{
@@ -161,10 +162,11 @@ func imp(fset *token.FileSet, af *ast.File, toggle []mImportDeclArg) *ast.File {
 						Name: sd.Name,
 					}
 				}
-				firstDecl.Specs = append(firstDecl.Specs, ispec)
+				addSpecs = append(addSpecs, ispec)
 				imports[sd] = true
 			}
 		}
+		firstDecl.Specs = append(addSpecs, firstDecl.Specs...)
 	}
 
 	dj := 0
