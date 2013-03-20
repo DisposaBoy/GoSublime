@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.20-1
+	* MarGo EXE name has changed to gosublime.margo.[VERSION].[platform]-[arch].exe
+		e.g. gosublime.margo.r13.03.20-1.linux-x64.exe
+
 ## r13.03.16-2
 	* use the first action on a line if an action is triggered in the wrong place
 		e.g. if there is a filename and an error message, clicking on the error message will
