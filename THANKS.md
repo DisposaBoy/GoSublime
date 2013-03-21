@@ -10,6 +10,7 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * guillermooo `https://github.com/guillermooo`
 * Hans Stimer
 * Joe Farro `http://jf.io/`
+* Joe Poirier `https://github.com/jpoirier`
 * Mark Smith `http://qq.is`
 * Tom Westberg
 * Yves Junqueira `http://pledgie.com/accounts/@cetico`
