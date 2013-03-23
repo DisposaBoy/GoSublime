@@ -4,6 +4,11 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 ## r13.03.20-1
+	* foreign platform binaries will no longer be cleaned up
+		e.g. where the current platform is linux-x64, a linux-x32 binary (gosublime.margo.r13.03.23-1.linux-x32.exe)
+			will not be cleaned up until you load st2 on linux-x32
+
+## r13.03.20-1
 	* MarGo EXE name has changed to gosublime.margo.[VERSION].[platform]-[arch].exe
 		e.g. gosublime.margo.r13.03.20-1.linux-x64.exe
 
