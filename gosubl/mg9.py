@@ -48,6 +48,7 @@ def sanity_check(env={}):
 
 	return [
 		('version', about.VERSION),
+		('platform', about.PLATFORM),
 		('~bin', '%s' % gs.home_path('bin')),
 		('MarGo', '%s (%s)' % _tp(_margo_bin())),
 		('GOROOT', '%s' % env.get('GOROOT', ns)),
