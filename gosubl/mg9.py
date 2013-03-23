@@ -166,7 +166,7 @@ def install(aso_tokens, force_install):
 		d = gs.home_path('bin')
 		for fn in os.listdir(d):
 			try:
-				if fn != about.MARGO_EXE and fn.startswith(('gosublime', 'gocode', 'margo')):
+				if fn != about.MARGO_EXE and about.MARGO_EXE_PAT.match(fn):
 					fn = os.path.join(d, fn)
 					gs.println("GoSublime: removing old binary: %s" % fn)
 					os.remove(fn)
