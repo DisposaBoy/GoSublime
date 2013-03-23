@@ -123,7 +123,7 @@ VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)$', re.IGNORECASE)
 def apath(fn, cwd=None):
 	if not os.path.isabs(fn):
 		if not cwd:
-			cwd = os.getcwd()
+			cwd = os.getcwdu()
 		fn = os.path.join(cwd, fn)
 	return os.path.normcase(os.path.normpath(fn))
 
@@ -146,7 +146,7 @@ def temp_file(suffix='', prefix='', delete=True):
 def basedir_or_cwd(fn):
 	if fn and not fn.startswith('gs.view://'):
 		return os.path.dirname(fn)
-	return os.getcwd()
+	return os.getcwdu()
 
 def popen(args, stdout=PIPE, stderr=PIPE, shell=False, environ={}, cwd=None, bufsize=0):
 	ev = env()
