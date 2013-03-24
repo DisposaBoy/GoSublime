@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.24-3
+	* wait for mg9.install to finish before attempting to send any request to margo.
+		fixes a false-positive error about the mg binary being missing before installtion completes
+
 ## a13.03.24-2
 	* fix call to getcwdu(not in py3k)
 
