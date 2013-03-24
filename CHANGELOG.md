@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.24-1
+	* communicate a tag/version between gs and mg so the case where they're out-of-sync can be detected
+
+
 ## r13.03.23-2
 	* use getcwdu instead of getcwd in hopes of avoiding python issues
 
