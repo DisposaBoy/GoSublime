@@ -389,8 +389,16 @@ def _send():
 
 				gs.debug(DOMAIN, 'margo request: method: %s, token: %s' % (req.method, req.token))
 
-				header, _ = gs.json_encode({'method': method, 'token': req.token})
-				body, _ = gs.json_encode(arg)
+				header, err = gs.json_encode({'method': method, 'token': req.token})
+				if err:
+					_cb_err('Failed to construct ipc header: ' % err)
+					continue
+
+				body, err = gs.json_encode(arg)
+				if err:
+					_cb_err(cb, 'Failed to construct ipc body: ' % err)
+					continue
+
 				ln = '%s %s\n' % (header, body)
 
 				if gs.PY3K:
@@ -403,6 +411,11 @@ def _send():
 		except Exception:
 			gs.println(gs.traceback())
 			break
+
+def _cb_err(cb, err):
+	gs.error(DOMAIN, err)
+	cb({}, err)
+
 
 def _read_stdout(proc):
 	try:
