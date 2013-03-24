@@ -16,6 +16,7 @@ import uuid
 DOMAIN = 'MarGo'
 REQUEST_PREFIX = '%s.rqst.' % DOMAIN
 PROC_ATTR_NAME = 'mg9.proc'
+TAG = about.VERSION
 
 def gs_init():
 	atexit.register(killSrv)
@@ -334,12 +335,21 @@ def _recv():
 				if ln:
 					r, _ = gs.json_decode(ln, {})
 					token = r.get('token', '')
+					tag = r.get('tag', '')
 					k = REQUEST_PREFIX+token
 					req = gs.attr(k)
 					gs.del_attr(k)
 					if req and req.f:
-						gs.debug(DOMAIN, "margo response: method: %s, token: %s, dur: %0.3fs, err: `%s'" % (
+						if tag != TAG:
+							gs.notice(DOMAIN, "\n".join([
+								"GoSublime/MarGo appears to be out-of-sync.",
+								"Maybe restart Sublime Text.",
+								"Received tag `%s', expected tag `%s'. " % (tag, TAG),
+							]))
+
+						gs.debug(DOMAIN, "margo response: method: %s, tag: %s, token: %s, dur: %0.3fs, err: `%s'" % (
 							req.method,
+							tag,
 							req.token,
 							(time.time() - req.tm),
 							r.get('error', ''),
@@ -376,7 +386,7 @@ def _send():
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					proc, _, err = gsshell.proc([_margo_bin(), '-poll=30'], stderr=gs.LOGFILE ,env={
+					proc, _, err = gsshell.proc([_margo_bin(), '-poll', 30, '-tag', TAG], stderr=gs.LOGFILE ,env={
 						'XDG_CONFIG_HOME': gs.home_path(),
 					})
 					gs.set_attr(PROC_ATTR_NAME, proc)

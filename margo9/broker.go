@@ -20,6 +20,7 @@ type Request struct {
 type Response struct {
 	Token string      `json:"token"`
 	Error string      `json:"error"`
+	Tag   string      `json:"tag"`
 	Data  interface{} `json:"data"`
 }
 
@@ -29,6 +30,7 @@ type Job struct {
 }
 
 type Broker struct {
+	tag    string
 	served uint
 	start  time.Time
 	rLck   sync.Mutex
@@ -39,8 +41,9 @@ type Broker struct {
 	out    *json.Encoder
 }
 
-func NewBroker(r io.Reader, w io.Writer) *Broker {
+func NewBroker(r io.Reader, w io.Writer, tag string) *Broker {
 	return &Broker{
+		tag: tag,
 		r:   r,
 		w:   w,
 		in:  bufio.NewReader(r),
@@ -62,6 +65,10 @@ func (b *Broker) SendNoLog(resp Response) error {
 
 	if resp.Data == nil {
 		resp.Data = M{}
+	}
+
+	if resp.Tag == "" {
+		resp.Tag = b.tag
 	}
 
 	s, err := json.Marshal(resp)

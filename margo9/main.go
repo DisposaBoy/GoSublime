@@ -59,12 +59,14 @@ func main() {
 	poll := 0
 	wait := false
 	dump_env := false
+	tag := ""
 
 	flags := flag.NewFlagSet("MarGo", flag.ExitOnError)
 	flags.BoolVar(&dump_env, "env", dump_env, "if true, dump all environment variables as a json map to stdout and exit")
 	flags.BoolVar(&wait, "wait", wait, "Whether or not to wait for outstanding requests (which may be hanging forever) when exiting")
 	flags.IntVar(&poll, "poll", poll, "If N is greater than zero, send a response every N seconds. The token will be `margo.poll`")
 	flags.StringVar(&do, "do", "-", "Process the specified operations(lines) and exit. `-` means operate as normal (`-do` implies `-wait=true`)")
+	flags.StringVar(&tag, "tag", tag, "Requests will include a member `tag' with this value")
 	flags.Parse(os.Args[1:])
 
 	if dump_env {
@@ -93,7 +95,7 @@ func main() {
 		}
 	}
 
-	broker := NewBroker(in, os.Stdout)
+	broker := NewBroker(in, os.Stdout, tag)
 	if poll > 0 {
 		pollSeconds := time.Second * time.Duration(poll)
 		pollCounter := &counter{}
