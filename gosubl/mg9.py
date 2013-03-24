@@ -347,16 +347,18 @@ def _recv():
 								"Received tag `%s', expected tag `%s'. " % (tag, TAG),
 							]))
 
-						gs.debug(DOMAIN, "margo response: method: %s, tag: %s, token: %s, dur: %0.3fs, err: `%s'" % (
-							req.method,
-							tag,
-							req.token,
-							(time.time() - req.tm),
-							r.get('error', ''),
-						))
+						err = r.get('error', '')
+
+						gs.debug(DOMAIN, "margo response: %s" % {
+							'method': req.method,
+							'tag': tag,
+							'token': token,
+							'dur': '%0.3fs' % (time.time() - req.tm),
+							'err': err,
+							'size': '%0.1fK' % (len(ln)/1024.0),
+						})
 
 						dat = expand_jdata(r.get('data', {}))
-						err = r.get('error', '')
 						try:
 							keep = req.f(dat, err) is not True
 							if keep:
