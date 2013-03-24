@@ -60,8 +60,10 @@ def _check_changes():
 	def cb():
 		aso = gs.aso()
 		old_version = aso.get('version', '')
-		if about.VERSION > old_version:
+		old_ann = aso.get('ann', '')
+		if about.VERSION > old_version or about.ANN > old_ann:
 			aso.set('version', about.VERSION)
+			aso.set('ann', about.ANN)
 			gs.save_aso()
 			gs.focus(gs.dist_path('CHANGELOG.md'))
 
