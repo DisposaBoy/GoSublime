@@ -97,7 +97,7 @@ class GsCreateNewGoFileCommand(sublime_plugin.TextCommand):
 	def run(self, edit, pkg_name, file_name):
 		view = self.view
 		view.set_name(file_name)
-		view.set_syntax_file('Packages/GoSublime/GoSublime.tmLanguage')
+		view.set_syntax_file(gs.dist_path('GoSublime.tmLanguage'))
 		view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
 		view.sel().clear()
 		view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
@@ -155,7 +155,7 @@ class GsSetOutputPanelContentCommand(sublime_plugin.TextCommand):
 
 		if syntax_file:
 			if syntax_file == 'GsDoc':
-				panel.set_syntax_file('Packages/GoSublime/GsDoc.hidden-tmLanguage')
+				panel.set_syntax_file(gs.dist_path('GsDoc.hidden-tmLanguage'))
 				panel.run_command("fold_by_level", { "level": 1 })
 			else:
 				panel.set_syntax_file(syntax_file)
