@@ -25,7 +25,7 @@ def gs_init():
 	gsq.do('GoSublime', f, msg='Installing MarGo', set_status=True)
 
 class Request(object):
-	def __init__(self, f, method='', token='', version=''):
+	def __init__(self, f, method='', token=''):
 		self.f = f
 		self.tm = time.time()
 		self.method = method
@@ -34,13 +34,10 @@ class Request(object):
 		else:
 			self.token = 'mg9.autoken.%s' % uuid.uuid4()
 
-		self.version = version or about.VERSION
-
 	def header(self):
 		return {
 			'method': self.method,
 			'token': self.token,
-			'version': self.version,
 		}
 
 
