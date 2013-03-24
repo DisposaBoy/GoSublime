@@ -25,7 +25,7 @@ def gs_init():
 	gsq.do('GoSublime', f, msg='Installing MarGo', set_status=True)
 
 class Request(object):
-	def __init__(self, f, method='', token=''):
+	def __init__(self, f, method='', token='', version=''):
 		self.f = f
 		self.tm = time.time()
 		self.method = method
@@ -33,6 +33,16 @@ class Request(object):
 			self.token = token
 		else:
 			self.token = 'mg9.autoken.%s' % uuid.uuid4()
+
+		self.version = version or about.VERSION
+
+	def header(self):
+		return {
+			'method': self.method,
+			'token': self.token,
+			'version': self.version,
+		}
+
 
 def _margo_src():
 	return gs.dist_path('margo9')
@@ -387,9 +397,7 @@ def _send():
 				req = Request(f=cb, method=method)
 				gs.set_attr(REQUEST_PREFIX+req.token, req)
 
-				gs.debug(DOMAIN, 'margo request: method: %s, token: %s' % (req.method, req.token))
-
-				header, err = gs.json_encode({'method': method, 'token': req.token})
+				header, err = gs.json_encode(req.header())
 				if err:
 					_cb_err('Failed to construct ipc header: ' % err)
 					continue
@@ -398,6 +406,8 @@ def _send():
 				if err:
 					_cb_err(cb, 'Failed to construct ipc body: ' % err)
 					continue
+
+				gs.debug(DOMAIN, 'margo request: %s ' % header)
 
 				ln = '%s %s\n' % (header, body)
 
