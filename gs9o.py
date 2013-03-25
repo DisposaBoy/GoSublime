@@ -218,28 +218,33 @@ def act_on(view, actions):
 			break
 
 def act_on_path(view, path):
-	if URL_PATH_PAT.match(path):
-		if path.lower().startswith('gs.packages://'):
-			path = os.path.join(sublime.packages_path(), path[14:])
-		else:
-			try:
-				if not URL_SCHEME_PAT.match(path):
-					path = 'http://%s' % path
-				gs.notify(DOMAIN, 'open url: %s' % path)
-				webbrowser.open_new_tab(path)
-				return True
-			except Exception:
-				gs.error_traceback(DOMAIN)
+	is_vfn = gs.VFN_ID_PAT.match(path)
+	row = 0
+	col = 0
 
-			return False
+	if not is_vfn:
+		if URL_PATH_PAT.match(path):
+			if path.lower().startswith('gs.packages://'):
+				path = os.path.join(sublime.packages_path(), path[14:])
+			else:
+				try:
+					if not URL_SCHEME_PAT.match(path):
+						path = 'http://%s' % path
+					gs.notify(DOMAIN, 'open url: %s' % path)
+					webbrowser.open_new_tab(path)
+					return True
+				except Exception:
+					gs.error_traceback(DOMAIN)
 
-	wd = view.settings().get('9o.wd') or active_wd()
-	m = SPLIT_FN_POS_PAT.match(path)
-	path = gs.apath((m.group(1) if m else path), wd)
-	row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
-	col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
+				return False
 
-	if os.path.exists(path):
+		wd = view.settings().get('9o.wd') or active_wd()
+		m = SPLIT_FN_POS_PAT.match(path)
+		path = gs.apath((m.group(1) if m else path), wd)
+		row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
+		col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
+
+	if is_vfn or os.path.exists(path):
 		gs.focus(path, row, col, win=view.window())
 		return True
 	else:
