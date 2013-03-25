@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## r13.03.25-1
+	* abort blocking calls(completion, fmt) early if the install stage isn't set to "done"
+
 ## r13.03.24-3
 	* wait for mg9.install to finish before attempting to send any request to margo.
 		fixes a false-positive error about the mg binary being missing before installtion completes
