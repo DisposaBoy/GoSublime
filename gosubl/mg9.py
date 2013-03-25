@@ -304,13 +304,16 @@ def acall(method, arg, cb):
 	gs.mg9_send_q.put((method, arg, cb))
 
 def bcall(method, arg):
+	if gs.attr(INSTALL_ATTR_NAME, '') != "done":
+		return {}, 'Blocking call(%s) aborted: Install is not done' % method
+
 	q = gs.queue.Queue()
 	acall(method, arg, lambda r,e: q.put((r, e)))
 	try:
 		res, err = q.get(True, 1)
 		return res, err
 	except:
-		return {}, 'Blocking Call: Timeout'
+		return {}, 'Blocking Call(%s): Timeout' % method
 
 def expand_jdata(v):
 	if gs.is_a(v, {}):
