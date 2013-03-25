@@ -1,19 +1,19 @@
 {
 	"name": "GoSublime 9o",
 	"scopeName": "text.9o",
-	"fileTypes": ["gosublime-commander"],
+	"fileTypes": ["9o"],
 	"patterns": [
 		{
 			"name": "path.9o storage.type.class.9o",
-			"match": "((?:\\w+://)\\S+)"
+			"match": "([\\w.-]+://\\S+)"
 		},
 		{
 			"name": "path.9o storage.type.class.9o",
-			"match": "((?:(?:\\w+:|[.]*)?[\\\\/].+?|(\\S+))(?:[.][^\\d][-~\\w]*)+(?:[:]\\d+){0,2})"
+			"match": "((?:(?:[\\w.-]+:|[.]*)?[\\\\/]\\S+?|(\\S+))(?:[.][^\\d][-~\\w]*)+(?:[:]\\d+){0,2})"
 		},
 		{
 			"name": "prompt.9o string.9o",
-			"match": "(#.+)"
+			"match": "(#.*)"
 		}
 	],
 	"uuid": "78c486ec-0101-11e2-a85a-00262d996a67"

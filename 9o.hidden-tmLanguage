@@ -4,7 +4,7 @@
 <dict>
 	<key>fileTypes</key>
 	<array>
-		<string>gosublime-commander</string>
+		<string>9o</string>
 	</array>
 	<key>name</key>
 	<string>GoSublime 9o</string>
@@ -12,19 +12,19 @@
 	<array>
 		<dict>
 			<key>match</key>
-			<string>((?:\w+://)\S+)</string>
+			<string>([\w.-]+://\S+)</string>
 			<key>name</key>
 			<string>path.9o storage.type.class.9o</string>
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>((?:(?:\w+:|[.]*)?[\\/].+?|(\S+))(?:[.][^\d][-~\w]*)+(?:[:]\d+){0,2})</string>
+			<string>((?:(?:[\w.-]+:|[.]*)?[\\/]\S+?|(\S+))(?:[.][^\d][-~\w]*)+(?:[:]\d+){0,2})</string>
 			<key>name</key>
 			<string>path.9o storage.type.class.9o</string>
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>(#.+)</string>
+			<string>(#.*)</string>
 			<key>name</key>
 			<string>prompt.9o string.9o</string>
 		</dict>
