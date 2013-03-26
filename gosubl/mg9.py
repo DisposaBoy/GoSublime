@@ -94,7 +94,7 @@ def _so(out, err, start, end):
 	if ok:
 		out = 'ok %0.3fs' % (end - start)
 	else:
-		out = '%s\n%s' % (out, err)
+		out = u'%s\n%s' % (out, err)
 	return (out.strip(), ok)
 
 def _run(cmd, cwd=None, shell=False):
