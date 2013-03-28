@@ -1,5 +1,20 @@
 [
 	{
+		"keys": ["ctrl+.", "ctrl+1"],
+		"command": "open_file",
+		"args": { "file": "${packages}/GoSublime/README.md" }
+	},
+	{
+		"keys": ["ctrl+.", "ctrl+2"],
+		"command": "open_file",
+		"args": { "file": "${packages}/GoSublime/USAGE.md" }
+	},
+	{
+		"keys": ["ctrl+.", "ctrl+3"],
+		"caption": "GoSublime: Do a sanity check",
+		"command": "gs_sanity_check"
+	},
+	{
 		"keys": ["ctrl+s"],
 		"command": "gs_fmt_save",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
