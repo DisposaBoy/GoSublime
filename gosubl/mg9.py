@@ -160,6 +160,8 @@ def install(aso_tokens, force_install):
 		gs.notify('GoSublime', 'Installing MarGo')
 		start = time.time()
 		m_out, err, _ = _run(['go', 'build', '-o', _margo_bin()], cwd=_margo_src())
+		m_out = gs.ustr(m_out)
+		err = gs.ustr(err)
 		m_out, m_ok = _so(m_out, err, start, time.time())
 
 		if m_ok:
