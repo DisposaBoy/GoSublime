@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.28-2
+	* more python hacks
+
 ## 13.03.28-1
 	* make the sanity check output more verbose
 	* add key bindings for:
