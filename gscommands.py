@@ -132,7 +132,7 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 
 class GsSanityCheckCommand(sublime_plugin.WindowCommand):
 	def run(self):
-		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(['%7s: %s' % ln for ln in mg9.sanity_check()])
+		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(mg9.sanity_check_sl(mg9.sanity_check({}, True)))
 		gs.show_output('GoSublime', s)
 
 class GsSetOutputPanelContentCommand(sublime_plugin.TextCommand):
