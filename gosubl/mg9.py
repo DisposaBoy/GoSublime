@@ -49,13 +49,32 @@ def _margo_src():
 def _margo_bin():
 	return gs.home_path('bin', about.MARGO_EXE)
 
-def sanity_check(env={}):
+def sanity_check_sl(sl):
+	n = 0
+	for p in sl:
+		n = max(n, len(p[0]))
+
+	t = '%d' % n
+	t = '| %'+t+'s: %s'
+	indent = '| %s> ' % (' ' * n)
+
+	a = '~%s' % os.sep
+	b = os.path.expanduser(a)
+
+	return [t % (k, v.replace(b, a).replace('\n', '\n%s' % indent)) for k,v in sl]
+
+def sanity_check(env={}, error_log=False):
 	if not env:
 		env = gs.env()
 
 	ns = '(not set)'
 
-	return [
+	sl = [
+		('install state', gs.attr(INSTALL_ATTR_NAME)),
+		('sublime.version', sublime.version()),
+		('sublime.channel', sublime.channel()),
+		('about.ann', gs.attr('about.ann')),
+		('about.version', gs.attr('about.version')),
 		('version', about.VERSION),
 		('platform', about.PLATFORM),
 		('~bin', '%s' % gs.home_path('bin')),
@@ -64,6 +83,16 @@ def sanity_check(env={}):
 		('GOPATH', '%s' % env.get('GOPATH', ns)),
 		('GOBIN', '%s (should usually be `%s`)' % (env.get('GOBIN', ns), ns)),
 	]
+
+	if error_log:
+		try:
+			with open(gs.home_path('log.txt'), 'r') as f:
+				s = f.read().strip()
+				sl.append(('error log', s))
+		except Exception:
+			pass
+
+	return sl
 
 def _check_changes():
 	def cb():
@@ -156,12 +185,15 @@ def install(aso_tokens, force_install):
 		else:
 			gs.environ9.update(env)
 
+	gs.set_attr(INSTALL_ATTR_NAME, 'done')
+
 	e = gs.env()
 	a = [
 		'GoSublime init (%0.3fs)' % (time.time() - init_start),
-		'| install margo: %s' % m_out,
 	]
-	a.extend(['| %14s: %s' % ln for ln in sanity_check(e)])
+	sl = [('install margo', m_out)]
+	sl.extend(sanity_check(e))
+	a.extend(sanity_check_sl(sl))
 	gs.println(*a)
 
 	missing = [k for k in ('GOROOT', 'GOPATH') if not e.get(k)]
@@ -186,8 +218,6 @@ def install(aso_tokens, force_install):
 				report_x()
 	except Exception:
 		report_x()
-
-	gs.set_attr(INSTALL_ATTR_NAME, 'done')
 
 def _gen_tokens():
 	return about.VERSION
