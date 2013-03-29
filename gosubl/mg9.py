@@ -416,19 +416,28 @@ def _send():
 					while gs.attr(INSTALL_ATTR_NAME) == "busy":
 						time.sleep(0.100)
 
-					proc, _, err = gsshell.proc([_margo_bin(), '-poll', 30, '-tag', TAG], stderr=gs.LOGFILE ,env={
+					cmd = [
+						_margo_bin(),
+						'-poll', 30,
+						'-tag', TAG,
+					]
+
+					proc, _, err = gsshell.proc(cmd, stderr=gs.LOGFILE ,env={
 						'XDG_CONFIG_HOME': gs.home_path(),
 					})
-					gs.set_attr(PROC_ATTR_NAME, proc)
 
-					if not proc:
-						gs.notice(DOMAIN, 'Cannot start MarGo: %s' % err)
+					if err or not proc or proc.poll() is not None:
+						killSrv()
+
+						gs.notice(DOMAIN, 'Cannot start MarGo:\n%s' % err)
 						try:
 							cb({}, 'Abort. Cannot start MarGo')
 						except:
 							pass
+
 						continue
 
+					gs.set_attr(PROC_ATTR_NAME, proc)
 					gsq.launch(DOMAIN, lambda: _read_stdout(proc))
 
 				req = Request(f=cb, method=method)
