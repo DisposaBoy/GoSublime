@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.29-2
+	* properly detect when the source(about.py) changes
+	* notify the user of an update if the on-disk vesion differs from the live version
+
 ## 13.03.29-1
 	* add bindings for default setting(ctrl+dot,ctrl+4) and user settings(ctrl+dot,ctrl+5)
 
