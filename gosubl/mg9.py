@@ -94,19 +94,6 @@ def sanity_check(env={}, error_log=False):
 
 	return sl
 
-def _check_changes():
-	def cb():
-		aso = gs.aso()
-		old_version = aso.get('version', '')
-		old_ann = aso.get('ann', '')
-		if about.VERSION > old_version or about.ANN > old_ann:
-			aso.set('version', about.VERSION)
-			aso.set('ann', about.ANN)
-			gs.save_aso()
-			gs.focus(gs.dist_path('CHANGELOG.md'))
-
-	sublime.set_timeout(cb, 0)
-
 def _sb(s):
 	bdir = gs.home_path('bin')
 	if s.startswith(bdir):
@@ -176,7 +163,6 @@ def install(aso_tokens, force_install):
 
 	# notify this early so we don't mask any notices below
 	gs.notify('GoSublime', 'Ready')
-	_check_changes()
 
 	if err:
 		gs.notice(DOMAIN, 'Cannot run get env vars: %s' % (err))
