@@ -17,6 +17,8 @@ START_SELECTOR_PAT = re.compile(r'^([\w.]+)')
 DOMAIN = 'GsComplete'
 SNIPPET_VAR_PAT = re.compile(r'\$\{([a-zA-Z]\w*)\}')
 
+HINT_KEY = '%s.completion-hint' % DOMAIN
+
 def snippet_match(ctx, m):
 	try:
 		for k,p in m.get('match', {}).items():
@@ -261,15 +263,39 @@ def declex(s):
 		ret = s[ep:].strip() if ep < lp else ''
 	return (params, ret)
 
+def _ct_poller():
+	try:
+		view = sublime.active_window().active_view()
+		if gs.setting('autocomplete_live_hint', False) is True:
+			view.run_command('gs_show_call_tip', {'set_status': True})
+		else:
+			view.erase_status(HINT_KEY)
+	except Exception:
+		pass
+
+	sublime.set_timeout(_ct_poller, 1000)
+
 class GsShowCallTip(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		return gs.is_go_source_view(self.view)
 
-	def show_hint(self, s):
-		dmn = '%s.completion-hint' % DOMAIN
-		gs.show_output(dmn, s, print_output=False, syntax_file='GsDoc')
+	def run(self, edit, set_status=False):
+		view = self.view
+		c, err = self.tip(edit)
+		if set_status:
+			if c:
+				s = '%s: %s' % (c['name'], c['type'])
+				view.set_status(HINT_KEY, s)
+			else:
+				view.erase_status(HINT_KEY)
+		else:
+			if c:
+				s = '%s %s\n%s' % (c['name'], c['class'], c['type'])
+			else:
+				s = '// %s' % err
+			gs.show_output(HINT_KEY, s, print_output=False, syntax_file='GsDoc')
 
-	def run(self, edit):
+	def tip(self, edit):
 		view = self.view
 		pt = gs.sel(view).begin()
 		if view.substr(sublime.Region(pt-1, pt)) == '(':
@@ -322,16 +348,14 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 			c = view.substr(sublime.Region(pt-1, pt))
 
 		if pt <= 0 or view.scope_name(pt).strip() == 'source.go':
-			self.show_hint("// can't find selector")
-			return
+			return ({}, "can't find selector")
 
 		line = view.line(pt)
 		line_start = line.begin()
 
 		s = view.substr(line)
 		if not s:
-			self.show_hint('// no source')
-			return
+			return ({}, 'no source')
 
 		scopes = [
 			'support.function.any-method.go',
@@ -352,14 +376,12 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 			pt -= 1
 
 		if not found:
-			self.show_hint("// can't find function call")
-			return
+			return ({}, "can't find function call")
 
 		s = view.substr(sublime.Region(line_start, pt))
 		m = END_SELECTOR_PAT.match(s)
 		if not m:
-			self.show_hint("// can't match selector")
-			return
+			return ({}, "can't match selector")
 
 		offset = (line_start + m.end())
 		sel = m.group(1)
@@ -379,9 +401,11 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 						break
 					c = i
 
-			if not c:
-				self.show_hint('// no candidates found')
-				return
+			if c:
+				return (c, '')
 
-			s = '// %s %s\n%s' % (c['name'], c['class'], c['type'])
-			self.show_hint(s)
+			return ({}, 'no candidates found')
+
+
+if not gs.checked(DOMAIN, '_ct_poller'):
+	_ct_poller()
