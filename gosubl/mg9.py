@@ -423,6 +423,7 @@ def _send():
 					]
 
 					proc, _, err = gsshell.proc(cmd, stderr=gs.LOGFILE ,env={
+						'GOGC': 10,
 						'XDG_CONFIG_HOME': gs.home_path(),
 					})
 
