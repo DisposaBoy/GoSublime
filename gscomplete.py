@@ -404,7 +404,8 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 			if c:
 				return (c, '')
 
-			return ({}, 'no candidates found')
+		return ({}, 'no candidates found')
+
 
 
 if not gs.checked(DOMAIN, '_ct_poller'):
