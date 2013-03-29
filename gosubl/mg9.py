@@ -416,17 +416,22 @@ def _send():
 					while gs.attr(INSTALL_ATTR_NAME) == "busy":
 						time.sleep(0.100)
 
+					mg_bin = _margo_bin()
 					cmd = [
-						_margo_bin(),
+						mg_bin,
 						'-oom', gs.setting('margo_oom', 0),
 						'-poll', 30,
 						'-tag', TAG,
 					]
 
-					proc, _, err = gsshell.proc(cmd, stderr=gs.LOGFILE ,env={
-						'GOGC': 10,
-						'XDG_CONFIG_HOME': gs.home_path(),
-					})
+					if os.path.exists(mg_bin):
+						proc, _, err = gsshell.proc(cmd, stderr=gs.LOGFILE ,env={
+							'GOGC': 10,
+							'XDG_CONFIG_HOME': gs.home_path(),
+						})
+					else:
+						proc = None
+						err = "Can't find the MarGo binary at `%s`" % mg_bin
 
 					if err or not proc or proc.poll() is not None:
 						killSrv()
