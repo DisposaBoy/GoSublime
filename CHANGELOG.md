@@ -3,6 +3,14 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.29-3
+	* add support for showing function call tip live in the status bar
+		to enable to add the setting:
+			"autocomplete_live_hint": true
+		to your user settings in ctrl+dot,ctrl+5
+
+		note: the old keybinding ctrl+dot,ctrl+space works as normal
+
 ## 13.03.29-2
 	* properly detect when the source(about.py) changes
 	* notify the user of an update if the on-disk vesion differs from the live version
