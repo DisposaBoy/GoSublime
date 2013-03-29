@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.29-1
+	* add bindings for default setting(ctrl+dot,ctrl+4) and user settings(ctrl+dot,ctrl+5)
+
 ## 13.03.28-2
 	* more python hacks
 
