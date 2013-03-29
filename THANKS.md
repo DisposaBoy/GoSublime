@@ -12,5 +12,6 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Joe Farro `http://jf.io/`
 * Joe Poirier `https://github.com/jpoirier`
 * Mark Smith `http://qq.is`
+* Nathan Youngman `http://nathany.com/`
 * Tom Westberg
 * Yves Junqueira `http://pledgie.com/accounts/@cetico`
