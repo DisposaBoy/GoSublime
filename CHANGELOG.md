@@ -3,6 +3,14 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.29-4
+	* impl a basic oom killer in MarGo. If MarGo's memory usage reaches 1000m, she? will die
+		you can configure this limit in the user settings ctrl+dot,ctrl+5
+		e.g. to limit the memory use to 500m use:
+
+			"margo_oom": 500
+
+
 ## 13.03.29-3
 	* add support for showing function call tip live in the status bar
 		to enable to add the setting:
