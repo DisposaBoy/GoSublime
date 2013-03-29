@@ -418,6 +418,7 @@ def _send():
 
 					cmd = [
 						_margo_bin(),
+						'-oom', gs.setting('margo_oom', 0),
 						'-poll', 30,
 						'-tag', TAG,
 					]
