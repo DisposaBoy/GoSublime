@@ -1,4 +1,7 @@
 {
+	// The maximum amount of memory(MiB) that MarGo is allowed to use
+	"margo_oom": 500,
+
 	// you may set specific environment variables here
 	// e.g "env": { "PATH": "$HOME/go/bin:$PATH" }
 	// in values, $PATH and ${PATH} are replaced with
