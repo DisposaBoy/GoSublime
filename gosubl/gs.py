@@ -56,6 +56,7 @@ _default_settings = {
 	"comp_lint_enabled": False,
 	"comp_lint_commands": [],
 	"gslint_timeout": 0,
+	"autocomplete_live_hint": False,
 	"autocomplete_snippets": False,
 	"autocomplete_tests": False,
 	"autocomplete_closures": False,

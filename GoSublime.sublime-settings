@@ -91,6 +91,10 @@
 	// note: this feature only comes into effect when autocomplete was triggered after a dot, e.g. `fmt.|`
 	"autocomplete_suggest_imports": false,
 
+	// whether or not to show function call tip in the status bar as you type
+	// the same can be achieved ctrl+dot,ctrl+space using an output panel
+	"autocomplete_live_hint": false,
+
 	// the tcp address on which MarGo listen/should listen
 	// if GoSublime can't connect to `margo_addr` it attempts to start MarGo
 	// with `margo_cmd` passing `margo_addr`
