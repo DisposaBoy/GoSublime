@@ -11,8 +11,17 @@
 	},
 	{
 		"keys": ["super+.", "super+3"],
-		"caption": "GoSublime: Do a sanity check",
 		"command": "gs_sanity_check"
+	},
+	{
+		"keys": ["super+.", "super+4"],
+		"command": "open_file",
+		"args": { "file": "${packages}/GoSublime/GoSublime.sublime-settings" }
+	},
+	{
+		"keys": ["super+.", "super+5"],
+		"command": "open_file",
+		"args": { "file": "${packages}/User/GoSublime.sublime-settings" }
 	},
 	{
 		"keys": ["super+s"],
