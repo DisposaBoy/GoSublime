@@ -303,7 +303,11 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 		else:
 			depth = 0
 		c = ''
-		while True:
+
+		_i = 0
+		while _i < 1000:
+			_i += 1
+
 			line = view.line(pt)
 			scope = view.scope_name(pt)
 			if 'string' in scope or 'comment' in scope:
