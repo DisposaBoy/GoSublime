@@ -6,6 +6,17 @@ st2 = (sys.version_info[0] == 2)
 dist_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, dist_dir)
 
+ANN = ''
+VERSION = ''
+fn = os.path.join(dist_dir, 'gosubl', 'about.py')
+try:
+	with open(fn) as f:
+		code = compile(f.read(), fn, 'exec')
+		exec(code)
+except Exception:
+	pass
+
+
 def plugin_loaded():
 	from gosubl import about
 	from gosubl import gs
@@ -16,17 +27,13 @@ def plugin_loaded():
 
 	# we need the values in the file on-disk but we don't want any interference with the live env
 	try:
-		g = {}
-		execfile(os.path.join(dist_dir, 'gosubl', 'about.py'), g)
-		version = g.get('VERSION', '')
-		ann = g.get('ANN', '')
-		gs.set_attr('about.version', version)
-		gs.set_attr('about.ann', ann)
+		gs.set_attr('about.version', VERSION)
+		gs.set_attr('about.ann', ANN)
 
-		if about.VERSION != version:
+		if about.VERSION != VERSION:
 			gs.show_output('GoSublime-source', '\n'.join([
 				'GoSublime source has been updated.',
-				'New version: `%s`, current version: `%s`' % (version, about.VERSION),
+				'New version: `%s`, current version: `%s`' % (VERSION, about.VERSION),
 				'Please restart Sublime Text to complete the update.',
 			]))
 	except Exception:
