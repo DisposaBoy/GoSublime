@@ -70,11 +70,11 @@ def sanity_check(env={}, error_log=False):
 	ns = '(not set)'
 
 	sl = [
-		('install state', gs.attr(INSTALL_ATTR_NAME)),
+		('install state', gs.attr(INSTALL_ATTR_NAME, '')),
 		('sublime.version', sublime.version()),
 		('sublime.channel', sublime.channel()),
-		('about.ann', gs.attr('about.ann')),
-		('about.version', gs.attr('about.version')),
+		('about.ann', gs.attr('about.ann', '')),
+		('about.version', gs.attr('about.version', '')),
 		('version', about.VERSION),
 		('platform', about.PLATFORM),
 		('~bin', '%s' % gs.home_path('bin')),
@@ -360,7 +360,7 @@ def _recv():
 					token = r.get('token', '')
 					tag = r.get('tag', '')
 					k = REQUEST_PREFIX+token
-					req = gs.attr(k)
+					req = gs.attr(k, {})
 					gs.del_attr(k)
 					if req and req.f:
 						if tag != TAG:
@@ -407,13 +407,13 @@ def _send():
 				if not proc or proc.poll() is not None:
 					killSrv()
 
-					if gs.attr(INSTALL_ATTR_NAME) != "busy":
+					if gs.attr(INSTALL_ATTR_NAME, '') != "busy":
 						maybe_install()
 
 					if not gs.checked(DOMAIN, 'launch _recv'):
 						gsq.launch(DOMAIN, _recv)
 
-					while gs.attr(INSTALL_ATTR_NAME) == "busy":
+					while gs.attr(INSTALL_ATTR_NAME, '') == "busy":
 						time.sleep(0.100)
 
 					mg_bin = _margo_bin()
