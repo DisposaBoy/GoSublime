@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.30-2
+	* restore py3k compat: execfile was removed
+
 ## 13.03.30-1
 	* work-around show_call_tip hang when the file starts with a comment
 
