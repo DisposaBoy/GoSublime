@@ -3,6 +3,8 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.30-3
+	* update gocode to https://github.com/nsf/gocode/commit/86e62597306bc1a07d6e64e7d22cd0bb0de78fc3
 ## 13.03.30-2
 	* restore py3k compat: execfile was removed
 
