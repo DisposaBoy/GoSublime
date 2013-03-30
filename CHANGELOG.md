@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.30-1
+	* work-around show_call_tip hang when the file starts with a comment
+
 ## 13.03.29-4
 	* impl a basic oom killer in MarGo. If MarGo's memory usage reaches 1000m, she? will die
 		you can configure this limit in the user settings ctrl+dot,ctrl+5
