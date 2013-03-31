@@ -3,8 +3,12 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.31-1
+	* use relative paths when setting syntax files: should fix any errors about not being able to load e.g. 9o.hidden-tmLanguage
+
 ## 13.03.30-3
 	* update gocode to https://github.com/nsf/gocode/commit/86e62597306bc1a07d6e64e7d22cd0bb0de78fc3
+
 ## 13.03.30-2
 	* restore py3k compat: execfile was removed
 
@@ -17,7 +21,6 @@ Note: you may need to restart Sublime Text after GoSublime updates
 		e.g. to limit the memory use to 500m use:
 
 			"margo_oom": 500
-
 
 ## 13.03.29-3
 	* add support for showing function call tip live in the status bar
