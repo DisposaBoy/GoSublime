@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.03.31-2
+	* add GOBIIN to PATH
+	* set default package snippet to `package main` if the filename is main.go
+
 ## 13.03.31-1
 	* use relative paths when setting syntax files: should fix any errors about not being able to load e.g. 9o.hidden-tmLanguage
 
