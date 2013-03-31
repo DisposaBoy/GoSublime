@@ -100,7 +100,10 @@ class GoSublime(sublime_plugin.EventListener):
 
 
 		try:
-			default_pkgname = basename(dirname(view.file_name()))
+			if basename(view.file_name()) == "main.go":
+				default_pkgname = 'main'
+			else:
+				default_pkgname = basename(dirname(view.file_name()))
 		except Exception:
 			default_pkgname = ''
 
