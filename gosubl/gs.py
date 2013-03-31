@@ -654,6 +654,13 @@ def dval(v, d):
 
 	return d
 
+def tm_path(name):
+	d = {
+		'9o': '9o.hidden-tmLanguage',
+		'doc': 'GsDoc.hidden-tmLanguage',
+	}
+	return 'Packages/GoSublime/%s' % d[name]
+
 def dist_path(*a):
 	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
 

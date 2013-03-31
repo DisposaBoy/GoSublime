@@ -155,7 +155,7 @@ class GsSetOutputPanelContentCommand(sublime_plugin.TextCommand):
 
 		if syntax_file:
 			if syntax_file == 'GsDoc':
-				panel.set_syntax_file(gs.dist_path('GsDoc.hidden-tmLanguage'))
+				panel.set_syntax_file(gs.tm_path('doc'))
 				panel.run_command("fold_by_level", { "level": 1 })
 			else:
 				panel.set_syntax_file(syntax_file)
