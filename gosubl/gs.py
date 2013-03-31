@@ -382,6 +382,10 @@ def env(m={}):
 			'/usr/bin',
 		]
 
+	gobin = e.get('GOBIN')
+	if gobin:
+		l.append(gobin)
+
 	for s in l:
 		s = os.path.expanduser(s)
 		if s not in add_path:
