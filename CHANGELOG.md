@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.04.01-1
+	* when replaying unsaved views you are now able to navigate to src lines inside 9o
+
 ## 13.03.31-2
 	* add GOBIIN to PATH
 	* set default package snippet to `package main` if the filename is main.go
