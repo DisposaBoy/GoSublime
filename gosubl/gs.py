@@ -120,7 +120,8 @@ IGNORED_SCOPES = frozenset([
 	'comment.block.go'
 ])
 
-VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)$', re.IGNORECASE)
+VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)(.*?)$', re.IGNORECASE)
+ROWCOL_PAT = re.compile(r'^[:]*(\d+)(?:[:](\d+))?[:]*$')
 
 def getwd():
 	if PY3K:
