@@ -13,6 +13,7 @@ import (
 type mPlay struct {
 	Args      []string          `json:"args"`
 	Dir       string            `json:"dir"`
+	Fn        string            `json:"fn"`
 	Src       string            `json:"src"`
 	Env       map[string]string `json:"env"`
 	Cid       string            `json:"cid"`
@@ -38,8 +39,10 @@ func (m *mPlay) Call() (interface{}, string) {
 	}
 	defer os.RemoveAll(dir)
 
+	tmpFn := ""
 	if m.Src != "" {
-		err = ioutil.WriteFile(filepath.Join(dir, "a.go"), []byte(m.Src), 0755)
+		tmpFn = filepath.Join(dir, "a.go")
+		err = ioutil.WriteFile(tmpFn, []byte(m.Src), 0644)
 		if err != nil {
 			return nil, err.Error()
 		}
@@ -78,9 +81,11 @@ func (m *mPlay) Call() (interface{}, string) {
 
 		err := c.Run()
 		res := M{
-			"out": jData(stdOut.Bytes()),
-			"err": jData(stdErr.Bytes()),
-			"dur": time.Now().Sub(start).String(),
+			"tmpFn": tmpFn,
+			"fn":    m.Fn,
+			"out":   jData(stdOut.Bytes()),
+			"err":   jData(stdErr.Bytes()),
+			"dur":   time.Now().Sub(start).String(),
 		}
 
 		return res, err
