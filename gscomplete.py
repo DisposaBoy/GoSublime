@@ -393,23 +393,19 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 		offset = (line_start + m.end())
 		sel = m.group(1)
 		name = m.group(2)
-		candidates = []
 		src = view.substr(sublime.Region(0, view.size()))
 		fn = view.file_name()
-		candidates, err = mg9.complete(fn, src, offset)
-		if err:
-			gs.notice(DOMAIN, err)
-		else:
-			c = {}
-			for i in candidates:
-				if i['name'] == name:
-					if c:
-						c = None
-						break
-					c = i
+		candidates, _ = mg9.complete(fn, src, offset)
+		c = {}
+		for i in candidates:
+			if i['name'] == name:
+				if c:
+					c = None
+					break
+				c = i
 
-			if c:
-				return (c, '')
+		if c:
+			return (c, '')
 
 		return ({}, 'no candidates found')
 
