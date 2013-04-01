@@ -218,11 +218,17 @@ def act_on(view, actions):
 			break
 
 def act_on_path(view, path):
-	is_vfn = gs.VFN_ID_PAT.match(path)
 	row = 0
 	col = 0
 
-	if not is_vfn:
+	m = gs.VFN_ID_PAT.match(path)
+	if m:
+		path = 'gs.view://%s' % m.group(1)
+		m2 = gs.ROWCOL_PAT.match(m.group(2))
+		if m2:
+			row = int(m2.group(1))-1 if m2.group(1) else 0
+			col = int(m2.group(2))-1 if m2.group(2) else 0
+	else:
 		if URL_PATH_PAT.match(path):
 			if path.lower().startswith('gs.packages://'):
 				path = os.path.join(sublime.packages_path(), path[14:])
@@ -244,7 +250,7 @@ def act_on_path(view, path):
 		row = max(0, int(m.group(2))-1 if (m and m.group(2)) else 0)
 		col = max(0, int(m.group(3))-1 if (m and m.group(3)) else 0)
 
-	if is_vfn or os.path.exists(path):
+	if m or os.path.exists(path):
 		gs.focus(path, row, col, win=view.window())
 		return True
 	else:
@@ -368,6 +374,19 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 
 	def cb(res, err):
 		out = '\n'.join(s for s in (res.get('out'), res.get('err'), err) if s)
+
+		tmp_fn = res.get('tmpFn')
+		fn = res.get('fn')
+		if fn and tmp_fn:
+			bfn = os.path.basename(tmp_fn)
+			repls = [
+				'./%s' % bfn,
+				'.\\%s' % bfn,
+				tmp_fn,
+			]
+			for s in repls:
+				out = out.replace(s, fn)
+
 		def f():
 			gs.end(tid)
 			push_output(view, rkey, out, hourglass_repl='| done: %s' % res.get('dur', ''))
@@ -451,6 +470,7 @@ def cmd_9(view, edit, args, wd, rkey):
 				_save_all(win, wd)
 			else:
 				if gs.is_go_source_view(av, False):
+					a['fn'] = gs.view_fn(av)
 					a['src'] = av.substr(sublime.Region(0, av.size()))
 
 	sublime.set_timeout(lambda: mg9.acall('play', a, cb), 0)
