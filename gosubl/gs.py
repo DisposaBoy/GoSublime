@@ -467,22 +467,26 @@ def win_view(vfn=None, win=None):
 			view = win.open_file(vfn)
 	return (win, view)
 
-def do_focus(fn, row, col, win=None, focus_pkg=True):
+def do_focus(fn, row, col, win, focus_pat, cb):
 	win, view = win_view(fn, win)
 	if win is None or view is None:
 		notify(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
+		if cb:
+			cb(False)
 	elif view.is_loading():
-		focus(fn, row, col, win, focus_pkg)
+		focus(fn, row=row, col=col, win=win, focus_pat=focus_pat, cb=cb)
 	else:
 		win.focus_view(view)
-		if row <= 0 and col <= 0 and focus_pkg:
-			r = view.find('^package ', 0)
+		if row <= 0 and col <= 0 and focus_pat:
+			r = view.find(focus_pat, 0)
 			if r:
 				row, col = view.rowcol(r.begin())
 		view.run_command("gs_goto_row_col", { "row": row, "col": col })
+		if cb:
+			cb(True)
 
-def focus(fn, row=0, col=0, win=None, timeout=100, focus_pkg=True):
-	sublime.set_timeout(lambda: do_focus(fn, row, col, win, focus_pkg), timeout)
+def focus(fn, row=0, col=0, win=None, timeout=100, focus_pat='^package ', cb=None):
+	sublime.set_timeout(lambda: do_focus(fn, row, col, win, focus_pat, cb), timeout)
 
 def sm_cb():
 	global sm_text
@@ -495,7 +499,7 @@ def sm_cb():
 		s = sm_text
 		if s:
 			delta = (datetime.datetime.now() - tm)
-			if delta.seconds >= 5:
+			if delta.seconds >= 10:
 				sm_text = ''
 
 	if ntasks > 0:
@@ -726,10 +730,16 @@ def checked(domain, k):
 	return v
 
 def sel(view, i=0):
+	debug(NAME, 'sel %d' % i)
 	try:
-		return view.sel()[i]
+		s = view.sel()
+		if s is not None and i < len(s):
+			return s[i]
 	except Exception:
-		return sublime.Region(0, 0)
+		pass
+
+	return sublime.Region(0, 0)
+
 
 try:
 	st2_status_message
@@ -754,7 +764,7 @@ except:
 	DEVNULL = open(os.devnull, 'w')
 	LOGFILE = DEVNULL
 
-def gs_init():
+def gs_init(m={}):
 	global LOGFILE
 	try:
 		LOGFILE = open(home_path('log.txt'), 'a+')
