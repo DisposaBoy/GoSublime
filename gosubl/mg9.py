@@ -61,7 +61,7 @@ def sanity_check_sl(sl):
 	a = '~%s' % os.sep
 	b = os.path.expanduser(a)
 
-	return [t % (k, v.replace(b, a).replace('\n', '\n%s' % indent)) for k,v in sl]
+	return [t % (k, gs.ustr(v).replace(b, a).replace('\n', '\n%s' % indent)) for k,v in sl]
 
 def sanity_check(env={}, error_log=False):
 	if not env:
