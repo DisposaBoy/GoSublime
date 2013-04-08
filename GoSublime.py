@@ -8,6 +8,7 @@ sys.path.insert(0, dist_dir)
 
 ANN = ''
 VERSION = ''
+MARGO_EXE = ''
 fn = os.path.join(dist_dir, 'gosubl', 'about.py')
 try:
 	with open(fn) as f:
@@ -16,28 +17,32 @@ try:
 except Exception:
 	pass
 
-
 def plugin_loaded():
 	from gosubl import about
 	from gosubl import gs
 	from gosubl import mg9
 
-	gs.gs_init()
-	mg9.gs_init()
+	mods = [
+		('gs', gs),
+		('mg9', mg9),
+	]
 
-	# we need the values in the file on-disk but we don't want any interference with the live env
-	try:
-		gs.set_attr('about.version', VERSION)
-		gs.set_attr('about.ann', ANN)
+	gs.set_attr('about.version', VERSION)
+	gs.set_attr('about.ann', ANN)
 
-		if about.VERSION != VERSION:
-			gs.show_output('GoSublime-source', '\n'.join([
-				'GoSublime source has been updated.',
-				'New version: `%s`, current version: `%s`' % (VERSION, about.VERSION),
-				'Please restart Sublime Text to complete the update.',
-			]))
-	except Exception:
-		pass
+	for mod_name, mod in mods:
+		print('GoSublime %s: init mod(%s)' % (VERSION, mod_name))
+
+		try:
+			mod.gs_init({
+				'version': VERSION,
+				'ann': ANN,
+				'margo_exe': MARGO_EXE,
+			})
+		except TypeError:
+			# old versions didn't take an arg
+			mod.gs_init()
+
 
 	def cb():
 		aso = gs.aso()
