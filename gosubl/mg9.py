@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sublime
+import subprocess
 import threading
 import time
 import uuid
@@ -92,7 +93,8 @@ def sanity_check(env={}, error_log=False):
 		('version', about.VERSION),
 		('platform', about.PLATFORM),
 		('~bin', '%s' % gs.home_path('bin')),
-		('MarGo', '%s (%s)' % _tp(_margo_bin())),
+		('margo.exe', '%s (%s)' % _tp(_margo_bin())),
+		('go.exe', '%s (%s)' % _tp(gs.which('go') or 'go')),
 		('GOROOT', '%s' % env.get('GOROOT', ns)),
 		('GOPATH', '%s' % env.get('GOPATH', ns)),
 		('GOBIN', '%s (should usually be `%s`)' % (env.get('GOBIN', ns), ns)),
@@ -162,13 +164,32 @@ def install(aso_install_vesion, force_install):
 	else:
 		gs.notify('GoSublime', 'Installing MarGo')
 		start = time.time()
-		cmd = [gs.which('go') or 'go', 'build', '-o', _margo_bin(INSTALL_EXE)]
-		cwd = _margo_src()
-		gs.debug('%s.build' % DOMAIN, {
-			'cmd': cmd,
-			'cwd': cwd,
-		})
-		m_out, err, _ = _run(cmd, cwd=cwd)
+
+		vars = ['%PATH%', '$PATH']
+		out, err, _ = gsshell.run('echo %s' % os.pathsep.join(vars), shell=True, stderr=subprocess.PIPE, env=gs.env())
+		if not err:
+			pl = []
+			for p in out.strip().split(os.pathsep):
+				p = os.path.normcase(p)
+				if p not in vars and p not in pl:
+					pl.append(p)
+
+			if pl:
+				gs.environ9.update({'PATH': os.pathsep.join(pl)})
+
+		go_exe = gs.which('go')
+		if go_exe:
+			cmd = [go_exe, 'build', '-o', _margo_bin(INSTALL_EXE)]
+			cwd = _margo_src()
+			gs.debug('%s.build' % DOMAIN, {
+				'cmd': cmd,
+				'cwd': cwd,
+			})
+			m_out, err, _ = _run(cmd, cwd=cwd)
+		else:
+			m_out = ''
+			err = 'Cannot find the `go` exe'
+
 		m_out = gs.ustr(m_out)
 		err = gs.ustr(err)
 		m_out, m_ok = _so(m_out, err, start, time.time())
