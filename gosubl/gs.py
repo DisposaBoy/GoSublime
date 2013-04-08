@@ -740,6 +740,30 @@ def sel(view, i=0):
 
 	return sublime.Region(0, 0)
 
+def which_ok(fn):
+	try:
+		return os.access(fn, os.X_OK)
+	except Exception:
+		return False
+
+def which(cmd):
+	if os.path.isabs(cmd):
+		return cmd if which_ok(cmd) else ''
+
+	# not supporting PATHEXT. period.
+	if os_is_windows():
+		cmd = '%s.exe' % cmd
+
+	seen = {}
+	for p in getenv('PATH', '').split(os.pathsep):
+		p = os.path.join(p, cmd)
+		if p not in seen and which_ok(p):
+			return p
+
+		seen[p] = True
+
+	return ''
+
 
 try:
 	st2_status_message
