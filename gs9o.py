@@ -143,6 +143,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		vs.set("auto_complete_selector", "text")
 		vs.set("highlight_line", True)
 		vs.set("draw_indent_guides", True)
+		vs.set("scroll_past_end", True)
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
 		vs.set("word_separators", "./\\()\"'-:,.;<>~!@#$%&*|+=[]{}`~?")
 		v.set_syntax_file(gs.tm_path('9o'))
