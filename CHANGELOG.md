@@ -3,6 +3,11 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.08.13-1
+	* pre-compile margo on update (before restart)
+	* detect the go binary's path instead of relying on python
+	* try to work-around odd scrolling in 9o
+
 ## 13.04.01-1
 	* when replaying unsaved views you are now able to navigate to src lines inside 9o
 
