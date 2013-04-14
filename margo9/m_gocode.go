@@ -138,20 +138,25 @@ func completeCalltip(src []byte, fn string, offset int) []gocode.GoSublimeGocode
 		ast.Walk(vis, af)
 
 		if vis.x != nil {
-			var pos token.Pos
+			var id *ast.Ident
 
 			switch v := vis.x.Fun.(type) {
 			case *ast.Ident:
-				pos = v.End()
+				id = v
 			case *ast.SelectorExpr:
-				pos = v.End()
+				id = v.Sel
 			}
 
-			if pos.IsValid() {
-				cr := fset.Position(pos).Offset
+			if id != nil && id.End().IsValid() {
+				cr := fset.Position(id.End()).Offset
 				cl := gocode.GoSublimeGocodeComplete(src, fn, cr)
-				if len(cl) == 1 {
-					return cl
+
+				if len(cl) > 0 {
+					for i, c := range cl {
+						if strings.EqualFold(id.Name, c.Name) {
+							return cl[i : i+1]
+						}
+					}
 				}
 			}
 		}
