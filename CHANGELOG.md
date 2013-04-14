@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.08.14-1
+	* calltips are now implemented in margo
+
 ## 13.08.13-1
 	* pre-compile margo on update (before restart)
 	* detect the go binary's path instead of relying on python
