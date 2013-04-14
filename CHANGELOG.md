@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.08.14-2
+	* fix failing to find a calltip for b() in p.a(p.b())
+
 ## 13.08.14-1
 	* calltips are now implemented in margo
 
