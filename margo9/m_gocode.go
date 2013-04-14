@@ -1,6 +1,9 @@
 package main
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"gosublime.org/gocode"
 	"io/ioutil"
 	"os"
@@ -33,6 +36,27 @@ type mGocodeComplete struct {
 	Fn       string
 	Src      string
 	Pos      int
+	calltip  bool
+}
+
+type calltipVisitor struct {
+	offset int
+	fset   *token.FileSet
+	x      *ast.CallExpr
+}
+
+func (v *calltipVisitor) Visit(node ast.Node) (w ast.Visitor) {
+	if node != nil {
+		if x, ok := node.(*ast.CallExpr); ok {
+			a := v.fset.Position(node.Pos())
+			b := v.fset.Position(node.End())
+
+			if (a.IsValid() && v.offset >= a.Offset) && (!b.IsValid() || v.offset <= b.Offset) {
+				v.x = x
+			}
+		}
+	}
+	return v
 }
 
 func (m *mGocodeOptions) Call() (interface{}, string) {
@@ -92,9 +116,48 @@ func (m *mGocodeComplete) Call() (interface{}, string) {
 		gocode.GoSublimeGocodeSet("lib-path", libpath)
 		mGocodeVars.lastGopath = gopath
 	}
-	res["completions"] = gocode.GoSublimeGocodeComplete(src, fn, pos)
+
+	if m.calltip {
+		res["calltips"] = completeCalltip(src, fn, pos)
+	} else {
+		res["completions"] = gocode.GoSublimeGocodeComplete(src, fn, pos)
+	}
 
 	return res, e
+}
+
+func completeCalltip(src []byte, fn string, offset int) []gocode.GoSublimeGocodeCandidate {
+	fset := token.NewFileSet()
+	af, _ := parser.ParseFile(fset, fn, src, 0)
+
+	if af != nil {
+		vis := &calltipVisitor{
+			offset: offset,
+			fset:   fset,
+		}
+		ast.Walk(vis, af)
+
+		if vis.x != nil {
+			var pos token.Pos
+
+			switch v := vis.x.Fun.(type) {
+			case *ast.Ident:
+				pos = v.End()
+			case *ast.SelectorExpr:
+				pos = v.End()
+			}
+
+			if pos.IsValid() {
+				cr := fset.Position(pos).Offset
+				cl := gocode.GoSublimeGocodeComplete(src, fn, cr)
+				if len(cl) == 1 {
+					return cl
+				}
+			}
+		}
+	}
+
+	return []gocode.GoSublimeGocodeCandidate{}
 }
 
 func init() {
@@ -104,5 +167,9 @@ func init() {
 
 	registry.Register("gocode_complete", func(b *Broker) Caller {
 		return &mGocodeComplete{}
+	})
+
+	registry.Register("gocode_calltip", func(b *Broker) Caller {
+		return &mGocodeComplete{calltip: true}
 	})
 }

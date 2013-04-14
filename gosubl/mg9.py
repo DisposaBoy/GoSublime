@@ -271,10 +271,31 @@ def completion_options(m={}):
 	res = gs.dval(res.get('options'), {})
 	return res, err
 
+def calltip(fn, src, pos, quiet, f):
+	tid = ''
+	if not quiet:
+		tid = gs.begin(DOMAIN, 'Fetching calltips')
+
+	def cb(res, err):
+		if tid:
+			gs.end(tid)
+
+		res = gs.dval(res.get('calltips'), [])
+		f(res, err)
+
+	return acall('gocode_calltip', _complete_opts(fn, src, pos), cb)
+
+
+
 def complete(fn, src, pos):
+	res, err = bcall('gocode_complete', _complete_opts(fn, src, pos))
+	res = gs.dval(res.get('completions'), [])
+	return res, err
+
+def _complete_opts(fn, src, pos):
 	home = gs.home_path()
 	builtins = (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
-	res, err = bcall('gocode_complete', {
+	return {
 		'Dir': gs.basedir_or_cwd(fn),
 		'Builtins': builtins,
 		'Fn':  fn or '',
@@ -284,10 +305,7 @@ def complete(fn, src, pos):
 		'Env': gs.env({
 			'XDG_CONFIG_HOME': home,
 		}),
-	})
-
-	res = gs.dval(res.get('completions'), [])
-	return res, err
+	}
 
 def fmt(fn, src):
 	res, err = bcall('fmt', {
