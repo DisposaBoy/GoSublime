@@ -14,6 +14,7 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Joe Poirier https://github.com/jpoirier
 * Mark Smith http://qq.is
 * Nathan Youngman http://nathany.com/
+* ProGNOMmers https://github.com/ProGNOMmers
 * Tom Westberg
 * Yves Junqueira http://pledgie.com/accounts/@cetico
 
