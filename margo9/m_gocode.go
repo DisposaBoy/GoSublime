@@ -148,10 +148,12 @@ func completeCalltip(src []byte, fn string, offset int) []gocode.GoSublimeGocode
 			}
 
 			if id != nil && id.End().IsValid() {
-				cr := fset.Position(id.End()).Offset
+				line := offsetLine(fset, af, offset)
+				cp := fset.Position(id.End())
+				cr := cp.Offset
 				cl := gocode.GoSublimeGocodeComplete(src, fn, cr)
 
-				if len(cl) > 0 {
+				if (cp.Line == line || line == 0) && len(cl) > 0 {
 					for i, c := range cl {
 						if strings.EqualFold(id.Name, c.Name) {
 							return cl[i : i+1]
@@ -163,6 +165,15 @@ func completeCalltip(src []byte, fn string, offset int) []gocode.GoSublimeGocode
 	}
 
 	return []gocode.GoSublimeGocodeCandidate{}
+}
+
+func offsetLine(fset *token.FileSet, af *ast.File, offset int) (line int) {
+	defer func() {
+		if err := recover(); err != nil {
+			line = 0
+		}
+	}()
+	return fset.File(af.Pos()).Position(token.Pos(offset)).Line
 }
 
 func init() {
