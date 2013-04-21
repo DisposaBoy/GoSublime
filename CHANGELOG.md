@@ -4,7 +4,14 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 ## 13.04.21-1
-	only show calltip if the call is on the same line as the cursor:
+	** WARNING **
+	**
+	** the linter system is being redone
+	** this means comp_lint and all lint-related settings will be removed or renamed
+	** see https://github.com/DisposaBoy/GoSublime/issues/220
+	**
+
+	* only show calltip if the call is on the same line as the cursor:
 		this avoids displaying a calltip for fmt.Println() in the following snippet
 
 			fmt.|
