@@ -3,13 +3,20 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
-## 13.08.14-2
+## 13.04.21-1
+	only show calltip if the call is on the same line as the cursor:
+		this avoids displaying a calltip for fmt.Println() in the following snippet
+
+			fmt.|
+			fmt.Println("done")
+
+## 13.04.14-2
 	* fix failing to find a calltip for b() in p.a(p.b())
 
-## 13.08.14-1
+## 13.04.14-1
 	* calltips are now implemented in margo
 
-## 13.08.13-1
+## 13.04.13-1
 	* pre-compile margo on update (before restart)
 	* detect the go binary's path instead of relying on python
 	* try to work-around odd scrolling in 9o
