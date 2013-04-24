@@ -538,10 +538,17 @@ def _send():
 
 				ln = '%s %s\n' % (header, body)
 
-				if gs.PY3K:
-					proc.stdin.write(bytes(ln, 'UTF-8'))
-				else:
-					proc.stdin.write(ln)
+				try:
+					if gs.PY3K:
+						proc.stdin.write(bytes(ln, 'UTF-8'))
+					else:
+						proc.stdin.write(ln)
+
+				except Exception as ex:
+					_cb_err(cb, 'Cannot talk to MarGo: %s' % err)
+					killSrv()
+					gs.println(gs.traceback())
+
 			except Exception:
 				killSrv()
 				gs.println(gs.traceback())
