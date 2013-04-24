@@ -411,6 +411,8 @@ def expand_jdata(v):
 	if gs.is_a(v, {}):
 		for k in v:
 			v[k] = expand_jdata(v[k])
+	elif gs.is_a(v, []):
+		v = [expand_jdata(e) for e in v]
 	else:
 		if gs.PY3K and isinstance(v, bytes):
 			v = gs.ustr(v)
