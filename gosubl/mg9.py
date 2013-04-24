@@ -526,12 +526,12 @@ def _send():
 
 				header, err = gs.json_encode(req.header())
 				if err:
-					_cb_err('Failed to construct ipc header: ' % err)
+					_cb_err('Failed to construct ipc header: %s' % err)
 					continue
 
 				body, err = gs.json_encode(arg)
 				if err:
-					_cb_err(cb, 'Failed to construct ipc body: ' % err)
+					_cb_err(cb, 'Failed to construct ipc body: %s' % err)
 					continue
 
 				gs.debug(DOMAIN, 'margo request: %s ' % header)
