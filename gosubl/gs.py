@@ -742,7 +742,7 @@ def sel(view, i=0):
 
 def which_ok(fn):
 	try:
-		return os.access(fn, os.X_OK)
+		return os.path.isfile(fn) and os.access(fn, os.X_OK)
 	except Exception:
 		return False
 
