@@ -526,7 +526,7 @@ def _send():
 
 				header, err = gs.json_encode(req.header())
 				if err:
-					_cb_err('Failed to construct ipc header: %s' % err)
+					_cb_err(cb, 'Failed to construct ipc header: %s' % err)
 					continue
 
 				body, err = gs.json_encode(arg)
