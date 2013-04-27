@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.04.27-1
+	* fix failure to load GoSublime.tmLanguage in st3
+
 ## 13.04.24-1
 	* fix gs.which treating directories `$PATH` named `go` as the `go` executable
 
