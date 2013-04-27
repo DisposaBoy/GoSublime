@@ -667,6 +667,7 @@ def tm_path(name):
 	d = {
 		'9o': '9o.hidden-tmLanguage',
 		'doc': 'GsDoc.hidden-tmLanguage',
+		'go': 'GoSublime.tmLanguage',
 	}
 	return 'Packages/GoSublime/%s' % d[name]
 
