@@ -97,7 +97,7 @@ class GsCreateNewGoFileCommand(sublime_plugin.TextCommand):
 	def run(self, edit, pkg_name, file_name):
 		view = self.view
 		view.set_name(file_name)
-		view.set_syntax_file(gs.dist_path('GoSublime.tmLanguage'))
+		view.set_syntax_file(gs.tm_path('go'))
 		view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
 		view.sel().clear()
 		view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
