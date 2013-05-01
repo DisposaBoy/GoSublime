@@ -459,7 +459,7 @@ def _recv():
 
 						dat = expand_jdata(r.get('data', {}))
 						try:
-							keep = req.f(dat, err) is not True
+							keep = req.f(dat, err) is True
 							if keep:
 								req.tm = time.time()
 								gs.set_attr(k, req)
