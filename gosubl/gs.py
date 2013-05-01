@@ -357,15 +357,17 @@ def env(m={}):
 	# will go into the "bin" dir of the corresponding GOPATH path.
 	# Therefore, make sure these paths are included in PATH.
 
-	# do this again based on updated vars
-	roots = lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))
 	add_path = [home_path('bin')]
-	add_path.extend(e.get('PATH', '').split(os.pathsep))
-	for s in roots:
+
+	for s in lst(e.get('GOROOT', ''), e.get('GOPATH', '').split(os.pathsep)):
 		if s:
 			s = os.path.join(s, 'bin')
 			if s not in add_path:
 				add_path.append(s)
+
+	gobin = e.get('GOBIN', '')
+	if gobin and gobin not in add_path:
+		add_path.append(gobin)
 
 	if os_is_windows():
 		l = [
@@ -383,14 +385,15 @@ def env(m={}):
 			'/usr/bin',
 		]
 
-	gobin = e.get('GOBIN')
-	if gobin:
-		l.append(gobin)
-
 	for s in l:
 		s = os.path.expanduser(s)
 		if s not in add_path:
 			add_path.append(s)
+
+	for s in e.get('PATH', '').split(os.pathsep):
+		if s and s not in add_path:
+			add_path.append(s)
+
 
 	e['PATH'] = os.pathsep.join(add_path)
 
