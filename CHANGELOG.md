@@ -3,6 +3,11 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.01-1
+	* give PATH preference to Go related bin directories
+		this has the side-effect that if you set e.g. GOROOT in your project settings(e.g. GAE),
+		then $GOROOT/bin/go should be found first, even if you have a normal Go binary at /usr/bin/gos
+
 ## 13.04.27-1
 	* fix failure to load GoSublime.tmLanguage in st3
 
