@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.01-2
+	* fix mg9 request leak
+
 ## 13.05.01-1
 	* give PATH preference to Go related bin directories
 		this has the side-effect that if you set e.g. GOROOT in your project settings(e.g. GAE),
