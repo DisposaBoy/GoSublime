@@ -63,7 +63,6 @@ _default_settings = {
 	"autocomplete_closures": False,
 	"autocomplete_filter_name": "",
 	"autocomplete_suggest_imports": False,
-	"margo_addr": "",
 	"on_save": [],
 	"shell": [],
 	"default_snippets": [],

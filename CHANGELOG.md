@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.04-2
+	* removed setting: `margo_addr`, if you have a *MarGo* binary in your $PATH, delete it.
+
 ## 13.05.04-1
 	* don't sort imports when adding/removing
 
