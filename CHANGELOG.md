@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.04-3
+	* add new `lint_enbaled` and `linters` settings. note: the new linter has not yet been implemented
+	  see https://github.com/DisposaBoy/GoSublime/issues/220
+
 ## 13.05.04-2
 	* removed setting: `margo_addr`, if you have a *MarGo* binary in your $PATH, delete it.
 

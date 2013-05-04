@@ -71,6 +71,8 @@ _default_settings = {
 	"autosave": True,
 	"build_command": [],
 	"lint_filter": [],
+	"lint_enbled": True,
+	"linters": [],
 }
 _settings = copy.copy(_default_settings)
 

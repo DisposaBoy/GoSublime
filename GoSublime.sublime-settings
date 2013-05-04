@@ -69,6 +69,65 @@
 	// how long to wait after the last keystroke before the gslint_cmd command is run (in milliseconds)
 	"gslint_timeout": 100,
 
+	// Not Implemented
+	// Whether or not gslint is enabled
+	"lint_enabled": true,
+
+	// Not Implemented
+	// list of linters to run
+	// note: before the linters are run, the builtin gs.syntax linter is run
+	//       * its purpose is to do a basic syntax check on the active file.
+	//       * by design, it cannot be disabled
+	//       * if there is a syntax error, no user-defined linters will be run
+	//
+	// each linter is an object of the form:
+	//
+	// {
+	// 	"ctx": "", // the context in which this linter runs, e.g. "live"
+	// 	           // default: "live", builtin contexts:
+	//             //      live: the linters are being called while you're editing the file
+	//             //      save: the linters are being called after saving.
+	//             //            this can be used to e.g. rebuild or install the pkg
+	//
+	// 	"pat": "", // a regexp pattern that will define the following variables:
+	// 	           // fn: the filename
+	// 	           // line: the line number (starting from 1)
+	// 	           // column: the column number (starting from 1)
+	// 	           //         (this can be considered optional because the error message is still useful without it)
+	// 	           // message: the error message
+	// 	           //
+	// 	           // the default pat will be defined such that it matches `main.go:1:2 error` resulting in:
+	// 	           //     fn: main.go
+	// 	           //     line: 1
+	// 	           //     column: 2
+	// 	           //     message: error
+	// 	           //
+	// 	           // it will also allow `line` and `column` to be missing. this should be sufficient
+	// 	           // for the output of the go tools (go vet, compilers, etc.)
+	//
+	// 	"env": "", // an object mapping keys to string values that will be added to the default env
+	// 	           // you could, e.g. set {"GOBIN": "/tmp"} in order to avoid installing potentially
+	// 	           // broken commands into your GOPATH*/bin
+	//
+	// 	"kind": "", // a string that identifies the linter, e.g. `go.vet'
+	// 	            // this is useful to be able to identify what kind of error you're seeing,
+	// 	            // but is otherwise optional
+	//
+	// 	"cmd": [], // the command to run, e.g. ["go", "vet"]
+	// }
+	//
+	// the minimal linter is thus: {"cmd": ["go", "vet"]}
+	//
+	// builtin linters:
+	//    {"cmd": ["gs.flag.parse"]}: try to report calls to e.g. flag.Int(),flag.String()
+	//                                for which there is no call to flag.Parse()
+	//
+	//    {"cmd": ["gs.types"]}: this is essentially `gotype`, it will do a full typecheck of the pkg
+	//                           similar to the compilers. it's faster than doing a full `go build`
+	//                           however, it can lead to false-positive errors, especially on cgo
+	//                           and other non-pure-go pkgs
+	"linters": [],
+
 	// whether or not to include snippets in the auto-completion list
 	"autocomplete_snippets": true,
 
