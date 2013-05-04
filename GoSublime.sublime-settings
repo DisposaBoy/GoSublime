@@ -233,6 +233,19 @@
 		}
 	],
 
+	// Not Implemented
+	// if set, 9o will run in single-instance mode instead of per-pkg
+	// the name can be any string, so you can e.g. set it per-project and maintain project-specific
+	// command history
+	"9o_instance": "9o",
+
+	// Not Implemented
+	// if set 9o will use the specified color scheme.
+	// the path must relative to `Packages` e.g. `Packages/My/9o Specific.tmTheme`
+	// `""` essentially means no color_scheme (like the Sublime Text console)
+	// `"default"` leaves it as-is, i.e. matching the color_scheme that's being used for your other views
+	"9o_color_scheme": "default",
+
 	// what 9o command to run when (super or )ctrl+dot,ctrl+b us pressed
 	// e.g. ["go", "build"]
 	// the 9o command ^1 recalls the last command you ran manually

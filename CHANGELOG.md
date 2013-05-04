@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.04-4
+	* add new `9o_instance` and `9o_color_scheme`. note: these are not yet implemented
+	  see https://github.com/DisposaBoy/GoSublime/issues/243
+
 ## 13.05.04-3
 	* add new `lint_enbaled` and `linters` settings. note: the new linter has not yet been implemented
 	  see https://github.com/DisposaBoy/GoSublime/issues/220

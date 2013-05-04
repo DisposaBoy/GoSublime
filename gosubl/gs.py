@@ -73,6 +73,8 @@ _default_settings = {
 	"lint_filter": [],
 	"lint_enbled": True,
 	"linters": [],
+	"9o_instance": "",
+	"9o_color_scheme": "",
 }
 _settings = copy.copy(_default_settings)
 
