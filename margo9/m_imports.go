@@ -181,6 +181,5 @@ func imp(fset *token.FileSet, af *ast.File, toggle []mImportDeclArg) *ast.File {
 	}
 	af.Decls = af.Decls[:dj]
 
-	ast.SortImports(fset, af)
 	return af
 }

@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.04-1
+	* don't sort imports when adding/removing
+
 ## 13.05.01-2
 	* fix mg9 request leak
 
