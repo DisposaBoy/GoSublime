@@ -28,7 +28,7 @@
 			<key>begin</key>
 			<string>//</string>
 			<key>end</key>
-			<string>$</string>
+			<string>\z</string>
 			<key>name</key>
 			<string>comment.line.double-slash.go</string>
 		</dict>

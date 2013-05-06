@@ -14,7 +14,7 @@
         },
         {
             "begin": "//",
-            "end": "$",
+            "end": "\\z",
             "name": "comment.line.double-slash.go"
         },
         {
