@@ -239,7 +239,6 @@
 	// command history
 	"9o_instance": "9o",
 
-	// Not Implemented
 	// if set 9o will use the specified color scheme.
 	// the path must relative to `Packages` e.g. `Packages/My/9o Specific.tmTheme`
 	// `""` essentially means no color_scheme (like the Sublime Text console)
