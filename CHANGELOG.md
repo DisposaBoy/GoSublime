@@ -3,6 +3,11 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.06-1
+	* A new syntax definition has been created to fix all the short-comings of the existing
+	  syntax highlighting. if you're interested in testing it, please take a look at
+	  https://github.com/DisposaBoy/GoSublime/issues/245
+
 ## 13.05.04-4
 	* add new `9o_instance` and `9o_color_scheme`. note: these are not yet implemented
 	  see https://github.com/DisposaBoy/GoSublime/issues/243
