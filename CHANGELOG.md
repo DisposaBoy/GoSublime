@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.06-3
+	* add support for setting the 9o color scheme with `9o_color_scheme`
+	* fix completion being shown in gs-next tmlang when the cursor it at the end of the line
+
 ## 13.05.06-2
 	* disable completion in gs-next: strings, runes, comments
 
