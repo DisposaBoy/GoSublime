@@ -120,7 +120,14 @@ IGNORED_SCOPES = frozenset([
 	'string.quoted.single.go',
 	'string.quoted.raw.go',
 	'comment.line.double-slash.go',
-	'comment.block.go'
+	'comment.block.go',
+
+	# gs-next
+	'comment.block.go',
+	'comment.line.double-slash.go',
+	'string.quoted.double.go',
+	'string.quoted.raw.go',
+	'constant.other.rune.go',
 ])
 
 VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)(.*?)$', re.IGNORECASE)
