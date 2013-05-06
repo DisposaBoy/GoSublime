@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.06-2
+	* disable completion in gs-next: strings, runes, comments
+
 ## 13.05.06-1
 	* A new syntax definition has been created to fix all the short-comings of the existing
 	  syntax highlighting. if you're interested in testing it, please take a look at
