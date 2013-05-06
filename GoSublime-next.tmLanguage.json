@@ -1,0 +1,148 @@
+{
+    "comment": "Based on work from github.com/frou/GoFeather and github.com/DisposaBoy/GoSublime",
+    "fileTypes": [
+        "go"
+    ],
+    "firstLineMatch": "-[*]-( Mode:)? Go -[*]-",
+    "keyEquivalent": "^~G",
+    "name": "GoSublime-next",
+    "patterns": [
+        {
+            "begin": "/\\*",
+            "end": "\\*/",
+            "name": "comment.block.go"
+        },
+        {
+            "begin": "//",
+            "end": "$",
+            "name": "comment.line.double-slash.go"
+        },
+        {
+            "begin": "\"",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.go"
+                }
+            },
+            "end": "\"",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.end.go"
+                }
+            },
+            "name": "string.quoted.double.go",
+            "patterns": [
+                {
+                    "include": "#string_placeholder"
+                },
+                {
+                    "include": "#string_escaped_char"
+                }
+            ]
+        },
+        {
+            "begin": "`",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.go"
+                }
+            },
+            "end": "`",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.end.go"
+                }
+            },
+            "name": "string.quoted.raw.go",
+            "patterns": [
+                {
+                    "include": "#string_placeholder"
+                }
+            ]
+        },
+        {
+            "match": "\\b(true|false|nil|iota)\\b",
+            "name": "constant.language.go"
+        },
+        {
+            "match": "\\b((\\d+\\.(\\d+)?([eE][+-]?\\d+)?|\\d+[eE][+-]?\\d+|\\.\\d+([eE][+-]?\\d+)?)i?)\\b",
+            "name": "constant.numeric.floating-point.go"
+        },
+        {
+            "match": "\\b(\\d+i|0[xX][0-9A-Fa-f]+|0[0-7]*|[1-9][0-9]*)\\b",
+            "name": "constant.numeric.integer.go"
+        },
+        {
+            "match": "(''|'.*?[^\\\\]')",
+            "name": "constant.other.rune.go"
+        },
+        {
+            "match": "\\b(bool|byte|complex(64|128)|error|float(32|64)|rune|string|u?int(8|16|32|64)?|uintptr)\\b",
+            "name": "storage.type.go"
+        },
+        {
+            "match": "\\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\\b",
+            "name": "keyword.other.go"
+        },
+        {
+            "match": "\\s:=\\s",
+            "name": "keyword.operator.initialize.go"
+        },
+        {
+            "match": "(?<=(\\Afunc|...\\))\\s)\\b(\\w+)\\b(?=\\()",
+            "name": "entity.name.function.go"
+        },
+        {
+            "match": "(?<=(\\sfunc|....\\))\\s)\\b(\\w+)\\b(?=\\()",
+            "name": "entity.name.function.go"
+        },
+        {
+            "match": "(?<=\\Atype\\s)\\b(\\w+)\\b",
+            "name": "entity.name.type.go"
+        },
+        {
+            "match": "(?<=\\stype\\s)\\b(\\w+)\\b",
+            "name": "entity.name.type.go"
+        },
+        {
+            "match": "\\b(append|cap|close|complex|copy|delete|imag|len|make|new|panic|print|println|real|recover)\\b",
+            "name": "support.function.builtin.go"
+        },
+        {
+            "match": "\\b(\\w+)\\b(?=\\()",
+            "name": "support.function.go"
+        },
+        {
+            "match": "(<-)",
+            "name": "keyword.operator.channel.go"
+        }
+    ],
+    "repository": {
+        "string_escaped_char": {
+            "patterns": [
+                {
+                    "match": "\\\\(\\\\|[abfnrutv'\"]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3})",
+                    "name": "constant.character.escape.go"
+                },
+                {
+                    "match": "\\\\.",
+                    "name": "invalid.illegal.unknown-escape.go"
+                }
+            ]
+        },
+        "string_placeholder": {
+            "patterns": [
+                {
+                    "match": "(?x)%\n                        (\\d+\\$)?                                    # field (argument #)\n                        [#0\\- +']*                                  # flags\n                        [,;:_]?                                     # separator character (AltiVec)\n                        ((-?\\d+)|\\*(-?\\d+\\$)?)?                     # minimum field width\n                        (\\.((-?\\d+)|\\*(-?\\d+\\$)?)?)?                # precision\n                        [diouxXDOUeEfFgGaAcCsSqpnvtTbyYhHmMzZ%]     # conversion type\n                    ",
+                    "name": "constant.other.placeholder.go"
+                },
+                {
+                    "match": "%",
+                    "name": "invalid.illegal.placeholder.go"
+                }
+            ]
+        }
+    },
+    "scopeName": "source.go",
+    "uuid": "01fb307a-6721-11e2-b2c2-00262d996a67"
+}
