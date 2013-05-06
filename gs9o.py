@@ -61,7 +61,10 @@ def active_wd(win=None):
 	_, v = gs.win_view(win=win)
 	return gs.basedir_or_cwd(v.file_name() if v else '')
 
-def wdid(wd):
+def _wdid(wd):
+	name = gs.setting("9o_instance")
+	if name:
+		return name
 	return '9o://%s' % wd
 
 
@@ -174,7 +177,7 @@ class Gs9oOpenCommand(sublime_plugin.TextCommand):
 		if not wd:
 			wd = active_wd(win=win)
 
-		id = wdid(wd)
+		id = _wdid(wd)
 		st = stash.setdefault(wid, {})
 		v = st.get(id)
 		if v is None:

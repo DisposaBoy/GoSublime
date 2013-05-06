@@ -233,7 +233,6 @@
 		}
 	],
 
-	// Not Implemented
 	// if set, 9o will run in single-instance mode instead of per-pkg
 	// the name can be any string, so you can e.g. set it per-project and maintain project-specific
 	// command history
