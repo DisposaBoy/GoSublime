@@ -116,7 +116,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 			wd = vs.get('9o.wd', active_wd(win=v.window()))
 
 		was_empty = v.size() == 0
-		s = '[ %s ] # \n' % wd
+		s = '[ %s ] # \n' % gs.simple_fn(wd)
 
 		if was_empty:
 			v.insert(edit, 0, 'GoSublime %s 9o: type `help` for help and command documentation\n\n' % about.VERSION)
@@ -380,7 +380,7 @@ def _save_all(win, wd):
 
 def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 	dmn = '%s: 9 %s' % (DOMAIN, name)
-	msg = '[ %s ] # 9 %s' % (wd, ' '.join(args))
+	msg = '[ %s ] # 9 %s' % (gs.simple_fn(wd), ' '.join(args))
 	if not cid:
 		cid = '9%s-%s' % (name, uuid.uuid4())
 	tid = gs.begin(dmn, msg, set_status=False, cancel=lambda: mg9.acall('kill', {'cid': cid}, None))

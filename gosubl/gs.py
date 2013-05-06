@@ -133,6 +133,12 @@ IGNORED_SCOPES = frozenset([
 VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)(.*?)$', re.IGNORECASE)
 ROWCOL_PAT = re.compile(r'^[:]*(\d+)(?:[:](\d+))?[:]*$')
 
+USER_DIR = os.path.expanduser('~')
+USER_DIR_PAT = re.compile(r'^%s/' % (re.escape(USER_DIR.replace(r'\\', '/').rstrip('/'))))
+
+def simple_fn(fn):
+	return USER_DIR_PAT.sub('~/', '%s/' % fn.replace(r'\\', '/').rstrip('/'))
+
 def getwd():
 	if PY3K:
 		return os.getcwd()
