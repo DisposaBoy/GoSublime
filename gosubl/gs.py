@@ -675,6 +675,14 @@ def tm_path(name):
 		'doc': 'GsDoc.hidden-tmLanguage',
 		'go': 'GoSublime.tmLanguage',
 	}
+
+	try:
+		so = sublime.load_settings('GoSublime-next.sublime-settings')
+		if 'go' in so.get('extensions', []):
+			d['go'] = 'GoSublime-next.tmLanguage'
+	except Exception:
+		pass
+
 	return 'Packages/GoSublime/%s' % d[name]
 
 def dist_path(*a):
