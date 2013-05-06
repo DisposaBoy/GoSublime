@@ -146,6 +146,16 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		vs.set("scroll_past_end", True)
 		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
 		vs.set("word_separators", "./\\()\"'-:,.;<>~!@#$%&*|+=[]{}`~?")
+
+		color_scheme = gs.setting("9o_color_scheme", "")
+		if color_scheme:
+			if color_scheme == "default":
+				vs.erase("color_scheme")
+			else:
+				vs.set("color_scheme", color_scheme)
+		else:
+			vs.set("color_scheme", "")
+
 		v.set_syntax_file(gs.tm_path('9o'))
 
 		if was_empty:
