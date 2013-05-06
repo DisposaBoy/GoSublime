@@ -129,6 +129,14 @@
 			<string>storage.type.go</string>
 		</dict>
 		<dict>
+			<key>comment</key>
+			<string>A subset of keyword.other.go for flow control keywords.</string>
+			<key>match</key>
+			<string>\b(break|case|continue|default|defer|else|for|go|goto|if|range|return|select|switch)\b</string>
+			<key>name</key>
+			<string>keyword.control.go</string>
+		</dict>
+		<dict>
 			<key>match</key>
 			<string>\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\b</string>
 			<key>name</key>

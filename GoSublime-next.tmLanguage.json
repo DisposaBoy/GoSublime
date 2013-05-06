@@ -81,6 +81,11 @@
             "name": "storage.type.go"
         },
         {
+            "comment": "A subset of keyword.other.go for flow control keywords.",
+            "match": "\\b(break|case|continue|default|defer|else|for|go|goto|if|range|return|select|switch)\\b",
+            "name": "keyword.control.go"
+        },
+        {
             "match": "\\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\\b",
             "name": "keyword.other.go"
         },
