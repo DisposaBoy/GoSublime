@@ -237,7 +237,7 @@
 	// if set, 9o will run in single-instance mode instead of per-pkg
 	// the name can be any string, so you can e.g. set it per-project and maintain project-specific
 	// command history
-	"9o_instance": "9o",
+	"9o_instance": "",
 
 	// if set 9o will use the specified color scheme.
 	// the path must relative to `Packages` e.g. `Packages/My/9o Specific.tmTheme`
