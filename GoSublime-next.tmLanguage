@@ -135,10 +135,25 @@
 			<string>keyword.other.go</string>
 		</dict>
 		<dict>
+			<key>captures</key>
+			<dict>
+				<key>0</key>
+				<dict>
+					<key>name</key>
+					<string>variable.other.go</string>
+				</dict>
+				<key>1</key>
+				<dict>
+					<key>name</key>
+					<string>keyword.operator.initialize.go</string>
+				</dict>
+			</dict>
+			<key>comment</key>
+			<string>This matches the 'x := 0' style of variable declaration.</string>
 			<key>match</key>
-			<string>\s:=\s</string>
+			<string>(?:[[:alpha:]_][[:alnum:]_]*)(?:,\s+[[:alpha:]_][[:alnum:]_]*)*\s*(:=)</string>
 			<key>name</key>
-			<string>keyword.operator.initialize.go</string>
+			<string>meta.initialization.short.go</string>
 		</dict>
 		<dict>
 			<key>match</key>

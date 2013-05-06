@@ -85,8 +85,17 @@
             "name": "keyword.other.go"
         },
         {
-            "match": "\\s:=\\s",
-            "name": "keyword.operator.initialize.go"
+            "captures": {
+                "0": {
+                    "name": "variable.other.go"
+                },
+                "1": {
+                    "name": "keyword.operator.initialize.go"
+                }
+            },
+            "comment": "This matches the 'x := 0' style of variable declaration.",
+            "match": "(?:[[:alpha:]_][[:alnum:]_]*)(?:,\\s+[[:alpha:]_][[:alnum:]_]*)*\\s*(:=)",
+            "name": "meta.initialization.short.go"
         },
         {
             "match": "(?<=(\\Afunc|...\\))\\s)\\b(\\w+)\\b(?=\\()",
