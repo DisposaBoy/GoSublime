@@ -81,12 +81,26 @@
             "name": "storage.type.go"
         },
         {
+            "comment": "A subset of keyword.other.go for flow control keywords.",
+            "match": "\\b(break|case|continue|default|defer|else|for|go|goto|if|range|return|select|switch)\\b",
+            "name": "keyword.control.go"
+        },
+        {
             "match": "\\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\\b",
             "name": "keyword.other.go"
         },
         {
-            "match": "\\s:=\\s",
-            "name": "keyword.operator.initialize.go"
+            "captures": {
+                "0": {
+                    "name": "variable.other.go"
+                },
+                "1": {
+                    "name": "keyword.operator.initialize.go"
+                }
+            },
+            "comment": "This matches the 'x := 0' style of variable declaration.",
+            "match": "(?:[[:alpha:]_][[:alnum:]_]*)(?:,\\s+[[:alpha:]_][[:alnum:]_]*)*\\s*(:=)",
+            "name": "meta.initialization.short.go"
         },
         {
             "match": "(?<=(\\Afunc|...\\))\\s)\\b(\\w+)\\b(?=\\()",

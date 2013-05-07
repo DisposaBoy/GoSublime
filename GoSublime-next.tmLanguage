@@ -129,16 +129,39 @@
 			<string>storage.type.go</string>
 		</dict>
 		<dict>
+			<key>comment</key>
+			<string>A subset of keyword.other.go for flow control keywords.</string>
+			<key>match</key>
+			<string>\b(break|case|continue|default|defer|else|for|go|goto|if|range|return|select|switch)\b</string>
+			<key>name</key>
+			<string>keyword.control.go</string>
+		</dict>
+		<dict>
 			<key>match</key>
 			<string>\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\b</string>
 			<key>name</key>
 			<string>keyword.other.go</string>
 		</dict>
 		<dict>
+			<key>captures</key>
+			<dict>
+				<key>0</key>
+				<dict>
+					<key>name</key>
+					<string>variable.other.go</string>
+				</dict>
+				<key>1</key>
+				<dict>
+					<key>name</key>
+					<string>keyword.operator.initialize.go</string>
+				</dict>
+			</dict>
+			<key>comment</key>
+			<string>This matches the 'x := 0' style of variable declaration.</string>
 			<key>match</key>
-			<string>\s:=\s</string>
+			<string>(?:[[:alpha:]_][[:alnum:]_]*)(?:,\s+[[:alpha:]_][[:alnum:]_]*)*\s*(:=)</string>
 			<key>name</key>
-			<string>keyword.operator.initialize.go</string>
+			<string>meta.initialization.short.go</string>
 		</dict>
 		<dict>
 			<key>match</key>
