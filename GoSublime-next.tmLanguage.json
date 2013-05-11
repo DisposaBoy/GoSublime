@@ -74,7 +74,7 @@
         },
         {
             "name": "constant.other.rune.go",
-            "match": "'(?:[^'\\\\]|\\\\(?:\\\\|[abfnrutv'\"]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3}))'"
+            "match": "'(?:[^'\\\\]|\\\\(?:\\\\|[abfnrutv']|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3}))'"
         },
         {
             "match": "\\b(bool|byte|complex(64|128)|error|float(32|64)|rune|string|u?int(8|16|32|64)?|uintptr)\\b",
