@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.12-4
+	* fix not being able to properly cd to relative parent directories
+
 ## 13.05.12-3
 	* add a basic `cd` command to 9o. see 9o `help` for documentation
 
