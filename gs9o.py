@@ -51,6 +51,7 @@ DEFAULT_COMMANDS = [
 	'share',
 	'hist',
 	'hist erase',
+	'cd',
 ]
 DEFAULT_CL = [(s, s+' ') for s in DEFAULT_COMMANDS]
 
@@ -323,21 +324,28 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			view.run_command('gs9o_init')
 
 			cli = cmd.split(' ', 1)
+			nm = cli[0]
+			ag = cli[1].strip() if len(cli) == 2 else ''
+
+			if nm == "cd":
+				args = [ag] if ag else []
+				cmd_cd(view, edit, args, wd, rkey)
+				return
 
 			# todo: move this into margo
-			if cli[0] == 'sh':
+			if nm == 'sh':
 				def on_done(c):
 					out = gs.ustr('\n'.join(c.consume_outq()))
 					sublime.set_timeout(lambda: push_output(view, rkey, out), 0)
 
-				c = gsshell.Command(cmd=cli[1], shell=True, cwd=wd)
+				c = gsshell.Command(cmd=ag, shell=True, cwd=wd)
 				c.on_done = on_done
 				c.start()
 				return
 
-			f = globals().get('cmd_%s' % cli[0])
+			f = globals().get('cmd_%s' % nm)
 			if f:
-				args = shlex.split(gs.astr(cli[1])) if len(cli) == 2 else []
+				args = shlex.split(gs.astr(ag)) if ag else []
 				f(view, edit, args, wd, rkey)
 			else:
 				push_output(view, rkey, 'Invalid command %s' % cli)
@@ -409,7 +417,30 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 
 	return cid, cb
 
+def cmd_cd(view, edit, args, wd, rkey):
+	if args:
+		try:
+			d = args[0]
+			d = os.path.expanduser(d)
+			d = os.path.abspath(d)
+			if not os.path.isdir(d):
+				push_output(view, rkey, 'Invalid directory `%s`' % d)
+				return
+		except Exception as ex:
+			push_output(view, rkey, 'Cannot change directory: %s' % ex)
+			return
+
+		wd = d
+	else:
+		fn = view.window().active_view().file_name()
+		if fn:
+			wd = os.path.dirname(fn)
+
+	push_output(view, rkey, '')
+	view.run_command('gs9o_init', {'wd': wd})
+
 def cmd_reset(view, edit, args, wd, rkey):
+	push_output(view, rkey, '')
 	view.erase(edit, sublime.Region(0, view.size()))
 	view.run_command('gs9o_init')
 
