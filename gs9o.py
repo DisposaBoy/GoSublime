@@ -419,22 +419,21 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 	return cid, cb
 
 def cmd_cd(view, edit, args, wd, rkey):
-	if args:
-		try:
-			d = args[0]
-			d = os.path.expanduser(d)
-			d = string.Template(d).safe_substitute(gs.env())
-			d = os.path.abspath(d)
-			os.chdir(d)
-		except Exception as ex:
-			push_output(view, rkey, 'Cannot change directory: %s' % ex)
-			return
+	try:
+		if args:
+			wd = args[0]
+			wd = string.Template(wd).safe_substitute(gs.env())
+			wd = os.path.expanduser(wd)
+			wd = os.path.abspath(wd)
+		else:
+			fn = view.window().active_view().file_name()
+			if fn:
+				wd = os.path.dirname(fn)
 
-		wd = d
-	else:
-		fn = view.window().active_view().file_name()
-		if fn:
-			wd = os.path.dirname(fn)
+		os.chdir(wd)
+	except Exception as ex:
+		push_output(view, rkey, 'Cannot chdir: %s' % ex)
+		return
 
 	push_output(view, rkey, '')
 	view.run_command('gs9o_init', {'wd': wd})
