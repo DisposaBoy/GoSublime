@@ -118,7 +118,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>'(?:[^'\\]|\\(?:\\|[abfnrutv']|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3}))'</string>
+			<string>'(?:[^'\\]|\\(?:\\|[abfnrtv']|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3}))'</string>
 			<key>name</key>
 			<string>constant.other.rune.go</string>
 		</dict>
@@ -214,7 +214,7 @@
 			<array>
 				<dict>
 					<key>match</key>
-					<string>\\(\\|[abfnrutv'"]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3})</string>
+					<string>\\(\\|[abfnrtv'"]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3})</string>
 					<key>name</key>
 					<string>constant.character.escape.go</string>
 				</dict>
