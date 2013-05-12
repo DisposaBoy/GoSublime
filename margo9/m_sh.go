@@ -45,8 +45,8 @@ func (m *mSh) Call() (interface{}, string) {
 	unwatchCmd(m.Cid)
 
 	res := M{
-		"out": stdOut.String(),
-		"err": stdErr.String(),
+		"out": jData(stdOut.Bytes()),
+		"err": jData(stdErr.Bytes()),
 		"dur": time.Now().Sub(start).String(),
 	}
 	return res, errStr(err)
