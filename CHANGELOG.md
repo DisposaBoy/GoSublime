@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.12-6
+	* 9o `hist` now honours `9o_instance`
+
 ## 13.05.12-5
 	* more 9o `cd`, always chdir
 
