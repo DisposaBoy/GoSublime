@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.12-5
+	* more 9o `cd`, always chdir
+
 ## 13.05.12-4
 	* fix not being able to properly cd to relative parent directories
 
