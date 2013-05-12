@@ -63,6 +63,12 @@ def active_wd(win=None):
 	_, v = gs.win_view(win=win)
 	return gs.basedir_or_cwd(v.file_name() if v else '')
 
+def _hkey(wd):
+	name = gs.setting("9o_instance")
+	if name:
+		wd = name
+	return '9o.hist.%s' % wd
+
 def _wdid(wd):
 	name = gs.setting("9o_instance")
 	if name:
@@ -78,7 +84,7 @@ class EV(sublime_plugin.EventListener):
 
 		cl = []
 
-		hkey = '9o.hist.%s' % view.settings().get('9o.wd', '')
+		hkey = _hkey(view.settings().get('9o.wd', ''))
 		for i, cmd in enumerate(reversed(gs.dval(gs.aso().get(hkey), []))):
 			if not cmd in cl:
 				cl.append(('^%d %s' % (i+1, cmd), cmd+' '))
@@ -291,7 +297,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			if cmd:
 				vs = view.settings()
 				aso = gs.aso()
-				hkey = '9o.hist.%s' % wd
+				hkey = _hkey(wd)
 				hist = gs.dval(aso.get(hkey), [])
 
 				m = HIST_EXPAND_PAT.match(cmd)
@@ -573,7 +579,7 @@ def cmd_env(view, edit, args, wd, rkey):
 
 def cmd_hist(view, edit, args, wd, rkey):
 	aso = gs.aso()
-	hkey = '9o.hist.%s' % wd
+	hkey = _hkey(wd)
 
 	s = 'hist: invalid args: %s' % args
 
