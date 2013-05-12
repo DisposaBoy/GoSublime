@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.12-1
+	* improved GoSublime-next syntax highlighting.
+	  see https://github.com/DisposaBoy/GoSublime/issues/245
+
 ## 13.05.06-4
 	* display 9o wd in a simplified manner
 	* impl 9o_instance setting: note: this does not work yet
