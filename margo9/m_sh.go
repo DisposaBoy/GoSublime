@@ -3,14 +3,16 @@ package main
 import (
 	"bytes"
 	"os/exec"
+	"strings"
 	"time"
 )
 
 type mShCmd struct {
-	Name string
-	Args []string
-	And  *mShCmd
-	Or   *mShCmd
+	Name  string
+	Args  []string
+	Input string
+	And   *mShCmd
+	Or    *mShCmd
 }
 
 type mSh struct {
@@ -37,6 +39,9 @@ func (m *mSh) Call() (interface{}, string) {
 	c := exec.Command(m.Cmd.Name, m.Cmd.Args...)
 	c.Stdout = stdOut
 	c.Stderr = stdErr
+	if m.Cmd.Input != "" {
+		c.Stdin = strings.NewReader(m.Cmd.Input)
+	}
 	c.Dir = m.Cwd
 	c.Env = env
 
