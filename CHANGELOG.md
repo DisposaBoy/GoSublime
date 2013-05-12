@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.12-3
+	* add a basic `cd` command to 9o. see 9o `help` for documentation
+
 ## 13.05.12-2
 	* mg/sh now handless binary output
 	* mg/sh now accepts a string `Cmd.Input` that allows passing input the command

@@ -1,8 +1,8 @@
 import re
 import sublime
 
-ANN = 'a13.05.12-2'
-VERSION = 'r13.05.12-2'
+ANN = 'a13.05.12-3'
+VERSION = 'r13.05.12-3'
 VERSION_PAT = re.compile(r'r\d{2}.\d{2}.\d{2}-\d+', re.IGNORECASE)
 PLATFORM = '%s-%s' % (sublime.platform(), sublime.arch())
 MARGO_EXE_PREFIX = 'gosublime.margo'
