@@ -200,3 +200,26 @@ func eRune() []byte {
 	s = s[:n]
 	return s
 }
+
+func tempDir(env map[string]string, subDirs ...string) string {
+	dir := ""
+
+	if env != nil {
+		for _, k := range []string{"TMP", "TMPDIR"} {
+			dir = env[k]
+			if dir != "" {
+				break
+			}
+		}
+	}
+
+	if dir == "" {
+		dir = os.TempDir()
+	}
+
+	args := append([]string{dir, "GoSublime-temp"}, subDirs...)
+	dir = filepath.Join(args...)
+	os.MkdirAll(dir, 0777)
+
+	return dir
+}

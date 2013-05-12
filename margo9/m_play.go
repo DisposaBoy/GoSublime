@@ -24,16 +24,7 @@ type mPlay struct {
 // todo: send the client output as it comes
 func (m *mPlay) Call() (interface{}, string) {
 	env := envSlice(m.Env)
-
-	tmpDir := m.Env["TMP"]
-	if tmpDir == "" {
-		tmpDir = os.TempDir()
-	}
-	tmpDir = filepath.Join(tmpDir, "GoSublime", "play")
-	// if this fails then the next operation fails as well so no point in checking this
-	os.MkdirAll(tmpDir, 0755)
-
-	dir, err := ioutil.TempDir(tmpDir, "play-")
+	dir, err := ioutil.TempDir(tempDir(m.Env), "play-")
 	if err != nil {
 		return nil, err.Error()
 	}
