@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.12-7
+	* add basic support for injecting commands into 9o.
+		contact me if you intend to make use of this feature
+
 ## 13.05.12-6
 	* 9o `hist` now honours `9o_instance`
 
