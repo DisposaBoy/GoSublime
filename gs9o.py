@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shlex
+import string
 import sublime
 import sublime_plugin
 import uuid
@@ -422,6 +423,7 @@ def cmd_cd(view, edit, args, wd, rkey):
 		try:
 			d = args[0]
 			d = os.path.expanduser(d)
+			d = string.Template(d).safe_substitute(gs.env())
 			d = os.path.abspath(d)
 			if not os.path.isdir(d):
 				push_output(view, rkey, 'Invalid directory `%s`' % d)
