@@ -425,9 +425,7 @@ def cmd_cd(view, edit, args, wd, rkey):
 			d = os.path.expanduser(d)
 			d = string.Template(d).safe_substitute(gs.env())
 			d = os.path.abspath(d)
-			if not os.path.isdir(d):
-				push_output(view, rkey, 'Invalid directory `%s`' % d)
-				return
+			os.chdir(d)
 		except Exception as ex:
 			push_output(view, rkey, 'Cannot change directory: %s' % ex)
 			return
