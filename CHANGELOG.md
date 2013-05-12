@@ -3,6 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.05.12-2
+	* mg/sh now handless binary output
+	* mg/sh now accepts a string `Cmd.Input` that allows passing input the command
+
 ## 13.05.12-1
 	* improved GoSublime-next syntax highlighting.
 	  see https://github.com/DisposaBoy/GoSublime/issues/245
