@@ -89,6 +89,9 @@ class EV(sublime_plugin.EventListener):
 			if not cmd in cl:
 				cl.append(('^%d %s' % (i+1, cmd), cmd+' '))
 
+		for k in gs.gs9o:
+			cl.append((k, k+' '))
+
 		cl.extend(DEFAULT_CL)
 
 		return (cl, AC_OPTS)
@@ -350,7 +353,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 				c.start()
 				return
 
-			f = globals().get('cmd_%s' % nm)
+			f = gs.gs9o.get(nm) or globals().get('cmd_%s' % nm)
 			if f:
 				args = shlex.split(gs.astr(ag)) if ag else []
 				f(view, edit, args, wd, rkey)

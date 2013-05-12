@@ -816,6 +816,11 @@ except:
 	DEVNULL = open(os.devnull, 'w')
 	LOGFILE = DEVNULL
 
+try:
+	gs9o
+except Exception:
+	gs9o = {}
+
 def gs_init(m={}):
 	global LOGFILE
 	try:
