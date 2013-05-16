@@ -1,7 +1,7 @@
 import re
 import sublime
 
-ANN = 'a13.05.12-7'
+ANN = 'a13.05.16-1'
 VERSION = 'r13.05.12-7'
 VERSION_PAT = re.compile(r'r\d{2}.\d{2}.\d{2}-\d+', re.IGNORECASE)
 PLATFORM = '%s-%s' % (sublime.platform(), sublime.arch())
