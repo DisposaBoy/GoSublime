@@ -1,4 +1,5 @@
 from gosubl import about
+from gosubl import ev
 from gosubl import gs
 from gosubl import gsq
 from gosubl import gsshell
@@ -181,7 +182,7 @@ def install(aso_install_vesion, force_install):
 		if go_exe:
 			cmd = [go_exe, 'build', '-o', _margo_bin(INSTALL_EXE)]
 			cwd = _margo_src()
-			gs.debug('%s.build' % DOMAIN, {
+			ev.debug('%s.build' % DOMAIN, {
 				'cmd': cmd,
 				'cwd': cwd,
 			})
@@ -448,7 +449,7 @@ def _recv():
 
 						err = r.get('error', '')
 
-						gs.debug(DOMAIN, "margo response: %s" % {
+						ev.debug(DOMAIN, "margo response: %s" % {
 							'method': req.method,
 							'tag': tag,
 							'token': token,
@@ -466,7 +467,7 @@ def _recv():
 						except Exception:
 							gs.error_traceback(DOMAIN)
 					else:
-						gs.debug(DOMAIN, 'Ignoring margo: token: %s' % token)
+						ev.debug(DOMAIN, 'Ignoring margo: token: %s' % token)
 			except Exception:
 				gs.println(gs.traceback())
 		except Exception:
@@ -536,7 +537,7 @@ def _send():
 					_cb_err(cb, 'Failed to construct ipc body: %s' % err)
 					continue
 
-				gs.debug(DOMAIN, 'margo request: %s ' % header)
+				ev.debug(DOMAIN, 'margo request: %s ' % header)
 
 				ln = '%s %s\n' % (header, body)
 
