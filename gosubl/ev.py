@@ -15,7 +15,7 @@ class Event(object):
 			try:
 				f(*args, **kwargs)
 			except Exception:
-				tbck.format_exc()
+				print(tbck.format_exc())
 
 		return self
 
