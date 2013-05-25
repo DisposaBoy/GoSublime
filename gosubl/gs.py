@@ -758,7 +758,6 @@ def checked(domain, k):
 	return v
 
 def sel(view, i=0):
-	debug(NAME, 'sel %d' % i)
 	try:
 		s = view.sel()
 		if s is not None and i < len(s):
