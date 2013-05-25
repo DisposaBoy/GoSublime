@@ -19,6 +19,7 @@ except Exception:
 
 def plugin_loaded():
 	from gosubl import about
+	from gosubl import ev
 	from gosubl import gs
 	from gosubl import mg9
 
@@ -43,6 +44,8 @@ def plugin_loaded():
 			# old versions didn't take an arg
 			mod.gs_init()
 
+	ev.init()
+	ev.init.post_add = lambda init: init()
 
 	def cb():
 		aso = gs.aso()

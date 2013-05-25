@@ -35,3 +35,4 @@ class Event(object):
 		return self
 
 debug = Event()
+init = Event()
