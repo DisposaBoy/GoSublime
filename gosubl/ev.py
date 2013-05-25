@@ -24,7 +24,7 @@ class Event(object):
 			self.lst.append(f)
 
 		if self.post_add:
-			self.post_add(self)
+			self.post_add(self, f)
 
 		return self
 
