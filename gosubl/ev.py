@@ -24,7 +24,10 @@ class Event(object):
 			self.lst.append(f)
 
 		if self.post_add:
-			self.post_add(self, f)
+			try:
+				self.post_add(self, f)
+			except Exception:
+				print(tbck.format_exc())
 
 		return self
 
