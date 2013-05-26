@@ -529,35 +529,18 @@ def cmd_9(view, edit, args, wd, rkey):
 	sublime.set_timeout(lambda: mg9.acall('play', a, cb), 0)
 
 def cmd_tskill(view, edit, args, wd, rkey):
-	if len(args) > 0:
-		l = []
-		for tid in args:
-			tid = tid.lstrip('#')
-			tid = tid_alias.get('%s-%s' % (tid, wd), tid)
-			l.append('kill %s: %s' % (tid, ('yes' if gs.cancel_task(tid) else 'no')))
-
-		push_output(view, rkey, '\n'.join(l))
+	if len(args) == 0:
+		sublime.set_timeout(lambda: sublime.active_window().run_command("gs_show_tasks"), 0)
+		push_output(view, rkey, '')
 		return
 
-	try:
-		now = datetime.datetime.now().replace(microsecond=0)
-		with gs.sm_lck:
-			tasks = sorted(gs.sm_tasks.items())
+	l = []
+	for tid in args:
+		tid = tid.lstrip('#')
+		tid = tid_alias.get('%s-%s' % (tid, wd), tid)
+		l.append('kill %s: %s' % (tid, ('yes' if gs.cancel_task(tid) else 'no')))
 
-		l = []
-		for tid, t in tasks:
-			if t['cancel']:
-				pfx = '#%s' % tid
-			else:
-				pfx = '(uninterruptible)'
-
-			l.append('%s %s %s: %s' % (pfx, (now - t['start'].replace(microsecond=0)), t['domain'], t['message']))
-
-		s = '\n'.join(l)
-	except Exception as ex:
-		gs.error_traceback(DOMAIN)
-		s = 'Error: %s' % ex
-	push_output(view, rkey, s)
+	push_output(view, rkey, '\n'.join(l))
 
 def _env_settings(d, view, edit, args, wd, rkey):
 	if len(args) > 0:
