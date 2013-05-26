@@ -9,6 +9,9 @@ For those who are not aware:
 	There is no ST3 branch or separate release this code supports both simultaneously.
 
 
+## 13.05.26-2
+	* 9o: `tskill` without args, now opens the `pending tasks` palette
+
 ## 13.05.26-1
 	* fix `mg -env` in st3 on windows
 
