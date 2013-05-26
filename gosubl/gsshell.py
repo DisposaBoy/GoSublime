@@ -32,17 +32,17 @@ def fix_shell_cmd(shell, cmd):
 		cmd = [cmd]
 
 	if shell:
-		sh = gs.setting('shell')
 		cmd_str = ' '.join(cmd)
+		sh = gs.setting('shell')
+		if not sh:
+			return (shell, gs.astr(cmd_str))
+
+		shell = False
 		cmd_map = {'CMD': cmd_str}
-		if sh:
-			shell = False
-			cmd = []
-			for v in sh:
-				if v:
-					cmd.append(string.Template(v).safe_substitute(cmd_map))
-		else:
-			cmd = [cmd_str]
+		cmd = []
+		for v in sh:
+			if v:
+				cmd.append(string.Template(v).safe_substitute(cmd_map))
 
 	return (shell, [gs.astr(v) for v in cmd])
 
