@@ -3,11 +3,14 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
-## 13.05.16-1
-	**NOTE**
-	For those who are not aware:
-		GoSublime already supports Sublime Text 3 equally to Sublime Text 2.
-		There is no ST3 branch or separate release this code supports both simultaneously.
+**NOTE**
+For those who are not aware:
+	GoSublime already supports Sublime Text 3 equally to Sublime Text 2.
+	There is no ST3 branch or separate release this code supports both simultaneously.
+
+
+## 13.05.26-1
+	* fix `mg -env` in st3 on windows
 
 ## 13.05.12-7
 	* add basic support for injecting commands into 9o.
