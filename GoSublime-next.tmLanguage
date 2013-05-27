@@ -96,6 +96,10 @@
 					<key>include</key>
 					<string>#string_placeholder</string>
 				</dict>
+				<dict>
+					<key>include</key>
+					<string>source.gotemplate</string>
+				</dict>
 			</array>
 		</dict>
 		<dict>

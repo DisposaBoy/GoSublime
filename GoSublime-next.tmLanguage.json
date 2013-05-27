@@ -57,6 +57,9 @@
 			"patterns": [
 				{
 					"include": "#string_placeholder"
+				},
+				{
+					"include": "source.gotemplate"
 				}
 			]
 		},
@@ -131,6 +134,7 @@
 			"name": "keyword.operator.channel.go"
 		}
 	],
+	// note: keep this in sync with GoTemplate
 	"repository": {
 		"string_escaped_char": {
 			"patterns": [
