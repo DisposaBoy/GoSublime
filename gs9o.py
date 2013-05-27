@@ -380,11 +380,14 @@ class Gs9oPushOutput(sublime_plugin.TextCommand):
 			view.show(view.size())
 
 def push_output(view, rkey, output, hourglass_repl=''):
-	view.run_command('gs9o_push_output', {
-		'rkey': rkey,
-		'output': output,
-		'hourglass_repl': hourglass_repl,
-	})
+	def f():
+		view.run_command('gs9o_push_output', {
+			'rkey': rkey,
+			'output': output,
+			'hourglass_repl': hourglass_repl,
+		})
+
+	sublime.set_timeout(f, 0)
 
 def _save_all(win, wd):
 	if gs.setting('autosave') is True and win is not None:
