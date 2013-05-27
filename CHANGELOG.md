@@ -9,6 +9,9 @@ For those who are not aware:
 	There is no ST3 branch or separate release this code supports both simultaneously.
 
 
+## 13.05.27-3
+	* make sure the output panel is always accessed from the main thread
+
 ## 13.05.27-2
 	* document the `fn_exclude_prefixes` setting
 
