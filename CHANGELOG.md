@@ -9,6 +9,9 @@ For those who are not aware:
 	There is no ST3 branch or separate release this code supports both simultaneously.
 
 
+## 13.05.27-2
+	* document the `fn_exclude_prefixes` setting
+
 ## 13.05.27-1
 	* added basic syntax highlighting for go templates (embedded within `{{` and `}}`)
 	* inside .go files, `raw` strings(only) now has highlighting for go templates
