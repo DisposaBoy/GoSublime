@@ -252,5 +252,8 @@
 
 	"auto_complete_triggers": [ {"selector": "source.go", "characters": "."} ],
 
+	// exclude files with the listed prefixes from the file browsing palette (ctrl+dot,ctrl+m)
+	"fn_exclude_prefixes": [".", "_"],
+
 	"extensions": ["go"]
 }
