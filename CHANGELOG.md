@@ -9,6 +9,15 @@ For those who are not aware:
 	There is no ST3 branch or separate release this code supports both simultaneously.
 
 
+## 13.05.27-1
+	* added basic syntax highlighting for go templates (embedded within `{{` and `}}`)
+	* inside .go files, `raw` strings(only) now has highlighting for go templates
+	      *note* this is only available on the GoSublime-next syntax which will be set to the default
+	      for .go files soon, see https://github.com/DisposaBoy/GoSublime/issues/245
+	* for html files, the extension .gohtml will yield html highlighting, snippets, etc.
+	      as normal .html files do, with addition of go template highighting within `{{` and `}}`
+	      see https://github.com/DisposaBoy/GoSublime/issues/252
+
 ## 13.05.26-2
 	* 9o: `tskill` without args, now opens the `pending tasks` palette
 
