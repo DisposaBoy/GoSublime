@@ -15,7 +15,7 @@ class Event(object):
 			try:
 				f(*args, **kwargs)
 			except Exception:
-				print(tbck.format_exc())
+				print(traceback.format_exc())
 
 		return self
 
@@ -27,7 +27,7 @@ class Event(object):
 			try:
 				self.post_add(self, f)
 			except Exception:
-				print(tbck.format_exc())
+				print(traceback.format_exc())
 
 		return self
 
