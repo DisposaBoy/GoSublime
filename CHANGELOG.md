@@ -9,6 +9,9 @@ For those who are not aware:
 	There is no ST3 branch or separate release this code supports both simultaneously.
 
 
+## 13.06.01-1
+	* fix missing method snippet when using GoSublime-next.tmLanguage
+
 ## 13.05.27-3
 	* make sure the output panel is always accessed from the main thread
 
