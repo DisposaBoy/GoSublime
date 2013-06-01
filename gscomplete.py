@@ -91,7 +91,7 @@ class GoSublime(sublime_plugin.EventListener):
 			return ([], AC_OPTS)
 
 		types = []
-		for r in view.find_by_selector('source.go keyword.control.go'):
+		for r in view.find_by_selector('source.go keyword.'):
 			if view.substr(r) == 'type':
 				end = r.end()
 				r = view.find(r'\s+(\w+)', end)
