@@ -3,11 +3,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
-**NOTE**
-For those who are not aware:
-	GoSublime already supports Sublime Text 3 equally to Sublime Text 2.
-	There is no ST3 branch or separate release this code supports both simultaneously.
-
+## 13.06.02-1
+	* changed GoSublime home dir to Packages/User/GoSublime/[PLATFORM]
+	* changed margo exe name to gosublime.margo_[VERSION]_[GO_VERSION].exe
+	* sorry for any breakages
 
 ## 13.06.01-1
 	* fix missing method snippet when using GoSublime-next.tmLanguage
