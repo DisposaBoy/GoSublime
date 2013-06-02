@@ -21,6 +21,8 @@ PROC_ATTR_NAME = 'mg9.proc'
 TAG = about.VERSION
 INSTALL_VERSION = about.VERSION
 INSTALL_EXE = about.MARGO_EXE
+GO_BIN = ''
+GO_VERSION = about.DEFAULT_GO_VERSION
 
 def gs_init(m={}):
 	global INSTALL_VERSION
@@ -63,7 +65,7 @@ def _margo_src():
 	return gs.dist_path('margo9')
 
 def _margo_bin(exe=''):
-	return gs.home_path('bin', exe or about.MARGO_EXE)
+ 	return gs.home_path('bin', exe or INSTALL_EXE)
 
 def sanity_check_sl(sl):
 	n = 0
@@ -93,9 +95,10 @@ def sanity_check(env={}, error_log=False):
 		('about.version', gs.attr('about.version', '')),
 		('version', about.VERSION),
 		('platform', about.PLATFORM),
-		('~bin', '%s' % gs.home_path('bin')),
+		('~bin', '%s' % gs.home_dir_path('bin')),
 		('margo.exe', '%s (%s)' % _tp(_margo_bin())),
 		('go.exe', '%s (%s)' % _tp(gs.which('go') or 'go')),
+		('go.version', GO_VERSION),
 		('GOROOT', '%s' % env.get('GOROOT', ns)),
 		('GOPATH', '%s' % env.get('GOPATH', ns)),
 		('GOBIN', '%s (should usually be `%s`)' % (env.get('GOBIN', ns), ns)),
@@ -112,7 +115,7 @@ def sanity_check(env={}, error_log=False):
 	return sl
 
 def _sb(s):
-	bdir = gs.home_path('bin')
+	bdir = gs.home_dir_path('bin')
 	if s.startswith(bdir):
 		s = '~bin%s' % (s[len(bdir):])
 	return s
@@ -140,14 +143,73 @@ def _run(cmd, cwd=None, shell=False):
 def _bins_exist():
 	return os.path.exists(_margo_bin())
 
+def _init_go_version():
+	global GO_VERSION
+
+	if GO_VERSION and GO_VERSION != about.DEFAULT_GO_VERSION:
+		return
+
+	tid = gs.begin(DOMAIN, 'Finding go version')
+
+	bin = _go_bin()
+	if bin:
+		out, _, _ = gsshell.run(['go', 'version'], stderr=subprocess.STDOUT, env=gs.env())
+		m = about.GO_VERSION_OUTPUT_PAT.search(out)
+		if m:
+			GO_VERSION = '-'.join(s for s in m.groups() if s)
+
+	gs.end(tid)
+
+def _go_version():
+	_init_go_version()
+	return GO_VERSION
+
+def _go_bin():
+	_init_go_bin()
+	return GO_BIN
+
+def _init_go_bin():
+	global GO_BIN
+
+	if GO_BIN:
+		return
+
+	tid = gs.begin(DOMAIN, 'Looking for go')
+
+	GO_BIN = gs.which('go')
+	if not GO_BIN:
+		_init_shell_path()
+		GO_BIN = gs.which('go')
+
+	gs.end(tid)
+
+def _init_shell_path():
+	vars = ['%PATH%', '$PATH']
+	out, err, _ = gsshell.run('echo %s' % os.pathsep.join(vars), shell=True, stderr=subprocess.PIPE, env=gs.env())
+	if not err:
+		pl = []
+		for p in out.strip().split(os.pathsep):
+			p = os.path.normcase(p)
+			if p not in vars and p not in pl:
+				pl.append(p)
+
+		if pl:
+			gs.environ9.update({'PATH': os.pathsep.join(pl)})
+
 def maybe_install():
 	if not _bins_exist():
 		install('', True)
 
 def install(aso_install_vesion, force_install):
+	global INSTALL_EXE
+
 	if gs.attr(_inst_name(), '') != "":
 		gs.notify(DOMAIN, 'Installation aborted. Install command already called for GoSublime %s.' % INSTALL_VERSION)
 		return
+
+	_init_go_version()
+	INSTALL_EXE = INSTALL_EXE.replace('_%s.exe' % about.DEFAULT_GO_VERSION, '_%s.exe' % GO_VERSION)
+	about.MARGO_EXE = INSTALL_EXE
 
 	is_update = about.VERSION != INSTALL_VERSION
 
@@ -155,32 +217,15 @@ def install(aso_install_vesion, force_install):
 
 	init_start = time.time()
 
-	try:
-		os.makedirs(gs.home_path('bin'))
-	except:
-		pass
-
 	if not is_update and not force_install and _bins_exist() and aso_install_vesion == INSTALL_VERSION:
 		m_out = 'no'
 	else:
 		gs.notify('GoSublime', 'Installing MarGo')
 		start = time.time()
 
-		vars = ['%PATH%', '$PATH']
-		out, err, _ = gsshell.run('echo %s' % os.pathsep.join(vars), shell=True, stderr=subprocess.PIPE, env=gs.env())
-		if not err:
-			pl = []
-			for p in out.strip().split(os.pathsep):
-				p = os.path.normcase(p)
-				if p not in vars and p not in pl:
-					pl.append(p)
-
-			if pl:
-				gs.environ9.update({'PATH': os.pathsep.join(pl)})
-
-		go_exe = gs.which('go')
-		if go_exe:
-			cmd = [go_exe, 'build', '-o', _margo_bin(INSTALL_EXE)]
+		go_bin = _go_bin()
+		if go_bin:
+			cmd = [go_bin, 'build', '-o', _margo_bin(INSTALL_EXE)]
 			cwd = _margo_src()
 			ev.debug('%s.build' % DOMAIN, {
 				'cmd': cmd,
@@ -204,7 +249,7 @@ def install(aso_install_vesion, force_install):
 
 	if not is_update:
 		gs.notify('GoSublime', 'Syncing environment variables')
-		out, err, _ = gsshell.run([about.MARGO_EXE, '-env'], cwd=gs.home_path(), shell=True)
+		out, err, _ = gsshell.run([INSTALL_EXE, '-env'], cwd=gs.home_dir_path(), shell=True)
 
 		# notify this early so we don't mask any notices below
 		gs.notify('GoSublime', 'Ready')
@@ -254,16 +299,27 @@ def install(aso_install_vesion, force_install):
 
 		report_x = lambda: gs.println("GoSublime: Exception while cleaning up old binaries", gs.traceback())
 		try:
-			d = gs.home_path('bin')
-			old_pat = re.compile(r'^gosublime.r\d{2}.\d{2}.\d{2}-\d+.margo.exe$')
-			for fn in os.listdir(d):
+			bin_dirs = [
+				gs.home_path('bin'),
+				os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', 'bin'),
+			]
+
+			l = []
+			for d in bin_dirs:
 				try:
-					if fn != about.MARGO_EXE and (about.MARGO_EXE_PAT.match(fn) or old_pat.match(fn)):
-						fn = os.path.join(d, fn)
-						gs.println("GoSublime: removing old binary: %s" % fn)
-						os.remove(fn)
+					for fn in os.listdir(d):
+						if fn != INSTALL_EXE and about.MARGO_EXE_PAT.match(fn):
+							l.append(os.path.join(d, fn))
+				except Exception:
+					pass
+
+			for fn in l:
+				try:
+					gs.println("GoSublime: removing old binary: `%s'" % fn)
+					os.remove(fn)
 				except Exception:
 					report_x()
+
 		except Exception:
 			report_x()
 

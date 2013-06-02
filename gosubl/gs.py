@@ -1,6 +1,7 @@
 # Sublime modelines - https://github.com/SublimeText/Modelines
 # sublime: translate_tabs_to_spaces false; rulers [100,120]
 
+from gosubl import about
 from subprocess import Popen, PIPE
 import copy
 import datetime
@@ -373,7 +374,7 @@ def env(m={}):
 	# will go into the "bin" dir of the corresponding GOPATH path.
 	# Therefore, make sure these paths are included in PATH.
 
-	add_path = [home_path('bin')]
+	add_path = [home_dir_path('bin')]
 
 	for s in lst(e.get('GOROOT', ''), e.get('GOPATH', '').split(os.pathsep)):
 		if s:
@@ -701,14 +702,24 @@ def tm_path(name):
 def dist_path(*a):
 	return os.path.join(sublime.packages_path(), 'GoSublime', *a)
 
+def mkdirp(fn):
+	try:
+		os.makedirs(fn)
+	except:
+		pass
+
+def _home_path(*a):
+	return os.path.join(sublime.packages_path(), 'User', 'GoSublime', about.PLATFORM, *a)
+
+def home_dir_path(*a):
+	fn = _home_path(*a)
+	mkdirp(fn)
+	return fn
+
 def home_path(*a):
-	p = os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9')
-	if not os.path.exists(p):
-		try:
-			os.makedirs(p)
-		except:
-			println('Error while creating 9/home dir', traceback())
-	return os.path.join(p, *a)
+	fn = _home_path(*a)
+	mkdirp(os.path.dirname(fn))
+	return fn
 
 def json_decode(s, default):
 	try:
