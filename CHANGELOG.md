@@ -3,6 +3,11 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+
+## 13.06.03-1
+	* I added a small article about running [golint](https://github.com/golang/lint) and other user-commands for linting
+	  https://github.com/DisposaBoy/GoSublime/blob/master/articles/golint.md
+
 ## 13.06.02-1
 	* changed GoSublime home dir to Packages/User/GoSublime/[PLATFORM]
 	* changed margo exe name to gosublime.margo_[VERSION]_[GO_VERSION].exe
