@@ -10,7 +10,7 @@ note: replace `ctrl` with `super` on OS X
 To enable comp-lint, add the following settings to your user settings file ( `ctrl+dot`, `ctrl+5` ). These settings are further documented in the default settings file ( `ctrl+dot`,`ctrl+4` )
 
 
-  // enable comp-lint, this will effectively disable the live linter
+	// enable comp-lint, this will effectively disable the live linter
 	"comp_lint_enabled": true,
 
 	// list of commands to run
