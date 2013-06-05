@@ -4,6 +4,35 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+
+
+** REQUEST FOR FEEDBACK **
+
+GoSublime is/I am, in need of your help in understanding what systems
+GoSublime is being used in. I'm interested in hearing about things like:
+
+* what shell you use
+* OS/version/language
+* what version of Go
+* what version of Sublime Text
+* whether or not you plan to upgrade to Sublime Text 3 when it's released
+* do you use GoSublime on a networked filesystem(NFS, sshfs, etc.)
+* whether you use Package Control to manage upgrades or just plain `git clone`
+* etc.
+
+Most of this information is available in the sanity check
+`ctrl+dot`,`ctrl+3` or `super+dot`,`super+3` on OS X
+
+If you're interested in particpating, please send an email to gosublime-rff@dby.me
+I probably won't reply, so TIA
+
+
+
+
+## 13.06.05-1
+	* added the shell env var and shell setting to the sanity check output
+
+
 ## 13.06.03-1
 	* I added a small article about running [golint](https://github.com/golang/lint) and other user-commands for linting
 	  https://github.com/DisposaBoy/GoSublime/blob/master/articles/golint.md
