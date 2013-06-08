@@ -16,9 +16,8 @@ except (AttributeError):
 
 Result = namedtuple('Result', 'out err ok exc')
 
-class Command(object):
-	def __init__(self, cmd_str):
-		self.cmd_str = gs.astr(cmd_str)
+class _command(object):
+	def __init__(self):
 		self.input = None
 		self.stdin = subprocess.PIPE
 		self.stdout = subprocess.PIPE
@@ -55,7 +54,7 @@ class Command(object):
 
 		try:
 			out, err = subprocess.Popen(
-				_cmd(self.cmd_str, nv),
+				self.cmd(nv),
 				stdout=self.stdout,
 				stderr=self.stderr,
 				stdin=self.stdin,
@@ -75,6 +74,22 @@ class Command(object):
 			ok=(not exc),
 			exc=exc
 		)
+
+class ShellCommand(_command):
+	def __init__(self, cmd_str):
+		_command.__init__(self)
+		self.cmd_str = gs.astr(cmd_str)
+
+	def cmd(self, e):
+		return _cmd(self.cmd_str, e)
+
+class Command(_command):
+	def __init__(self, cmd_lst):
+		_command.__init__(self)
+		self.cmd_lst = [gs.astr(s) for s in cmd_lst]
+
+	def cmd(self, e):
+		return self.cmd_lst
 
 def _exists(fn):
 	return os.path.exists(os.path.expanduser(fn))
@@ -156,12 +171,12 @@ def init():
 		'CGO_ENABLED',
 	]
 
-	cmdl = ['echo']
+	cmdl = []
 	for k in vars:
 		cmdl.append('[[[$'+k+']]'+k+'[[%'+k+'%]]]')
-	cmd_str = ' '.join(cmdl)
+	cmd_str = 'echo "%s"' % ' '.join(cmdl)
 
-	cr = Command(cmd_str).run()
+	cr = ShellCommand(cmd_str).run()
 	if cr.exc:
 		_print('error loading env vars: %s' % cr.exc)
 
@@ -308,7 +323,7 @@ def which(cmd):
 	return ''
 
 def go(subcmd_str):
-	cr = Command('go '+subcmd_str).run()
+	cr = ShellCommand('go '+subcmd_str).run()
 	out = cr.out.strip() + '\n' + cr.err.strip()
 	return out.strip()
 
