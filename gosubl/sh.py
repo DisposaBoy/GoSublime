@@ -151,6 +151,7 @@ def _cmd(cmd_str, e):
 
 def init():
 	global _env_ext
+	global GO_VERSION
 
 	start = time.time()
 
@@ -193,12 +194,20 @@ def init():
 		if v:
 			_env_ext[k] = v
 
+	m = about.GO_VERSION_OUTPUT_PAT.search(go('version'))
+	if m:
+		GO_VERSION = '-'.join(s for s in m.groups() if s)
+
+	dur = (time.time() - start)
+
 	ev.debug('sh.init', {
 		'out': out,
 		'env': _env_ext,
+		'go_version': GO_VERSION,
+		'dur': dur,
 	})
 
-	_print('load env vars: %0.3fs' % (time.time() - start))
+	_print('load env vars: %0.3fs' % dur)
 
 def _print(s):
 	print('GoSblime %s sh: %s' % (about.VERSION, s))
@@ -344,5 +353,7 @@ def go(subcmd_str):
 	out = cr.out.strip() + '\n' + cr.err.strip()
 	return out.strip()
 
+GO_VERSION = about.DEFAULT_GO_VERSION
 _env_ext = {}
 init()
+
