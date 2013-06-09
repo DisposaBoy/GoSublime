@@ -103,9 +103,6 @@ class Command(_command):
 	def cmd(self, e):
 		return self.cmd_lst
 
-def _exists(fn):
-	return os.path.exists(os.path.expanduser(fn))
-
 def shl(m={}):
 	return _shl(env(m))
 
@@ -134,18 +131,12 @@ def _shl_sh(fn):
 	return [fn, '-c', '${CMD}']
 
 def _shl_fish(fn):
-	return [fn, '-i', '-c', '${CMD}']
+	return [fn, '-l', '-c', '${CMD}']
 
 def _shl_bash(fn):
-	if _exists('~/.bashrc'):
-		return [fn, '-i', '-c', '${CMD}']
-
 	return [fn, '-l', '-c', '${CMD}']
 
 def _shl_zsh(fn):
-	if _exists('~/.zshrc'):
-		return [fn, '-i', '-c', '${CMD}']
-
 	return [fn, '-l', '-c', '${CMD}']
 
 def cmd(cmd_str, m={}):
