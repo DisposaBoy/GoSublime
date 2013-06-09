@@ -130,14 +130,9 @@ def _shl_cmd(fn):
 def _shl_sh(fn):
 	return [fn, '-l', '-c', '${CMD}']
 
-def _shl_fish(fn):
-	return [fn, '-l', '-c', '${CMD}']
-
-def _shl_bash(fn):
-	return [fn, '-l', '-c', '${CMD}']
-
-def _shl_zsh(fn):
-	return [fn, '-l', '-c', '${CMD}']
+_shl_fish = _shl_sh
+_shl_bash = _shl_sh
+_shl_zsh = _shl_sh
 
 def cmd(cmd_str, m={}):
 	return _cmd(cmd_str, env(m))
