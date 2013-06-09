@@ -193,6 +193,11 @@ def init():
 		if v:
 			_env_ext[k] = v
 
+	ev.debug('sh.init', {
+		'out': out,
+		'env': _env_ext,
+	})
+
 	_print('load env vars: %0.3fs' % (time.time() - start))
 
 def _print(s):
