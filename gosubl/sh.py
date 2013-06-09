@@ -203,6 +203,9 @@ def init():
 def _print(s):
 	print('GoSblime %s sh: %s' % (about.VERSION, s))
 
+def _shell_pathsep():
+	return gs.setting('shell_pathsep') or os.pathsep
+
 def getenv(name, default='', m={}):
 	return env(m).get(name, default)
 
@@ -275,7 +278,7 @@ def env(m={}):
 		if s not in add_path:
 			add_path.append(s)
 
-	psep = gs.setting('shell_path_sep') or os.pathsep
+	psep = _shell_pathsep()
 
 	for s in e.get('PATH', '').split(psep):
 		if s and s not in add_path:
@@ -317,10 +320,8 @@ def _which(cmd, env_path):
 	if gs.os_is_windows() and not cmd.endswith('.exe'):
 		cmd = '%s.exe' % cmd
 
-	psep = gs.setting('shell_path_sep') or os.pathsep
-
 	seen = {}
-	for p in env_path.split(psep):
+	for p in env_path.split(_shell_pathsep()):
 		p = os.path.join(p, cmd)
 		if p not in seen and which_ok(p):
 			return p
