@@ -19,12 +19,14 @@ except Exception:
 
 def plugin_loaded():
 	from gosubl import about
+	from gosubl import sh
 	from gosubl import ev
 	from gosubl import gs
 	from gosubl import mg9
 
 	mods = [
 		('gs', gs),
+		('sh', sh),
 		('mg9', mg9),
 	]
 
