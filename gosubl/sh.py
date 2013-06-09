@@ -9,11 +9,11 @@ import subprocess
 import time
 
 try:
-	STARTUP_INFO = subprocess.STARTUPINFO()
-	STARTUP_INFO.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-	STARTUP_INFO.wShowWindow = subprocess.SW_HIDE
+	STARTUPINFO = subprocess.STARTUPINFO()
+	STARTUPINFO.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+	STARTUPINFO.wShowWindow = subprocess.SW_HIDE
 except (AttributeError):
-	STARTUP_INFO = None
+	STARTUPINFO = None
 
 Proc = namedtuple('Proc', 'p input orig_cmd cmd_lst env wd ok exc')
 Result = namedtuple('Result', 'out cmd_lst err ok exc')
@@ -24,7 +24,7 @@ class _command(object):
 		self.stdin = subprocess.PIPE
 		self.stdout = subprocess.PIPE
 		self.stderr = subprocess.PIPE
-		self.startupinfo = STARTUP_INFO
+		self.startupinfo = STARTUPINFO
 		self.wd = None
 		self.env = {}
 
