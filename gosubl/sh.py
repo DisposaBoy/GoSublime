@@ -15,6 +15,7 @@ try:
 except (AttributeError):
 	STARTUP_INFO = None
 
+Proc = namedtuple('Proc', 'p input orig_cmd cmd_lst env wd exc')
 Result = namedtuple('Result', 'out err ok exc')
 
 class _command(object):
@@ -27,7 +28,7 @@ class _command(object):
 		self.wd = None
 		self.env = {}
 
-	def run(self):
+	def proc(self):
 		if self.wd:
 			wd = self.wd
 			try:
@@ -52,20 +53,15 @@ class _command(object):
 		exc = None
 
 		nv = env(self.env)
+		cmd_lst = self.cmd(nv)
+		orig_cmd = cmd_lst[0]
+		cmd_lst[0] = _which(orig_cmd, nv.get('PATH'))
+
 		try:
-			cmd_lst = self.cmd(nv)
-			orig_cmd = cmd_lst[0]
-			cmd_lst[0] = _which(orig_cmd, nv.get('PATH'))
 			if not cmd_lst[0]:
 				raise Exception('Cannot find command `%s`' % orig_cmd)
 
-			ev.debug('sh.run', {
-				'orig_cmd': orig_cmd,
-				'cmd_lst': cmd_lst,
-				'env': nv,
-			})
-
-			out, err = subprocess.Popen(
+			p = subprocess.Popen(
 				cmd_lst,
 				stdout=self.stdout,
 				stderr=self.stderr,
@@ -76,7 +72,32 @@ class _command(object):
 				cwd=wd,
 				preexec_fn=setsid,
 				bufsize=0
-			).communicate(input=input)
+			)
+		except Exception as e:
+			exc = e
+			p = None
+
+		return Proc(
+			p=p,
+			input=input,
+			orig_cmd=orig_cmd,
+			cmd_lst=cmd_lst,
+			env=nv,
+			wd=wd,
+			exc=exc
+		)
+
+	def run(self):
+		out = ''
+		err = ''
+		exc = None
+
+		pr = self.proc()
+
+		ev.debug('sh.run', pr)
+
+		try:
+			out, err = pr.p.communicate(input=pr.input)
 		except Exception as e:
 			exc = e
 
