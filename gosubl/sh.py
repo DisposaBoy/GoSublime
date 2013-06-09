@@ -174,7 +174,7 @@ def _cmd(cmd_str, e):
 
 	return cmdl
 
-def init():
+def gs_init(_={}):
 	global _env_ext
 	global GO_VERSION
 
@@ -389,4 +389,3 @@ def go(subcmd_str):
 
 GO_VERSION = about.DEFAULT_GO_VERSION
 _env_ext = {}
-init()
