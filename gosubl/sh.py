@@ -206,6 +206,9 @@ def _print(s):
 def _shell_pathsep():
 	return gs.setting('shell_pathsep') or os.pathsep
 
+def _sj_path(p):
+	return _shell_pathsep().join(p.split(os.pathsep))
+
 def getenv(name, default='', m={}):
 	return env(m).get(name, default)
 
@@ -215,6 +218,12 @@ def env(m={}):
 	ensure that directories containing binaries are included in PATH.
 	"""
 	e = os.environ.copy()
+
+	# the system's env may be compatible with the shell
+	# so try to fix the env vars that depend on shell_pathsep
+	e['PATH'] = _sj_path(e.get('PATH', ''))
+	e['GOPATH'] = _sj_path(e.get('GOPATH', ''))
+
 	e.update(_env_ext)
 	e.update(m)
 
