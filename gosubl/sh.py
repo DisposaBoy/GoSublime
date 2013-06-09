@@ -128,7 +128,7 @@ def _shl_cmd(fn):
 	return [fn, '/C', '${CMD}']
 
 def _shl_sh(fn):
-	return [fn, '-c', '${CMD}']
+	return [fn, '-l', '-c', '${CMD}']
 
 def _shl_fish(fn):
 	return [fn, '-l', '-c', '${CMD}']
