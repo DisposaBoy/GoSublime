@@ -26,6 +26,7 @@ def plugin_loaded():
 
 	mods = [
 		('gs', gs),
+		('sh', sh),
 		('mg9', mg9),
 	]
 
