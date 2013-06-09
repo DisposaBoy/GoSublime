@@ -1,4 +1,5 @@
 from . import about
+from . import ev
 from . import gs
 from collections import namedtuple
 import os
@@ -51,10 +52,21 @@ class _command(object):
 		exc = None
 
 		nv = env(self.env)
-
 		try:
+			cmd_lst = self.cmd(nv)
+			orig_cmd = cmd_lst[0]
+			cmd_lst[0] = _which(orig_cmd, nv.get('PATH'))
+			if not cmd_lst[0]:
+				raise Exception('Cannot find command `%s`' % orig_cmd)
+
+			ev.debug('sh.run', {
+				'orig_cmd': orig_cmd,
+				'cmd_lst': cmd_lst,
+				'env': nv,
+			})
+
 			out, err = subprocess.Popen(
-				self.cmd(nv),
+				cmd_lst,
 				stdout=self.stdout,
 				stderr=self.stderr,
 				stdin=self.stdin,
@@ -303,6 +315,9 @@ def which_ok(fn):
 		return False
 
 def which(cmd):
+	return _which(cmd, getenv('PATH', ''))
+
+def _which(cmd, env_path):
 	if os.path.isabs(cmd):
 		return cmd if which_ok(cmd) else ''
 
@@ -313,7 +328,7 @@ def which(cmd):
 	psep = gs.setting('shell_path_sep') or os.pathsep
 
 	seen = {}
-	for p in getenv('PATH', '').split(psep):
+	for p in env_path.split(psep):
 		p = os.path.join(p, cmd)
 		if p not in seen and which_ok(p):
 			return p
