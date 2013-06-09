@@ -232,7 +232,14 @@ def init():
 		'dur': dur,
 	})
 
-	_print('load env vars: %0.3fs' % dur)
+	cmd_lst = []
+	for v in cr.cmd_lst:
+		if v == cmd_str:
+			cmd_lst.append('echo "..."')
+		else:
+			cmd_lst.append(v)
+
+	_print('load env vars: (%s): %0.3fs' % (cmd_lst, dur))
 
 def _print(s):
 	print('GoSblime %s sh: %s' % (about.VERSION, s))
