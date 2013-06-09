@@ -16,7 +16,7 @@ except (AttributeError):
 	STARTUP_INFO = None
 
 Proc = namedtuple('Proc', 'p input orig_cmd cmd_lst env wd ok exc')
-Result = namedtuple('Result', 'out err ok exc')
+Result = namedtuple('Result', 'out cmd_lst err ok exc')
 
 class _command(object):
 	def __init__(self):
@@ -105,6 +105,7 @@ class _command(object):
 		return Result(
 			out=gs.ustr(out),
 			err=gs.ustr(err),
+			cmd_lst=pr.cmd_lst,
 			ok=(not exc),
 			exc=exc
 		)
@@ -216,16 +217,18 @@ def init():
 		if v:
 			_env_ext[k] = v
 
-	m = about.GO_VERSION_OUTPUT_PAT.search(go('version'))
+	cr_go = ShellCommand('go version').run()
+	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go.out + cr_go.err)
 	if m:
 		GO_VERSION = '-'.join(s for s in m.groups() if s)
 
 	dur = (time.time() - start)
 
 	ev.debug('sh.init', {
-		'out': out,
-		'env': _env_ext,
+		'cr.init': cr,
+		'cr.go': cr_go,
 		'go_version': GO_VERSION,
+		'env': _env_ext,
 		'dur': dur,
 	})
 
@@ -378,4 +381,3 @@ def go(subcmd_str):
 GO_VERSION = about.DEFAULT_GO_VERSION
 _env_ext = {}
 init()
-
