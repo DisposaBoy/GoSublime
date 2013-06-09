@@ -94,13 +94,15 @@ class _command(object):
 		exc = None
 
 		pr = self.proc()
+		if pr.ok:
+			ev.debug('sh.run', pr)
 
-		ev.debug('sh.run', pr)
-
-		try:
-			out, err = pr.p.communicate(input=pr.input)
-		except Exception as e:
-			exc = e
+			try:
+				out, err = pr.p.communicate(input=pr.input)
+			except Exception as e:
+				exc = e
+		else:
+			exc = pr.exc
 
 		return Result(
 			out=gs.ustr(out),
