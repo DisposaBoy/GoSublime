@@ -66,7 +66,7 @@ class _command(object):
 				stdout=self.stdout,
 				stderr=self.stderr,
 				stdin=self.stdin,
-				startupinfo=self.STARTUP_INFO,
+				startupinfo=self.startupinfo,
 				shell=False,
 				env=nv,
 				cwd=wd,
