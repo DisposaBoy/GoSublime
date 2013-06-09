@@ -314,7 +314,7 @@ def _which(cmd, env_path):
 		return cmd if which_ok(cmd) else ''
 
 	# not supporting PATHEXT. period.
-	if gs.os_is_windows():
+	if gs.os_is_windows() and not cmd.endswith('.exe'):
 		cmd = '%s.exe' % cmd
 
 	psep = gs.setting('shell_path_sep') or os.pathsep
