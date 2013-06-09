@@ -133,6 +133,7 @@ def _shl_sh(fn):
 _shl_fish = _shl_sh
 _shl_bash = _shl_sh
 _shl_zsh = _shl_sh
+_shl_rc = _shl_sh
 
 def cmd(cmd_str, m={}):
 	return _cmd(cmd_str, env(m))
