@@ -241,7 +241,12 @@ def gs_init(_={}):
 		else:
 			cmd_lst.append(v)
 
-	_print('load env vars: (%s): %0.3fs' % (cmd_lst, dur))
+	_print('load env vars %s: go version %s = %s: %0.3fs' % (
+		cmd_lst,
+		cr_go.cmd_lst,
+		(GO_VERSION if GO_VERSION != about.DEFAULT_GO_VERSION else cr_go),
+		dur,
+	))
 
 def _print(s):
 	print('GoSblime %s sh: %s' % (about.VERSION, s))
