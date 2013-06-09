@@ -15,7 +15,7 @@ try:
 except (AttributeError):
 	STARTUP_INFO = None
 
-Proc = namedtuple('Proc', 'p input orig_cmd cmd_lst env wd exc')
+Proc = namedtuple('Proc', 'p input orig_cmd cmd_lst env wd ok exc')
 Result = namedtuple('Result', 'out err ok exc')
 
 class _command(object):
@@ -84,6 +84,7 @@ class _command(object):
 			cmd_lst=cmd_lst,
 			env=nv,
 			wd=wd,
+			ok=(not exc),
 			exc=exc
 		)
 
