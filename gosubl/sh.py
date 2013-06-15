@@ -227,10 +227,8 @@ def gs_init(_={}):
 
 	cmd_lst = []
 	for v in cr.cmd_lst:
-		if v == cmd_str:
-			cmd_lst.append('echo "..."')
-		else:
-			cmd_lst.append(v)
+		v = v.replace(cmd_str, 'echo "..."')
+		cmd_lst.append(v)
 
 	_print('load env vars %s: go version %s = %s: %0.3fs' % (
 		cmd_lst,
