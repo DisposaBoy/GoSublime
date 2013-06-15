@@ -211,7 +211,9 @@ def gs_init(_={}):
 			_env_ext[k] = v
 
 	if not _env_ext.get('GOROOT'):
-		_env_ext['GOROOT'] = go('env GOROOT')
+		m = re.search(r'\bGOROOT=(.+)', go('env'))
+		if m:
+			_env_ext['GOROOT'] = m.group(1).strip('"')
 
 	cr_go = ShellCommand('go version').run()
 	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go.out + cr_go.err)
