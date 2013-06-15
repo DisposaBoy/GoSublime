@@ -29,6 +29,9 @@ I probably won't reply, so TIA
 
 
 
+## 13.06.16-1
+	* all undefined 9o commands are now run through your shell. As always, commands can manually be run through the with the `sh` command e.g. `sh echo 123` command
+
 ## 13.06.15-1
 	* based on the feedback I recieved I integrated with the shell a little...
 	* I added support for shells: bash, cygwin/msys/git bash, fish, zsh, rc, etc.
