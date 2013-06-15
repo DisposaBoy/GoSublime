@@ -260,5 +260,11 @@
 	// exclude files with the listed prefixes from the file browsing palette (ctrl+dot,ctrl+m)
 	"fn_exclude_prefixes": [".", "_"],
 
+	// Automatically set the syntax file for the specificed file extensions to `GoSublime: HTML`
+	// `GoSublime: HTML` files are html files with the template delimiters `{{` and `}}` tailored to
+	// Go templates (text/template, html/template)
+	// (`.gohtml` files are automatically set by the syntax definition)
+	"gohtml_extensions": [".html.go"],
+
 	"extensions": ["go"]
 }
