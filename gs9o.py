@@ -343,23 +343,19 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 				cmd_cd(view, edit, args, wd, rkey)
 				return
 
-			# todo: move this into margo
+			if nm != 'sh':
+				f = gs.gs9o.get(nm) or globals().get('cmd_%s' % nm)
+				if f:
+					args = shlex.split(gs.astr(ag)) if ag else []
+					f(view, edit, args, wd, rkey)
+					return
+
 			if nm == 'sh':
-				def on_done(c):
-					out = gs.ustr('\n'.join(c.consume_outq()))
-					sublime.set_timeout(lambda: push_output(view, rkey, out), 0)
-
-				c = gsshell.Command(cmd=ag, shell=True, cwd=wd)
-				c.on_done = on_done
-				c.start()
-				return
-
-			f = gs.gs9o.get(nm) or globals().get('cmd_%s' % nm)
-			if f:
-				args = shlex.split(gs.astr(ag)) if ag else []
-				f(view, edit, args, wd, rkey)
+				args = sh.cmd(ag)
 			else:
-				push_output(view, rkey, 'Invalid command %s' % cli)
+				args = sh.cmd(cmd)
+
+			cmd_sh(view, edit, args, wd, rkey)
 		else:
 			view.insert(edit, gs.sel(view).begin(), '\n')
 
@@ -470,6 +466,19 @@ def cmd_go(view, edit, args, wd, rkey):
 		'cmd': {
 			'name': 'go',
 			'args': args,
+		}
+	}
+	sublime.set_timeout(lambda: mg9.acall('sh', a, cb), 0)
+
+def cmd_sh(view, edit, args, wd, rkey):
+	cid, cb = _9_begin_call('sh', view, edit, args, wd, rkey, '')
+	a = {
+		'cid': cid,
+		'env': sh.env(),
+		'cwd': wd,
+		'cmd': {
+			'name': args[0],
+			'args': args[1:],
 		}
 	}
 	sublime.set_timeout(lambda: mg9.acall('sh', a, cb), 0)
