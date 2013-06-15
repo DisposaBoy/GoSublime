@@ -6,11 +6,18 @@ import sublime_plugin
 DOMAIN = 'GsEV'
 
 class EV(sublime_plugin.EventListener):
+	def on_pre_save(self, view):
+		sublime.set_timeout(lambda: do_set_gohtml_syntax(view), 0)
+
 	def on_post_save(self, view):
 		sublime.set_timeout(lambda: do_post_save(view), 0)
 
 	def on_activated(self, view):
 		sublime.set_timeout(lambda: do_sync_active_view(view), 0)
+		sublime.set_timeout(lambda: do_set_gohtml_syntax(view), 0)
+
+	def on_load(self, view):
+		sublime.set_timeout(lambda: do_set_gohtml_syntax(view), 0)
 
 class GsOnLeftClick(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -57,3 +64,10 @@ def do_sync_active_view(view):
 		if psettings and gs.is_a(psettings, {}):
 			m = gs.mirror_settings(psettings)
 		gs.set_attr('last_active_project_settings', gs.dval(m, {}))
+
+def do_set_gohtml_syntax(view):
+	fn = view.file_name()
+	xl = gs.setting('gohtml_extensions', [])
+	if xl and fn and fn.lower().endswith(tuple(xl)):
+		view.set_syntax_file(gs.tm_path('gohtml'))
+
