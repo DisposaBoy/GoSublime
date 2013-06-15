@@ -100,9 +100,9 @@ def sanity_check(env={}, error_log=False):
 		('GOROOT', '%s' % env.get('GOROOT', ns)),
 		('GOPATH', '%s' % env.get('GOPATH', ns)),
 		('GOBIN', '%s (should usually be `%s`)' % (env.get('GOBIN', ns), ns)),
-		('set.shell', ' '.join(gs.lst(gs.setting('shell')))),
+		('set.shell', str(gs.lst(gs.setting('shell')))),
 		('env.shell', env.get('SHELL', '')),
-		('shell.cmd', ' '.join(sh.cmd('${CMD}'))),
+		('shell.cmd', str(sh.cmd('${CMD}'))),
 	]
 
 	if error_log:
