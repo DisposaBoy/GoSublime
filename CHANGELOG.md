@@ -29,6 +29,11 @@ I probably won't reply, so TIA
 
 
 
+## 13.06.15-1
+	* based on the feedback I recieved I integrated with the shell a little...
+	* I added support for shells: bash, cygwin/msys/git bash, fish, zsh, rc, etc.
+	* see https://github.com/DisposaBoy/GoSublime/blob/master/articles/shell.md for more details
+
 ## 13.06.05-1
 	* added the shell env var and shell setting to the sanity check output
 
