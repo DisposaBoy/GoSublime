@@ -2,6 +2,7 @@ from gosubl import about
 from gosubl import gs
 from gosubl import gsshell
 from gosubl import mg9
+from gosubl import sh
 import datetime
 import json
 import os
@@ -434,7 +435,7 @@ def cmd_cd(view, edit, args, wd, rkey):
 	try:
 		if args:
 			wd = args[0]
-			wd = string.Template(wd).safe_substitute(gs.env())
+			wd = string.Template(wd).safe_substitute(sh.env())
 			wd = os.path.expanduser(wd)
 			wd = os.path.abspath(wd)
 		else:
@@ -464,7 +465,7 @@ def cmd_go(view, edit, args, wd, rkey):
 	cid, cb = _9_begin_call('go', view, edit, args, wd, rkey, '9go-%s' % wd)
 	a = {
 		'cid': cid,
-		'env': gs.env(),
+		'env': sh.env(),
 		'cwd': wd,
 		'cmd': {
 			'name': 'go',
@@ -511,7 +512,7 @@ def cmd_9(view, edit, args, wd, rkey):
 
 	a = {
 		'cid': cid,
-		'env': gs.env(),
+		'env': sh.env(),
 		'dir': wd,
 		'args': args[1:],
 		'build_only': (subcmd == 'build'),
@@ -564,7 +565,7 @@ def cmd_settings(view, edit, args, wd, rkey):
 	_env_settings(gs.settings_dict(), view, edit, args, wd, rkey)
 
 def cmd_env(view, edit, args, wd, rkey):
-	_env_settings(gs.env(), view, edit, args, wd, rkey)
+	_env_settings(sh.env(), view, edit, args, wd, rkey)
 
 def cmd_hist(view, edit, args, wd, rkey):
 	aso = gs.aso()
