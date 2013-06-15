@@ -210,6 +210,9 @@ def gs_init(_={}):
 		if v:
 			_env_ext[k] = v
 
+	if not _env_ext.get('GOROOT'):
+		_env_ext['GOROOT'] = go('env GOROOT')
+
 	cr_go = ShellCommand('go version').run()
 	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go.out + cr_go.err)
 	if m:
