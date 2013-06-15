@@ -182,18 +182,9 @@ def gs_init(_={}):
 
 	vars = [
 		'PATH',
-		'GOARCH',
 		'GOBIN',
-		'GOCHAR',
-		'GOEXE',
-		'GOGCCFLAGS',
-		'GOHOSTARCH',
-		'GOHOSTOS',
-		'GOOS',
 		'GOPATH',
 		'GOROOT',
-		'GOTOOLDIR',
-		'CGO_ENABLED',
 	]
 
 	cmdl = []
