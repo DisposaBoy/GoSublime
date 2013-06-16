@@ -381,8 +381,10 @@ def builtins():
 
 	g = globals()
 	for k in g:
-		if k.startswith('cmd_') and k not in m:
-			m[k] = g[k]
+		if k.startswith('cmd_'):
+			k = k[4:]
+			if k and k not in m:
+				m[k] = g[k]
 
 	return m
 
