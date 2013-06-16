@@ -380,11 +380,11 @@ def builtins():
 	m = gs.gs9o.copy()
 
 	g = globals()
-	for k in g:
+	for k, v in g.items():
 		if k.startswith('cmd_'):
 			k = k[4:]
 			if k and k not in m:
-				m[k] = g[k]
+				m[k] = v
 
 	return m
 
