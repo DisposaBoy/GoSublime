@@ -344,7 +344,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 				return
 
 			if nm != 'sh':
-				f = gs.gs9o.get(nm) or globals().get('cmd_%s' % nm)
+				f = builtins().get(nm)
 				if f:
 					args = shlex.split(gs.astr(ag)) if ag else []
 					f(view, edit, args, wd, rkey)
@@ -375,6 +375,16 @@ class Gs9oPushOutput(sublime_plugin.TextCommand):
 		else:
 			view.insert(edit, view.size(), '\n%s' % output)
 			view.show(view.size())
+
+def builtins():
+	m = gs.gs9o.copy()
+
+	g = globals()
+	for k in g:
+		if k.startswith('cmd_') and k not in m:
+			m[k] = g[k]
+
+	return m
 
 def push_output(view, rkey, output, hourglass_repl=''):
 	def f():
