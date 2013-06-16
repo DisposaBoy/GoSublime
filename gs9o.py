@@ -439,6 +439,29 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 
 	return cid, cb
 
+def cmd_which(view, edit, args, wd, rkey):
+	l = []
+	m = builtins()
+
+	if not args:
+		args = sorted(m.keys())
+
+	fm = '%{0}s: %s'.format(max(len(s) for s in args))
+
+	for k in args:
+		if k == 'sh':
+			v = '9o builtin: %s' % sh.cmd('${CMD}')
+		elif k in ('go'):
+			v = '9o builtin: %s' % sh.which(k)
+		elif k in m:
+			v = '9o builtin'
+		else:
+			v = sh.which(k)
+
+		l.append(fm % (k, v))
+
+	push_output(view, rkey, '\n'.join(l))
+
 def cmd_cd(view, edit, args, wd, rkey):
 	try:
 		if args:
