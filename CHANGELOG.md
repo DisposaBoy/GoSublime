@@ -29,6 +29,9 @@ I probably won't reply, so TIA
 
 
 
+## 13.06.16-2
+	* added support for automatically setting the `GoSublime: HTML` syntax to certain extensions. See the default settings file (ctrl+dot,ctrl+4) for documentation on the `gohtml_extensions` setting
+
 ## 13.06.16-1
 	* all undefined 9o commands are now run through your shell. As always, commands can manually be run through the with the `sh` command e.g. `sh echo 123` command
 
