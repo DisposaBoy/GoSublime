@@ -29,6 +29,12 @@ I probably won't reply, so TIA
 
 
 
+## 13.06.22-1
+	* NOTE: if you have your own GoSublime snippets, the meaning of `global` has changed.
+		It will no longer be `true` unless a package is fully declared and the cursor
+		is below the line on which the package was declared
+
+
 ## 13.06.16-2
 	* added support for automatically setting the `GoSublime: HTML` syntax to certain extensions. See the default settings file (ctrl+dot,ctrl+4) for documentation on the `gohtml_extensions` setting
 
