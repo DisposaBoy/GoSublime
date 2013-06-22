@@ -117,7 +117,7 @@ class GoSublime(sublime_plugin.EventListener):
 			default_pkgname = pkgname if pkgname else 'main'
 
 		ctx = {
-			'global': True,
+			'global': bool(pkgname and pos > view.line(r).end()),
 			'pkgname': pkgname,
 			'types': types or [''],
 			'has_types': len(types) > 0,

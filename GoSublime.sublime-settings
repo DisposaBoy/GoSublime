@@ -193,7 +193,7 @@
 
 	"default_snippets": [
 		{
-			"match": {"global": true, "pkgname": ""},
+			"match": {"global": false, "pkgname": ""},
 			"snippets": [
 				{"text": "package ${default_pkgname}", "title": "", "value": "package ${default_pkgname}\n\n$1\n"}
 			]
