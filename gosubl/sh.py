@@ -218,7 +218,7 @@ def gs_init(_={}):
 	cr_go = ShellCommand('go version').run()
 	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go.out + cr_go.err)
 	if m:
-		GO_VERSION = '-'.join(s for s in m.groups() if s)
+		GO_VERSION = about.GO_VERSION_NORM_PAT.sub('', m.group(1))
 
 	dur = (time.time() - start)
 
