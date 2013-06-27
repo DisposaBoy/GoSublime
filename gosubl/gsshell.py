@@ -1,4 +1,5 @@
 from gosubl import gs
+from gosubl import sh
 import hashlib
 import os
 import re
@@ -47,7 +48,7 @@ def fix_shell_cmd(shell, cmd):
 	return (shell, [gs.astr(v) for v in cmd])
 
 def proc(cmd, shell=False, env={}, cwd=None, input=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, bufsize=0):
-	env = gs.env(env)
+	env = sh.env(env)
 	shell, cmd = fix_shell_cmd(shell, cmd)
 
 	if input is not None:
