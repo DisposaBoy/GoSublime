@@ -178,6 +178,8 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		else:
 			v.show(v.size()-1)
 
+		os.chdir(wd)
+
 class Gs9oOpenV(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None, run=[], save_hist=False, focus_view=True):
 		self.view.run_command('gs9o_open', {'wd': wd, 'run': run, 'save_hist': save_hist, 'focus_view': focus_view})
