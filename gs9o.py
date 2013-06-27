@@ -286,6 +286,12 @@ def act_on_path(view, path):
 
 	return False
 
+
+def _exparg(s, m):
+	s = string.Template(s).safe_substitute(m)
+	s = os.path.expanduser(s)
+	return s
+
 class Gs9oExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		pos = gs.sel(self.view).begin()
@@ -340,15 +346,25 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			nm = cli[0]
 			ag = cli[1].strip() if len(cli) == 2 else ''
 
-			if nm == "cd":
-				args = [ag] if ag else []
-				cmd_cd(view, edit, args, wd, rkey)
-				return
-
 			if nm != 'sh':
 				f = builtins().get(nm)
 				if f:
-					args = shlex.split(gs.astr(ag)) if ag else []
+					try:
+						fn = view.window().active_view().file_name() or ''
+					except Exception:
+						fn = ''
+
+					m = sh.env()
+					m.update({
+						'PWD': wd,
+						'_wd': wd,
+						'_fn': fn,
+					})
+
+					args = []
+					if ag:
+						args = [_exparg(s, m) for s in shlex.split(gs.astr(ag))]
+
 					f(view, edit, args, wd, rkey)
 					return
 
@@ -440,6 +456,9 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 		sublime.set_timeout(f, 0)
 
 	return cid, cb
+
+def cmd_echo(view, edit, args, wd, rkey):
+	push_output(view, rkey, ' '.join(args))
 
 def cmd_which(view, edit, args, wd, rkey):
 	l = []
