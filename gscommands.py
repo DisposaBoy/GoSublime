@@ -130,6 +130,14 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 
 		self.window.show_quick_panel(ents, cb)
 
+class GsOpenHomePathCommand(sublime_plugin.WindowCommand):
+	def run(self, fn):
+		self.window.open_file(gs.home_path(fn))
+
+class GsOpenDistPathCommand(sublime_plugin.WindowCommand):
+	def run(self, fn):
+		self.window.open_file(gs.dist_path(fn))
+
 class GsSanityCheckCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		s = 'GoSublime Sanity Check\n\n%s' % '\n'.join(mg9.sanity_check_sl(mg9.sanity_check({}, True)))
