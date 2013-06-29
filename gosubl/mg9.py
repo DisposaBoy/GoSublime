@@ -163,7 +163,7 @@ def install(aso_install_vesion, force_install):
 		gs.notify('GoSublime', 'Installing MarGo')
 		start = time.time()
 
-		cmd = sh.Command(['go', 'build', '-o', _margo_bin(INSTALL_EXE)])
+		cmd = sh.Command(['go', 'build', '-v', '-x', '-o', _margo_bin(INSTALL_EXE)])
 		cmd.wd = _margo_src()
 		cmd.env = {
 			'GOBIN': '',
@@ -205,6 +205,10 @@ def install(aso_install_vesion, force_install):
 		a = [
 			'GoSublime init %s (%0.3fs)' % (INSTALL_VERSION, time.time() - init_start),
 		]
+
+		if m_out:
+			m_out = '\n%s\n' % m_out
+
 		sl = [('install margo', m_out)]
 		sl.extend(sanity_check(e))
 		a.extend(sanity_check_sl(sl))
