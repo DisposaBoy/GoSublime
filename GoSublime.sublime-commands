@@ -166,9 +166,7 @@
 	},
 	{
 		"caption": "GoSublime: Open Error Log",
-		"command": "open_file",
-		"args": {
-			"file": "${packages}/User/GoSublime/9/log.txt"
-		}
+		"command": "gs_open_home_path",
+		"args": { "fn": "log.txt" }
 	}
 ]

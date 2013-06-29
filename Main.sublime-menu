@@ -93,10 +93,8 @@
 							{ "caption": "-" },
 							{
 								"caption": "Open Log File",
-								"command": "open_file",
-								"args": {
-									"file": "${packages}/User/GoSublime/9/log.txt"
-								}
+								"command": "gs_open_home_path",
+								"args": { "fn": "log.txt" }
 							}
 						]
 					}
