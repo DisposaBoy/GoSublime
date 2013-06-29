@@ -689,7 +689,7 @@ def tm_path(name):
 	d = {
 		'9o': '9o.hidden-tmLanguage',
 		'doc': 'GsDoc.hidden-tmLanguage',
-		'go': 'GoSublime.tmLanguage',
+		'go': 'syntax/GoSublime-Go.tmLanguage',
 		'gohtml': 'syntax/GoSublime-HTML.tmLanguage',
 	}
 
