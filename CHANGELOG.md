@@ -32,6 +32,7 @@ I probably won't reply, so TIA
 ## 13.06.29-2
 	* show the `go build` output when (re-)installing MarGo
 	* show the `go version` output on startup
+	* fix the main menu and command palette pointing to the wrong error log file
 
 ## 13.06.29-1
 	* added 9o `echo` command
