@@ -29,6 +29,13 @@ I probably won't reply, so TIA
 
 
 
+## 13.06.29-1
+	* added 9o `echo` command
+	* added two new env vars:
+		`$_wd (or $PWD)` contains the 9o working directory
+		`$_fn` contains the abs path to the current active view/file (if available)
+	* env vars on the 9o command line are expanded before the command is run. see 9o `help`
+
 ## 13.06.22-1
 	* NOTE: if you have your own GoSublime snippets, the meaning of `global` has changed.
 		It will no longer be `true` unless a package is fully declared and the cursor
