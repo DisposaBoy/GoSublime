@@ -124,16 +124,6 @@ def _sb(s):
 def _tp(s):
 	return (_sb(s), ('ok' if os.path.exists(s) else 'missing'))
 
-def _so(out, err, start, end):
-	out = out.strip()
-	err = err.strip()
-	ok = not out and not err
-	if ok:
-		out = 'ok %0.3fs' % (end - start)
-	else:
-		out = u'%s\n%s' % (out, err)
-	return (out.strip(), ok)
-
 def _bins_exist():
 	return os.path.exists(_margo_bin())
 
@@ -177,13 +167,11 @@ def install(aso_install_vesion, force_install):
 
 		cr = cmd.run()
 		err = ''
-		m_out = '\n'.join(s for s in (cr.out, cr.err) if s)
+		m_out = '\n%s\n' % '\n'.join(s for s in (cr.out, cr.err) if s)
 		if not cr.ok:
 			err = 'Cannot run go: %s' % cr.exc
 
-		m_out, m_ok = _so(m_out, err, start, time.time())
-
-		if m_ok:
+		if not err and _bins_exist():
 			def f():
 				gs.aso().set('install_version', INSTALL_VERSION)
 				gs.save_aso()
@@ -205,9 +193,6 @@ def install(aso_install_vesion, force_install):
 		a = [
 			'GoSublime init %s (%0.3fs)' % (INSTALL_VERSION, time.time() - init_start),
 		]
-
-		if m_out:
-			m_out = '\n%s\n' % m_out
 
 		sl = [('install margo', m_out)]
 		sl.extend(sanity_check(e))
