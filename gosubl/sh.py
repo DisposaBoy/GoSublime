@@ -216,7 +216,8 @@ def gs_init(_={}):
 			_env_ext['GOROOT'] = m.group(1).strip('"')
 
 	cr_go = ShellCommand('go version').run()
-	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go.out + cr_go.err)
+	cr_go_out = cr_go.out + cr_go.err
+	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go_out)
 	if m:
 		GO_VERSION = about.GO_VERSION_NORM_PAT.sub('', m.group(1))
 
@@ -235,9 +236,10 @@ def gs_init(_={}):
 		v = v.replace(cmd_str, 'echo "..."')
 		cmd_lst.append(v)
 
-	_print('load env vars %s: go version %s = %s: %0.3fs' % (
+	_print('load env vars %s: go version: %s -> `%s` -> `%s`: %0.3fs' % (
 		cmd_lst,
 		cr_go.cmd_lst,
+		cr_go_out,
 		(GO_VERSION if GO_VERSION != about.DEFAULT_GO_VERSION else cr_go),
 		dur,
 	))
