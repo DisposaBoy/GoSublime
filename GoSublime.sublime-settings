@@ -267,7 +267,5 @@
 	// `GoSublime: HTML` files are html files with the template delimiters `{{` and `}}` tailored to
 	// Go templates (text/template, html/template)
 	// (`.gohtml` files are automatically set by the syntax definition)
-	"gohtml_extensions": [".html.go"],
-
-	"extensions": ["go"]
+	"gohtml_extensions": [".html.go"]
 }
