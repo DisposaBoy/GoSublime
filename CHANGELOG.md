@@ -29,6 +29,10 @@ I probably won't reply, so TIA
 
 
 
+## 13.06.29-2
+	* show the `go build` output when (re-)installing MarGo
+	* show the `go version` output on startup
+
 ## 13.06.29-1
 	* added 9o `echo` command
 	* added two new env vars:
