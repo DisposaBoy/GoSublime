@@ -1,3 +1,18 @@
+
+** WARNING **
+=============
+
+The next update will bring with it a new `GoSublime: Go` syntax definition.
+The path will change and this may cause errors complaining about the missing syntax definition for `GoSublime.tmLanguage`.
+If this happens, you should be able to fix it by closing all `.go` files and restarting Sublime Text.
+If you're using the `GoSublime-next.tmLanguage` please delete the file `Packages/User/GoSublime-next.sublime-settings` (if it exists).
+On update(and restart), all views using syntax files with the base-name `GoSublime.tmLanguage`
+or `GoSublime-next.tmLanguage` will be automatically changed to `GoSublime: Go`.
+Hopefully this change will go smoothly.
+
+
+
+
 GoSublime Changes
 -----------------
 
