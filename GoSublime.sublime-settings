@@ -94,18 +94,21 @@
 	//             //      save: the linters are being called after saving.
 	//             //            this can be used to e.g. rebuild or install the pkg
 	//
-	// 	"pat": "", // a regexp pattern that will define the following variables:
+	// 	"pat": "", // a regexp pattern that will define the following named variables:
 	// 	           // fn: the filename
 	// 	           // line: the line number (starting from 1)
 	// 	           // column: the column number (starting from 1)
 	// 	           //         (this can be considered optional because the error message is still useful without it)
 	// 	           // message: the error message
 	// 	           //
-	// 	           // the default pat will be defined such that it matches `main.go:1:2 error` resulting in:
+	// 	           // the default pat will be defined[1] such that it matches `main.go:1:2 error` resulting in:
 	// 	           //     fn: main.go
 	// 	           //     line: 1
 	// 	           //     column: 2
 	// 	           //     message: error
+	//	           //
+	//	           //  The following regexp is a copy of the one used in MarGo (it might be out-of-sync)
+	//	           //      `(?P<fn>\S+\.go):(?P<line>\d+)?(?:[:](?P<column>\d+))?[:]*(?P<message>.+)`
 	// 	           //
 	// 	           // it will also allow `line` and `column` to be missing. this should be sufficient
 	// 	           // for the output of the go tools (go vet, compilers, etc.)
