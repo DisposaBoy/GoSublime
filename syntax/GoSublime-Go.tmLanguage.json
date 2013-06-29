@@ -5,7 +5,7 @@
 	],
 	"firstLineMatch": "-[*]-( Mode:)? Go -[*]-",
 	"keyEquivalent": "^~G",
-	"name": "GoSublime-next",
+	"name": "GoSublime: Go",
 	"patterns": [
 		{
 			"begin": "/\\*",

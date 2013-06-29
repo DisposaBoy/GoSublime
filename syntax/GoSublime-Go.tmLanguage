@@ -13,7 +13,7 @@
 	<key>keyEquivalent</key>
 	<string>^~G</string>
 	<key>name</key>
-	<string>GoSublime-next</string>
+	<string>GoSublime: Go</string>
 	<key>patterns</key>
 	<array>
 		<dict>
