@@ -347,17 +347,36 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			view.add_regions(rkey, [sublime.Region(line.begin(), view.size())], '')
 			view.run_command('gs9o_init')
 
-			cli = cmd.split(' ', 1)
-			nm = cli[0]
-			ag = cli[1].strip() if len(cli) == 2 else ''
+			nv = sh.env()
+			anv = nv.copy()
+			seen = {}
+			am = aliases()
+			while True:
+				cli = cmd.split(' ', 1)
+				nm = cli[0]
+				if not nm:
+					break
+
+				ag = cli[1].strip() if len(cli) == 2 else ''
+
+				alias = am.get(nm, '')
+				if not alias:
+					break
+
+				if alias in seen:
+					gs.error(DOMAIN, 'recursive alias detected: `%s`' % alias)
+					break
+
+				seen[alias] = True
+				anv['_args'] = ag
+				cmd = string.Template(alias).safe_substitute(anv)
 
 			if nm != 'sh':
 				f = builtins().get(nm)
 				if f:
-					m = sh.env()
 					args = []
 					if ag:
-						args = [_exparg(s, m) for s in shlex.split(gs.astr(ag))]
+						args = [_exparg(s, nv) for s in shlex.split(gs.astr(ag))]
 
 					f(view, edit, args, wd, rkey)
 					return
