@@ -252,6 +252,21 @@
 	// `"default"` leaves it as-is, i.e. matching the color_scheme that's being used for your other views
 	"9o_color_scheme": "default",
 
+	// a mapping of names to string commands e.g. `{"ci": "git ci $_args"}`
+	// the environment variable `$_args` will be the raw, un-parsed argument passed to the command such that,
+	// in the command `ci a.go    b.go`, `$_args` will be `a.go    b.go`
+	// and the alias above expands to `git ci a.go    b.go`
+	//
+	// examples
+	// {
+	//  	"git": "git $_args", // call git directly, otherwise it's run through your `shell`
+	//  	"ci": "git commit $_args",
+	//  	"ci.": "git commit $_fn", // $_fn points to the abs path of the current file
+	//  	"gro": "sh grep $_args 2>/dev/null", // call grep through your shell and discard stderr
+	// }
+	//
+	"9o_aliases": {},
+
 	// what 9o command to run when (super or )ctrl+dot,ctrl+b us pressed
 	// e.g. ["go", "build"]
 	// the 9o command ^1 recalls the last command you ran manually

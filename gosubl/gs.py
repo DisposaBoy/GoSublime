@@ -77,6 +77,7 @@ _default_settings = {
 	"linters": [],
 	"9o_instance": "",
 	"9o_color_scheme": "",
+	"9o_aliases": {},
 	"gohtml_extensions": [],
 }
 _settings = copy.copy(_default_settings)
