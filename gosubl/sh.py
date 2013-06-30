@@ -5,6 +5,7 @@ from collections import namedtuple
 import os
 import re
 import string
+import sublime
 import subprocess
 import time
 
@@ -339,6 +340,16 @@ def env(m={}):
 
 
 	e['PATH'] = psep.join(add_path)
+
+	fn = gs.attr('last_active_fn', '')
+	wd =  gs.getwd()
+
+	e.update({
+		'PWD': wd,
+		'_wd': wd,
+		'_fn': fn,
+		'_nm': fn.replace('\\', '/').split('/')[-1],
+	})
 
 	# Ensure no unicode objects leak through. The reason is twofold:
 	# 	* On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen
