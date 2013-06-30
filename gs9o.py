@@ -90,7 +90,7 @@ class EV(sublime_plugin.EventListener):
 			if not cmd in cl:
 				cl.append(('^%d %s' % (i+1, cmd), cmd+' '))
 
-		for k in gs.gs9o:
+		for k in builtins():
 			cl.append((k, k+' '))
 
 		cl.extend(DEFAULT_CL)
