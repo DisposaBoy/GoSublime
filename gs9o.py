@@ -388,6 +388,9 @@ class Gs9oPushOutput(sublime_plugin.TextCommand):
 			view.insert(edit, view.size(), '\n%s' % output)
 			view.show(view.size())
 
+def aliases():
+	return gs.setting('9o_aliases', {}).copy()
+
 def builtins():
 	m = gs.gs9o.copy()
 
@@ -456,6 +459,7 @@ def cmd_echo(view, edit, args, wd, rkey):
 
 def cmd_which(view, edit, args, wd, rkey):
 	l = []
+	am = aliases()
 	m = builtins()
 
 	if not args:
@@ -470,6 +474,8 @@ def cmd_which(view, edit, args, wd, rkey):
 			v = '9o builtin: %s' % sh.which(k)
 		elif k in m:
 			v = '9o builtin'
+		elif k in am:
+			v = '9o alias: `%s`' % am[k]
 		else:
 			v = sh.which(k)
 
