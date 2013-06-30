@@ -122,6 +122,45 @@ class Gs9oInsertLineCommand(sublime_plugin.TextCommand):
 			self.view.run_command("move", {"by": "lines", "forward": False})
 
 
+class Gs9oMoveHist(sublime_plugin.TextCommand):
+	def run(self, edit, up):
+		view = self.view
+		pos = gs.sel(view).begin()
+		if view.score_selector(pos, 'prompt.9o') <= 0:
+			return
+
+		aso = gs.aso()
+		vs = view.settings()
+		wd = vs.get('9o.wd')
+		hkey = _hkey(wd)
+		hist = [s for s in gs.dval(aso.get(hkey), []) if s.strip()]
+		if not hist:
+			return
+
+		r = view.extract_scope(pos)
+		cmd = view.substr(r).strip('#').strip()
+		try:
+			idx = hist.index(cmd) + (-1 if up else 1)
+			found = True
+		except Exception:
+			idx = -1
+			found = False
+
+		if cmd and not found:
+			hist.append(cmd)
+			aso.set(hkey, hist)
+			gs.save_aso()
+
+		if idx >= 0 and idx < len(hist):
+			cmd = hist[idx]
+		elif up:
+			if not found:
+				cmd = hist[-1]
+		else:
+			cmd = ''
+
+		view.replace(edit, r, '# %s\n' % cmd)
+
 class Gs9oInitCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None):
 		v = self.view
