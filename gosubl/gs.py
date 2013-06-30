@@ -688,7 +688,7 @@ def dval(v, d):
 
 def tm_path(name):
 	d = {
-		'9o': '9o.hidden-tmLanguage',
+		'9o': 'syntax/GoSublime-9o.tmLanguage',
 		'doc': 'GsDoc.hidden-tmLanguage',
 		'go': 'syntax/GoSublime-Go.tmLanguage',
 		'gohtml': 'syntax/GoSublime-HTML.tmLanguage',
