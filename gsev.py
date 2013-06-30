@@ -52,7 +52,9 @@ def do_post_save(view):
 			gs.end(tid)
 
 def do_sync_active_view(view):
-	fn = view.file_name()
+	fn = view.file_name() or ''
+	gs.set_attr('active_fn', fn)
+
 	if fn:
 		gs.set_attr('last_active_fn', fn)
 		if fn.lower().endswith('.go'):
