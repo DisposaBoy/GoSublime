@@ -268,7 +268,7 @@
 	// {
 	//  	"git": "/usr/bin/git $_args", // call git directly, otherwise it's run through your `shell`
 	//  	"ci": "git commit $_args",
-	//  	"ci.": "git commit $_fn", // $_fn points to the abs path of the current file
+	//  	"ci.": "ci $_fn", // $_fn points to the abs path of the current file
 	//  	"gro": "sh grep $_args 2>/dev/null", // call grep through your shell and discard stderr
 	// }
 	//
