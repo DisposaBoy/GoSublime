@@ -1,8 +1,6 @@
-from gosubl import gs
-import sublime
-import sys
+import sublime_plugin
 
-def plugin_loaded():
+def _stx(v):
 	old = [
 		'GoSublime.tmLanguage',
 		'GoSublime-next.tmLanguage',
@@ -10,20 +8,21 @@ def plugin_loaded():
 
 	fn = 'Packages/GoSublime/syntax/GoSublime-Go.tmLanguage'
 
-	for w in sublime.windows():
-		for v in w.views():
-			stx = v.settings().get('syntax')
-			if stx:
-				name = stx.replace('\\', '/').split('/')[-1]
-				if name in old:
-					print('GoSublime: changing syntax of `%s` from `%s` to `%s`' % (
-						gs.view_fn(v),
-						stx,
-						fn
-					))
-					v.set_syntax_file(fn)
+	stx = v.settings().get('syntax')
+	if stx:
+		name = stx.replace('\\', '/').split('/')[-1]
+		if name in old:
+			print('GoSublime: changing syntax of `%s` from `%s` to `%s`' % (
+				(v.file_name() or ('view://%s' % v.id())),
+				stx,
+				fn
+			))
+			v.set_syntax_file(fn)
 
 
-st2 = (sys.version_info[0] == 2)
-if st2:
-	sublime.set_timeout(plugin_loaded, 0)
+class Ev(sublime_plugin.EventListener):
+	def on_load(self, view):
+		_stx(view)
+
+	def on_activated(self, view):
+		_stx(view)
