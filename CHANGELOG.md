@@ -1,46 +1,28 @@
-
-** WARNING **
-=============
-
-The next update will bring with it a new `GoSublime: Go` syntax definition.
-The path will change and this may cause errors complaining about the missing syntax definition for `GoSublime.tmLanguage`.
-If this happens, you should be able to fix it by closing all `.go` files and restarting Sublime Text.
-If you're using the `GoSublime-next.tmLanguage` please delete the file `Packages/User/GoSublime-next.sublime-settings` (if it exists).
-On update(and restart), all views using syntax files with the base-name `GoSublime.tmLanguage`
-or `GoSublime-next.tmLanguage` will be automatically changed to `GoSublime: Go`.
-Hopefully this change will go smoothly.
-
-
-
-
 GoSublime Changes
 -----------------
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## 13.06.30-1
+	This update brings with it a new `GoSublime: Go` syntax definition.
+	If you get an error complaining about GoSublime .tmLanguage file,
+	you should be able to fix it by closing all `.go` files and restarting Sublime Text.
+	If you're using the `GoSublime-next.tmLanguage` please delete the file `Packages/User/GoSublime-next.sublime-settings` (if it exists).
+	On update(and restart), all views using syntax files with the base-name `GoSublime.tmLanguage`
+	or `GoSublime-next.tmLanguage` will be automatically changed to `GoSublime: Go`.
+	Hopefully this change will go smoothly.
 
+	For all other bugs relating to the new syntax definition (e.g. completion stops working)
+	please add a comment to https://github.com/DisposaBoy/GoSublime/issues/245
 
-** REQUEST FOR FEEDBACK **
+	For all other feature requests or bugs, please open a new issue.
 
-GoSublime is/I am, in need of your help in understanding what systems
-GoSublime is being used in. I'm interested in hearing about things like:
+	additionally:
 
-* what shell you use
-* OS/version/language
-* what version of Go
-* what version of Sublime Text
-* whether or not you plan to upgrade to Sublime Text 3 when it's released
-* do you use GoSublime on a networked filesystem(NFS, sshfs, etc.)
-* whether you use Package Control to manage upgrades or just plain `git clone`
-* etc.
-
-Most of this information is available in the sanity check
-`ctrl+dot`,`ctrl+3` or `super+dot`,`super+3` on OS X
-
-If you're interested in particpating, please send an email to gosublime-rff@dby.me
-I probably won't reply, so TIA
-
+	* there is a new pre-defined variable _nm that is the base name of the current view
+	* all pre-defind env vars (_fn, _wd, etc.) are now defined globally and will appear within the
+		environment of all 9o command even when run through your shell
 
 
 
