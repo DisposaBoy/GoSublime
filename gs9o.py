@@ -349,18 +349,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			if nm != 'sh':
 				f = builtins().get(nm)
 				if f:
-					try:
-						fn = view.window().active_view().file_name() or ''
-					except Exception:
-						fn = ''
-
 					m = sh.env()
-					m.update({
-						'PWD': wd,
-						'_wd': wd,
-						'_fn': fn,
-					})
-
 					args = []
 					if ag:
 						args = [_exparg(s, m) for s in shlex.split(gs.astr(ag))]
