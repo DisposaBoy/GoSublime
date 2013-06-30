@@ -24,6 +24,22 @@ def plugin_loaded():
 	from gosubl import gs
 	from gosubl import mg9
 
+	if VERSION != about.VERSION:
+		gs.show_output('GoSublime-main', '\n'.join([
+			'GoSublime has been updated.',
+			'New version: `%s`, current version: `%s`' % (VERSION, about.VERSION),
+			'Please restart Sublime Text to complete the update.',
+		]))
+		return
+
+	if gs.attr('about.version'):
+		gs.show_output('GoSublime-main', '\n'.join([
+			'GoSublime appears to have been updated.',
+			'New ANNOUNCE: `%s`, current ANNOUNCE: `%s`' % (ANN, about.ANN),
+			'You may need to restart Sublime Text.',
+		]))
+		return
+
 	mods = [
 		('gs', gs),
 		('sh', sh),
