@@ -1,3 +1,5 @@
+from gosubl import gs
+import os
 import sublime_plugin
 
 def _stx(v):
@@ -7,6 +9,8 @@ def _stx(v):
 	]
 
 	fn = 'Packages/GoSublime/syntax/GoSublime-Go.tmLanguage'
+	if not os.path.exists(gs.dist_path('syntax/GoSublime-Go.tmLanguage')):
+		return
 
 	stx = v.settings().get('syntax')
 	if stx:
