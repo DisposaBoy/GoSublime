@@ -159,7 +159,10 @@ class Gs9oMoveHist(sublime_plugin.TextCommand):
 		else:
 			cmd = ''
 
-		view.replace(edit, r, '# %s\n' % cmd)
+		view.replace(edit, r, '# %s \n' % cmd)
+		n = view.line(r.begin()).end()
+		view.sel().clear()
+		view.sel().add(sublime.Region(n, n))
 
 class Gs9oInitCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None):
