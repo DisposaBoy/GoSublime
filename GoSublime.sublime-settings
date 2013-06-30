@@ -257,9 +257,16 @@
 	// in the command `ci a.go    b.go`, `$_args` will be `a.go    b.go`
 	// and the alias above expands to `git ci a.go    b.go`
 	//
+	// aliases are resolved recursively so they can be re-used, however recursive aliases are not supported.
+	// e.g. if you define an alias `"gs-git": "git --git-dir=... $_args"`,
+	// it will be used in the alias `"gs-ci": "gs-git commit $_args"`
+	// but an alias `"git": "git $_args"` will fail because it resolves to itself.
+	// you can, however create the alias `"git": "$HOME/git/bin/git"` which allows you to add commands
+	// to 9o without them needing to appear in your $PATH
+	//
 	// examples
 	// {
-	//  	"git": "git $_args", // call git directly, otherwise it's run through your `shell`
+	//  	"git": "/usr/bin/git $_args", // call git directly, otherwise it's run through your `shell`
 	//  	"ci": "git commit $_args",
 	//  	"ci.": "git commit $_fn", // $_fn points to the abs path of the current file
 	//  	"gro": "sh grep $_args 2>/dev/null", // call grep through your shell and discard stderr
