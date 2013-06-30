@@ -341,7 +341,7 @@ def env(m={}):
 
 	e['PATH'] = psep.join(add_path)
 
-	fn = gs.attr('last_active_fn', '')
+	fn = gs.attr('active_fn', '')
 	wd =  gs.getwd()
 
 	e.update({
