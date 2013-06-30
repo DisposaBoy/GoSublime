@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## 13.06.30-3
+	* the `up` and `down` arrows keys now traverses the 9o history when the cursor is in the prompt
+
 ## 13.06.30-2
 	* added support for aliases via the setting `9o_aliases`, see the default settings files for documentation
 
