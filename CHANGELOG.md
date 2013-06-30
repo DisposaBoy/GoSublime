@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## 13.06.30-4
+	* try not to init() GoSublime more than once
+
 ## 13.06.30-3
 	* the `up` and `down` arrows keys now traverses the 9o history when the cursor is in the prompt
 
