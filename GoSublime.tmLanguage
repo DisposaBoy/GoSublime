@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>name</key>
+	<string>GoSublime: Old syntax file</string>
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>include</key>
+			<string>source.go</string>
+		</dict>
+	</array>
+	<key>scopeName</key>
+	<string>source.oldgosublime</string>
+	<key>uuid</key>
+	<string>a0ffb7c4-e14a-11e2-81dd-77364b0fdae3</string>
+</dict>
+</plist>
