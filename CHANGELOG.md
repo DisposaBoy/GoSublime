@@ -4,6 +4,9 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## 13.06.30-2
+	* added support for aliases via the setting `9o_aliases`, see the default settings files for documentation
+
 ## 13.06.30-1
 	This update brings with it a new `GoSublime: Go` syntax definition.
 	If you get an error complaining about GoSublime .tmLanguage file,
