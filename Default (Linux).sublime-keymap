@@ -174,5 +174,17 @@
 		"command": "gs9o_insert_line",
 		"args": {"after": false},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "text.9o" }]
+	},
+	{
+		"keys": ["up"],
+		"command": "gs9o_move_hist",
+		"args": {"up": true},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "prompt.9o" }]
+	},
+	{
+		"keys": ["down"],
+		"command": "gs9o_move_hist",
+		"args": {"up": false},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "prompt.9o" }]
 	}
 ]
