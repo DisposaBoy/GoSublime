@@ -13,7 +13,7 @@ class EV(sublime_plugin.EventListener):
 		sublime.set_timeout(lambda: do_post_save(view), 0)
 
 	def on_activated(self, view):
-		sublime.set_timeout(lambda: do_sync_active_view(view), 0)
+		sublime.set_timeout(lambda: do_sync_active_view(view.window().active_view()), 0)
 		sublime.set_timeout(lambda: do_set_gohtml_syntax(view), 0)
 
 	def on_load(self, view):
