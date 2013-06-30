@@ -303,6 +303,11 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 		line = view.line(pos)
 		wd = view.settings().get('9o.wd')
 
+		try:
+			os.chdir(wd)
+		except Exception:
+			gs.error_traceback(DOMAIN)
+
 		ln = view.substr(line).split('#', 1)
 		if len(ln) == 2:
 			cmd = ln[1].strip()
