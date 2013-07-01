@@ -4,6 +4,11 @@ GoSublime Changes
 Note: you may need to restart Sublime Text after GoSublime updates
 
 
+## 13.07.01-1
+	* add user aliases to the 9o completion
+	* fix broken arrows keys in 9o completion
+	* 9o completion no longer contains the history command prefix (^1 ^2 etc.) (the commands are still shown)
+
 ## 13.06.30-4
 	* try not to init() GoSublime more than once
 
