@@ -83,22 +83,15 @@ class EV(sublime_plugin.EventListener):
 		if view.score_selector(pos, 'text.9o') == 0:
 			return []
 
-		cl = []
+		cl = set()
 
 		hkey = _hkey(view.settings().get('9o.wd', ''))
-		for i, cmd in enumerate(reversed(gs.dval(gs.aso().get(hkey), []))):
-			if not cmd in cl:
-				cl.append(('^%d %s' % (i+1, cmd), cmd+' '))
+		cl.update((k, k+' ') for k in gs.dval(gs.aso().get(hkey), []))
+		cl.update((k, k+' ') for k in aliases())
+		cl.update((k, k+' ') for k in builtins())
+		cl.update(DEFAULT_CL)
 
-		for k in aliases():
-			cl.append((k, k+' '))
-
-		for k in builtins():
-			cl.append((k, k+' '))
-
-		cl.extend(DEFAULT_CL)
-
-		return (cl, AC_OPTS)
+		return ([e for e in sorted(cl)], AC_OPTS)
 
 class Gs9oBuildCommand(sublime_plugin.WindowCommand):
 	def is_enabled(self):
