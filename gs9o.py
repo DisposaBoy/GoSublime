@@ -527,7 +527,9 @@ def cmd_which(view, edit, args, wd, rkey):
 	m = builtins()
 
 	if not args:
-		args = sorted(m.keys())
+		args = []
+		args.extend(sorted(m.keys()))
+		args.extend(sorted(am.keys()))
 
 	fm = '%{0}s: %s'.format(max(len(s) for s in args))
 
