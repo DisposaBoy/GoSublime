@@ -179,12 +179,18 @@
 		"keys": ["up"],
 		"command": "gs9o_move_hist",
 		"args": {"up": true},
-		"context": [{ "key": "selector", "operator": "equal", "operand": "prompt.9o" }]
+		"context": [
+			{ "key": "selector", "operator": "equal", "operand": "prompt.9o" },
+			{ "key": "auto_complete_visible", "operand": false }
+		]
 	},
 	{
 		"keys": ["down"],
 		"command": "gs9o_move_hist",
 		"args": {"up": false},
-		"context": [{ "key": "selector", "operator": "equal", "operand": "prompt.9o" }]
+		"context": [
+			{ "key": "selector", "operator": "equal", "operand": "prompt.9o" },
+			{ "key": "auto_complete_visible", "operand": false }
+		]
 	}
 ]
