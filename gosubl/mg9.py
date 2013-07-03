@@ -146,6 +146,7 @@ def install(aso_install_vesion, force_install):
 	gs.set_attr(_inst_name(), 'busy')
 
 	init_start = time.time()
+	err = ''
 
 	if not is_update and not force_install and _bins_exist() and aso_install_vesion == INSTALL_VERSION:
 		m_out = 'no'
@@ -166,10 +167,15 @@ def install(aso_install_vesion, force_install):
 		})
 
 		cr = cmd.run()
-		err = ''
-		m_out = '\n%s\n' % '\n'.join(s for s in (cr.out, cr.err) if s)
+		m_out = 'cmd: `%s`\nstdout: `%s`\nstderr: `%s`' % (
+			cr.cmd_lst,
+			cr.out.strip(),
+			cr.err.strip(),
+		)
+
 		if not cr.ok:
-			err = 'Cannot run go: %s' % cr.exc
+			m_out = '%s\nexception: `%s`' % (m_out, cr.exc)
+			err = 'MarGo build failure\n%s' % m_out
 
 		if not err and _bins_exist():
 			def f():
@@ -179,8 +185,12 @@ def install(aso_install_vesion, force_install):
 			sublime.set_timeout(f, 0)
 
 	gs.set_attr(_inst_name(), 'done')
-	# notify this early so we don't mask any notices below
-	gs.notify('GoSublime', 'Ready')
+
+	if err:
+		gs.error(DOMAIN, err)
+	else:
+		# notify this early so we don't mask any notices below
+		gs.notify('GoSublime', 'Ready')
 
 	if is_update:
 		gs.show_output('GoSublime-source', '\n'.join([
