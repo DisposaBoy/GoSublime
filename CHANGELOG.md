@@ -3,6 +3,8 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.07.03-1
+	* log MarGo build failure
 
 ## 13.07.01-1
 	* add user aliases to the 9o completion
