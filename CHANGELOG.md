@@ -3,6 +3,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.07.06-1
+	* the various operator groups, in addition to semi-colons are now treated as `operators` so they should now be syntax highlighted
+
 ## 13.07.03-1
 	* log MarGo build failure
 
