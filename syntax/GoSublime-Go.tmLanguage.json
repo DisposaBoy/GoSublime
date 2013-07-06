@@ -160,6 +160,10 @@
 		{
 			"match": ";",
 			"name": "keyword.operator.semi-colon.go"
+		},
+		{
+			"match": "(\\[|\\]|{|}|\\(|\\))",
+			"name": "punctuation.definition.bracket.go"
 		}
 	],
 	// note: keep this in sync with GoTemplate

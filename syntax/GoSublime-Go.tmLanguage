@@ -251,6 +251,12 @@
 			<key>name</key>
 			<string>keyword.operator.semi-colon.go</string>
 		</dict>
+		<dict>
+			<key>match</key>
+			<string>(\[|\]|{|}|\(|\))</string>
+			<key>name</key>
+			<string>punctuation.definition.bracket.go</string>
+		</dict>
 	</array>
 	<key>repository</key>
 	<dict>
