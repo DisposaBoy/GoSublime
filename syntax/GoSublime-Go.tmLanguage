@@ -209,6 +209,48 @@
 			<key>name</key>
 			<string>keyword.operator.channel.go</string>
 		</dict>
+		<dict>
+			<key>match</key>
+			<string>(==|!=|&lt;|&lt;=|&gt;|&gt;=)</string>
+			<key>name</key>
+			<string>keyword.operator.comparison.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(&amp;&amp;|[|]{2}|!)</string>
+			<key>name</key>
+			<string>keyword.operator.logical.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>([+]{2})</string>
+			<key>name</key>
+			<string>keyword.operator.increment.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(--)</string>
+			<key>name</key>
+			<string>keyword.decrement.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(=|(?:[+]|-|[|]|^|[*]|/|%|&lt;&lt;|&gt;&gt;|&amp;|&amp;^)=)</string>
+			<key>name</key>
+			<string>keyword.operator.assignment.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>([+]|-|[*]|/|%|&amp;|[|]|^|&amp;^|&lt;&lt;|&gt;&gt;)</string>
+			<key>name</key>
+			<string>keyword.operator.arithmetic.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>;</string>
+			<key>name</key>
+			<string>keyword.operator.semi-colon.go</string>
+		</dict>
 	</array>
 	<key>repository</key>
 	<dict>

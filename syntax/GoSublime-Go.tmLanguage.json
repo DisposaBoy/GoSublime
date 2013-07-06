@@ -132,6 +132,34 @@
 		{
 			"match": "(<-)",
 			"name": "keyword.operator.channel.go"
+		},
+		{
+			"match": "(==|!=|<|<=|>|>=)",
+			"name": "keyword.operator.comparison.go"
+		},
+		{
+			"match": "(&&|[|]{2}|!)",
+			"name": "keyword.operator.logical.go"
+		},
+		{
+			"match": "([+]{2})",
+			"name": "keyword.operator.increment.go"
+		},
+		{
+			"match": "(--)",
+			"name": "keyword.decrement.go"
+		},
+		{
+			"match": "(=|(?:[+]|-|[|]|^|[*]|/|%|<<|>>|&|&^)=)",
+			"name": "keyword.operator.assignment.go"
+		},
+		{
+			"match": "([+]|-|[*]|/|%|&|[|]|^|&^|<<|>>)",
+			"name": "keyword.operator.arithmetic.go"
+		},
+		{
+			"match": ";",
+			"name": "keyword.operator.semi-colon.go"
 		}
 	],
 	// note: keep this in sync with GoTemplate
