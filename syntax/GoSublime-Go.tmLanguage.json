@@ -158,8 +158,20 @@
 			"name": "keyword.operator.arithmetic.go"
 		},
 		{
-			"match": ";",
+			"match": "(;)",
 			"name": "keyword.operator.semi-colon.go"
+		},
+		{
+			"match": "(,)",
+			"name": "punctuation.definition.comma.go"
+		},
+		{
+			"match": "([.])",
+			"name": "punctuation.definition.dot.go"
+		},
+		{
+			"match": "(:)",
+			"name": "punctuation.definition.colon.go"
 		},
 		{
 			"match": "(\\[|\\]|{|}|\\(|\\))",

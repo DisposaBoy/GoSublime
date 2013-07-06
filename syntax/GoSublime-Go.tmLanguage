@@ -247,9 +247,27 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>;</string>
+			<string>(;)</string>
 			<key>name</key>
 			<string>keyword.operator.semi-colon.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(,)</string>
+			<key>name</key>
+			<string>punctuation.definition.comma.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>([.])</string>
+			<key>name</key>
+			<string>punctuation.definition.dot.go</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(:)</string>
+			<key>name</key>
+			<string>punctuation.definition.colon.go</string>
 		</dict>
 		<dict>
 			<key>match</key>
