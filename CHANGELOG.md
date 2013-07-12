@@ -3,6 +3,12 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.07.12-1
+	* update gocode
+
+## 13.07.06-2
+	* the symbols [ ] ( ) { } , . are now treated as puctuation (they might be syntax highlighted)
+
 ## 13.07.06-1
 	* the various operator groups, in addition to semi-colons are now treated as `operators` so they should now be syntax highlighted
 
