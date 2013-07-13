@@ -16,6 +16,8 @@ You may customize GoSublimes behaviour by (creating and) customizing the file fi
 Quirks
 ------
 
+This section assumes you know what `GOPATH` is and how to set it. If you don't, please see http://golang.org/doc/code.html
+
 In some system environment variables are not passed around as expected.
 The result of which is that some commands e.g `go build` doesn't work
 as the command cannot be found or `GOPATH` is not set. To get around this
