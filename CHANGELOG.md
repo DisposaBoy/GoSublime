@@ -20,11 +20,10 @@ As with previous RFFs, I might not respond so Thanks In Advance
 
 
 
-
-
-
-
 Note: you may need to restart Sublime Text after GoSublime updates
+
+## 13.07.14-1
+	* fix comment toggling when the `Go` package is disabled
 
 ## 13.07.12-1
 	* update gocode
