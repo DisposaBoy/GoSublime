@@ -1,0 +1,34 @@
+{
+	"name": "Comments",
+	"scope": "source.go",
+	"settings": {
+		"shellVariables": [
+			{
+				"name": "TM_COMMENT_START",
+				"value": "// "
+			},
+			{
+				"name": "TM_COMMENT_MODE",
+				"value": "line"
+			},
+
+			{
+				"name": "TM_COMMENT_START_2",
+				"value": "/*"
+			},
+			{
+				"name": "TM_COMMENT_END_2",
+				"value": "*/"
+			},
+			{
+				"name": "TM_COMMENT_MODE",
+				"value": "block"
+			},
+			{
+				"name": "TM_COMMENT_DISABLE_INDENT_2",
+				"value": "yes"
+			}
+		]
+	},
+	"uuid": "91133848-ecbe-11e2-8df9-6fbbfa6ad449"
+}
