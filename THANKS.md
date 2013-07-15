@@ -12,9 +12,10 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Hans Stimer
 * Joe Farro http://jf.io/
 * Joe Poirier https://github.com/jpoirier
+* Karl Tuhkanen
 * Mark Smith http://qq.is
 * Nathan Youngman http://nathany.com/
 * ProGNOMmers https://github.com/ProGNOMmers
 * Tom Westberg
 * Yves Junqueira http://pledgie.com/accounts/@cetico
-
+* 
