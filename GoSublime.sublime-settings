@@ -241,6 +241,10 @@
 		}
 	],
 
+	// whether or not 9o should ask Sublime Text to show(scroll to) the end of a command's output
+	// by default it will attempt to show the beginning
+	"9o_show_end": false,
+
 	// if set, 9o will run in single-instance mode instead of per-pkg
 	// the name can be any string, so you can e.g. set it per-project and maintain project-specific
 	// command history

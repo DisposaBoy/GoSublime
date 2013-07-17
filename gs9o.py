@@ -437,13 +437,21 @@ class Gs9oPushOutput(sublime_plugin.TextCommand):
 			line = view.line(regions[0].begin())
 			lsrc = view.substr(line).replace(HOURGLASS, (hourglass_repl or '| done'))
 			view.replace(edit, line, lsrc)
+			r = line
 			if output.strip():
 				line = view.line(regions[0].begin())
 				view.insert(edit, line.end(), '\n%s' % output)
-				view.show(view.get_regions(rkey)[-1].end())
+				r = view.get_regions(rkey)[0]
 		else:
-			view.insert(edit, view.size(), '\n%s' % output)
-			view.show(view.size())
+			n = view.size()
+			view.insert(edit, n, '\n%s' % output)
+			r = sublime.Region(n, view.size())
+
+		if gs.setting('9o_show_end') is True:
+			view.show(r.end())
+		else:
+			view.show(r.begin())
+
 
 def aliases():
 	return gs.setting('9o_aliases', {}).copy()
