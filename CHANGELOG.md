@@ -22,6 +22,11 @@ As with previous RFFs, I might not respond so Thanks In Advance
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.07.17-1
+	* the behaviour of 9o output scrolling has changed. instead of attempting to show the end
+	    of the output, the start of the output will be shown instead.
+	    if you preferred the old behaviour, use the new setting `"9o_show_end": true`
+
 ## 13.07.14-1
 	* fix comment toggling when the `Go` package is disabled
 
