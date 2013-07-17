@@ -1,9 +1,9 @@
 How to run custom linters in GoSublime.
 =============================
 
-Until https://github.com/DisposaBoy/GoSublime/issues/220 is closed, you can run your own linters e.g.`go build`, `go vet` or [golint](https://github.com/golang/lint) commands by using `comp-lint`, it's able to run use-commands when you save.
+Until https://github.com/DisposaBoy/GoSublime/issues/220 is closed, you can run your own linters e.g.`go build`, `go vet` or [golint](https://github.com/golang/lint) commands by using `comp-lint`, it's able to run user-commands when you save.
 
-Please note that comp-lint may effectively disable the live linter that currently only does syntax 
+Please note that comp-lint may effectively disable the live linter that currently only does `syntax` and `flag` checks.
 
 note: replace `ctrl` with `super` on OS X
 
@@ -15,7 +15,7 @@ To enable comp-lint, add the following settings to your user settings file ( `ct
 
 	// list of commands to run
 	"comp_lint_commands": [
-		// run go lint on all files in the package
+		// run `golint` on all files in the package
 		// "shell":true is required in order to run the command through your shell (to expand `*.go`)
 		// also see: the documentation for the `shell` setting in the default settings file ctrl+dot,ctrl+4
 		{"cmd": ["golint *.go"], "shell": true}
