@@ -5,7 +5,8 @@ We also don't want to be installing the same pkg over and over so pkg existense 
 Iff `go install` succeeds(results in a `.a` file) then a message is sent back to the client.
 In this case GS can just display a message in the status bar or something.
 
-  type AutoInstOptions struct {
+
+	type AutoInstOptions struct {
 		// if ImportPaths is empty, Src is parsed in order to populate it
 		ImportPaths []string
 		Src         string
@@ -33,5 +34,5 @@ then every second call to the `go` command kills the previous which is often eno
 
 Possible side-effects of concurrent install:
 
-	* a second compile instance fails to open or rename the `.a` file because it's already open
-	* high memory and CPU use due to having multiple compiles going at the same time
+* a second compile instance fails to open or rename the `.a` file because it's already open
+* high memory and CPU use due to having multiple compiles going at the same time
