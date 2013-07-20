@@ -1,6 +1,7 @@
 import os
 import sublime
 import sys
+import traceback
 
 st2 = (sys.version_info[0] == 2)
 dist_dir = os.path.dirname(os.path.abspath(__file__))
@@ -10,12 +11,14 @@ ANN = ''
 VERSION = ''
 MARGO_EXE = ''
 fn = os.path.join(dist_dir, 'gosubl', 'about.py')
+execErr = ''
 try:
 	with open(fn) as f:
 		code = compile(f.read(), fn, 'exec')
 		exec(code)
 except Exception:
-	pass
+	execErr = "Error: failed to exec about.py: Exception: %s" % traceback.format_exc()
+	print("GoSublime: %s" % execErr)
 
 def plugin_loaded():
 	from gosubl import about
@@ -29,6 +32,7 @@ def plugin_loaded():
 			'GoSublime has been updated.',
 			'New version: `%s`, current version: `%s`' % (VERSION, about.VERSION),
 			'Please restart Sublime Text to complete the update.',
+			execErr,
 		]))
 		return
 
