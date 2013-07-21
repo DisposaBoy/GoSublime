@@ -56,6 +56,9 @@ class Request(object):
 			'token': self.token,
 		}
 
+def _inst_state():
+	return gs.attr(_inst_name(), '')
+
 def _inst_name():
 	return 'mg9.install.%s' % INSTALL_VERSION
 
@@ -86,7 +89,7 @@ def sanity_check(env={}, error_log=False):
 	ns = '(not set)'
 
 	sl = [
-		('install state', gs.attr(_inst_name(), '')),
+		('install state', _inst_state()),
 		('sublime.version', sublime.version()),
 		('sublime.channel', sublime.channel()),
 		('about.ann', gs.attr('about.ann', '')),
@@ -128,13 +131,13 @@ def _bins_exist():
 	return os.path.exists(_margo_bin())
 
 def maybe_install():
-	if not _bins_exist() and gs.attr(_inst_name(), '') == '':
+	if not _bins_exist() and _inst_state() == '':
 		install('', True)
 
 def install(aso_install_vesion, force_install):
 	global INSTALL_EXE
 
-	if gs.attr(_inst_name(), '') != "":
+	if _inst_state() != "":
 		gs.notify(DOMAIN, 'Installation aborted. Install command already called for GoSublime %s.' % INSTALL_VERSION)
 		return
 
@@ -378,7 +381,7 @@ def acall(method, arg, cb):
 	gs.mg9_send_q.put((method, arg, cb))
 
 def bcall(method, arg):
-	if gs.attr(_inst_name(), '') != "done":
+	if _inst_state() != "done":
 		return {}, 'Blocking call(%s) aborted: Install is not done' % method
 
 	q = gs.queue.Queue()
@@ -465,10 +468,10 @@ def _send():
 				if not proc or proc.poll() is not None:
 					killSrv()
 
-					if gs.attr(_inst_name(), '') != "busy":
+					if _inst_state() != "busy":
 						maybe_install()
 
-					while gs.attr(_inst_name(), '') == "busy":
+					while _inst_state() == "busy":
 						time.sleep(0.100)
 
 					mg_bin = _margo_bin()
