@@ -128,7 +128,7 @@ def _bins_exist():
 	return os.path.exists(_margo_bin())
 
 def maybe_install():
-	if not _bins_exist():
+	if not _bins_exist() and gs.attr(_inst_name(), '') == '':
 		install('', True)
 
 def install(aso_install_vesion, force_install):
