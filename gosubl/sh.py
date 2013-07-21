@@ -349,6 +349,7 @@ def env(m={}):
 		'_wd': wd,
 		'_fn': fn,
 		'_nm': fn.replace('\\', '/').split('/')[-1],
+		'_pathsep': psep,
 	})
 
 	# Ensure no unicode objects leak through. The reason is twofold:
