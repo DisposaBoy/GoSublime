@@ -149,7 +149,6 @@ def install(aso_install_vesion, force_install):
 	gs.set_attr(_inst_name(), 'busy')
 
 	init_start = time.time()
-	err = ''
 
 	if not is_update and not force_install and _bins_exist() and aso_install_vesion == INSTALL_VERSION:
 		m_out = 'no'
@@ -170,30 +169,38 @@ def install(aso_install_vesion, force_install):
 		})
 
 		cr = cmd.run()
-		m_out = 'cmd: `%s`\nstdout: `%s`\nstderr: `%s`' % (
+		m_out = 'cmd: `%s`\nstdout: `%s`\nstderr: `%s`\nexception: `%s`' % (
 			cr.cmd_lst,
 			cr.out.strip(),
 			cr.err.strip(),
+			cr.exc,
 		)
 
-		if not cr.ok:
-			m_out = '%s\nexception: `%s`' % (m_out, cr.exc)
-			err = 'MarGo build failure\n%s' % m_out
-
-		if not err and _bins_exist():
+		if cr.ok and _bins_exist():
 			def f():
 				gs.aso().set('install_version', INSTALL_VERSION)
 				gs.save_aso()
 
 			sublime.set_timeout(f, 0)
+		else:
+			err_prefix = 'MarGo build failed'
+			gs.error(DOMAIN, '%s\n%s' % (err_prefix, m_out))
+
+			sl = [
+				('GoSublime error', '\n'.join((
+					err_prefix,
+					'This is possibly a bug or miss-configuration of your environment.',
+					'For more help, please file an issue with the following build output',
+					'at: https://github.com/DisposaBoy/GoSublime/issues/new',
+					'or alternatively, you may send an email to: gosublime@dby.me',
+					'\n',
+					m_out,
+				)))
+			]
+			sl.extend(sanity_check({}, False))
+			gs.show_output('GoSublime', '\n'.join(sanity_check_sl(sl)))
 
 	gs.set_attr(_inst_name(), 'done')
-
-	if err:
-		gs.error(DOMAIN, err)
-	else:
-		# notify this early so we don't mask any notices below
-		gs.notify('GoSublime', 'Ready')
 
 	if is_update:
 		gs.show_output('GoSublime-source', '\n'.join([
