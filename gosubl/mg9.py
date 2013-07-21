@@ -375,9 +375,6 @@ def share(src, f):
 		f({}, 'Share cancelled')
 
 def acall(method, arg, cb):
-	if not gs.checked(DOMAIN, 'launch _send'):
-		gsq.launch(DOMAIN, _send)
-
 	gs.mg9_send_q.put((method, arg, cb))
 
 def bcall(method, arg):
@@ -470,9 +467,6 @@ def _send():
 
 					if gs.attr(_inst_name(), '') != "busy":
 						maybe_install()
-
-					if not gs.checked(DOMAIN, 'launch _recv'):
-						gsq.launch(DOMAIN, _recv)
 
 					while gs.attr(_inst_name(), '') == "busy":
 						time.sleep(0.100)
@@ -588,3 +582,7 @@ def _dump(res, err):
 		'res': res,
 		'err': err,
 	}, sort_keys=True, indent=2))
+
+if not gs.checked(DOMAIN, 'launch ipc threads'):
+	gsq.launch(DOMAIN, _send)
+	gsq.launch(DOMAIN, _recv)
