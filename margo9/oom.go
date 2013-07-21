@@ -28,7 +28,7 @@ func startOomKiller(maxMb int) {
 				n := runtime.Stack(buf, true)
 				log.Fatalf(f, maxMb, alloc, runtime.NumGoroutine(), buf[:n])
 			}
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Second * 2)
 		}
 	}()
 }
