@@ -80,6 +80,7 @@ _default_settings = {
 	"9o_aliases": {},
 	"9o_show_end": False,
 	"gohtml_extensions": [],
+	"autoinst": False,
 }
 _settings = copy.copy(_default_settings)
 

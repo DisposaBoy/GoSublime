@@ -165,6 +165,10 @@
 	// the same can be achieved ctrl+dot,ctrl+space using an output panel
 	"autocomplete_live_hint": false,
 
+	// whether or not MarGo may automatically run `go install` for packages that are missing
+	// when you `import`, or `autocomplete` them
+	"autoinst": true,
+
 	// commands to run on (post) save - list of objects of the form {"cmd": "...", "args": {...}}
 	// Any TextCommand may be run. Supported GS commands include:
 	//     gs_comp_lint - compile the pkg and report any errors
