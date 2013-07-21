@@ -31,7 +31,7 @@ type Job struct {
 
 type Broker struct {
 	tag    string
-	served uint
+	served counter
 	start  time.Time
 	rLck   sync.Mutex
 	wLck   sync.Mutex
@@ -95,7 +95,7 @@ func (b *Broker) SendNoLog(resp Response) error {
 }
 
 func (b *Broker) call(req *Request, cl Caller) {
-	b.served++
+	b.served.next()
 
 	defer func() {
 		err := recover()
@@ -226,7 +226,7 @@ func (b *Broker) Loop(decorate bool, wait bool) {
 		b.SendNoLog(Response{
 			Token: "margo.bye-ni",
 			Data: M{
-				"served": b.served,
+				"served": b.served.val(),
 				"uptime": time.Now().Sub(b.start).String(),
 			},
 		})
