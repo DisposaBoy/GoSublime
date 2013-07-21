@@ -502,11 +502,7 @@ def _send():
 
 					if err or not proc or proc.poll() is not None:
 						killSrv()
-
-						try:
-							cb({}, 'Abort. Cannot start MarGo: %s' % err)
-						except:
-							pass
+						_call(cb, {}, 'Abort. Cannot start MarGo: %s' % err)
 
 						continue
 
@@ -548,9 +544,15 @@ def _send():
 			gs.println(gs.traceback())
 			break
 
+def _call(cb, res, err):
+	try:
+		cb(res, err)
+	except Exception:
+		gs.error_traceback(DOMAIN)
+
 def _cb_err(cb, err):
 	gs.error(DOMAIN, err)
-	cb({}, err)
+	_call(cb, {}, err)
 
 
 def _read_stdout(proc):
