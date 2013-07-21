@@ -34,6 +34,12 @@ func (c *counter) next() uint64 {
 	return c.n
 }
 
+func (c *counter) val() uint64 {
+	c.lck.Lock()
+	defer c.lck.Unlock()
+	return c.n
+}
+
 func (c *counter) nextString() string {
 	c.lck.Lock()
 	defer c.lck.Unlock()
