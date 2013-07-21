@@ -485,31 +485,26 @@ def _send():
 						'-tag', TAG,
 					]
 
-					if os.path.exists(mg_bin):
-						c = sh.Command(cmd)
-						c.stderr = gs.LOGFILE
-						c.env = {
-							'GOGC': 10,
-							'XDG_CONFIG_HOME': gs.home_path(),
-						}
+					c = sh.Command(cmd)
+					c.stderr = gs.LOGFILE
+					c.env = {
+						'GOGC': 10,
+						'XDG_CONFIG_HOME': gs.home_path(),
+					}
 
-						pr = c.proc()
-						if pr.ok:
-							proc = pr.p
-							err = ''
-						else:
-							proc = None
-							err = 'Cannot start MarGo: %s' % pr.exc
+					pr = c.proc()
+					if pr.ok:
+						proc = pr.p
+						err = ''
 					else:
 						proc = None
-						err = "Can't find the MarGo binary at `%s`" % mg_bin
+						err = 'Exception: %s' % pr.exc
 
 					if err or not proc or proc.poll() is not None:
 						killSrv()
 
-						gs.notice(DOMAIN, 'Cannot start MarGo:\n%s' % err)
 						try:
-							cb({}, 'Abort. Cannot start MarGo')
+							cb({}, 'Abort. Cannot start MarGo: %s' % err)
 						except:
 							pass
 
