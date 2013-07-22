@@ -3,24 +3,11 @@ GoSublime Changes
 
 
 
-
-********************
-Request for feedback
-====================
-
-I'm currently considering what to do about invalid(utf8) source files.
-If you can think of any reason why GoSublime should accept files where
-e.g. rune literals are invalid, or you write code where the `.go` files are not in the utf8 encoding
-please add a comment to https://github.com/DisposaBoy/GoSublime/issues/319
-or email me gosublime-utf8@dby.me
-
-As with previous RFFs, I might not respond so Thanks In Advance
-
-********************
-
-
-
 Note: you may need to restart Sublime Text after GoSublime updates
+
+## 13.07.22-1
+	* update gocode
+	
 
 ## 13.07.17-1
 	* the behaviour of 9o output scrolling has changed. instead of attempting to show the end
