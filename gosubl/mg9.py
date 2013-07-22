@@ -586,6 +586,10 @@ def killSrv():
 		except Exception:
 			pass
 
+def on(token, cb):
+	req = Request(f=cb, token=token)
+	gs.set_attr(REQUEST_PREFIX+req.token, req)
+
 def _dump(res, err):
 	gs.println(json.dumps({
 		'res': res,
