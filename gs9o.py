@@ -297,7 +297,7 @@ def act_on_path(view, path):
 	else:
 		if URL_PATH_PAT.match(path):
 			if path.lower().startswith('gs.packages://'):
-				path = os.path.join(sublime.packages_path(), path[14:])
+				path = os.path.join(gs.packages_dir(), path[14:])
 			else:
 				try:
 					if not URL_SCHEME_PAT.match(path):
