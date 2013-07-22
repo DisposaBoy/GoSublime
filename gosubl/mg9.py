@@ -239,7 +239,6 @@ def install(aso_install_vesion, force_install):
 		try:
 			bin_dirs = [
 				gs.home_path('bin'),
-				os.path.join(sublime.packages_path(), 'User', 'GoSublime', '9', 'bin'),
 			]
 
 			l = []
