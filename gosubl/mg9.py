@@ -599,3 +599,12 @@ def _dump(res, err):
 if not gs.checked(DOMAIN, 'launch ipc threads'):
 	gsq.launch(DOMAIN, _send)
 	gsq.launch(DOMAIN, _recv)
+
+def on_mg_msg(res, err):
+	msg = res.get('message', '')
+	if msg:
+		gs.notify('MarGo', msg)
+
+	return True
+
+on('margo.message', on_mg_msg)
