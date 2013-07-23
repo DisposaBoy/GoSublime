@@ -24,6 +24,8 @@ type mImports struct {
 	Toggle    []mImportDeclArg
 	TabWidth  int
 	TabIndent bool
+	Env       map[string]string
+	Autoinst  bool
 }
 
 func (m *mImports) Call() (interface{}, string) {
@@ -55,6 +57,13 @@ func (m *mImports) Call() (interface{}, string) {
 
 		af = imp(fset, af, m.Toggle)
 		src, err = printSrc(fset, af, m.TabIndent, m.TabWidth)
+	}
+
+	if m.Autoinst {
+		autoInstall(AutoInstOptions{
+			Env:         m.Env,
+			ImportPaths: fileImportPaths(af),
+		})
 	}
 
 	res := M{
