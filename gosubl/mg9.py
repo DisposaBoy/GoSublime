@@ -354,6 +354,7 @@ def declarations(fn, src, pkg_dir, f):
 
 def imports(fn, src, toggle):
 	return bcall('imports', {
+		'env': sh.env(),
 		'fn': fn or '',
 		'src': src or '',
 		'toggle': toggle or [],
