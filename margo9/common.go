@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -222,4 +223,38 @@ func tempDir(env map[string]string, subDirs ...string) string {
 	os.MkdirAll(dir, 0777)
 
 	return dir
+}
+
+func post(r Response) {
+	sendCh <- r
+}
+
+func postMessage(format string, a ...interface{}) {
+	post(Response{
+		Token: "margo.message",
+		Data: M{
+			"message": fmt.Sprintf(format, a...),
+		},
+	})
+}
+
+func fileImportPaths(af *ast.File) []string {
+	l := []string{}
+
+	if af != nil {
+		for _, decl := range af.Decls {
+			if gdecl, ok := decl.(*ast.GenDecl); ok {
+				for _, spec := range gdecl.Specs {
+					if ispec, ok := spec.(*ast.ImportSpec); ok {
+						ipath := unquote(ispec.Path.Value)
+						if ipath != "C" {
+							l = append(l, ipath)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return l
 }
