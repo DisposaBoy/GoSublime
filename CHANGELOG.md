@@ -5,6 +5,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.07.23-1
+	* update gocode
+	
 ## 13.07.22-1
 	* update gocode
 	
