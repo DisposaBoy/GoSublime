@@ -604,6 +604,7 @@ if not gs.checked(DOMAIN, 'launch ipc threads'):
 def on_mg_msg(res, err):
 	msg = res.get('message', '')
 	if msg:
+		print('GoSublime: MarGo: %s' % msg)
 		gs.notify('MarGo', msg)
 
 	return True
