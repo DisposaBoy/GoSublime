@@ -20,6 +20,7 @@ var (
 	byeFuncs *byeFunc = nil
 	numbers           = &counter{}
 	logger            = log.New(os.Stderr, "margo: ", log.Ldate|log.Ltime|log.Lshortfile)
+	sendCh            = make(chan Response, 100)
 )
 
 type counter struct {
@@ -129,6 +130,13 @@ func main() {
 			}
 		}()
 	}
+
+	go func() {
+		for r := range sendCh {
+			broker.SendNoLog(r)
+		}
+	}()
+
 	broker.Loop(!doCall, (wait || doCall))
 
 	byeLck.Lock()
