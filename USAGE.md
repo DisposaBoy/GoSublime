@@ -114,6 +114,11 @@ success by adding the string `$GS_GOPATH` to your global `GOPATH` setting e.g.
 	* or the path the current `.go` file (or last activated `.go` file if the current file is not `.go`)
 	    e.g. if your file path is `/tmp/go/src/hello/main.go` then it will be `/tmp/go`
 
+If you would like to use `GS_GOPATH` exclusively, you maybe set the setting `use_gs_gopath` to true.
+The automatically changes `GOPATH` to the value of `$GS_GOPATH` if `$GS_GOPATH` is not empty.
+This allows you to e.g. automatically adapt GOPATH to your current project without and otherwise
+revert to your normal GOPATH.
+
 Lint/Syntax Check
 -----------------
 
