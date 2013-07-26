@@ -296,6 +296,9 @@ def env(m={}):
 	e.update(uenv)
 	e.update(m)
 
+	if e['GS_GOPATH'] and gs.setting('use_gs_gopath') is True:
+		e['GOPATH'] = e['GS_GOPATH']
+
 	# For custom values of GOPATH, installed binaries via go install
 	# will go into the "bin" dir of the corresponding GOPATH path.
 	# Therefore, make sure these paths are included in PATH.

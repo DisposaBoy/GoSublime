@@ -8,6 +8,11 @@
 	// the corresponding environment(PATH) variable, if it exists.
 	"env": {},
 
+	// if set, whenever possible `GOPATH` will be set to `GS_GOPATH`.
+	// please see `Usage & Tips` `ctrl+dot,ctrl+2`
+	// section `Per-project  settings & Project-based GOPATH` for details about `GS_GOPATH`
+	"use_gs_gopath": false,
+
 	// Your shell. e.g. on Linux and OS X, if your shell bash:
 	// you may set it to ["/bin/bash", "--login", "-c", "$CMD"]
 	// it's useful to pass the --login argument in order for it run your ~/.bashrc etc.

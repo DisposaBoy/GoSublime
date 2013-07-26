@@ -81,6 +81,7 @@ _default_settings = {
 	"9o_show_end": False,
 	"gohtml_extensions": [],
 	"autoinst": False,
+	"use_gs_gopath": False,
 }
 _settings = copy.copy(_default_settings)
 
