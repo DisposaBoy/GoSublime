@@ -82,7 +82,7 @@ will execute that instead. To access the `GoSublime` build system directly press
 This build system simply opens 9o and expand the last command. i.e. executes the 9o command `^1`.
 
 Per-project  settings & Project-based GOPATH
-------------------------------
+--------------------------------------------
 
 If you have a settings object called `GoSublime` in your project settings its values will override those
 inside the `GoSublime.sublime-settings` file. As a side-effect you may set a specific GOPATH for a simple
@@ -109,9 +109,10 @@ success by adding the string `$GS_GOPATH` to your global `GOPATH` setting e.g.
 	}
 
 
-`GS_GOPATH` is a pseudo-environment-variable.
-It's changed to match a possible GOPATH based on the current file's path. e.g. if your file path is
-`/tmp/go/src/hello/main.go` then it will contain the value `/tmp/go`
+`GS_GOPATH` is a pseudo-environment-variable. It's changed to match a possible GOPATH based on:
+	* the current working directory, e.g. `~/go/src/pkg` then `$GS_GOPATH` will be `~/go/`
+	* or the path the current `.go` file (or last activated `.go` file if the current file is not `.go`)
+	    e.g. if your file path is `/tmp/go/src/hello/main.go` then it will be `/tmp/go`
 
 Lint/Syntax Check
 -----------------
