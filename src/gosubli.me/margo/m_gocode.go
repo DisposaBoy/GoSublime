@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"gosublime.org/gocode"
+	"gosubli.me/something-borrowed/gocode"
 	"io/ioutil"
 	"os"
 	"path/filepath"
