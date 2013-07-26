@@ -262,7 +262,7 @@ def gs_gopath(fn, roots=[]):
 	l = []
 	for i, s in enumerate(comps):
 		if s.lower() == "src":
-			p = os.sep.join(comps[:i])
+			p = os.path.normpath(os.sep.join(comps[:i]))
 			if p not in roots:
 				l.append(p)
 	l.reverse()
@@ -283,7 +283,7 @@ def env(m={}):
 	e.update(_env_ext)
 	e.update(m)
 
-	roots = gs.lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))
+	roots = [os.path.normpath(s) for s in gs.lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))]
 	e['GS_GOPATH'] = gs_gopath(gs.getwd(), roots) or gs_gopath(gs.attr('last_active_go_fn', ''), roots)
 
 	uenv = gs.setting('env', {})
