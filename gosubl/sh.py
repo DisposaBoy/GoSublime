@@ -257,6 +257,17 @@ def _sj_path(p):
 def getenv(name, default='', m={}):
 	return env(m).get(name, default)
 
+def gs_gopath(fn, roots=[]):
+	comps = fn.split(os.sep)
+	l = []
+	for i, s in enumerate(comps):
+		if s.lower() == "src":
+			p = os.sep.join(comps[:i])
+			if p not in roots:
+				l.append(p)
+	l.reverse()
+	return os.pathsep.join(l)
+
 def env(m={}):
 	"""
 	Assemble environment information needed for correct operation. In particular,
@@ -273,17 +284,7 @@ def env(m={}):
 	e.update(m)
 
 	roots = gs.lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))
-	lfn = gs.attr('last_active_go_fn', '')
-
-	comps = lfn.split(os.sep)
-	gs_gopath = []
-	for i, s in enumerate(comps):
-		if s.lower() == "src":
-			p = os.sep.join(comps[:i])
-			if p not in roots:
-				gs_gopath.append(p)
-	gs_gopath.reverse()
-	e['GS_GOPATH'] = os.pathsep.join(gs_gopath)
+	e['GS_GOPATH'] = gs_gopath(gs.getwd(), roots) or gs_gopath(gs.attr('last_active_go_fn', ''), roots)
 
 	uenv = gs.setting('env', {})
 	for k in uenv:
