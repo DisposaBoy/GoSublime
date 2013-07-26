@@ -20,6 +20,8 @@ var (
 	sRuneError = eRune()
 )
 
+type void struct{}
+
 type jString string
 
 func (s jString) String() string {
@@ -257,4 +259,28 @@ func fileImportPaths(af *ast.File) []string {
 	}
 
 	return l
+}
+
+func pathList(p, pathSep string) []string {
+	if pathSep == "" {
+		pathSep = string(filepath.ListSeparator)
+	}
+	l := strings.Split(p, pathSep)
+
+	i := 0
+	for _, s := range l {
+		if s != "" {
+			l[i] = s
+			i += 1
+		}
+	}
+
+	return l[:i]
+}
+
+func envRootList(env map[string]string) (string, []string) {
+	if env == nil {
+		return "", []string{}
+	}
+	return env["GOROOT"], pathList(env["GOPATH"], env["_pathsep"])
 }
