@@ -339,6 +339,22 @@ def pkg_dirs(f):
 		'env': sh.env(),
 	}, cb)
 
+def a_pkgpaths(exclude, f):
+	tid = gs.begin(DOMAIN, '')
+	def cb(res, err):
+		gs.end(tid)
+		f(res, err)
+
+	m = sh.env()
+	acall('pkgpaths', {
+		'env': {
+			'GOPATH': m.get('GOPATH'),
+			'GOROOT': m.get('GOROOT'),
+			'_pathsep': m.get('_pathsep'),
+		},
+		'exclude': exclude,
+	}, cb)
+
 def declarations(fn, src, pkg_dir, f):
 	tid = gs.begin(DOMAIN, 'Fetching declarations')
 	def cb(res, err):
