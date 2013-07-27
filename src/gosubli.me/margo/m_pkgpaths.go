@@ -11,9 +11,19 @@ type mPkgPaths struct {
 }
 
 func (m *mPkgPaths) Call() (interface{}, string) {
+	return mPkgPathsRes(m.Env, m.Exclude), ""
+}
+
+func init() {
+	registry.Register("pkgpaths", func(_ *Broker) Caller {
+		return &mPkgPaths{}
+	})
+}
+
+func mPkgPathsRes(env map[string]string, exclude []string) map[string]map[string]string {
 	lck := sync.Mutex{}
-	goroot, gopaths := envRootList(m.Env)
-	res := M{}
+	goroot, gopaths := envRootList(env)
+	res := map[string]map[string]string{}
 
 	wg := sync.WaitGroup{}
 	proc := func(srcDir string) {
@@ -21,7 +31,7 @@ func (m *mPkgPaths) Call() (interface{}, string) {
 		go func() {
 			defer wg.Done()
 
-			paths := pkgPaths(srcDir, m.Exclude)
+			paths := pkgPaths(srcDir, exclude)
 			if len(paths) > 0 {
 				lck.Lock()
 				res[srcDir] = paths
@@ -36,11 +46,5 @@ func (m *mPkgPaths) Call() (interface{}, string) {
 	}
 	wg.Wait()
 
-	return res, ""
-}
-
-func init() {
-	registry.Register("pkgpaths", func(_ *Broker) Caller {
-		return &mPkgPaths{}
-	})
+	return res
 }
