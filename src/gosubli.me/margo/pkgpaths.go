@@ -76,7 +76,7 @@ func pkgPaths(srcDir string, exclude []string) map[string]string {
 	proc := func(fn string) {
 		dir := filepath.Dir(fn)
 		p, err := filepath.Rel(srcDir, dir)
-		if err != nil {
+		if err != nil || strings.HasPrefix(p, ".") {
 			return
 		}
 		p = filepath.ToSlash(p)
