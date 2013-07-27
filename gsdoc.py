@@ -30,6 +30,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 
 		pt = gs.sel(view).begin()
 		src = view.substr(sublime.Region(0, view.size()))
+		pt = len(src[:pt].encode("utf-8"))
 		def f(docs, err):
 			doc = ''
 			if err:
