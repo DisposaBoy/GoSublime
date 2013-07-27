@@ -170,6 +170,13 @@
 	// the same can be achieved ctrl+dot,ctrl+space using an output panel
 	"autocomplete_live_hint": false,
 
+	// whether or not to use named imports when the basename of the import path doesn't match the pkg name
+	// e.g. gosubli.me/go-foo would be imported as:
+	//     import (
+	//         foo "gosubli.me/go-foo"
+	//     )
+	"use_named_imports": false,
+
 	// whether or not MarGo may automatically run `go install` for packages that are missing
 	// when you `import`, or `autocomplete` them
 	"autoinst": true,

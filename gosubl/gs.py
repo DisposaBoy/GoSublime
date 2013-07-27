@@ -82,6 +82,7 @@ _default_settings = {
 	"gohtml_extensions": [],
 	"autoinst": False,
 	"use_gs_gopath": False,
+	"use_named_imports": False,
 }
 _settings = copy.copy(_default_settings)
 
