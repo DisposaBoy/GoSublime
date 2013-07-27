@@ -188,7 +188,8 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 
 			delete_imports = []
 			add_imports = []
-			for path in im.get('paths', []):
+			paths = im.get('paths', {})
+			for path in paths:
 				skipAdd = False
 				for i in im.get('imports', []):
 					if i.get('path') == path:
@@ -202,7 +203,20 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 							delete_imports.append(('%sdelete: %s ( %s )' % (indent, name, path), i))
 
 				if not skipAdd:
-					add_imports.append(('%s%s' % (indent, path), {'path': path, 'add': True}))
+					s = '%s%s' % (indent, path)
+					m = {
+						'path': path,
+						'add': True,
+					}
+
+					nm = paths[path]
+					if nm and nm != path and not path.endswith('/%s' % nm):
+						s = '%s (%s)' % (s, nm)
+						if gs.setting('use_named_imports') is True:
+							m['name'] = nm
+
+					add_imports.append((s, m))
+
 			for i in sorted(delete_imports):
 				self.add_item(i[0], self.toggle_import, (view, i[1]))
 			if len(delete_imports) > 0:

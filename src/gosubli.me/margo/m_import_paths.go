@@ -22,7 +22,6 @@ type mImportPathsDecl struct {
 }
 
 func (m *mImportPaths) Call() (interface{}, string) {
-	paths, _ := importPaths(m.Env)
 	imports := []mImportPathsDecl{}
 	_, af, err := parseAstFile(m.Fn, m.Src, parser.ImportsOnly)
 	if err != nil {
@@ -44,6 +43,13 @@ func (m *mImportPaths) Call() (interface{}, string) {
 					}
 				}
 			}
+		}
+	}
+
+	paths := map[string]string{}
+	for _, m := range mPkgPathsRes(m.Env, []string{"main"}) {
+		for p, nm := range m {
+			paths[p] = nm
 		}
 	}
 
