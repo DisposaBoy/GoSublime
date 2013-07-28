@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"go/parser"
 	"go/token"
 	"os"
@@ -99,7 +98,6 @@ func pkgPaths(srcDir string, exclude []string) map[string]string {
 		for _, cg := range af.Comments {
 			for _, c := range cg.List {
 				if buildIgnore.MatchString(c.Text) {
-					fmt.Println("ignore", af.Name.String(), fn)
 					return
 				}
 			}
