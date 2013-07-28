@@ -296,6 +296,7 @@ def _complete_opts(fn, src, pos):
 		'Src': src or '',
 		'Pos': pos or 0,
 		'Home': home,
+		'Autoinst': gs.setting('autoinst'),
 		'Env': sh.env({
 			'XDG_CONFIG_HOME': home,
 		}),
