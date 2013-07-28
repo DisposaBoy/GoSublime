@@ -5,12 +5,26 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.07.28-1
+	* the behaviour of `$GS_GOPATH` has change, please see `Usage & Tips` `ctrl+dot,ctrl+2`
+	    section `Per-project  settings & Project-based GOPATH` for details
+
+	* MarGo will now attempt to automatically install packages when you import a package that doesn't exist
+	    or when completion fails. see the default settings file, `ctrl+dot,ctrl+4` for more details
+	    about the `autoinst` setting
+
+	* a new setting was added to allow using `GS_GOPATH` exclusively. see the default settings file,
+	    `ctrl+dot,ctrl+4` for more details on the `use_gs_gopath` setting
+
+	* a new setting to allow importing packages with their package name was added.
+	    see the default settings file, `ctrl+dot,ctrl+4` for more details on the `use_named_imports` setting
+
+
 ## 13.07.23-1
 	* update gocode
-	
+
 ## 13.07.22-1
 	* update gocode
-	
 
 ## 13.07.17-1
 	* the behaviour of 9o output scrolling has changed. instead of attempting to show the end
