@@ -75,8 +75,8 @@ func (a *AutoInstOptions) install() {
 
 	archiveOk := func(fn string) bool {
 		for _, root := range roots {
-			fi, err := os.Stat(filepath.Join(root, fn))
-			if err == nil && fi.Mode().IsRegular() {
+			_, err := os.Stat(filepath.Join(root, fn))
+			if err == nil {
 				return true
 			}
 		}
