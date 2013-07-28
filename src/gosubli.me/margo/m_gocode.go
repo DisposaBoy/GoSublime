@@ -120,7 +120,15 @@ func (m *mGocodeComplete) Call() (interface{}, string) {
 	if m.calltip {
 		res["calltips"] = completeCalltip(src, fn, pos)
 	} else {
-		res["completions"] = gocode.GoSublimeGocodeComplete(src, fn, pos)
+		l := gocode.GoSublimeGocodeComplete(src, fn, pos)
+		res["completions"] = l
+
+		if len(l) == 0 {
+			autoInstall(AutoInstOptions{
+				Src: m.Src,
+				Env: m.Env,
+			})
+		}
 	}
 
 	return res, e
