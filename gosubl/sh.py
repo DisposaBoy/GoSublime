@@ -221,7 +221,7 @@ def gs_init(_={}):
 		if v:
 			_env_ext[k] = v
 
-	cr_go = ShellCommand('go version').run()
+	cr_go = go_cmd(['version']).run()
 	cr_go_out = cr_go.out + cr_go.err
 	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go_out)
 	if m:
@@ -404,8 +404,14 @@ def _which(cmd, env_path):
 
 	return ''
 
-def go(subcmd_str):
-	cr = ShellCommand('go '+subcmd_str).run()
+def go_cmd(cmd_lst):
+	go = which('go')
+	if go:
+		return Command(gs.lst(go, cmd_lst))
+	return ShellCommand('go %s' % (' '.join(cmd_lst)))
+
+def go(cmd_lst):
+	cr = go_cmd(cmd_lst).run()
 	out = cr.out.strip() + '\n' + cr.err.strip()
 	return out.strip()
 
