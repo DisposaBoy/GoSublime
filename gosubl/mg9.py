@@ -38,7 +38,7 @@ def gs_init(m={}):
 
 	aso_install_vesion = gs.aso().get('install_version', '')
 	f = lambda: install(aso_install_vesion, False)
-	gsq.do('GoSublime', f, msg='Installing MarGo', set_status=True)
+	gsq.do('GoSublime', f, msg='Installing MarGo', set_status=False)
 
 class Request(object):
 	def __init__(self, f, method='', token=''):
