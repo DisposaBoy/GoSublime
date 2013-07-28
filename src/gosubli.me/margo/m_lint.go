@@ -5,7 +5,7 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"gosublime.org/types"
+	"gosubli.me/something-borrowed/types"
 	"regexp"
 	"strconv"
 )
