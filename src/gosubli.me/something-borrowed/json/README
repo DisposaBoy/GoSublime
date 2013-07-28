@@ -1,7 +1,0 @@
-This is a clone of the standard lib's "encoding/json" except for handling of anonymous fields.
-
-Anonymous fields that are also structs are marshalled as if their fields are the containing struct's fields.
-
-Anonymous fields that are not structs are given the name equal to their type.
-
-No precautions are taken for any ambiguity this may cause, so be warned.
