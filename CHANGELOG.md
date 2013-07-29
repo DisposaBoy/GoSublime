@@ -5,6 +5,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.07.29-1
+	* the .p method of finding packages was reverted. as a result `use_named_imports` has no effect
+
 ## 13.07.28-1
 	* the behaviour of `$GS_GOPATH` has change, please see `Usage & Tips` `ctrl+dot,ctrl+2`
 	    section `Per-project  settings & Project-based GOPATH` for details
