@@ -47,10 +47,9 @@ func (m *mImportPaths) Call() (interface{}, string) {
 	}
 
 	paths := map[string]string{}
-	for _, m := range mPkgPathsRes(m.Env, []string{"main"}) {
-		for p, nm := range m {
-			paths[p] = nm
-		}
+	l, _ := importPaths(m.Env)
+	for _, p := range l {
+		paths[p] = ""
 	}
 
 	res := M{
