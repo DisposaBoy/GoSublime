@@ -186,6 +186,7 @@ def gs_init(_={}):
 		'GOBIN',
 		'GOPATH',
 		'GOROOT',
+		'CGO_ENABLED',
 	]
 
 	cmdl = []
