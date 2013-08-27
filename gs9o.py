@@ -179,27 +179,37 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		v.sel().clear()
 		n = v.size()-1
 		v.sel().add(sublime.Region(n, n))
-		vs.set("9o.wd", wd)
-		vs.set("rulers", [])
-		vs.set("fold_buttons", True)
-		vs.set("fade_fold_buttons", False)
-		vs.set("gutter", True)
-		vs.set("margin", 0)
-		# pad mostly so the completion menu shows on the first line
-		vs.set("line_padding_top", 1)
-		vs.set("line_padding_bottom", 1)
-		vs.set("tab_size", 2)
-		vs.set("word_wrap", True)
-		vs.set("indent_subsequent_lines", True)
-		vs.set("line_numbers", False)
-		vs.set("auto_complete", True)
-		vs.set("auto_complete_selector", "text")
-		vs.set("highlight_line", True)
-		vs.set("draw_indent_guides", True)
-		vs.set("scroll_past_end", True)
-		vs.set("indent_guide_options", ["draw_normal", "draw_active"])
-		vs.set("word_separators", "./\\()\"'-:,.;<>~!@#$%&*|+=[]{}`~?")
+		
+		opts = {
+			"rulers": [],
+			"fold_buttons": True,
+			"fade_fold_buttons": False,
+			"gutter": True,
+			"margin": 0,
+			# pad mostly so the completion menu shows on the first line
+			"line_padding_top": 1,
+			"line_padding_bottom": 1,
+			"tab_size": 2,
+			"word_wrap": True,
+			"indent_subsequent_lines": True,
+			"line_numbers": False,
+			"auto_complete": True,
+			"auto_complete_selector": "text",
+			"highlight_line": True,
+			"draw_indent_guides": True,
+			"scroll_past_end": True,
+			"indent_guide_options": ["draw_normal", "draw_active"],
+			"word_separators": "./\\()\"'-:,.;<>~!@#$%&*|+=[]{}`~?",
+		}
+		
+		opts.update(gs.setting('9o_settings'))
 
+		for opt in opts:
+			vs.set(opt, opts[opt])
+
+		vs.set("9o", True)
+		vs.set("9o.wd", wd)
+		
 		color_scheme = gs.setting("9o_color_scheme", "")
 		if color_scheme:
 			if color_scheme == "default":
