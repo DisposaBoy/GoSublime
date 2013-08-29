@@ -18,7 +18,7 @@ func init() {
 	gosublimeGocodeDaemon = &daemon{}
 	gosublimeGocodeDaemon.cmd_in = make(chan int, 1)
 	gosublimeGocodeDaemon.pkgcache = new_package_cache()
-	gosublimeGocodeDaemon.declcache = new_decl_cache()
+	gosublimeGocodeDaemon.declcache = new_decl_cache(&gocode_env{})
 	gosublimeGocodeDaemon.autocomplete = new_auto_complete_context(gosublimeGocodeDaemon.pkgcache, gosublimeGocodeDaemon.declcache)
 }
 
