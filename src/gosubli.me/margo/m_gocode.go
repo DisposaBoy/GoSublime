@@ -6,23 +6,18 @@ import (
 	"go/token"
 	"gosubli.me/something-borrowed/gocode"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 )
 
-const (
-	mGocodeAddr = "127.0.0.1:57952"
-)
-
 var (
 	mGocodeVars = struct {
-		lck          sync.Mutex
-		lastGopath   string
-		lastBuiltins string
-	}{}
+		sync.Mutex
+
+		opts map[string]string
+	}{opts: map[string]string{}}
 )
 
 type mGocodeOptions struct {
@@ -95,28 +90,10 @@ func (m *mGocodeComplete) Call() (interface{}, string) {
 		fn = filepath.Join(orString(m.Dir, m.Home), orString(fn, "_.go"))
 	}
 
-	mGocodeVars.lck.Lock()
-	defer mGocodeVars.lck.Unlock()
+	mGocodeVars.Lock()
+	defer mGocodeVars.Unlock()
 
-	builtins := "false"
-	if m.Builtins {
-		builtins = "true"
-	}
-	if mGocodeVars.lastBuiltins != builtins {
-		gocode.GoSublimeGocodeSet("propose-builtins", builtins)
-	}
-
-	gopath := orString(m.Env["GOPATH"], os.Getenv("GOPATH"))
-	if gopath != mGocodeVars.lastGopath {
-		p := []string{}
-		osArch := runtime.GOOS + "_" + runtime.GOARCH
-		for _, s := range filepath.SplitList(gopath) {
-			p = append(p, filepath.Join(s, "pkg", osArch))
-		}
-		libpath := strings.Join(p, string(filepath.ListSeparator))
-		gocode.GoSublimeGocodeSet("lib-path", libpath)
-		mGocodeVars.lastGopath = gopath
-	}
+	m.checkOpts()
 
 	if m.calltip {
 		res["calltips"] = completeCalltip(src, fn, pos)
@@ -133,6 +110,40 @@ func (m *mGocodeComplete) Call() (interface{}, string) {
 	}
 
 	return res, e
+}
+
+func (m *mGocodeComplete) checkOpts() {
+	opts := map[string]string{
+		"propose-builtins": "false",
+	}
+
+	if m.Builtins {
+		opts["propose-builtins"] = "true"
+	}
+
+	osArch := runtime.GOOS + "_" + runtime.GOARCH
+	goroot, gopaths := envRootList(m.Env)
+	pl := []string{}
+
+	add := func(p string) {
+		if p != "" {
+			pl = append(pl, filepath.Join(p, "pkg", osArch))
+		}
+	}
+
+	add(goroot)
+	for _, p := range gopaths {
+		add(p)
+	}
+
+	opts["lib-path"] = strings.Join(pl, string(filepath.ListSeparator))
+
+	for k, v := range opts {
+		if mGocodeVars.opts[k] != v {
+			mGocodeVars.opts[k] = v
+			gocode.GoSublimeGocodeSet(k, v)
+		}
+	}
 }
 
 func completeCalltip(src []byte, fn string, offset int) []gocode.GoSublimeGocodeCandidate {
