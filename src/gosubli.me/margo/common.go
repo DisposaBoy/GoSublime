@@ -247,7 +247,7 @@ func fileImportPaths(af *ast.File) []string {
 		for _, decl := range af.Decls {
 			if gdecl, ok := decl.(*ast.GenDecl); ok {
 				for _, spec := range gdecl.Specs {
-					if ispec, ok := spec.(*ast.ImportSpec); ok {
+					if ispec, ok := spec.(*ast.ImportSpec); ok && ispec.Path != nil {
 						ipath := unquote(ispec.Path.Value)
 						if ipath != "C" {
 							l = append(l, ipath)
