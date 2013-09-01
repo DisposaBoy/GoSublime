@@ -18,9 +18,9 @@ Features
 * quickly jump to any syntax error reported (and jump back to where you were before (across files))
 * quickly fmt your source or automatically on save to conform with the Go standards
 * easily create a new go file and run it without needing to save it first (9o `replay`)
-* share your snippets(anything in the loaded file) on play.golang.org
+* share your snippets (anything in the loaded file) on play.golang.org
 * list declarations in the current file
-* automtically add/remove package imports
+* automatically add/remove package imports
 * quickly jump your import section(automatically goes to the last import) where you can easily edit the pkg alias and return to where you were before
 * go to definition of a package function or constant, etc.
 * show the source(and thus documentation) of a variable without needing to change views
@@ -38,7 +38,7 @@ Demo
 Installation
 ------------
 
-Sublime Package Control allows you to easily install or remove GoSublime(and many other ST2 packages) from within the editor. It offers automatically updating packages as well so you no longer need to keep track of changes in GoSublime.
+Sublime Package Control allows you to easily install or remove GoSublime (and many other ST2 packages) from within the editor. It offers automatically updating packages as well so you no longer need to keep track of changes in GoSublime.
 
 1. Install Sublime Package Control (if you haven't done so already) from http://wbond.net/sublime_packages/package_control . Be sure to restart ST2 to complete the installation.
 
@@ -57,7 +57,7 @@ Settings
 
 You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings` or alternatively copy the default settings file `Packages/GoSublime/GoSublime.sublime-settings` to your `User` package and edit it to your liking.
 
-Note: Filenames are case-sensitive on some platforms(e.g. Linux) so the filename should be exactly `GoSublime.sublime-settings` with capitalization preserved.
+Note: File names are case-sensitive on some platforms (e.g. Linux) so the file name should be exactly `GoSublime.sublime-settings` with capitalization preserved.
 
 Completion Markers
 ------------------
@@ -84,7 +84,7 @@ GoSublime and MarGo are released under the MIT license. See [LICENSE.md](LICENSE
 
 GoSublime is the copyrighted work of *The GoSublime Authors* i.e me ([https://github.com/DisposaBoy/GoSublime](DisposaBoy)) and *all* contributors. If you submit a change, be it documentation or code, so long as it's committed to GoSublime's history I consider you a contributor. See [AUTHORS.md](AUTHORS.md) for a list of all the GoSublime authors/contributors.
 
-GoSublime bundles several dependencies, these all reside under the diriectory tree [something_borrowed/](something_borrowed/) and are the copyright of their respective authors.
+GoSublime bundles several dependencies, these all reside under the directory tree [something_borrowed/](something_borrowed/) and are the copyright of their respective authors.
 
 Supporters
 ==========
