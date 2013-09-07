@@ -313,12 +313,6 @@
 					<key>name</key>
 					<string>constant.other.placeholder.go</string>
 				</dict>
-				<dict>
-					<key>match</key>
-					<string>%</string>
-					<key>name</key>
-					<string>invalid.illegal.placeholder.go</string>
-				</dict>
 			</array>
 		</dict>
 	</dict>

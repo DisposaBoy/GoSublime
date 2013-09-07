@@ -198,10 +198,6 @@
 				{
 					"match": "(?x)%\n                        (\\d+\\$)?                                    # field (argument #)\n                        [#0\\- +']*                                  # flags\n                        [,;:_]?                                     # separator character (AltiVec)\n                        ((-?\\d+)|\\*(-?\\d+\\$)?)?                     # minimum field width\n                        (\\.((-?\\d+)|\\*(-?\\d+\\$)?)?)?                # precision\n                        [diouxXDOUeEfFgGaAcCsSqpnvtTbyYhHmMzZ%]     # conversion type\n                    ",
 					"name": "constant.other.placeholder.go"
-				},
-				{
-					"match": "%",
-					"name": "invalid.illegal.placeholder.go"
 				}
 			]
 		}
