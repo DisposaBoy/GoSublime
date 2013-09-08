@@ -91,7 +91,10 @@ class EV(sublime_plugin.EventListener):
 		cl.update((k, k+' ') for k in builtins())
 		cl.update(DEFAULT_CL)
 
-		return ([e for e in sorted(cl)], AC_OPTS)
+		return ([cl_esc(e) for e in sorted(cl)], AC_OPTS)
+
+def cl_esc(e):
+	return (e[0], e[1].replace('$', '\\$'))
 
 class Gs9oBuildCommand(sublime_plugin.WindowCommand):
 	def is_enabled(self):
@@ -179,7 +182,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		v.sel().clear()
 		n = v.size()-1
 		v.sel().add(sublime.Region(n, n))
-		
+
 		opts = {
 			"rulers": [],
 			"fold_buttons": True,
@@ -201,7 +204,6 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 			"indent_guide_options": ["draw_normal", "draw_active"],
 			"word_separators": "./\\()\"'-:,.;<>~!@#$%&*|+=[]{}`~?",
 		}
-		
 		opts.update(gs.setting('9o_settings'))
 
 		for opt in opts:
@@ -209,7 +211,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 
 		vs.set("9o", True)
 		vs.set("9o.wd", wd)
-		
+
 		color_scheme = gs.setting("9o_color_scheme", "")
 		if color_scheme:
 			if color_scheme == "default":
@@ -228,13 +230,18 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 
 		os.chdir(wd)
 
-class Gs9oOpenV(sublime_plugin.TextCommand):
-	def run(self, edit, wd=None, run=[], save_hist=False, focus_view=True):
-		self.view.run_command('gs9o_open', {'wd': wd, 'run': run, 'save_hist': save_hist, 'focus_view': focus_view})
-
 class Gs9oOpenCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None, run=[], save_hist=False, focus_view=True):
-		win = self.view.window()
+		self.view.window().run_command('gs9o_win_open', {
+			'wd': wd,
+			'run': run,
+			'save_hist': save_hist,
+			'focus_view': focus_view,
+		})
+
+class Gs9oWinOpenCommand(sublime_plugin.WindowCommand):
+	def run(self, wd=None, run=[], save_hist=False, focus_view=True):
+		win = self.window
 		wid = win.id()
 		if not wd:
 			wd = active_wd(win=win)
@@ -254,11 +261,15 @@ class Gs9oOpenCommand(sublime_plugin.TextCommand):
 		v.run_command('gs9o_init', {'wd': wd})
 
 		if run:
-			cmd = ' '.join(run)
-			v.insert(edit, v.line(v.size()-1).end(), cmd)
-			v.sel().clear()
-			v.sel().add(v.line(v.size()-1).end())
-			v.run_command('gs9o_exec', {'save_hist': save_hist})
+			v.run_command('gs9o_paste_exec', {'cmd': ' '.join(run), 'save_hist': save_hist})
+
+class Gs9oPasteExecCommand(sublime_plugin.TextCommand):
+	def run(self, edit, cmd, save_hist=False):
+		view = self.view
+		view.insert(edit, view.line(view.size()-1).end(), cmd)
+		view.sel().clear()
+		view.sel().add(view.line(view.size()-1).end())
+		view.run_command('gs9o_exec', {'save_hist': save_hist})
 
 class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -472,7 +483,7 @@ def builtins():
 	g = globals()
 	for k, v in g.items():
 		if k.startswith('cmd_'):
-			k = k[4:]
+			k = k[4:].replace('_', '-')
 			if k and k not in m:
 				m[k] = v
 
