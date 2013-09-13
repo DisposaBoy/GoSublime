@@ -169,7 +169,7 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 			wd = vs.get('9o.wd', active_wd(win=v.window()))
 
 		was_empty = v.size() == 0
-		s = '[ %s ] # \n' % gs.simple_fn(wd)
+		s = '[ %s ] # \n' % gs.simple_fn(wd).replace('#', '~')
 
 		if was_empty:
 			v.insert(edit, 0, 'GoSublime %s 9o: type `help` for help and command documentation\n\n' % about.VERSION)
