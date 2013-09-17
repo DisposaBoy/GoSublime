@@ -13,6 +13,10 @@ class GsCommentForwardCommand(sublime_plugin.TextCommand):
 		self.view.run_command("toggle_comment", {"block": False})
 		self.view.run_command("move", {"by": "lines", "forward": True})
 
+class GsStartNextLineCommentCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		self.view.run_command("run_macro_file", {"file": "Packages/Default/Add Line.sublime-macro"})
+		self.view.run_command("toggle_comment", {"block": False})
 
 class GsFmtCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
