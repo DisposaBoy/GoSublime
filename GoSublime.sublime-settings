@@ -55,6 +55,7 @@
 	// gs.types - do a typecheck using the go/types package(like the old gotype)
 	//            disabled by default until it's ready(copied from tip)
 	"lint_filter": [
+		"gs.flag.parse",
 		"gs.types"
 	],
 
