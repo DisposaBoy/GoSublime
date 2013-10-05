@@ -5,6 +5,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.10.05-1
+
+* sync gocode
+
 ## 13.09.07-1
 	* remove error syntax highlighting of lone percentage signs in strings
 
