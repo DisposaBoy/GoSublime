@@ -8,6 +8,7 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Daniele Baroncelli http://www.baroncelli.eu
 * E Brady https://github.com/ebrady
 * Erik Unger https://github.com/ungerik
+* Frank Schroeder https://go-left.com/
 * Fredrik Ehnbom http://pledgie.com/accounts/quarnster
 * guillermooo https://github.com/guillermooo
 * Hans Stimer
