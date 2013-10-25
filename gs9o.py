@@ -614,6 +614,22 @@ def cmd_go(view, edit, args, wd, rkey):
 	}
 	sublime.set_timeout(lambda: mg9.acall('sh', a, cb), 0)
 
+def cmd_cancel_replay(view, edit, args, wd, rkey):
+	cid = ''
+	av = None
+	win = view.window()
+	if win is not None:
+		av = win.active_view()
+
+		if av is not None and not av.file_name():
+			cid = '9replayv-%s' % av.id()
+
+	if not cid:
+		cid = '9replay-%s' % wd
+
+	mg9.acall('kill', {'cid': cid}, None)
+	push_output(view, rkey, '')
+
 def cmd_sh(view, edit, args, wd, rkey):
 	cid, cb = _9_begin_call('sh', view, edit, args, wd, rkey, '')
 	a = {
