@@ -321,6 +321,12 @@ def env(m={}):
 	if gobin and gobin not in add_path:
 		add_path.append(gobin)
 
+	psep = _shell_pathsep()
+
+	for s in e.get('PATH', '').split(psep):
+		if s and s not in add_path:
+			add_path.append(s)
+
 	if gs.os_is_windows():
 		l = [
 			'~\\bin',
@@ -341,13 +347,6 @@ def env(m={}):
 		s = os.path.expanduser(s)
 		if s not in add_path:
 			add_path.append(s)
-
-	psep = _shell_pathsep()
-
-	for s in e.get('PATH', '').split(psep):
-		if s and s not in add_path:
-			add_path.append(s)
-
 
 	e['PATH'] = psep.join(add_path)
 
