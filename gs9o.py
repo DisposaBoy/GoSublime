@@ -473,6 +473,15 @@ class Gs9oPushOutput(sublime_plugin.TextCommand):
 		else:
 			view.show(r.begin())
 
+class Gs9oRunManyCommand(sublime_plugin.TextCommand):
+	def run(self, edit, wd=None, commands=[], save_hist=False, focus_view=False):
+		for run in commands:
+			self.view.run_command("gs9o_open", {
+				'run': run,
+				'wd': wd,
+				'save_hist': save_hist,
+				'focus_view': focus_view,
+			})
 
 def aliases():
 	return gs.setting('9o_aliases', {}).copy()
