@@ -310,5 +310,14 @@
 	// `GoSublime: HTML` files are html files with the template delimiters `{{` and `}}` tailored to
 	// Go templates (text/template, html/template)
 	// (`.gohtml` files are automatically set by the syntax definition)
-	"gohtml_extensions": [".html.go"]
+	"gohtml_extensions": [".html.go"],
+
+	// Extra args to 'go test'
+	"extra_test_args" : [], 
+
+	// Extra args for tests using 'gocheck'
+	"extra_gocheck_args": [],
+
+	// Clear the quick_panel on test runs if True (1)
+	"clear_quick_panel_on_test_run": 0
 }
