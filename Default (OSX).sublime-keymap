@@ -34,7 +34,7 @@
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
-		"keys": ["super+space"],
+		"keys": ["shift+space"],
 		"command": "auto_complete",
 		"args": {"disable_auto_insert": true, "api_completions_only": true, "next_completion_if_showing": false},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
@@ -135,7 +135,7 @@
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
-		"keys": ["super+.", "super+space"],
+		"keys": ["super+.", "shift+space"],
 		"command": "gs_show_call_tip",
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
@@ -144,7 +144,7 @@
 		"command": "gs9o_open"
 	},
 	{
-		"keys": ["super+space"],
+		"keys": ["shift+space"],
 		"command": "auto_complete",
 		"args": {"disable_auto_insert": true, "api_completions_only": true, "next_completion_if_showing": false},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "text.9o" }]
