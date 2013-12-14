@@ -27,7 +27,7 @@ class GsTestCommand(sublime_plugin.WindowCommand):
 				name = d['name']
 				prefix, _ =  match_prefix_name(name)
 				if prefix and d['kind'] == 'func' and d['repr'] == '':
-					mats[True] = prefix
+					mats[prefix] = True
 					args[name] = name
 
 			names = sorted(args.keys())
