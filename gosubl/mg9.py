@@ -324,7 +324,7 @@ def fmt(fn, src):
 		'TabIndent': st.get('fmt_tab_indent'),
 		'TabWidth': st.get('fmt_tab_width'),
 	})
-	return res.get('src', ''), errs
+	return res.get('src', ''), err
 
 def import_paths(fn, src, f):
 	tid = gs.begin(DOMAIN, 'Fetching import paths')
