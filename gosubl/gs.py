@@ -54,6 +54,7 @@ _default_settings = {
 	"fmt_enabled": False,
 	"fmt_tab_indent": True,
 	"fmt_tab_width": 8,
+	"fmt_cmd": [],
 	"gslint_enabled": False,
 	"comp_lint_enabled": False,
 	"comp_lint_commands": [],
