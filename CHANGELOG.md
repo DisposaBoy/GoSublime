@@ -5,9 +5,13 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
-## 13.10.05-1
+## 13.12.14-1
+	* added new setting `fmt_cmd` to allow replacing margo's fmt with an external gofmt compatible command like like https://github.com/bradfitz/goimports. see the default config for documentation
+	* as a last resort, GoSublime will now try to ignore (by replacement) any bytes that cannot be decoded as utf-8 in places that handle strings (like printing to the console)
+	* fix the missing `Run {Test,Example,Benchmark}s` entries in the .t palette
 
-* sync gocode
+## 13.10.05-1
+	* sync gocode
 
 ## 13.09.07-1
 	* remove error syntax highlighting of lone percentage signs in strings
