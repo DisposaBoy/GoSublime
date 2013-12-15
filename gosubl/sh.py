@@ -52,9 +52,13 @@ class _command(object):
 		out = ''
 		err = ''
 		exc = None
+		
+		nv0 = {}
+		for k in self.env:
+			nv0[gs.astr(k)] = gs.astr(self.env[k])
 
-		nv = env(self.env)
-		nv.update(self.env)
+		nv = env(nv0)
+		nv.update(nv0)
 		cmd_lst = self.cmd(nv)
 		orig_cmd = cmd_lst[0]
 		cmd_lst[0] = _which(orig_cmd, nv.get('PATH'))
