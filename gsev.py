@@ -7,6 +7,7 @@ DOMAIN = 'GsEV'
 
 class EV(sublime_plugin.EventListener):
 	def on_pre_save(self, view):
+		view.run_command('gs_fmt')
 		sublime.set_timeout(lambda: do_set_gohtml_syntax(view), 0)
 
 	def on_post_save(self, view):

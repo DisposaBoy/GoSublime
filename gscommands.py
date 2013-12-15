@@ -20,7 +20,13 @@ class GsStartNextLineCommentCommand(sublime_plugin.TextCommand):
 
 class GsFmtCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
-		return gs.setting('fmt_enabled', False) is True and gs.is_go_source_view(self.view)
+		fn = self.view.file_name()
+		if fn:
+			scope_ok = fn.lower().endswith('.go')
+		else:
+			scope_ok = gs.is_go_source_view(self.view)
+
+		return scope_ok and gs.setting('fmt_enabled') is True
 
 	def run(self, edit):
 		vsize = self.view.size()

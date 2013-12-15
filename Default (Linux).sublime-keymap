@@ -24,16 +24,6 @@
 		"args": { "file": "${packages}/User/GoSublime.sublime-settings" }
 	},
 	{
-		"keys": ["ctrl+s"],
-		"command": "gs_fmt_save",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
-	},
-	{
-		"keys": ["ctrl+shift+s"],
-		"command": "gs_fmt_prompt_save_as",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
-	},
-	{
 		"keys": ["ctrl+space"],
 		"command": "auto_complete",
 		"args": {"disable_auto_insert": true, "api_completions_only": true, "next_completion_if_showing": false},

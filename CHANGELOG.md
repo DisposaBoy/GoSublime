@@ -5,6 +5,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.12.15-1
+	* remove the ctrl+s, etc. key bindings and fmt the file during the save event.
+
 ## 13.12.14-2
 	* the autocompletion key bindings on OS X have been changed to shift+space
 
