@@ -54,6 +54,7 @@ class _command(object):
 		exc = None
 
 		nv = env(self.env)
+		nv.update(self.env)
 		cmd_lst = self.cmd(nv)
 		orig_cmd = cmd_lst[0]
 		cmd_lst[0] = _which(orig_cmd, nv.get('PATH'))
