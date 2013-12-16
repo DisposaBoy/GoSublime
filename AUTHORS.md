@@ -11,3 +11,4 @@ This is the official list of GoSublime authors for copyright purposes.
 * igm https://github.com/igm
 * John Asmuth https://github.com/skelterjohn
 * teejae https://github.com/teejae
+* eddie cianci https://github.com/defeated
