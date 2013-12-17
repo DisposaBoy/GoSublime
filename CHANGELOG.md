@@ -5,6 +5,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.12.17-1
+	* give string decoding priority to utf-8 over the system's preferred encoding
+
 ## 13.12.15-1
 	* remove the ctrl+s, etc. key bindings and fmt the file during the save event.
 
