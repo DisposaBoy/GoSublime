@@ -5,6 +5,20 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.12.19-1
+	* the OS X key bindings have been removed
+
+	* a copy has been provided below. you may change the "keys" as you wish and place it inside
+	    your user key bindings (menu Preferences > Key bindings - User) to restore the functionality
+
+		{
+			"keys": ["shift+space"],
+			"command": "auto_complete",
+			"args": {"disable_auto_insert": true, "api_completions_only": true, "next_completion_if_showing": false},
+			"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		}
+
+
 ## 13.12.17-1
 	* give string decoding priority to utf-8 over the system's preferred encoding
 
