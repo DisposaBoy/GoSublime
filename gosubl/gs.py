@@ -627,7 +627,7 @@ def show_quick_panel(items, cb=None):
 			else:
 				f = lambda i: None
 
-			win.show_quick_panel(items, f)
+			win.show_quick_panel(items, f, sublime.MONOSPACE_FONT)
 
 	sublime.set_timeout(f, 0)
 
