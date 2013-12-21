@@ -138,7 +138,7 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 		def cb(i):
 			gs.cancel_task(m.get(i, ''))
 
-		self.window.show_quick_panel(ents, cb)
+		gs.show_quick_panel(ents, cb)
 
 class GsOpenHomePathCommand(sublime_plugin.WindowCommand):
 	def run(self, fn):
