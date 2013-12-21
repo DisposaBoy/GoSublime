@@ -125,7 +125,8 @@ func (m *mDeclarations) collectDecls(fset *token.FileSet, af *ast.File, decls []
 									}
 
 									if v.Obj.Kind == ast.Con && i < len(gn.Values) {
-										if lit, ok := gn.Values[i].(*ast.BasicLit); ok {
+										lit, ok := gn.Values[i].(*ast.BasicLit)
+										if ok && lit.Value != "" && len(lit.Value) <= 64 {
 											d.Name += " (" + lit.Value + ")"
 										}
 									}
