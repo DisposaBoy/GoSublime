@@ -12,12 +12,15 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
 var (
 	sRuneError = eRune()
+	osArch     = runtime.GOOS + "_" + runtime.GOARCH
 )
 
 type void struct{}
@@ -58,6 +61,10 @@ func (d jData) MarshalJSON() ([]byte, error) {
 	enc.Close()
 	buf.WriteByte('"')
 	return buf.Bytes(), nil
+}
+
+func uid() string {
+	return "mg#" + strconv.FormatUint(numbers.next(), 16)
 }
 
 func errStr(err error) string {
@@ -231,6 +238,10 @@ func post(r Response) {
 	sendCh <- r
 }
 
+func dbg(format string, a ...interface{}) {
+	postMessage("dbg: "+format, a...)
+}
+
 func postMessage(format string, a ...interface{}) {
 	post(Response{
 		Token: "margo.message",
@@ -261,26 +272,35 @@ func fileImportPaths(af *ast.File) []string {
 	return l
 }
 
-func pathList(p, pathSep string) []string {
-	if pathSep == "" {
-		pathSep = string(filepath.ListSeparator)
-	}
-	l := strings.Split(p, pathSep)
-
-	i := 0
-	for _, s := range l {
+func pathList(p string) []string {
+	l := []string{}
+	for _, s := range strings.Split(p, string(filepath.ListSeparator)) {
 		if s != "" {
-			l[i] = s
-			i += 1
+			l = append(l, s)
 		}
 	}
-
-	return l[:i]
+	return l
 }
 
 func envRootList(env map[string]string) (string, []string) {
 	if env == nil {
 		return "", []string{}
 	}
-	return env["GOROOT"], pathList(env["GOPATH"], env["_pathsep"])
+	return env["GOROOT"], pathList(env["GOPATH"])
+}
+
+func msDur(start time.Time) time.Duration {
+	dur := time.Now().Sub(start)
+	dur -= dur % time.Millisecond
+	return dur
+}
+
+func bytePos(src string, charPos int) int {
+	for i, _ := range src {
+		if charPos <= 0 {
+			return i
+		}
+		charPos--
+	}
+	return -1
 }
