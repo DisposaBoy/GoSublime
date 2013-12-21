@@ -7,6 +7,7 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
+	"path/filepath"
 )
 
 type mDeclarations struct {
@@ -30,7 +31,7 @@ func (m *mDeclarations) Call() (interface{}, string) {
 	pkgDecls := []*mDeclarationsDecl{}
 
 	if fset, af, err := parseAstFile(m.Fn, m.Src, 0); err == nil {
-		fileDecls = collectDecls(fset, af, fileDecls)
+		fileDecls = m.collectDecls(fset, af, fileDecls)
 	}
 
 	fset := token.NewFileSet()
@@ -45,7 +46,7 @@ func (m *mDeclarations) Call() (interface{}, string) {
 
 		for _, pkg := range pkgs {
 			for _, af := range pkg.Files {
-				pkgDecls = collectDecls(fset, af, pkgDecls)
+				pkgDecls = m.collectDecls(fset, af, pkgDecls)
 			}
 		}
 	}
@@ -66,7 +67,7 @@ func init() {
 	})
 }
 
-func collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl) []*mDeclarationsDecl {
+func (m *mDeclarations) collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl) []*mDeclarationsDecl {
 	for _, fdecl := range af.Decls {
 		if tp := fset.Position(fdecl.Pos()); tp.IsValid() {
 			switch n := fdecl.(type) {
@@ -74,13 +75,14 @@ func collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl)
 				if n.Name.Name != "_" {
 					d := &mDeclarationsDecl{
 						Name: n.Name.Name,
-						Kind: "func",
+						Kind: m.kind(n.Name, "func"),
 						Fn:   tp.Filename,
 						Row:  tp.Line - 1,
 						Col:  tp.Column - 1,
 					}
 
-					if n.Recv != nil {
+					switch {
+					case n.Recv != nil:
 						recvFields := n.Recv.List
 						if len(recvFields) > 0 {
 							typ := recvFields[0].Type
@@ -90,6 +92,8 @@ func collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl)
 								d.Repr = buf.String()
 							}
 						}
+					case d.Name == "init" && n.Recv == nil:
+						d.Name += " (" + filepath.Base(d.Fn) + ")"
 					}
 
 					decls = append(decls, d)
@@ -101,7 +105,7 @@ func collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl)
 						if tp := fset.Position(gn.Pos()); gn.Name.Name != "_" && tp.IsValid() {
 							decls = append(decls, &mDeclarationsDecl{
 								Name: gn.Name.Name,
-								Kind: "type",
+								Kind: m.kind(gn.Name, "type"),
 								Fn:   tp.Filename,
 								Row:  tp.Line - 1,
 								Col:  tp.Column - 1,
@@ -114,7 +118,7 @@ func collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl)
 								case ast.Typ, ast.Fun, ast.Con, ast.Var:
 									decls = append(decls, &mDeclarationsDecl{
 										Name: v.Name,
-										Kind: v.Obj.Kind.String(),
+										Kind: m.kind(v, v.Obj.Kind.String()),
 										Fn:   vp.Filename,
 										Row:  vp.Line - 1,
 										Col:  vp.Column - 1,
@@ -128,4 +132,11 @@ func collectDecls(fset *token.FileSet, af *ast.File, decls []*mDeclarationsDecl)
 		}
 	}
 	return decls
+}
+
+func (m *mDeclarations) kind(id *ast.Ident, k string) string {
+	if id.IsExported() {
+		return "+ " + k
+	}
+	return "- " + k
 }
