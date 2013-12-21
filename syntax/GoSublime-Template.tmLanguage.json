@@ -36,8 +36,12 @@
 					"name": "variable.other.gotemplate"
 				},
 				{
-					"match": "\\b(if|else|range|template|with|end)\\b",
+					"match": "\\b(if|else|range|template|with|end|nil|with|define)\\b",
 					"name": "keyword.control.gotemplate"
+				},
+				{
+					"match": "\\b(and|call|html|index|js|len|not|or|print|printf|println|urlquery|eq|ne|lt|le|gt|ge)\\b",
+					"name": "support.function.builtin.gotemplate"
 				},
 				{
 					"begin": "/\\*",

@@ -53,9 +53,15 @@
 				</dict>
 				<dict>
 					<key>match</key>
-					<string>\b(if|else|range|template|with|end)\b</string>
+					<string>\b(if|else|range|template|with|end|nil|with|define)\b</string>
 					<key>name</key>
 					<string>keyword.control.gotemplate</string>
+				</dict>
+				<dict>
+					<key>match</key>
+					<string>\b(and|call|html|index|js|len|not|or|print|printf|println|urlquery|eq|ne|lt|le|gt|ge)\b</string>
+					<key>name</key>
+					<string>support.function.builtin.gotemplate</string>
 				</dict>
 				<dict>
 					<key>begin</key>
