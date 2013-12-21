@@ -24,11 +24,6 @@
 	// the special entry "$CMD" is replaced by the actual command
 	"shell": [],
 
-	// the shell env $PATH separator. This is only useful when your shell doesn't use the native pathsep.
-	// Windows(cmd.exe) uses semi-colon(;) and Linux and OS X use colon(:)
-	// you may need to set this if you use bash(cygwin, msys) on Windows as it stilll uses colon(:)
-	"shell_pathsep": "",
-
 	// whether or not pkg files should be automatically saved when necessary (e.g. when running 9o `replay` or `go test` commands)
 	"autosave": true,
 
@@ -174,9 +169,9 @@
 	// note: this feature only comes into effect when autocomplete was triggered after a dot, e.g. `fmt.|`
 	"autocomplete_suggest_imports": false,
 
-	// whether or not to show function call tip in the status bar as you type
+	// whether or not to show function call tip in the status bar
 	// the same can be achieved ctrl+dot,ctrl+space using an output panel
-	"autocomplete_live_hint": false,
+	"calltips": true,
 
 	// whether or not to use named imports when the basename of the import path doesn't match the pkg name
 	// e.g. gosubli.me/go-foo would be imported as:

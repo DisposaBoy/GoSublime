@@ -18,6 +18,7 @@ except (AttributeError):
 
 Proc = namedtuple('Proc', 'p input orig_cmd cmd_lst env wd ok exc')
 Result = namedtuple('Result', 'out cmd_lst err ok exc')
+psep = os.pathsep
 
 class _command(object):
 	def __init__(self):
@@ -52,7 +53,7 @@ class _command(object):
 		out = ''
 		err = ''
 		exc = None
-		
+
 		nv0 = {}
 		for k in self.env:
 			nv0[gs.astr(k)] = gs.astr(self.env[k])
@@ -183,6 +184,8 @@ def _cmd(cmd_str, e):
 def gs_init(_={}):
 	global _env_ext
 	global GO_VERSION
+	global VDIR_NAME
+	global init_done
 
 	start = time.time()
 
@@ -232,6 +235,7 @@ def gs_init(_={}):
 	m = about.GO_VERSION_OUTPUT_PAT.search(cr_go_out)
 	if m:
 		GO_VERSION = about.GO_VERSION_NORM_PAT.sub('', m.group(1))
+		VDIR_NAME = '%s_%s' % (about.VERSION, GO_VERSION)
 
 	dur = (time.time() - start)
 
@@ -256,14 +260,10 @@ def gs_init(_={}):
 		dur,
 	))
 
+	init_done = True
+
 def _print(s):
 	print('GoSblime %s sh: %s' % (about.VERSION, s))
-
-def _shell_pathsep():
-	return gs.setting('shell_pathsep') or os.pathsep
-
-def _sj_path(p):
-	return _shell_pathsep().join(p.split(os.pathsep))
 
 def getenv(name, default='', m={}):
 	return env(m).get(name, default)
@@ -277,7 +277,7 @@ def gs_gopath(fn, roots=[]):
 			if p not in roots:
 				l.append(p)
 	l.reverse()
-	return os.pathsep.join(l)
+	return psep.join(l)
 
 def env(m={}):
 	"""
@@ -285,16 +285,10 @@ def env(m={}):
 	ensure that directories containing binaries are included in PATH.
 	"""
 	e = os.environ.copy()
-
-	# the system's env may be compatible with the shell
-	# so try to fix the env vars that depend on shell_pathsep
-	e['PATH'] = _sj_path(e.get('PATH', ''))
-	e['GOPATH'] = _sj_path(e.get('GOPATH', ''))
-
 	e.update(_env_ext)
 	e.update(m)
 
-	roots = [os.path.normpath(s) for s in gs.lst(e.get('GOPATH', '').split(os.pathsep), e.get('GOROOT', ''))]
+	roots = [os.path.normpath(s) for s in gs.lst(e.get('GOPATH', '').split(psep), e.get('GOROOT', ''))]
 	e['GS_GOPATH'] = gs_gopath(gs.getwd(), roots) or gs_gopath(gs.attr('last_active_go_fn', ''), roots)
 
 	uenv = gs.setting('env', {})
@@ -314,9 +308,9 @@ def env(m={}):
 	# will go into the "bin" dir of the corresponding GOPATH path.
 	# Therefore, make sure these paths are included in PATH.
 
-	add_path = [gs.home_dir_path('bin')]
+	add_path = [bin_dir()]
 
-	for s in gs.lst(e.get('GOROOT', ''), e.get('GOPATH', '').split(os.pathsep)):
+	for s in gs.lst(e.get('GOROOT', ''), e.get('GOPATH', '').split(psep)):
 		if s:
 			s = os.path.join(s, 'bin')
 			if s not in add_path:
@@ -325,8 +319,6 @@ def env(m={}):
 	gobin = e.get('GOBIN', '')
 	if gobin and gobin not in add_path:
 		add_path.append(gobin)
-
-	psep = _shell_pathsep()
 
 	for s in e.get('PATH', '').split(psep):
 		if s and s not in add_path:
@@ -362,8 +354,8 @@ def env(m={}):
 		'PWD': wd,
 		'_wd': wd,
 		'_fn': fn,
+		'_vfn': gs.attr('active_vfn', ''),
 		'_nm': fn.replace('\\', '/').split('/')[-1],
-		'_pathsep': psep,
 	})
 
 	# Ensure no unicode objects leak through. The reason is twofold:
@@ -400,7 +392,7 @@ def _which(cmd, env_path):
 		cmd = '%s.exe' % cmd
 
 	seen = {}
-	for p in env_path.split(_shell_pathsep()):
+	for p in env_path.split(psep):
 		p = os.path.join(p, cmd)
 		if p not in seen and which_ok(p):
 			return p
@@ -420,5 +412,27 @@ def go(cmd_lst):
 	out = cr.out.strip() + '\n' + cr.err.strip()
 	return out.strip()
 
+def vdir():
+	return gs.home_dir_path(VDIR_NAME)
+
+def bin_dir():
+	if not init_done:
+		# bootstrapping issue:
+		#	* gs_init useds ShellCommand to run the go command in order to init GO_VERSION
+		#	* ShellCommand calls env()
+		#	* env() calls bin_dir()
+		#	* we(bin_dir()) use GO_VERSION
+		return ''
+
+	return gs.home_dir_path(VDIR_NAME, 'bin')
+
+def exe(nm):
+	if gs.os_is_windows():
+		nm = '%s.exe' % nm
+
+	return os.path.join(bin_dir(), nm)
+
+init_done = False
 GO_VERSION = about.DEFAULT_GO_VERSION
+VDIR_NAME = '%s_%s' % (about.VERSION, GO_VERSION)
 _env_ext = {}
