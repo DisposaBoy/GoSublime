@@ -112,17 +112,25 @@ func (m *mDeclarations) collectDecls(fset *token.FileSet, af *ast.File, decls []
 							})
 						}
 					case *ast.ValueSpec:
-						for _, v := range gn.Names {
+						for i, v := range gn.Names {
 							if vp := fset.Position(v.Pos()); v.Name != "_" && vp.IsValid() {
 								switch v.Obj.Kind {
 								case ast.Typ, ast.Fun, ast.Con, ast.Var:
-									decls = append(decls, &mDeclarationsDecl{
+									d := &mDeclarationsDecl{
 										Name: v.Name,
 										Kind: m.kind(v, v.Obj.Kind.String()),
 										Fn:   vp.Filename,
 										Row:  vp.Line - 1,
 										Col:  vp.Column - 1,
-									})
+									}
+
+									if v.Obj.Kind == ast.Con && i < len(gn.Values) {
+										if lit, ok := gn.Values[i].(*ast.BasicLit); ok {
+											d.Name += " (" + lit.Value + ")"
+										}
+									}
+
+									decls = append(decls, d)
 								}
 							}
 						}
