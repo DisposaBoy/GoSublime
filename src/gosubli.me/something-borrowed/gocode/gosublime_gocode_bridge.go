@@ -1,32 +1,58 @@
 package gocode
 
 import (
-	"reflect"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"sync"
 )
 
-var (
-	gosublimeGocodeDaemon *daemon
-)
+var Margo = newMargoState()
 
-type GoSublimeGocodeCandidate struct {
+type MargoConfig struct {
+	Builtins      bool
+	InstallSuffix string
+	GOROOT        string
+	GOPATHS       []string
+}
+
+type margoState struct {
+	sync.Mutex
+
+	ctx       *auto_complete_context
+	env       *gocode_env
+	pkgCache  package_cache
+	declCache *decl_cache
+}
+
+type MargoCandidate struct {
 	Name  string `json:"name"`
 	Type  string `json:"type"`
 	Class string `json:"class"`
 }
 
-func init() {
-	gosublimeGocodeDaemon = &daemon{}
-	gosublimeGocodeDaemon.cmd_in = make(chan int, 1)
-	gosublimeGocodeDaemon.pkgcache = new_package_cache()
-	gosublimeGocodeDaemon.declcache = new_decl_cache(&gocode_env{})
-	gosublimeGocodeDaemon.autocomplete = new_auto_complete_context(gosublimeGocodeDaemon.pkgcache, gosublimeGocodeDaemon.declcache)
+func newMargoState() *margoState {
+	env := &gocode_env{}
+	pkgCache := new_package_cache()
+	declCache := new_decl_cache(env)
+	return &margoState{
+		ctx:       new_auto_complete_context(pkgCache, declCache),
+		env:       env,
+		pkgCache:  pkgCache,
+		declCache: declCache,
+	}
 }
 
-func GoSublimeGocodeComplete(file []byte, filename string, cursor int) []GoSublimeGocodeCandidate {
-	list, _ := gosublimeGocodeDaemon.autocomplete.apropos(file, filename, cursor)
-	candidates := make([]GoSublimeGocodeCandidate, len(list))
+func (m *margoState) Complete(c MargoConfig, file []byte, filename string, cursor int) []MargoCandidate {
+	m.Lock()
+	defer m.Unlock()
+
+	m.updateConfig(c)
+
+	list, _ := m.ctx.apropos(file, filename, cursor)
+	candidates := make([]MargoCandidate, len(list))
 	for i, c := range list {
-		candidates[i] = GoSublimeGocodeCandidate{
+		candidates[i] = MargoCandidate{
 			Name:  c.Name,
 			Type:  c.Type,
 			Class: c.Class.String(),
@@ -35,28 +61,23 @@ func GoSublimeGocodeComplete(file []byte, filename string, cursor int) []GoSubli
 	return candidates
 }
 
-func GoSublimeGocodeSet(k, v string) {
-	g_config.set_option(k, v)
-}
-
-func GoSublimeGocodeOptions() map[string]interface{} {
-	m := map[string]interface{}{}
-	str, typ := g_config.value_and_type()
-	for i := 0; i < str.NumField(); i++ {
-		name := typ.Field(i).Tag.Get("json")
-		v := str.Field(i)
-		switch v.Kind() {
-		case reflect.Bool:
-			m[name] = v.Bool()
-		case reflect.String:
-			m[name] = v.String()
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			m[name] = v.Int()
-		case reflect.Float32, reflect.Float64:
-			m[name] = v.Float()
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			m[name] = v.Uint()
+func (m *margoState) updateConfig(c MargoConfig) {
+	pl := []string{}
+	osArch := runtime.GOOS + "_" + runtime.GOARCH
+	if c.InstallSuffix != "" {
+		osArch += "_" + c.InstallSuffix
+	}
+	add := func(p string) {
+		if p != "" {
+			pl = append(pl, filepath.Join(p, "pkg", osArch))
 		}
 	}
-	return m
+
+	add(c.GOROOT)
+	for _, p := range c.GOPATHS {
+		add(p)
+	}
+
+	g_config.ProposeBuiltins = c.Builtins
+	g_config.LibPath = strings.Join(pl, string(filepath.ListSeparator))
 }

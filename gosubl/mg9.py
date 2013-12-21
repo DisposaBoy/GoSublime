@@ -261,11 +261,6 @@ def install(aso_install_vesion, force_install):
 		except Exception:
 			report_x()
 
-def completion_options(m={}):
-	res, err = bcall('gocode_options', {})
-	res = gs.dval(res.get('options'), {})
-	return res, err
-
 def calltip(fn, src, pos, quiet, f):
 	tid = ''
 	if not quiet:
@@ -275,34 +270,33 @@ def calltip(fn, src, pos, quiet, f):
 		if tid:
 			gs.end(tid)
 
-		res = gs.dval(res.get('calltips'), [])
+		res = gs.dval(res.get('Candidates'), [])
 		f(res, err)
 
-	return acall('gocode_calltip', _complete_opts(fn, src, pos), cb)
-
-
+	return acall('gocode_calltip', _complete_opts(fn, src, pos, True), cb)
 
 def complete(fn, src, pos):
-	res, err = bcall('gocode_complete', _complete_opts(fn, src, pos))
-	res = gs.dval(res.get('completions'), [])
+	builtins = (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
+	res, err = bcall('gocode_complete', _complete_opts(fn, src, pos, builtins))
+	res = gs.dval(res.get('Candidates'), [])
 	return res, err
 
-def _complete_opts(fn, src, pos):
-	home = gs.home_path()
-	builtins = (gs.setting('autocomplete_builtins') is True or gs.setting('complete_builtins') is True)
+def _complete_opts(fn, src, pos, builtins):
+	nv = sh.env()
 	return {
 		'Dir': gs.basedir_or_cwd(fn),
 		'Builtins': builtins,
 		'Fn':  fn or '',
 		'Src': src or '',
 		'Pos': pos or 0,
-		'Home': home,
+		'Home': sh.vdir(),
 		'Autoinst': gs.setting('autoinst'),
-		'Env': sh.env({
-			'XDG_CONFIG_HOME': home,
-		}),
+		'Env': {
+			'GOROOT': nv.get('GOROOT', ''),
+			'GOPATH': nv.get('GOPATH', ''),
+		},
+		'InstallSuffix': gs.setting('installsuffix'),
 	}
-
 
 def fmt(fn, src):
 	st = gs.settings_dict()

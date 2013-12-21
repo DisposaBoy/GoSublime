@@ -269,7 +269,7 @@ def declex(s):
 def _ct_poller():
 	try:
 		view = sublime.active_window().active_view()
-		if gs.setting('autocomplete_live_hint', False) is True:
+		if gs.setting('calltips') is True:
 			view.run_command('gs_show_call_tip', {'set_status': True})
 		else:
 			view.erase_status(HINT_KEY)

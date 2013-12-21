@@ -7,32 +7,21 @@ import (
 	"gosubli.me/something-borrowed/gocode"
 	"io/ioutil"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"sync"
 )
 
-var (
-	mGocodeVars = struct {
-		sync.Mutex
+type mGocode struct {
+	Autoinst      bool
+	InstallSuffix string
+	Env           map[string]string
+	Home          string
+	Dir           string
+	Builtins      bool
+	Fn            string
+	Src           string
+	Pos           int
 
-		opts map[string]string
-	}{opts: map[string]string{}}
-)
-
-type mGocodeOptions struct {
-}
-
-type mGocodeComplete struct {
-	Autoinst bool
-	Env      map[string]string
-	Home     string
-	Dir      string
-	Builtins bool
-	Fn       string
-	Src      string
-	Pos      int
-	calltip  bool
+	calltip bool
 }
 
 type calltipVisitor struct {
@@ -55,16 +44,7 @@ func (v *calltipVisitor) Visit(node ast.Node) (w ast.Visitor) {
 	return v
 }
 
-func (m *mGocodeOptions) Call() (interface{}, string) {
-	res := M{}
-	res["options"] = gocode.GoSublimeGocodeOptions()
-	return res, ""
-}
-
-func (m *mGocodeComplete) Call() (interface{}, string) {
-	e := ""
-	res := M{}
-
+func (m *mGocode) Call() (interface{}, string) {
 	if m.Src == "" {
 		// this is here for testing, the client should always send the src
 		s, _ := ioutil.ReadFile(m.Fn)
@@ -72,16 +52,12 @@ func (m *mGocodeComplete) Call() (interface{}, string) {
 	}
 
 	if m.Src == "" {
-		return res, "No source"
+		return nil, "No source"
 	}
 
-	pos := 0
-	for i, _ := range m.Src {
-		pos += 1
-		if pos > m.Pos {
-			pos = i
-			break
-		}
+	pos := bytePos(m.Src, m.Pos)
+	if m.Pos < 0 {
+		return nil, "Invalid offset"
 	}
 
 	src := []byte(m.Src)
@@ -90,101 +66,80 @@ func (m *mGocodeComplete) Call() (interface{}, string) {
 		fn = filepath.Join(orString(m.Dir, m.Home), orString(fn, "_.go"))
 	}
 
-	mGocodeVars.Lock()
-	defer mGocodeVars.Unlock()
-
-	m.checkOpts()
+	res := struct {
+		Candidates []gocode.MargoCandidate
+	}{}
 
 	if m.calltip {
-		res["calltips"] = completeCalltip(src, fn, pos)
+		res.Candidates = m.calltips(src, fn, pos)
 	} else {
-		l := gocode.GoSublimeGocodeComplete(src, fn, pos)
-		res["completions"] = l
-
-		if m.Autoinst && len(l) == 0 {
-			autoInstall(AutoInstOptions{
-				Src: m.Src,
-				Env: m.Env,
-			})
-		}
+		res.Candidates = m.completions(src, fn, pos)
 	}
 
-	return res, e
+	if m.Autoinst && len(res.Candidates) == 0 {
+		autoInstall(AutoInstOptions{
+			Src:           m.Src,
+			Env:           m.Env,
+			InstallSuffix: m.InstallSuffix,
+		})
+	}
+
+	return res, ""
 }
 
-func (m *mGocodeComplete) checkOpts() {
-	opts := map[string]string{
-		"propose-builtins": "false",
-	}
-
-	if m.Builtins {
-		opts["propose-builtins"] = "true"
-	}
-
-	osArch := runtime.GOOS + "_" + runtime.GOARCH
-	goroot, gopaths := envRootList(m.Env)
-	pl := []string{}
-
-	add := func(p string) {
-		if p != "" {
-			pl = append(pl, filepath.Join(p, "pkg", osArch))
-		}
-	}
-
-	add(goroot)
-	for _, p := range gopaths {
-		add(p)
-	}
-
-	opts["lib-path"] = strings.Join(pl, string(filepath.ListSeparator))
-
-	for k, v := range opts {
-		if mGocodeVars.opts[k] != v {
-			mGocodeVars.opts[k] = v
-			gocode.GoSublimeGocodeSet(k, v)
-		}
-	}
+func (g *mGocode) completions(src []byte, fn string, pos int) []gocode.MargoCandidate {
+	c := gocode.MargoConfig{}
+	c.InstallSuffix = g.InstallSuffix
+	c.Builtins = g.Builtins
+	c.GOROOT, c.GOPATHS = envRootList(g.Env)
+	return gocode.Margo.Complete(c, src, fn, pos)
 }
 
-func completeCalltip(src []byte, fn string, offset int) []gocode.GoSublimeGocodeCandidate {
-	fset := token.NewFileSet()
-	af, _ := parser.ParseFile(fset, fn, src, 0)
+func (m *mGocode) calltips(src []byte, fn string, offset int) []gocode.MargoCandidate {
+	id, fset, af := identAtOffset(src, offset)
+	if id != nil {
+		cp := fset.Position(id.End())
+		if cp.IsValid() {
+			line := offsetLine(fset, af, offset)
+			cr := cp.Offset
+			cl := m.completions(src, fn, cr)
 
-	if af != nil {
-		vis := &calltipVisitor{
-			offset: offset,
-			fset:   fset,
-		}
-		ast.Walk(vis, af)
-
-		if vis.x != nil {
-			var id *ast.Ident
-
-			switch v := vis.x.Fun.(type) {
-			case *ast.Ident:
-				id = v
-			case *ast.SelectorExpr:
-				id = v.Sel
-			}
-
-			if id != nil && id.End().IsValid() {
-				line := offsetLine(fset, af, offset)
-				cp := fset.Position(id.End())
-				cr := cp.Offset
-				cl := gocode.GoSublimeGocodeComplete(src, fn, cr)
-
-				if (cp.Line == line || line == 0) && len(cl) > 0 {
-					for i, c := range cl {
-						if strings.EqualFold(id.Name, c.Name) {
-							return cl[i : i+1]
-						}
+			if (cp.Line == line || line == 0) && len(cl) > 0 {
+				for i, c := range cl {
+					if strings.EqualFold(id.Name, c.Name) {
+						return cl[i : i+1]
 					}
 				}
 			}
 		}
 	}
 
-	return []gocode.GoSublimeGocodeCandidate{}
+	return []gocode.MargoCandidate{}
+}
+
+func identAtOffset(src []byte, offset int) (id *ast.Ident, fset *token.FileSet, af *ast.File) {
+	fset = token.NewFileSet()
+	af, _ = parser.ParseFile(fset, "<stdin>", src, 0)
+
+	if af == nil {
+		return
+	}
+
+	vis := &calltipVisitor{
+		offset: offset,
+		fset:   fset,
+	}
+	ast.Walk(vis, af)
+
+	if vis.x != nil && vis.x.Fun != nil {
+		switch v := vis.x.Fun.(type) {
+		case *ast.Ident:
+			id = v
+		case *ast.SelectorExpr:
+			id = v.Sel
+		}
+	}
+	return
 }
 
 func offsetLine(fset *token.FileSet, af *ast.File, offset int) (line int) {
@@ -197,15 +152,11 @@ func offsetLine(fset *token.FileSet, af *ast.File, offset int) (line int) {
 }
 
 func init() {
-	registry.Register("gocode_options", func(b *Broker) Caller {
-		return &mGocodeOptions{}
-	})
-
 	registry.Register("gocode_complete", func(b *Broker) Caller {
-		return &mGocodeComplete{}
+		return &mGocode{}
 	})
 
 	registry.Register("gocode_calltip", func(b *Broker) Caller {
-		return &mGocodeComplete{calltip: true}
+		return &mGocode{calltip: true}
 	})
 }
