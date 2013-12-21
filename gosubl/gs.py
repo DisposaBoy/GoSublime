@@ -621,8 +621,14 @@ def cancel_task(tid):
 def show_quick_panel(items, cb=None):
 	def f():
 		win = sublime.active_window()
-		if win:
-			win.show_quick_panel(items, (lambda i: cb(i, win)) if cb else (lambda i: None))
+		if win is not None:
+			if callable(cb):
+				f = lambda i: cb(i, win)
+			else:
+				f = lambda i: None
+
+			win.show_quick_panel(items, f)
+
 	sublime.set_timeout(f, 0)
 
 def go_env_goroot():
