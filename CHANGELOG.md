@@ -5,6 +5,15 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.12.21-1
+	* make GoSublime's quick panels use a monospace font
+	* add a prefix to the declarations panels:
+		`+` indicates exported identifiers
+		`-` indicates non-exported identifiers
+	* in the declarations panels, init functions are now suffixed with ` (filename)`
+	* in the declarations panels, const declarations are now suffixed with ` (value)` e.g. `const StatusTeapot (418)`
+	* add syntax definitions for the template builtin functions
+
 ## 13.12.19-1
 	* the OS X key bindings have been removed
 
