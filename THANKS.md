@@ -16,6 +16,7 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Joe Poirier https://github.com/jpoirier
 * Karl Tuhkanen
 * Mark Smith http://qq.is
+* Maxim Kouprianov https://github.com/Xlab
 * Nathan Youngman http://nathany.com/
 * Peter Olds https://github.com/polds
 * ProGNOMmers https://github.com/ProGNOMmers
