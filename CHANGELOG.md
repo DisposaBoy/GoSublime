@@ -2,8 +2,17 @@ GoSublime Changes
 -----------------
 
 
+** Please be aware that go1 is no longer supported. The minimum supported version is go1.1.2 **
+
 
 Note: you may need to restart Sublime Text after GoSublime updates
+
+## 13.12.21-2
+	* setting `autocomplete_live_hint` was renamed to `calltips` and enabled by default.
+		this setting make functions signatures appear in the status bar when you place the
+		cursor in a function call
+	* the completion_options command was dropped from margo and therefore mg9.completion_options was removed
+	* the shell_pathsep setting was removed
 
 ## 13.12.21-1
 	* make GoSublime's quick panels use a monospace font
