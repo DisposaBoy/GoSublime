@@ -135,7 +135,7 @@ class GsShowTasksCommand(sublime_plugin.WindowCommand):
 		except:
 			ents = [['', 'Failed to gather active tasks']]
 
-		def cb(i):
+		def cb(i, _):
 			gs.cancel_task(m.get(i, ''))
 
 		gs.show_quick_panel(ents, cb)
