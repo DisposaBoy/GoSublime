@@ -7,6 +7,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 13.12.26-1
+	* when the key binding `ctrl+dot`,`ctrl+r` is pressed, 9o no longer gains
+
 ## 13.12.21-2
 	* setting `autocomplete_live_hint` was renamed to `calltips` and enabled by default.
 		this setting make functions signatures appear in the status bar when you place the
