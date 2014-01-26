@@ -14,6 +14,7 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Hans Stimer
 * Joe Farro http://jf.io/
 * Joe Poirier https://github.com/jpoirier
+* Jérémy Ozog http://www.jeremy-ozog.fr
 * Karl Tuhkanen
 * Mark Smith http://qq.is
 * Maxim Kouprianov https://github.com/Xlab
