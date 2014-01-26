@@ -293,7 +293,14 @@ class GsShowCallTip(sublime_plugin.TextCommand):
 
 				if set_status:
 					if c:
-						s = '%s: %s' % (c['name'], c['type'])
+						pfx = 'func('
+						typ = c['type']
+						if typ.startswith(pfx):
+							s = 'func %s(%s' % (c['name'], typ[len(pfx):])
+						else:
+							s = '%s: %s' % (c['name'], typ)
+
+
 						view.set_status(HINT_KEY, s)
 					else:
 						view.erase_status(HINT_KEY)
