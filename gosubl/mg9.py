@@ -420,7 +420,7 @@ def bcall(method, arg):
 	q = gs.queue.Queue()
 	acall(method, arg, lambda r,e: q.put((r, e)))
 	try:
-		res, err = q.get(True, 1)
+		res, err = q.get(True, gs.setting('ipc_timeout', 1))
 		return res, err
 	except:
 		return {}, 'Blocking Call(%s): Timeout' % method
