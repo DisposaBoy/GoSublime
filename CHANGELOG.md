@@ -7,6 +7,21 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 14.02.25-1
+	* added setting `installsuffix`. this should help enabling completion and pkg importing
+	  for appengine. set this to `appengine` and add the appengine goroot to your GOPATH e.g.
+	  {
+	  	 "installsuffix": "appengine",
+	     "env": {
+	       "GOPATH": "$YOUR_OWN_GOPATH:$PATH_TO_APPENGINE/goroot"
+	     }
+	  }
+
+	* added setting `ipc_timeout`. if you're experiencing issues with code completion
+	  and the error is `Blocking Call(gocode_complete): Timeout`, set this setting to `2`, or `3`, etc..
+	  this value is the number of seconds to wait for ipc response from margo before timing out.
+	  **note: blocking ipc calls like code completion will freeze the ui if they take too long**
+
 ## 13.12.26-1
 	* when the key binding `ctrl+dot`,`ctrl+r` is pressed, 9o no longer gains focus
 
