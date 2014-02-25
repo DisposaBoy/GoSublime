@@ -11,9 +11,10 @@ import (
 )
 
 type mImportPaths struct {
-	Fn  string
-	Src string
-	Env map[string]string
+	Fn            string
+	Src           string
+	Env           map[string]string
+	InstallSuffix string
 }
 
 type mImportPathsDecl struct {
@@ -47,7 +48,7 @@ func (m *mImportPaths) Call() (interface{}, string) {
 	}
 
 	paths := map[string]string{}
-	l, _ := importPaths(m.Env)
+	l, _ := importPaths(m.Env, m.InstallSuffix)
 	for _, p := range l {
 		paths[p] = ""
 	}
@@ -67,7 +68,7 @@ func init() {
 	})
 }
 
-func importPaths(environ map[string]string) ([]string, error) {
+func importPaths(environ map[string]string, installSuffix string) ([]string, error) {
 	imports := []string{
 		"unsafe",
 	}
@@ -91,9 +92,12 @@ func importPaths(environ map[string]string) ([]string, error) {
 	seen := map[string]bool{}
 	pfx := strings.HasPrefix
 	sfx := strings.HasSuffix
-	osArch := runtime.GOOS + "_" + runtime.GOARCH
+	osArchSfx := osArch
+	if installSuffix != "" {
+		osArchSfx += "_" + installSuffix
+	}
 	for root, _ := range paths {
-		root = filepath.Join(root, "pkg", osArch)
+		root = filepath.Join(root, "pkg", osArchSfx)
 		walkF := func(p string, info os.FileInfo, err error) error {
 			if err == nil && !info.IsDir() {
 				p, e := filepath.Rel(root, p)
