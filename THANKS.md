@@ -22,5 +22,6 @@ Its purpose is to thank the many supporters of myself and GoSublime, so thank yo
 * Peter Olds https://github.com/polds
 * ProGNOMmers https://github.com/ProGNOMmers
 * Ralf Rottmann http://twitter.com/ralf
+* Sander van Harmelen https://github.com/svanharmelen
 * Tom Westberg
 * Yves Junqueira http://pledgie.com/accounts/@cetico
