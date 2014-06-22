@@ -88,28 +88,30 @@ def highlight(fr):
 		fr.state = 0
 		cleanup(fr.view)
 
-		regions = []
-		regions0 = []
-		domain0 = DOMAIN+'-zero'
+		line_regions = []
+		col_regions = []
 		for r in fr.reports.values():
 			line = fr.view.line(fr.view.text_point(r.row, 0))
 			pos = line.begin() + r.col
 			if pos >= line.end():
 				pos = line.end()
-			if pos == line.begin():
-				regions0.append(sublime.Region(pos, pos))
-			else:
-				regions.append(sublime.Region(pos, pos))
 
-		if regions:
-			fr.view.add_regions(DOMAIN, regions, 'comment', 'dot', sublime.DRAW_EMPTY_AS_OVERWRITE)
+			line_regions.append(sublime.Region(line.begin(), line.end()))
+			if pos != line.begin():
+				col_regions.append(sublime.Region(pos, pos))
+
+		if line_regions:
+			if gs.setting('gslint_outline'):
+				fr.view.add_regions(DOMAIN, line_regions, 'comment', 'dot', sublime.DRAW_OUTLINED)
+			else:
+				fr.view.add_regions(DOMAIN, line_regions, 'comment', 'dot', sublime.HIDDEN)
 		else:
 			fr.view.erase_regions(DOMAIN)
 
-		if regions0:
-			fr.view.add_regions(domain0, regions0, 'comment', 'dot', sublime.HIDDEN)
+		if col_regions:
+			fr.view.add_regions(DOMAIN + '-col', col_regions, 'comment', '', sublime.DRAW_EMPTY_AS_OVERWRITE)
 		else:
-			fr.view.erase_regions(domain0)
+			fr.view.erase_regions(DOMAIN + '-col')
 
 	msg = ''
 	reps = fr.reports.copy()
@@ -128,7 +130,7 @@ def highlight(fr):
 def cleanup(view):
 	view.set_status(DOMAIN, '')
 	view.erase_regions(DOMAIN)
-	view.erase_regions(DOMAIN+'-zero')
+	view.erase_regions(DOMAIN+'-col')
 
 def watch():
 	global file_refs
