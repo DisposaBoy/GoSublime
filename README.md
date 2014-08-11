@@ -55,7 +55,7 @@ assume they are GoSublime's bugs and I will forward bug reports as necessary.
 Settings
 --------
 
-You can customize the behaviour of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings` or alternatively copy the default settings file `Packages/GoSublime/GoSublime.sublime-settings` to your `User` package and edit it to your liking.
+You can customize the behavior of GoSublime by creating a settings file in your `User` package. This can be accessed from within SublimeText by going to the menu `Preferences > Browse Packages...`. Create a file named `GoSublime.sublime-settings` or alternatively copy the default settings file `Packages/GoSublime/GoSublime.sublime-settings` to your `User` package and edit it to your liking.
 
 Note: File names are case-sensitive on some platforms (e.g. Linux) so the file name should be exactly `GoSublime.sublime-settings` with capitalization preserved.
 
