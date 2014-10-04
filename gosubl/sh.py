@@ -263,7 +263,7 @@ def gs_init(_={}):
 	init_done = True
 
 def _print(s):
-	print('GoSblime %s sh: %s' % (about.VERSION, s))
+	print('GoSublime %s sh: %s' % (about.VERSION, s))
 
 def getenv(name, default='', m={}):
 	return env(m).get(name, default)
