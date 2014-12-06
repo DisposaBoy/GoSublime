@@ -184,7 +184,7 @@ func findUnderlyingObj(fset *token.FileSet, af *ast.File, pkg *ast.Package, pkgs
 		if obj := pkg.Scope.Lookup(id.Name); obj != nil {
 			return obj, pkg, pkgs
 		}
-		fn := filepath.Join(runtime.GOROOT(), "src", "pkg", "builtin")
+		fn := filepath.Join(runtime.GOROOT(), SrcPkg, "builtin")
 		if pkgBuiltin, _, err := parsePkg(fset, fn, parser.ParseComments); err == nil {
 			if obj := pkgBuiltin.Scope.Lookup(id.Name); obj != nil {
 				return obj, pkgBuiltin, pkgs

@@ -169,7 +169,7 @@ func rootDirs(env map[string]string) []string {
 	} else if fn := os.Getenv("GOROOT"); fn != "" {
 		gorootBase = fn
 	}
-	goroot := filepath.Join(gorootBase, "src", "pkg")
+	goroot := filepath.Join(gorootBase, SrcPkg)
 
 	dirsSeen := map[string]bool{}
 	for _, fn := range filepath.SplitList(gopath) {
