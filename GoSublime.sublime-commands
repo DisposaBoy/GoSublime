@@ -66,6 +66,13 @@
 		"command": "gs_fmt"
 	},
 	{
+		"caption": "GoSublime: Help you to make your imports clean",
+		"command": "gs_imports"
+	},	
+		"caption": "GoSublime: Rename the current selection (gorename)",
+		"command": "gs_gorename"
+	},
+	{
 		"caption": "GoSublime: New Go File",
 		"command": "gs_new_go_file"
 	},

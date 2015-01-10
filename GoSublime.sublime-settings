@@ -45,6 +45,7 @@
 	// the command will be passed, to its stdin, the contents of the file
 	// it must output the new file contents
 	"fmt_cmd": [],
+	"goimports_cmd": ["goimports"],
 
 	// Whether or not gslint is enabled
 	"gslint_enabled": true,

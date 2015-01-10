@@ -2,6 +2,7 @@ from gosubl import gs
 from gosubl import gspatch
 from gosubl import mg9
 import datetime
+import subprocess
 import os
 import sublime
 import sublime_plugin
@@ -17,6 +18,36 @@ class GsStartNextLineCommentCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command("run_macro_file", {"file": "Packages/Default/Add Line.sublime-macro"})
 		self.view.run_command("toggle_comment", {"block": False})
+
+class GsImportsCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		fn = self.view.file_name()
+		if fn:
+			scope_ok = fn.lower().endswith('.go')
+		else:
+			scope_ok = gs.is_go_source_view(self.view)
+
+		return scope_ok
+
+	def run(self, edit):
+		vsize = self.view.size()
+		src = self.view.substr(sublime.Region(0, vsize))
+		if not src.strip():
+			return
+
+		src, err = mg9.goimports(self.view.file_name(), src)
+		if err:
+			gs.println(DOMAIN, "cannot goimports file. error: `%s'" % err)
+			return
+
+		if not src.strip():
+			gs.println(DOMAIN, "cannot goimports file. it appears to be empty")
+			return
+
+		_, err = gspatch.merge(self.view, vsize, src, edit)
+		if err:
+			msg = 'PANIC: Cannot goimports file. Check your source for errors (and maybe undo any changes).'
+			sublime.error_message("%s: %s: Merge failure: `%s'" % (DOMAIN, msg, err))
 
 class GsFmtCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -63,6 +94,7 @@ class GsFmtPromptSaveAsCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command("gs_fmt")
 		sublime.set_timeout(lambda: self.view.run_command("prompt_save_as"), 0)
+
 
 class GsGotoRowColCommand(sublime_plugin.TextCommand):
 	def run(self, edit, row, col=0):
@@ -201,3 +233,61 @@ class GsPatchImportsCommand(sublime_plugin.TextCommand):
 				gs.set_attr(k, added_path)
 			else:
 				gs.del_attr(k)
+
+class GsGorenameCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		fn = self.view.file_name()
+		if fn:
+			scope_ok = fn.lower().endswith('.go')
+		else:
+			scope_ok = gs.is_go_source_view(self.view)
+
+		return scope_ok 
+
+	def run(self, edit):
+		view = self.view
+
+		# if view.is_dirty():
+		# 	sublime.error_message("{0}: GoRename failure: Unsaved file".format(DOMAIN))
+		# 	return 
+
+		region = view.sel()[0]
+
+		# If the current selection is empty, try to expand
+		# it to the word under the cursor
+		if region.empty():
+			region = view.word(region)
+
+		if region.empty(): 
+			sublime.message_dialog('Select an identifier you would like to rename and try again.')
+			return
+
+		current_selection = view.substr(region)
+		filename = view.file_name()
+		
+		def on_done(new_name):
+			if new_name == current_selection:
+				return
+
+			gs.println(DOMAIN, 'Requested New Name: {0}'.format(new_name))
+
+			offset =  '{0}:#{1}'.format(filename, region.begin())
+			command = ['gorename', '-offset', offset, '-to', new_name]
+
+			gs.println(DOMAIN, 'CMD: {0}'.format(' '.join(command)))
+
+			out = ""
+			try:
+				p = gs.popen(command, stderr=subprocess.STDOUT)
+				out = p.communicate()[0]
+				if p.returncode != 0:
+					raise OSError("GoRename failed")
+
+			except Exception as e:
+				msg = gs.tbck.format_exc()
+				if out:
+					msg = '{0}\n{1}'.format(msg, gs.ustr(out))
+				gs.show_output('GsGorename', msg, replace=False, merge_domain=False)
+
+		view.window().show_input_panel("New name:", current_selection, on_done, None, None)
+

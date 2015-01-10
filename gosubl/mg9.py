@@ -320,6 +320,28 @@ def fmt(fn, src):
 	})
 	return res.get('src', ''), err
 
+def goimports(fn, src):
+	st = gs.settings_dict()
+	x = st.get('goimports_cmd')
+	if x:
+		res, err = bcall('sh', {
+			'Env': sh.env(),
+			'Cmd': {
+					'Name': x[0],
+					'Args': x[1:],
+					'Input': src or '',
+			},
+		})
+		return res.get('out', ''), (err or res.get('err', ''))
+
+	res, err = bcall('goimports', {
+		'Fn': fn or '',
+		'Src': src or '',
+		'TabIndent': st.get('fmt_tab_indent'),
+		'TabWidth': st.get('fmt_tab_width'),
+	})
+	return res.get('src', ''), err	
+
 def import_paths(fn, src, f):
 	tid = gs.begin(DOMAIN, 'Fetching import paths')
 	def cb(res, err):
