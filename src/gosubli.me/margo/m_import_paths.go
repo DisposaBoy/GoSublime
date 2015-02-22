@@ -1,14 +1,21 @@
 package main
 
 import (
+	"errors"
 	"go/ast"
 	"go/parser"
 	"os"
-	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
+
+func init() {
+	registry.Register("import_paths", func(_ *Broker) Caller {
+		return &mImportPaths{
+			Env: map[string]string{},
+		}
+	})
+}
 
 type mImportPaths struct {
 	Fn            string
@@ -22,99 +29,131 @@ type mImportPathsDecl struct {
 	Path string `json:"path"`
 }
 
+type mImportPathsResponse struct {
+	Imports []mImportDecl     `json:"imports"`
+	Paths   map[string]string `json:"paths"`
+}
+
 func (m *mImportPaths) Call() (interface{}, string) {
-	imports := []mImportPathsDecl{}
-	_, af, err := parseAstFile(m.Fn, m.Src, parser.ImportsOnly)
+	imports, err := m.pkgImports()
 	if err != nil {
-		return M{}, err.Error()
+		imports = []mImportDecl{}
 	}
-
-	if m.Fn != "" || m.Src != "" {
-		for _, decl := range af.Decls {
-			if gdecl, ok := decl.(*ast.GenDecl); ok && len(gdecl.Specs) > 0 {
-				for _, spec := range gdecl.Specs {
-					if ispec, ok := spec.(*ast.ImportSpec); ok {
-						sd := mImportPathsDecl{
-							Path: unquote(ispec.Path.Value),
-						}
-						if ispec.Name != nil {
-							sd.Name = ispec.Name.String()
-						}
-						imports = append(imports, sd)
-					}
-				}
-			}
-		}
-	}
-
-	paths := map[string]string{}
-	l, _ := importPaths(m.Env, m.InstallSuffix)
-	for _, p := range l {
-		paths[p] = ""
-	}
-
-	res := M{
-		"imports": imports,
-		"paths":   paths,
+	res := mImportPathsResponse{
+		Imports: imports,
+		Paths:   m.importPaths(),
 	}
 	return res, ""
 }
 
-func init() {
-	registry.Register("import_paths", func(_ *Broker) Caller {
-		return &mImportPaths{
-			Env: map[string]string{},
+func (m *mImportPaths) pkgImports() ([]mImportDecl, error) {
+	if m.Fn == "" && m.Src == "" {
+		return nil, errors.New("invalid request")
+	}
+	_, af, err := parseAstFile(m.Fn, m.Src, parser.ImportsOnly)
+	if err != nil {
+		return nil, err
+	}
+	if af == nil || af.Decls == nil {
+		return nil, errors.New("invalid fileset")
+	}
+	var imports []mImportDecl
+	for _, decl := range af.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || len(gen.Specs) == 0 {
+			continue
 		}
-	})
-}
-
-func importPaths(environ map[string]string, installSuffix string) ([]string, error) {
-	imports := []string{
-		"unsafe",
-	}
-	paths := map[string]bool{}
-
-	env := []string{
-		environ["GOPATH"],
-		environ["GOROOT"],
-		os.Getenv("GOPATH"),
-		os.Getenv("GOROOT"),
-		runtime.GOROOT(),
-	}
-	for _, ent := range env {
-		for _, path := range filepath.SplitList(ent) {
-			if path != "" {
-				paths[path] = true
-			}
-		}
-	}
-
-	seen := map[string]bool{}
-	pfx := strings.HasPrefix
-	sfx := strings.HasSuffix
-	osArchSfx := osArch
-	if installSuffix != "" {
-		osArchSfx += "_" + installSuffix
-	}
-	for root, _ := range paths {
-		root = filepath.Join(root, "pkg", osArchSfx)
-		walkF := func(p string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() {
-				p, e := filepath.Rel(root, p)
-				if e == nil && sfx(p, ".a") {
-					p := p[:len(p)-2]
-					if !pfx(p, ".") && !pfx(p, "_") && !sfx(p, "_test") {
-						p = path.Clean(filepath.ToSlash(p))
-						if !seen[p] {
-							seen[p] = true
-							imports = append(imports, p)
-						}
-					}
+		for _, spec := range gen.Specs {
+			if imp, ok := spec.(*ast.ImportSpec); ok {
+				p := mImportDecl{Path: unquote(imp.Path.Value)}
+				if imp.Name != nil {
+					p.Name = imp.Name.String()
 				}
+				imports = append(imports, p)
 			}
-			return nil
 		}
-		filepath.Walk(root, walkF)
 	}
 	return imports, nil
+}
+
+func (m *mImportPaths) importPaths() map[string]string {
+	// Matching the previous behavior of GoSublime where the
+	// environment variables provided by environ and the OS
+	// were concatenated.
+	roots := uniqueEnv(m.Env)
+	w := newImportWalker("")
+	for _, root := range roots {
+		if m.InstallSuffix == "" {
+			w.root = root
+		} else {
+			w.root = root + "_" + m.InstallSuffix
+		}
+		filepath.Walk(w.root, w.Walk)
+	}
+	return w.imports
+}
+
+type importWalker struct {
+	root string
+	// Matching GoSublime's original behavior which returns
+	// imports as a map where the keys are the imports and
+	// the values are empty string "".
+	imports map[string]string
+}
+
+func newImportWalker(root string) *importWalker {
+	return &importWalker{
+		root:    root,
+		imports: map[string]string{"unsafe": ""},
+	}
+}
+
+// Walk appends Go pkg files to importWalker.
+func (w *importWalker) Walk(path string, info os.FileInfo, err error) error {
+	if err != nil || info.IsDir() {
+		return nil
+	}
+	if !strings.HasSuffix(path, ".a") || strings.HasSuffix(path, "_test.a") {
+		return nil
+	}
+	p, e := filepath.Rel(w.root, path)
+	if e != nil {
+		return nil
+	}
+	if strings.HasPrefix(p, ".") || strings.HasPrefix(p, "_") {
+		return nil
+	}
+	p = filepath.Clean(p[:len(p)-2])
+	if _, ok := w.imports[p]; !ok {
+		// Match GoSublime's original behavior
+		// and store the import path in the key
+		w.imports[p] = ""
+	}
+	return nil
+}
+
+// uniqueEnv returns a slice of unique Go pkg directories by
+// combining the Go paths supplied by env and DefaultEnv.
+func uniqueEnv(env map[string]string) []string {
+	if env == nil || len(env) == 0 {
+		return DefaultEnv.PkgDirs(nil)
+	}
+	return uniqueSlice(DefaultEnv.PkgDirs(nil), DefaultEnv.PkgDirs(env))
+}
+
+// uniqueSlice returns the unique elements of slice s0 and s1.
+func uniqueSlice(s0, s1 []string) []string {
+	seen := make(map[string]struct{}, len(s0)+len(s1))
+	s := make([]string, len(s0)+len(s1))
+	n := copy(s, s0)
+	copy(s[n:], s1)
+	j := 0
+	for i := 0; i < len(s); i++ {
+		if _, ok := seen[s[i]]; !ok {
+			seen[s[i]] = struct{}{}
+			s[j] = s[i]
+			j++
+		}
+	}
+	return s[:j]
 }

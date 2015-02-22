@@ -3,11 +3,14 @@ package gocode
 import (
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sync"
 )
 
@@ -20,40 +23,16 @@ type package_import struct {
 	path  string
 }
 
-// it's defined here, simply because package_import is the only user
-type gocode_env struct {
-	GOPATH string
-	GOROOT string
-	GOARCH string
-	GOOS   string
-}
-
-func (env *gocode_env) get() {
-	env.GOPATH = os.Getenv("GOPATH")
-	env.GOROOT = os.Getenv("GOROOT")
-	env.GOARCH = os.Getenv("GOARCH")
-	env.GOOS = os.Getenv("GOOS")
-	if env.GOROOT == "" {
-		env.GOROOT = runtime.GOROOT()
-	}
-	if env.GOARCH == "" {
-		env.GOARCH = runtime.GOARCH
-	}
-	if env.GOOS == "" {
-		env.GOOS = runtime.GOOS
-	}
-}
-
 // Parses import declarations until the first non-import declaration and fills
 // `packages` array with import information.
-func collect_package_imports(filename string, decls []ast.Decl, env *gocode_env) []package_import {
+func collect_package_imports(filename string, decls []ast.Decl, context build.Context) []package_import {
 	pi := make([]package_import, 0, 16)
 	for _, decl := range decls {
 		if gd, ok := decl.(*ast.GenDecl); ok && gd.Tok == token.IMPORT {
 			for _, spec := range gd.Specs {
 				imp := spec.(*ast.ImportSpec)
 				path, alias := path_and_alias(imp)
-				path, ok := abs_path_for_package(filename, path, env)
+				path, ok := abs_path_for_package(filename, path, context)
 				if ok && alias != "_" {
 					pi = append(pi, package_import{alias, path})
 				}
@@ -81,14 +60,14 @@ type decl_file_cache struct {
 	packages  []package_import // import information
 	filescope *scope
 
-	fset *token.FileSet
-	env  *gocode_env
+	fset    *token.FileSet
+	context build.Context
 }
 
-func new_decl_file_cache(name string, env *gocode_env) *decl_file_cache {
+func new_decl_file_cache(name string, context build.Context) *decl_file_cache {
 	return &decl_file_cache{
-		name: name,
-		env:  env,
+		name:    name,
+		context: context,
 	}
 }
 
@@ -129,7 +108,7 @@ func (f *decl_file_cache) process_data(data []byte) {
 	for _, d := range file.Decls {
 		anonymify_ast(d, 0, f.filescope)
 	}
-	f.packages = collect_package_imports(f.name, file.Decls, f.env)
+	f.packages = collect_package_imports(f.name, file.Decls, f.context)
 	f.decls = make(map[string]*decl, len(file.Decls))
 	for _, decl := range file.Decls {
 		append_to_top_decls(f.decls, decl, f.filescope)
@@ -169,7 +148,7 @@ func append_to_top_decls(decls map[string]*decl, decl ast.Decl, scope *scope) {
 	})
 }
 
-func abs_path_for_package(filename, p string, env *gocode_env) (string, bool) {
+func abs_path_for_package(filename, p string, context build.Context) (string, bool) {
 	dir, _ := filepath.Split(filename)
 	if len(p) == 0 {
 		return "", false
@@ -181,7 +160,7 @@ func abs_path_for_package(filename, p string, env *gocode_env) (string, bool) {
 	if ok {
 		return pkg, true
 	}
-	return find_global_file(p, env)
+	return find_global_file(p, context)
 }
 
 func path_and_alias(imp *ast.ImportSpec) (string, string) {
@@ -207,7 +186,71 @@ func find_go_dag_package(imp, filedir string) (string, bool) {
 	return "", false
 }
 
-func find_global_file(imp string, env *gocode_env) (string, bool) {
+// autobuild compares the mod time of the source files of the package, and if any of them is newer
+// than the package object file will rebuild it.
+func autobuild(p *build.Package) error {
+	if p.Dir == "" {
+		return fmt.Errorf("no files to build")
+	}
+	ps, err := os.Stat(p.PkgObj)
+	if err != nil {
+		// Assume package file does not exist and build for the first time.
+		return build_package(p)
+	}
+	pt := ps.ModTime()
+	fs, err := ioutil.ReadDir(p.Dir)
+	if err != nil {
+		return err
+	}
+	for _, f := range fs {
+		if f.IsDir() {
+			continue
+		}
+		if f.ModTime().After(pt) {
+			// Source file is newer than package file; rebuild.
+			return build_package(p)
+		}
+	}
+	return nil
+}
+
+// build_package builds the package by calling `go install package/import`. If everything compiles
+// correctly, the newly compiled package should then be in the usual place in the `$GOPATH/pkg`
+// directory, and gocode will pick it up from there.
+func build_package(p *build.Package) error {
+	log.Printf("-------------------")
+	log.Printf("rebuilding package %s", p.Name)
+	log.Printf("package import: %s", p.ImportPath)
+	log.Printf("package object: %s", p.PkgObj)
+	log.Printf("package source dir: %s", p.Dir)
+	log.Printf("package source files: %v", p.GoFiles)
+	// TODO: Should read STDERR rather than STDOUT.
+	out, err := exec.Command("go", "install", p.ImportPath).Output()
+	if err != nil {
+		return err
+	}
+	log.Printf("build out: %s\n", string(out))
+	return nil
+}
+
+func log_found_package_maybe(imp, pkgpath string) {
+	if *g_debug {
+		log.Printf("Found %q at %q\n", imp, pkgpath)
+	}
+}
+
+func log_build_context(context build.Context) {
+	log.Printf(" GOROOT: %s\n", context.GOROOT)
+	log.Printf(" GOPATH: %s\n", context.GOPATH)
+	log.Printf(" GOOS: %s\n", context.GOOS)
+	log.Printf(" GOARCH: %s\n", context.GOARCH)
+	log.Printf(" lib-path: %q\n", g_config.LibPath)
+}
+
+// find_global_file returns the file path of the compiled package corresponding to the specified
+// import, and a boolean stating whether such path is valid.
+// TODO: Return only one value, possibly empty string if not found.
+func find_global_file(imp string, context build.Context) (string, bool) {
 	// gocode synthetically generates the builtin package
 	// "unsafe", since the "unsafe.a" package doesn't really exist.
 	// Thus, when the user request for the package "unsafe" we
@@ -224,24 +267,36 @@ func find_global_file(imp string, env *gocode_env) (string, bool) {
 		for _, p := range filepath.SplitList(g_config.LibPath) {
 			pkg_path := filepath.Join(p, pkgfile)
 			if file_exists(pkg_path) {
+				log_found_package_maybe(imp, pkg_path)
+				return pkg_path, true
+			}
+			// Also check the relevant pkg/OS_ARCH dir for the libpath, if provided.
+			pkgdir := fmt.Sprintf("%s_%s", context.GOOS, context.GOARCH)
+			pkg_path = filepath.Join(p, "pkg", pkgdir, pkgfile)
+			if file_exists(pkg_path) {
+				log_found_package_maybe(imp, pkg_path)
 				return pkg_path, true
 			}
 		}
 	}
 
-	pkgdir := fmt.Sprintf("%s_%s", env.GOOS, env.GOARCH)
-	pkgpath := filepath.Join("pkg", pkgdir, pkgfile)
-
-	if env.GOPATH != "" {
-		for _, p := range filepath.SplitList(env.GOPATH) {
-			gopath_pkg := filepath.Join(p, pkgpath)
-			if file_exists(gopath_pkg) {
-				return gopath_pkg, true
-			}
+	p, err := context.Import(imp, "", build.AllowBinary|build.FindOnly)
+	if err == nil {
+		if g_config.Autobuild {
+			autobuild(p)
+		}
+		if file_exists(p.PkgObj) {
+			log_found_package_maybe(imp, p.PkgObj)
+			return p.PkgObj, true
 		}
 	}
-	goroot_pkg := filepath.Join(env.GOROOT, pkgpath)
-	return goroot_pkg, file_exists(goroot_pkg)
+
+	if *g_debug {
+		log.Printf("Import path %q was not resolved\n", imp)
+		log.Println("Gocode's build context is:")
+		log_build_context(context)
+	}
+	return "", false
 }
 
 func package_name(file *ast.File) string {
@@ -258,15 +313,15 @@ func package_name(file *ast.File) string {
 //-------------------------------------------------------------------------
 
 type decl_cache struct {
-	cache map[string]*decl_file_cache
-	env   *gocode_env
+	cache   map[string]*decl_file_cache
+	context build.Context
 	sync.Mutex
 }
 
-func new_decl_cache(env *gocode_env) *decl_cache {
+func new_decl_cache(context build.Context) *decl_cache {
 	return &decl_cache{
-		cache: make(map[string]*decl_file_cache),
-		env:   env,
+		cache:   make(map[string]*decl_file_cache),
+		context: context,
 	}
 }
 
@@ -276,7 +331,7 @@ func (c *decl_cache) get(filename string) *decl_file_cache {
 
 	f, ok := c.cache[filename]
 	if !ok {
-		f = new_decl_file_cache(filename, c.env)
+		f = new_decl_file_cache(filename, c.context)
 		c.cache[filename] = f
 	}
 	return f
