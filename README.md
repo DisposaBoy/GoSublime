@@ -38,9 +38,9 @@ Demo
 Installation
 ------------
 
-Sublime Package Control allows you to easily install or remove GoSublime (and many other ST2 packages) from within the editor. It offers automatically updating packages as well so you no longer need to keep track of changes in GoSublime.
+Sublime Package Control allows you to easily install or remove GoSublime (and many other ST packages) from within the editor. It offers automatically updating packages as well so you no longer need to keep track of changes in GoSublime.
 
-1. Install Sublime Package Control (if you haven't done so already) from http://wbond.net/sublime_packages/package_control . Be sure to restart ST2 to complete the installation.
+1. Install Sublime Package Control (if you haven't done so already) from http://wbond.net/sublime_packages/package_control . Be sure to restart ST to complete the installation.
 
 2. Bring up the command palette (default `ctrl+shift+p` or `cmd+shift+p`) and start typing `Package Control: Install Package` then press return or click on that option to activate it. You will be presented with a new Quick Panel with the list of available packages. Type `GoSublime` and press return or on its entry to install GoSublime. If there is no entry for GoSublime, you most likely already have it installed.
 
