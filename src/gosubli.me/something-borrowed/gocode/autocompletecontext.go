@@ -6,7 +6,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -134,7 +133,7 @@ func (b *out_buffers) append_embedded(p string, decl *decl, class decl_class) {
 //-------------------------------------------------------------------------
 
 type auto_complete_context struct {
-	current *auto_complete_file // currently editted file
+	current *auto_complete_file // currently edited file
 	others  []*decl_file_cache  // other files of the current package
 	pkg     *scope
 
@@ -144,7 +143,7 @@ type auto_complete_context struct {
 
 func new_auto_complete_context(pcache package_cache, declcache *decl_cache) *auto_complete_context {
 	c := new(auto_complete_context)
-	c.current = new_auto_complete_file("", declcache.env)
+	c.current = new_auto_complete_file("", declcache.context)
 	c.pcache = pcache
 	c.declcache = declcache
 	return c
@@ -207,6 +206,12 @@ func (c *auto_complete_context) get_candidates_from_decl(cc cursor_context, clas
 		if cc.decl.class == decl_package && !ast.IsExported(decl.name) {
 			continue
 		}
+		if cc.struct_field {
+			// if we're autocompleting struct field init, skip all methods
+			if _, ok := decl.typ.(*ast.FuncType); ok {
+				continue
+			}
+		}
 		b.append_decl(cc.partial, decl.name, decl, class)
 	}
 	// propose all children of an underlying struct/interface type
@@ -236,9 +241,16 @@ func (c *auto_complete_context) apropos(file []byte, filename string, cursor int
 	// concurrent fashion. Apparently I'm not really good at that. Hopefully
 	// will be better in future.
 
-	// Does full processing of the currently editted file (top-level declarations plus
+	// Ugly hack, but it actually may help in some cases. Insert a
+	// semicolon right at the cursor location.
+	filesemi := make([]byte, len(file)+1)
+	copy(filesemi, file[:cursor])
+	filesemi[cursor] = ';'
+	copy(filesemi[cursor+1:], file[cursor:])
+
+	// Does full processing of the currently edited file (top-level declarations plus
 	// active function).
-	c.current.process_data(file)
+	c.current.process_data(filesemi)
 
 	// Updates cache of other files and packages. See the function for details of
 	// the process. At the end merges all the top-level declarations into the package
@@ -294,21 +306,6 @@ func (c *auto_complete_context) apropos(file []byte, filename string, cursor int
 
 	sort.Sort(b)
 	return b.candidates, partial
-}
-
-func (c *auto_complete_context) cursor_type_pkg(file []byte, filename string, cursor int) (string, string) {
-	c.current.cursor = cursor
-	c.current.name = filename
-	c.current.process_data(file)
-	c.update_caches()
-	typ, pkg, ok := c.deduce_cursor_type_pkg(file, cursor)
-	if !ok || typ == nil {
-		return "", ""
-	}
-
-	var tmp bytes.Buffer
-	pretty_print_type_expr(&tmp, typ)
-	return tmp.String(), pkg
 }
 
 func update_packages(ps map[string]*package_file_cache) {
@@ -408,7 +405,7 @@ func find_other_package_files(filename, package_name string) []string {
 	}
 
 	dir, file := filepath.Split(filename)
-	files_in_dir, err := ioutil.ReadDir(dir)
+	files_in_dir, err := readdir(dir)
 	if err != nil {
 		panic(err)
 	}
@@ -571,7 +568,7 @@ func (c *auto_complete_context) status() string {
 		fmt.Fprintf(buf, "\n")
 	}
 	if c.current.name != "" {
-		fmt.Fprintf(buf, "Last editted file: %s (package: %s)\n", c.current.name, c.current.package_name)
+		fmt.Fprintf(buf, "Last edited file: %s (package: %s)\n", c.current.name, c.current.package_name)
 		if len(c.others) > 0 {
 			fmt.Fprintf(buf, "\nOther files from the current package:\n")
 		}

@@ -3,6 +3,7 @@ package gocode
 import (
 	"flag"
 	"fmt"
+	"go/build"
 	"io/ioutil"
 	"net/rpc"
 	"os"
@@ -41,8 +42,6 @@ func do_client() int {
 		switch flag.Arg(0) {
 		case "autocomplete":
 			cmd_auto_complete(client)
-		case "cursortype":
-			cmd_cursor_type_pkg(client)
 		case "close":
 			cmd_close(client)
 		case "status":
@@ -60,12 +59,27 @@ func try_run_server() error {
 	path := get_executable_filename()
 	args := []string{os.Args[0], "-s", "-sock", *g_sock, "-addr", *g_addr}
 	cwd, _ := os.Getwd()
-	procattr := os.ProcAttr{Dir: cwd, Env: os.Environ(), Files: []*os.File{nil, nil, nil}}
-	p, err := os.StartProcess(path, args, &procattr)
 
+	var err error
+	stdin, err := os.Open(os.DevNull)
 	if err != nil {
 		return err
 	}
+	stdout, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	stderr, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+
+	procattr := os.ProcAttr{Dir: cwd, Env: os.Environ(), Files: []*os.File{stdin, stdout, stderr}}
+	p, err := os.StartProcess(path, args, &procattr)
+	if err != nil {
+		return err
+	}
+
 	return p.Release()
 }
 
@@ -139,17 +153,10 @@ func cmd_status(c *rpc.Client) {
 }
 
 func cmd_auto_complete(c *rpc.Client) {
-	var env gocode_env
-	env.get()
+	context := pack_build_context(&build.Default)
 	file, filename, cursor := prepare_file_filename_cursor()
 	f := get_formatter(*g_format)
-	f.write_candidates(client_auto_complete(c, file, filename, cursor, env))
-}
-
-func cmd_cursor_type_pkg(c *rpc.Client) {
-	file, filename, cursor := prepare_file_filename_cursor()
-	typ, pkg := client_cursor_type_pkg(c, file, filename, cursor)
-	fmt.Printf("%s,,%s\n", typ, pkg)
+	f.write_candidates(client_auto_complete(c, file, filename, cursor, context))
 }
 
 func cmd_close(c *rpc.Client) {

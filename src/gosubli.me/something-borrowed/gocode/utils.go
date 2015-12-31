@@ -3,6 +3,7 @@ package gocode
 import (
 	"bytes"
 	"fmt"
+	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,6 +12,30 @@ import (
 	"sync"
 	"unicode/utf8"
 )
+
+// our own readdir, which skips the files it cannot lstat
+func readdir(name string) ([]os.FileInfo, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]os.FileInfo, 0, len(names))
+	for _, lname := range names {
+		s, err := os.Lstat(filepath.Join(name, lname))
+		if err != nil {
+			continue
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
 
 // returns truncated 'data' and amount of bytes skipped (for cursor pos adjustment)
 func filter_out_shebang(data []byte) ([]byte, int) {
@@ -56,6 +81,31 @@ func has_prefix(s, prefix string, ignorecase bool) bool {
 	return strings.HasPrefix(s, prefix)
 }
 
+// Code taken directly from `gb`, I hope author doesn't mind.
+func find_gb_project_root(path string) (string, error) {
+	path = filepath.Dir(path)
+	if path == "" {
+		return "", fmt.Errorf("project root is blank")
+	}
+	start := path
+	for path != "/" {
+		root := filepath.Join(path, "src")
+		if _, err := os.Stat(root); err != nil {
+			if os.IsNotExist(err) {
+				path = filepath.Dir(path)
+				continue
+			}
+			return "", err
+		}
+		path, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			return "", err
+		}
+		return path, nil
+	}
+	return "", fmt.Errorf("could not find project root in %q or its parents", start)
+}
+
 //-------------------------------------------------------------------------
 // print_backtrace
 //
@@ -87,7 +137,7 @@ func print_backtrace(err interface{}) {
 // It's a bad idea to block multiple goroutines on file I/O. Creates many
 // threads which fight for HDD. Therefore only single goroutine should read HDD
 // at the same time.
-// -------------------------------------------------------------------------
+//-------------------------------------------------------------------------
 
 type file_read_request struct {
 	filename string
@@ -128,3 +178,52 @@ func (this *file_reader_type) read_file(filename string) ([]byte, error) {
 }
 
 var file_reader = new_file_reader()
+
+//-------------------------------------------------------------------------
+// copy of the build.Context without func fields
+//-------------------------------------------------------------------------
+
+type go_build_context struct {
+	GOARCH        string
+	GOOS          string
+	GOROOT        string
+	GOPATH        string
+	CgoEnabled    bool
+	UseAllFiles   bool
+	Compiler      string
+	BuildTags     []string
+	ReleaseTags   []string
+	InstallSuffix string
+}
+
+func pack_build_context(ctx *build.Context) go_build_context {
+	return go_build_context{
+		GOARCH:        ctx.GOARCH,
+		GOOS:          ctx.GOOS,
+		GOROOT:        ctx.GOROOT,
+		GOPATH:        ctx.GOPATH,
+		CgoEnabled:    ctx.CgoEnabled,
+		UseAllFiles:   ctx.UseAllFiles,
+		Compiler:      ctx.Compiler,
+		BuildTags:     ctx.BuildTags,
+		ReleaseTags:   ctx.ReleaseTags,
+		InstallSuffix: ctx.InstallSuffix,
+	}
+}
+
+func unpack_build_context(ctx *go_build_context) package_lookup_context {
+	return package_lookup_context{
+		Context: build.Context{
+			GOARCH:        ctx.GOARCH,
+			GOOS:          ctx.GOOS,
+			GOROOT:        ctx.GOROOT,
+			GOPATH:        ctx.GOPATH,
+			CgoEnabled:    ctx.CgoEnabled,
+			UseAllFiles:   ctx.UseAllFiles,
+			Compiler:      ctx.Compiler,
+			BuildTags:     ctx.BuildTags,
+			ReleaseTags:   ctx.ReleaseTags,
+			InstallSuffix: ctx.InstallSuffix,
+		},
+	}
+}

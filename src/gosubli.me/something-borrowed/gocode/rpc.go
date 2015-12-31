@@ -15,7 +15,7 @@ type Args_auto_complete struct {
 	Arg0 []byte
 	Arg1 string
 	Arg2 int
-	Arg3 gocode_env
+	Arg3 go_build_context
 }
 type Reply_auto_complete struct {
 	Arg0 []candidate
@@ -26,7 +26,7 @@ func (r *RPC) RPC_auto_complete(args *Args_auto_complete, reply *Reply_auto_comp
 	reply.Arg0, reply.Arg1 = server_auto_complete(args.Arg0, args.Arg1, args.Arg2, args.Arg3)
 	return nil
 }
-func client_auto_complete(cli *rpc.Client, Arg0 []byte, Arg1 string, Arg2 int, Arg3 gocode_env) (c []candidate, d int) {
+func client_auto_complete(cli *rpc.Client, Arg0 []byte, Arg1 string, Arg2 int, Arg3 go_build_context) (c []candidate, d int) {
 	var args Args_auto_complete
 	var reply Reply_auto_complete
 	args.Arg0 = Arg0
@@ -34,34 +34,6 @@ func client_auto_complete(cli *rpc.Client, Arg0 []byte, Arg1 string, Arg2 int, A
 	args.Arg2 = Arg2
 	args.Arg3 = Arg3
 	err := cli.Call("RPC.RPC_auto_complete", &args, &reply)
-	if err != nil {
-		panic(err)
-	}
-	return reply.Arg0, reply.Arg1
-}
-
-// wrapper for: server_cursor_type_pkg
-
-type Args_cursor_type_pkg struct {
-	Arg0 []byte
-	Arg1 string
-	Arg2 int
-}
-type Reply_cursor_type_pkg struct {
-	Arg0, Arg1 string
-}
-
-func (r *RPC) RPC_cursor_type_pkg(args *Args_cursor_type_pkg, reply *Reply_cursor_type_pkg) error {
-	reply.Arg0, reply.Arg1 = server_cursor_type_pkg(args.Arg0, args.Arg1, args.Arg2)
-	return nil
-}
-func client_cursor_type_pkg(cli *rpc.Client, Arg0 []byte, Arg1 string, Arg2 int) (typ, pkg string) {
-	var args Args_cursor_type_pkg
-	var reply Reply_cursor_type_pkg
-	args.Arg0 = Arg0
-	args.Arg1 = Arg1
-	args.Arg2 = Arg2
-	err := cli.Call("RPC.RPC_cursor_type_pkg", &args, &reply)
 	if err != nil {
 		panic(err)
 	}

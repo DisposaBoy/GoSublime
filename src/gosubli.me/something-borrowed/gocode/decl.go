@@ -280,6 +280,9 @@ func check_for_anon_type(t ast.Expr, flags decl_flags, s *scope) ast.Expr {
 //-------------------------------------------------------------------------
 
 func new_decl_full(name string, class decl_class, flags decl_flags, typ, v ast.Expr, vi int, s *scope) *decl {
+	if name == "_" {
+		return nil
+	}
 	d := new(decl)
 	d.name = name
 	d.class = class
@@ -321,6 +324,9 @@ func method_of(d ast.Decl) string {
 		if t.Recv != nil {
 			switch t := t.Recv.List[0].Type.(type) {
 			case *ast.StarExpr:
+				if se, ok := t.X.(*ast.SelectorExpr); ok {
+					return se.Sel.Name
+				}
 				return t.X.(*ast.Ident).Name
 			case *ast.Ident:
 				return t.Name
@@ -681,6 +687,8 @@ func (a *anonymous_typer) Visit(node ast.Node) ast.Visitor {
 		t.Fun = check_for_anon_type(t.Fun, a.flags, a.scope)
 	case *ast.ParenExpr:
 		t.X = check_for_anon_type(t.X, a.flags, a.scope)
+	case *ast.StarExpr:
+		t.X = check_for_anon_type(t.X, a.flags, a.scope)
 	case *ast.GenDecl:
 		switch t.Tok {
 		case token.VAR:
@@ -955,6 +963,10 @@ func (d *decl) find_child(name string) *decl {
 }
 
 func (d *decl) find_child_and_in_embedded(name string) *decl {
+	if d == nil {
+		return nil
+	}
+
 	c := d.find_child(name)
 	if c == nil {
 		for _, e := range d.embedded {

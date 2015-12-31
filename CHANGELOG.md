@@ -7,6 +7,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 15.12.31-1
+	* Update gocode (struct field completion, go15vendor completion, etc.)
+
 ## 14.02.25-1
 	* added setting `installsuffix`. this should help enabling completion and pkg importing
 	  for appengine. set this to `appengine` and add the appengine goroot to your GOPATH e.g.

@@ -1,6 +1,7 @@
 package gocode
 
 import (
+	"go/build"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -20,7 +21,7 @@ type margoState struct {
 	sync.Mutex
 
 	ctx       *auto_complete_context
-	env       *gocode_env
+	env       *package_lookup_context
 	pkgCache  package_cache
 	declCache *decl_cache
 }
@@ -32,7 +33,7 @@ type MargoCandidate struct {
 }
 
 func newMargoState() *margoState {
-	env := &gocode_env{}
+	env := &package_lookup_context{}
 	pkgCache := new_package_cache()
 	declCache := new_decl_cache(env)
 	return &margoState{
@@ -47,7 +48,7 @@ func (m *margoState) Complete(c MargoConfig, file []byte, filename string, curso
 	m.Lock()
 	defer m.Unlock()
 
-	m.updateConfig(c)
+	m.updateConfig(c, filename)
 
 	list, _ := m.ctx.apropos(file, filename, cursor)
 	candidates := make([]MargoCandidate, len(list))
@@ -61,7 +62,7 @@ func (m *margoState) Complete(c MargoConfig, file []byte, filename string, curso
 	return candidates
 }
 
-func (m *margoState) updateConfig(c MargoConfig) {
+func (m *margoState) updateConfig(c MargoConfig, filename string) {
 	pl := []string{}
 	osArch := runtime.GOOS + "_" + runtime.GOARCH
 	if c.InstallSuffix != "" {
@@ -78,6 +79,20 @@ func (m *margoState) updateConfig(c MargoConfig) {
 		add(p)
 	}
 
+	sep := string(filepath.ListSeparator)
 	g_config.ProposeBuiltins = c.Builtins
-	g_config.LibPath = strings.Join(pl, string(filepath.ListSeparator))
+	g_config.LibPath = strings.Join(pl, sep)
+
+	m.env.GOOS = runtime.GOOS
+	m.env.GOARCH = runtime.GOARCH
+	m.env.Compiler = runtime.Compiler
+	m.env.GOROOT = c.GOROOT
+	m.env.GOPATH = strings.Join(c.GOPATHS, sep)
+	m.env.InstallSuffix = c.InstallSuffix
+	m.env.CurrentPackagePath = ""
+
+	p, _ := m.env.ImportDir(filepath.Dir(filename), build.FindOnly)
+	if p != nil {
+		m.env.CurrentPackagePath = p.ImportPath
+	}
 }
