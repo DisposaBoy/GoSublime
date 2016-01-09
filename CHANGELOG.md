@@ -7,6 +7,9 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+## 16.01.09-1
+	* Output GOROOT and GOPATH to the ST console when they change
+
 ## 15.12.31-1
 	* Update gocode (struct field completion, go15vendor completion, etc.)
 
