@@ -288,6 +288,17 @@ def env(m={}):
 	e.update(_env_ext)
 	e.update(m)
 
+	fn = gs.attr('active_fn', '')
+	wd =  gs.getwd()
+
+	e.update({
+		'PWD': wd,
+		'_wd': wd,
+		'_fn': fn,
+		'_vfn': gs.attr('active_vfn', ''),
+		'_nm': fn.replace('\\', '/').split('/')[-1],
+	})
+
 	roots = [os.path.normpath(s) for s in gs.lst(e.get('GOPATH', '').split(psep), e.get('GOROOT', ''))]
 	e['GS_GOPATH'] = gs_gopath(gs.getwd(), roots) or gs_gopath(gs.attr('last_active_go_fn', ''), roots)
 
@@ -346,17 +357,6 @@ def env(m={}):
 			add_path.append(s)
 
 	e['PATH'] = psep.join(add_path)
-
-	fn = gs.attr('active_fn', '')
-	wd =  gs.getwd()
-
-	e.update({
-		'PWD': wd,
-		'_wd': wd,
-		'_fn': fn,
-		'_vfn': gs.attr('active_vfn', ''),
-		'_nm': fn.replace('\\', '/').split('/')[-1],
-	})
 
 	# Ensure no unicode objects leak through. The reason is twofold:
 	# 	* On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen
