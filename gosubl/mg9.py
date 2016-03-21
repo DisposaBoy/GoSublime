@@ -302,11 +302,16 @@ def fmt(fn, src):
 	st = gs.settings_dict()
 	x = st.get('fmt_cmd')
 	if x:
+		import os.path
+		args = {
+			"filename": fn,
+			"filedir": os.path.dirname(fn),
+		}
 		res, err = bcall('sh', {
 			'Env': sh.env(),
 			'Cmd': {
 					'Name': x[0],
-					'Args': x[1:],
+					'Args': tuple([a % args for a in x[1:]]),
 					'Input': src or '',
 			},
 		})
