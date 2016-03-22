@@ -353,6 +353,7 @@ def env(m={}):
 	e.update({
 		'PWD': wd,
 		'_wd': wd,
+		'_dir': os.path.dirname(fn),
 		'_fn': fn,
 		'_vfn': gs.attr('active_vfn', ''),
 		'_nm': fn.replace('\\', '/').split('/')[-1],

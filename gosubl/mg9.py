@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import string
 import sublime
 import subprocess
 import threading
@@ -302,8 +303,10 @@ def fmt(fn, src):
 	st = gs.settings_dict()
 	x = st.get('fmt_cmd')
 	if x:
+		env = sh.env()
+		x = [string.Template(s).safe_substitute(env) for s in x]
 		res, err = bcall('sh', {
-			'Env': sh.env(),
+			'Env': env,
 			'Cmd': {
 					'Name': x[0],
 					'Args': x[1:],

@@ -7,6 +7,10 @@ GoSublime Changes
 
 Note: you may need to restart Sublime Text after GoSublime updates
 
+16.03.22-1
+	* add new pseudo env var _dir (`dirname($_fn)`) and do env var substitution on fmt_cmd
+	* use `"fmt_cmd": ["goimports", "-srcdir", "$_dir"]` for newer version of goimports
+
 ## 16.01.09-1
 	* Output GOROOT and GOPATH to the ST console when they change
 
