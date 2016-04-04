@@ -2,7 +2,7 @@ from gosubl import gs
 from gosubl import gspatch
 from gosubl import mg9
 from os.path import dirname, basename, relpath
-import gslint
+from . import gslint
 import re
 import sublime
 import sublime_plugin

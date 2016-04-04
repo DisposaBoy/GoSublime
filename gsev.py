@@ -1,5 +1,5 @@
 from gosubl import gs
-import gstest
+from . import gstest
 import sublime
 import sublime_plugin
 
