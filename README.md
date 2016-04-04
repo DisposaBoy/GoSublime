@@ -28,8 +28,6 @@ Features
 Demo
 ----
 
-* New demos will be uploaded to http://www.youtube.com/user/GoSublime/videos
-
 * Old demo http://vimeo.com/disposaboy/gosublime-demo2
 
 ![](https://github.com/DisposaBoy/GoSublime/raw/master/ss/2.png)
