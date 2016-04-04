@@ -1,11 +1,12 @@
 GoSublime Changes
 -----------------
 
+** Note: **
 
-** Please be aware that go1 is no longer supported. The minimum supported version is go1.1.2 **
+* Please be aware that the minimum supported version of Go is go1.6. Only the gc toolchain is supported.
+* Only Sublime Text 3 is supported
+* You may need to restart Sublime Text after GoSublime updates
 
-
-Note: you may need to restart Sublime Text after GoSublime updates
 
 16.03.22-1
 	* add new pseudo env var _dir (`dirname($_fn)`) and do env var substitution on fmt_cmd
