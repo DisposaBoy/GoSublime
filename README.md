@@ -1,12 +1,12 @@
 GoSublime
 =========
 
-<a href='http://www.pledgie.com/campaigns/19078'><img alt='Click here to lend your support to: GoSublime and make a donation at www.pledgie.com !' src='http://www.pledgie.com/campaigns/19078.png?skin_name=chrome' border='0' /></a>
-
 Intro
 -----
 
-GoSublime is a Golang plugin collection for the text editor [SublimeText](http://www.sublimetext.com/) providing code completion and other IDE-like features. Only Sublime Text **3** is supported.
+GoSublime is a Golang plugin collection for the text editor [Sublime Text](http://www.sublimetext.com/) providing code completion and other IDE-like features. Only Sublime Text **3** is supported.
+
+Before using GoSublime you should read and understand [SUPPORT.md](https://github.com/DisposaBoy/GoSublime/blob/master/SUPPORT.md)
 
 Features
 --------
@@ -36,11 +36,12 @@ Demo
 Installation
 ------------
 
-Sublime Package Control allows you to easily install or remove GoSublime (and many other ST2 packages) from within the editor. It offers automatically updating packages as well so you no longer need to keep track of changes in GoSublime.
+It is assumed that you have a working installation of [Git](https://git-scm.com/) and know how to use it to clone and update repositories.
 
-1. Install Sublime Package Control (if you haven't done so already) from http://wbond.net/sublime_packages/package_control . Be sure to restart ST2 to complete the installation.
+Run the command `git clone https://github.com/DisposaBoy/GoSublime` from within the Sublime Text `Packages` directory.
+The location of your Sublime Text Packages can be found by clicking the menu: `Preferences` > `Browse Packages...`.
 
-2. Bring up the command palette (default `ctrl+shift+p` or `cmd+shift+p`) and start typing `Package Control: Install Package` then press return or click on that option to activate it. You will be presented with a new Quick Panel with the list of available packages. Type `GoSublime` and press return or on its entry to install GoSublime. If there is no entry for GoSublime, you most likely already have it installed.
+GoSublime should also be available via [Package Control](https://packagecontrol.io/installation) but I not use it or check for compatibility.
 
 Usage
 -----
@@ -57,23 +58,6 @@ You can customize the behaviour of GoSublime by creating a settings file in your
 
 Note: File names are case-sensitive on some platforms (e.g. Linux) so the file name should be exactly `GoSublime.sublime-settings` with capitalization preserved.
 
-Completion Markers
-------------------
-
-The following letters are used as suffix for entries in the completion list.
-
-* ʂ - Snippets. These snippets are provided by GoSublime and should not be confused with SublimeText's snippets. Furthermore, they are context sensitive, therefore the snippets provided in the global scope will be different to those provided in function scope.
-
-* ν - Variables
-
-* ʈ - User-defined types, structs, maps, slices, etc.
-
-* Ɩ - Constants
-
-* ƒ - Functions
-
-* ρ - Packages
-
 
 Copyright, License & Contributors
 =================================
@@ -82,10 +66,8 @@ GoSublime and MarGo are released under the MIT license. See [LICENSE.md](LICENSE
 
 GoSublime is the copyrighted work of *The GoSublime Authors* i.e me ([https://github.com/DisposaBoy/GoSublime](DisposaBoy)) and *all* contributors. If you submit a change, be it documentation or code, so long as it's committed to GoSublime's history I consider you a contributor. See [AUTHORS.md](AUTHORS.md) for a list of all the GoSublime authors/contributors.
 
-GoSublime bundles several dependencies, these all reside under the directory tree [something_borrowed/](something_borrowed/) and are the copyright of their respective authors.
-
 Supporters
 ==========
 
-GoSublime has received support from many kind individuals and as a thank you I've added most to [THANKS.md](THANKS.md) file as a way of saying *Thank You*. Some donors donated anonymously and so are not listed, however, if you donated and either I have not yet sent you an email personally thanking you or you would otherwise like to be added, please don't hesitate to contact me disposaboy@dby.me
+GoSublime has received support from many kind individuals and as a thank you I've added most to [THANKS.md](THANKS.md) file as a way of saying *Thank You*. Some donors donated anonymously and so are not listed, however. If you have donated and would like to add an entry to this file, feel free to open a pull request.
 
