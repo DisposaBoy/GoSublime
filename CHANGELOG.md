@@ -2,12 +2,16 @@
 
 * It is assumed that you have read and understood the contents of SUPPORT.md
 * You may need to restart Sublime Text after GoSublime updates
-
-
+* If you use the `fmt_cmd` setting with `goimports` or any other slow command
+   you should read and understand the `ipc_timeout` setting documented in `GoSublime.sublime-settings`
 
 
 GoSublime Changes
 -----------------
+
+## 16.04.08-2
+	* If you use the `fmt_cmd` setting with `goimports` or any other slow command
+        you should read and understand the `ipc_timeout` setting documented in `GoSublime.sublime-settings`
 
 ## 16.04.08-1
 	* added a new SUPPORT.md file calrify what level of support can be expected from use of GoSublime

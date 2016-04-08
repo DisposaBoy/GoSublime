@@ -41,10 +41,17 @@
 
 	// by default fmt'ing is done by margo using `fmt_tab_intent` and `fmt_tab_width` (above)
 	// you may use a command of your choosing by setting `fmt_cmd`
-	// e.g. ["goimports"]
+	// e.g. ["goimports", "-srcdir", "$_dir"]
 	// the command will be passed, to its stdin, the contents of the file
 	// it must output the new file contents
+	//
+	// You might need to increase `ipc_timeout` below if you use this setting
 	"fmt_cmd": [],
+
+	// ipc_timeout sets the maximum amount of time time in seconds to wait for a blocking ipc call to MarGo.
+	// Due to limitations in Sublime Text, fmt cannot be done without freezing Sublime Text.
+	// If you use the `fmt_cmd` setting above with a command that is slow like `goimports` you should increase this value.
+	"ipc_timeout": 1,
 
 	// Whether or not gslint is enabled
 	"gslint_enabled": true,

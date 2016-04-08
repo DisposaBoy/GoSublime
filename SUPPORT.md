@@ -51,3 +51,5 @@ I do not use the following tools and do *not* test for compatibility with them:
 * GVM or any other Go version manager
 * GB or any other other alternative to the `go` tool
 * `goimports`, the `gofmt`/`go fmt` *binary* or any other `gofmt` alternative
+* If you use the `fmt_cmd` setting with `goimports` or any other slow command
+   you should read and understand the `ipc_timeout` setting documented in `GoSublime.sublime-settings`
