@@ -424,11 +424,12 @@ def bcall(method, arg):
 
 	q = gs.queue.Queue()
 	acall(method, arg, lambda r,e: q.put((r, e)))
+	timeout = gs.setting('ipc_timeout', 1)
 	try:
-		res, err = q.get(True, gs.setting('ipc_timeout', 1))
+		res, err = q.get(True, timeout)
 		return res, err
 	except:
-		return {}, 'Blocking Call(%s): Timeout' % method
+		return {}, 'Blocking Call(%s) Timed out after %0.3f second(s). You might need to increase the `ipc_timeout` setting' % (method, timeout)
 
 def expand_jdata(v):
 	if gs.is_a(v, {}):
