@@ -42,8 +42,19 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 
 		if err:
 			err = "Cannot fmt file. Error: `%s'" % err
+			short_err = '%s: %s... error logged to console' % (domain, err[:15])
+
+			def clear_status():
+				if self.view.get_status(domain) == short_err:
+					self.view.set_status(domain, '')
+
 			gs.println(domain, err)
-			self.view.show_popup("%s: <b>%s</b>" % (domain, err))
+			self.view.set_status(domain, short_err)
+			sublime.set_timeout(clear_status, 10000)
+
+			if 'ipc_timeout' in err:
+				self.view.show_popup("%s: <b>%s</b>" % (domain, err))
+
 			return
 
 		_, err = gspatch.merge(self.view, vsize, src, edit)
