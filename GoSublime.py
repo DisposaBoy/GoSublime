@@ -1,5 +1,6 @@
 import os
 import sublime
+import sublime_plugin
 import sys
 import traceback
 
@@ -82,5 +83,26 @@ def plugin_loaded():
 	sublime.set_timeout(cb, 0)
 
 
+class GosublimeDoesntSupportSublimeText2(sublime_plugin.TextCommand):
+	def run(self, edit):
+		msg = '\n'.join([
+			'Sublime Text 2 is no longer supported by GoSublime'+
+			'',
+			'See https://github.com/DisposaBoy/GoSublime/blob/master/SUPPORT.md#sublime-text',
+			'',
+			'If you have a *good* reason to not upgrade to Sublime Text 3,',
+			'discuss it here https://github.com/DisposaBoy/GoSublime/issues/689',
+			'',
+		])
+		self.view.set_scratch(True)
+		self.view.set_syntax_file('Packages/GoSublime/syntax/GoSublime-9o.tmLanguage')
+		self.view.set_name('GoSublime no longer supports Sublime Text 2')
+		self.view.insert(edit, 0, msg)
+		self.view.set_read_only(True)
+
 if st2:
-	sublime.set_timeout(plugin_loaded, 0)
+	def cb():
+		view = sublime.active_window().new_file()
+		view.run_command('gosublime_doesnt_support_sublime_text2')
+
+	sublime.set_timeout(cb, 1000)

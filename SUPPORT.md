@@ -3,17 +3,24 @@ Use of GoSublime assumes you've read and understood *all* the points herein.
 
 Discussion of support and this file in particular are tracked here: https://github.com/DisposaBoy/GoSublime/issues/689
 
+
+
+# Sublime Text
+
+* **Sublime Text 2 is *not* supported.**
+* It's several years old at this point and Sublime HQ does not respond to my support requests.
+* Furthermore, they've changed the default download link to Sublime Text 3 implying they do not support it either.
+
+If you have a *good* reason to not upgrade to Sublime Text 3,
+discuss it here https://github.com/DisposaBoy/GoSublime/issues/689
+
+
+
 # Experience
 
 * It is assumed that you are experienced with Sublime Text, basic key bindings, its settings system, etc.
 * It is assumed that you already have a working Go installation: https://golang.org/doc/install
 * You are expect to have read and understand the contents of the files: GoSublime.sublime-settings, USAGE.md and 9o.md
-
-# Sublime Text
-
-* Sublime Text 2 is *not* supported.
-* It's several years old at this point and Sublime HQ does not respond to my support requests.
-* Furthermore, they've changed the default download link to Sublime Text 3 implying they do not support it either.
 
 # Sublime Text's Go package
 
