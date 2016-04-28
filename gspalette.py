@@ -189,6 +189,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 			delete_imports = []
 			add_imports = []
 			paths = im.get('paths', {})
+			use_named = gs.setting('use_named_imports') is True
 			for path in paths:
 				skipAdd = False
 				for i in im.get('imports', []):
@@ -203,17 +204,20 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 							delete_imports.append(('%sdelete: %s ( %s )' % (indent, name, path), i))
 
 				if not skipAdd:
+					title = paths[path]
 					s = '%s%s' % (indent, path)
 					m = {
 						'path': path,
 						'add': True,
 					}
+					name = title.split()[0]
+					if name and name != path and not path.endswith('/%s' % name):
+						s = '%s (%s)' % (s, name)
+						if use_named:
+							m['name'] = name
 
-					nm = paths[path]
-					if nm and nm != path and not path.endswith('/%s' % nm):
-						s = '%s (%s)' % (s, nm)
-						if gs.setting('use_named_imports') is True:
-							m['name'] = nm
+					if '[vendored]' in title:
+						s = s + ' [vendored]'
 
 					add_imports.append((s, m))
 
