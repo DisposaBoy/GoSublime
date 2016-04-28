@@ -135,12 +135,12 @@ def maybe_install():
 	if _inst_state() == '' and not _bins_exist():
 		install('', True)
 
-def install(aso_install_vesion, force_install):
+def install(aso_install_vesion, force_install, _reinstall=False):
 	global INSTALL_EXE
 
-	if _inst_state() != "":
+	if not _reinstall and _inst_state() != "":
 		gs.notify(DOMAIN, 'Installation aborted. Install command already called for GoSublime %s.' % INSTALL_VERSION)
-		return
+		return ''
 
 	INSTALL_EXE = INSTALL_EXE.replace('_%s.exe' % about.DEFAULT_GO_VERSION, '_%s.exe' % sh.GO_VERSION)
 	about.MARGO_EXE = INSTALL_EXE
@@ -151,7 +151,7 @@ def install(aso_install_vesion, force_install):
 
 	init_start = time.time()
 
-	if not is_update and not force_install and _bins_exist() and aso_install_vesion == INSTALL_VERSION:
+	if not _reinstall and not is_update and not force_install and _bins_exist() and aso_install_vesion == INSTALL_VERSION:
 		m_out = 'no'
 	else:
 		gs.notify('GoSublime', 'Installing MarGo')
@@ -261,6 +261,8 @@ def install(aso_install_vesion, force_install):
 
 		except Exception:
 			report_x()
+
+	return m_out
 
 def calltip(fn, src, pos, quiet, f):
 	tid = ''
