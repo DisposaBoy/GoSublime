@@ -1,5 +1,6 @@
 from gosubl import about
 from gosubl import gs
+from gosubl import gsq
 from gosubl import gsshell
 from gosubl import mg9
 from gosubl import sh
@@ -548,6 +549,15 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 		sublime.set_timeout(f, 0)
 
 	return cid, cb
+
+def cmd_margo_reinstall(view, edit, args, wd, rkey):
+	def cb():
+		gs.del_attr(mg9._inst_name())
+		out = mg9.install('', True, True)
+		gs.notify(DOMAIN, 'MarGo re-installed done')
+		push_output(view, rkey, out)
+
+	gsq.launch(DOMAIN, cb)
 
 def cmd_echo(view, edit, args, wd, rkey):
 	push_output(view, rkey, ' '.join(args))
