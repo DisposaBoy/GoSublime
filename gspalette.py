@@ -210,7 +210,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 						'path': path,
 						'add': True,
 					}
-					name = title.split()[0]
+					name = title.split()[0] if title else ''
 					if name and name != path and not path.endswith('/%s' % name):
 						s = '%s (%s)' % (s, name)
 						if use_named:
