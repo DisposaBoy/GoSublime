@@ -10,7 +10,24 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
+	"time"
 )
+
+var (
+	qidCache = struct {
+		sync.Mutex
+		m map[string]*qidNode
+	}{m: map[string]*qidNode{}}
+)
+
+type qidNode struct {
+	sync.Mutex
+	Pkg     *build.Package
+	EntName string
+	DirMod  time.Time
+	EntMod  time.Time
+}
 
 type mImportPaths struct {
 	Fn            string
@@ -133,7 +150,7 @@ func importsPaths(srcDir string, bctx *build.Context) map[string]string {
 		return nil
 	}
 
-	srcImportPath := quickImportPath(rootDirs, srcDir)
+	srcImportPath := quickImportPath(srcDir)
 
 	var pkgs []*build.Package
 	for _, dir := range rootDirs {
@@ -180,32 +197,61 @@ func importsPaths(srcDir string, bctx *build.Context) map[string]string {
 	return res
 }
 
-func quickImportPath(rootDirs []string, srcDir string) string {
-	for _, rootDir := range rootDirs {
-		dir := strings.TrimPrefix(srcDir, rootDir)
-		if dir != srcDir && strings.HasPrefix(dir, string(filepath.Separator)) {
-			return filepath.ToSlash(dir[1:])
-		}
+func quickImportPath(srcDir string) string {
+	dir := filepath.ToSlash(filepath.Clean(srcDir))
+	if i := strings.LastIndex(dir, "/src/"); i >= 0 {
+		return dir[i+5:]
 	}
 	return ""
 }
 
 func quickImportDir(bctx *build.Context, rootDirs []string, srcDir string) *build.Package {
-	ipath := quickImportPath(rootDirs, srcDir)
-	if ipath == "" {
+	srcDir = filepath.Clean(srcDir)
+	qidCache.Lock()
+	qn := qidCache.m[srcDir]
+	if qn == nil {
+		qn = &qidNode{
+			Pkg: &build.Package{
+				Dir:        srcDir,
+				ImportPath: quickImportPath(srcDir),
+			},
+		}
+		qidCache.m[srcDir] = qn
+	}
+	qidCache.Unlock()
+
+	qn.Lock()
+	defer qn.Unlock()
+
+	if qn.Pkg.ImportPath == "" {
 		return nil
 	}
+
+	dirMod := fileModTime(srcDir)
+	if dirMod.IsZero() {
+		return nil
+	}
+
+	if qn.DirMod.Equal(dirMod) {
+		if qn.Pkg.Name == "" {
+			// not a Go pkg
+			return nil
+		}
+		if qn.EntName != "" && qn.EntMod.Equal(fileModTime(filepath.Join(srcDir, qn.EntName))) {
+			return qn.Pkg
+		}
+	}
+
+	// reset cache
+	qn.DirMod = dirMod
+	qn.EntName = ""
+	qn.Pkg.Name = ""
 
 	f, err := os.Open(srcDir)
 	if err != nil {
 		return nil
 	}
 	defer f.Close()
-
-	pkg := &build.Package{
-		Dir:        srcDir,
-		ImportPath: ipath,
-	}
 
 	fset := token.NewFileSet()
 	for {
@@ -224,15 +270,34 @@ func quickImportDir(bctx *build.Context, rootDirs []string, srcDir string) *buil
 			}
 
 			path := filepath.Join(srcDir, nm)
+			entMod := fileModTime(path)
+			if entMod.IsZero() {
+				continue
+			}
+
 			mode := parser.PackageClauseOnly | parser.ParseComments
 			af, _ := parser.ParseFile(fset, path, nil, mode)
-			pkg.Name = astFileName(af)
-			if pkg.Name != "" {
-				return pkg
+			qn.Pkg.Name = astFileName(af)
+			if qn.Pkg.Name != "" {
+				qn.EntName = nm
+				qn.EntMod = entMod
+				return qn.Pkg
 			}
 		}
 	}
 	return nil
+}
+
+func fileModTime(fn string) time.Time {
+	if fi := fileInfo(fn); fi != nil {
+		return fi.ModTime()
+	}
+	return time.Time{}
+}
+
+func fileInfo(fn string) os.FileInfo {
+	fi, _ := os.Lstat(fn)
+	return fi
 }
 
 func astFileName(af *ast.File) string {
@@ -305,8 +370,8 @@ func dirNames(dir string, match func(basename string) bool) []string {
 			}
 
 			path := filepath.Join(dir, nm)
-			fi, err := os.Lstat(path)
-			if err == nil && fi.IsDir() {
+			fi := fileInfo(path)
+			if fi != nil && fi.IsDir() {
 				dirs = append(dirs, path)
 			}
 		}
