@@ -9,6 +9,10 @@
 GoSublime Changes
 -----------------
 
+## 16.04.29-1
+	* the imports list (ctrl+.,ctrl+p/super+.,super+p) is now sourced from source code packages only
+	  and recognises vendored packages
+
 ## 16.04.08-2
 	* If you use the `fmt_cmd` setting with `goimports` or any other slow command
         you should read and understand the `ipc_timeout` setting documented in `GoSublime.sublime-settings`
