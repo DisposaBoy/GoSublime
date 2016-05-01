@@ -9,6 +9,10 @@
 GoSublime Changes
 -----------------
 
+## 16.05.01-1
+	* update gocode
+	* add struct fields to the declarations palettes
+
 ## 16.04.29-1
 	* the imports list (ctrl+.,ctrl+p/super+.,super+p) is now sourced from source code packages only
 	  and recognises vendored packages
