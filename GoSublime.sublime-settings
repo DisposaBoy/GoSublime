@@ -45,7 +45,8 @@
 	// the command will be passed, to its stdin, the contents of the file
 	// it must output the new file contents
 	//
-	// You might need to increase `ipc_timeout` below if you use this setting
+	// You might need to increase `ipc_timeout` below if you use this setting.
+	// If `fmt_cmd` takes too long, the internal MarGo fmt will be tried instead.
 	"fmt_cmd": [],
 
 	// ipc_timeout sets the maximum amount of time time in seconds to wait for a blocking ipc call to MarGo.

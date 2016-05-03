@@ -302,28 +302,43 @@ def _complete_opts(fn, src, pos, builtins):
 	}
 
 def fmt(fn, src):
-	st = gs.settings_dict()
-	x = st.get('fmt_cmd')
-	if x:
-		env = sh.env()
-		x = [string.Template(s).safe_substitute(env) for s in x]
-		res, err = bcall('sh', {
-			'Env': env,
-			'Cmd': {
-					'Name': x[0],
-					'Args': x[1:],
-					'Input': src or '',
-			},
-		})
-		return res.get('out', ''), (err or res.get('err', ''))
+	fn = fn or ''
+	src = src or ''
+	fmt_cmd = gs.settings_dict().get('fmt_cmd')
+	if not fmt_cmd:
+		return _mg_fmt(fn, src)
 
+	env = sh.env()
+	fmt_cmd = [string.Template(s).safe_substitute(env) for s in fmt_cmd]
+	cmd_name = fmt_cmd[0]
+	cmd_args = fmt_cmd[1:]
+	res, err = bcall('sh', {
+		'Env': env,
+		'Cmd': {
+			'Name': cmd_name,
+			'Args': cmd_args,
+			'Input': src,
+		},
+	}, err_title=cmd_name)
+	err = err or res.get('err') or ''
+	cmd_src = '' if err else (res.get('out') or '')
+	if err:
+		mg_src, mg_err = _mg_fmt(fn, src)
+		if mg_src and not mg_err:
+			err = 'Used MarGo fmt because %s failed:\n\n%s' % (cmd_name, err)
+			cmd_src = mg_src
+
+	return cmd_src, err
+
+def _mg_fmt(fn, src):
 	res, err = bcall('fmt', {
-		'Fn': fn or '',
-		'Src': src or '',
-		'TabIndent': st.get('fmt_tab_indent'),
-		'TabWidth': st.get('fmt_tab_width'),
+		'Fn': fn,
+		'Src': src,
 	})
-	return res.get('src', ''), err
+	if err:
+		return '', err
+
+	return (res.get('src') or ''), ''
 
 def import_paths(fn, src, f):
 	tid = gs.begin(DOMAIN, 'Fetching import paths')
@@ -420,9 +435,11 @@ def share(src, f):
 def acall(method, arg, cb):
 	gs.mg9_send_q.put((method, arg, cb))
 
-def bcall(method, arg):
+def bcall(method, arg, err_title=''):
+	err_title = err_title or method
+
 	if _inst_state() != "done":
-		return {}, 'Blocking call(%s) aborted: Install is not done' % method
+		return {}, 'Blocking call(%s) aborted: Install is not done' % err_title
 
 	q = gs.queue.Queue()
 	acall(method, arg, lambda r,e: q.put((r, e)))
@@ -431,7 +448,7 @@ def bcall(method, arg):
 		res, err = q.get(True, timeout)
 		return res, err
 	except:
-		return {}, 'Blocking Call(%s) Timed out after %0.3f second(s). You might need to increase the `ipc_timeout` setting' % (method, timeout)
+		return {}, 'Blocking Call(%s) timed out after %0.3f second(s). You might need to increase the `ipc_timeout` setting' % (err_title, timeout)
 
 def expand_jdata(v):
 	if gs.is_a(v, {}):

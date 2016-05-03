@@ -38,10 +38,9 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 		src, err = mg9.fmt(self.view.file_name(), src)
 
 		if not err and not src.strip():
-			err = "it appears to be empty"
+			err = "the fmt'd file result appears to be empty"
 
 		if err:
-			err = "Cannot fmt file. Error: `%s'" % err
 			short_err = '%s: %s... error logged to console' % (domain, err[:15])
 
 			def clear_status():
@@ -53,14 +52,13 @@ class GsFmtCommand(sublime_plugin.TextCommand):
 			sublime.set_timeout(clear_status, 10000)
 
 			if 'ipc_timeout' in err:
-				self.view.show_popup("%s: <b>%s</b>" % (domain, err))
+				self.view.show_popup("%s: %s" % (domain, err.replace('\n', '<br>')))
 
-			return
-
-		_, err = gspatch.merge(self.view, vsize, src, edit)
-		if err:
-			msg = 'PANIC: Cannot fmt file. Check your source for errors (and maybe undo any changes).'
-			sublime.error_message("%s: %s: Merge failure: `%s'" % (domain, msg, err))
+		if src:
+			_, err = gspatch.merge(self.view, vsize, src, edit)
+			if err:
+				msg = 'PANIC: Cannot fmt file. Check your source for errors (and maybe undo any changes).'
+				sublime.error_message("%s: %s: Merge failure: `%s'" % (domain, msg, err))
 
 class GsFmtSaveCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
