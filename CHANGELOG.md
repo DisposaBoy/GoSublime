@@ -9,6 +9,9 @@
 GoSublime Changes
 -----------------
 
+## 16.05.03-1
+	* fix incomplete gocode update
+
 ## 16.05.01-1
 	* update gocode
 	* add struct fields to the declarations palettes
