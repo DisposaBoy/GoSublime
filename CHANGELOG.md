@@ -9,6 +9,9 @@
 GoSublime Changes
 -----------------
 
+## 16.05.03-2
+	* fallback to the internal MarGo fmt if `fmt_cmd` fails
+
 ## 16.05.03-1
 	* fix incomplete gocode update
 
