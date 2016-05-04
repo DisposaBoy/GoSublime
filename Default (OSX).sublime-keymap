@@ -82,6 +82,12 @@
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
+		"keys": ["super+.", "super+u"],
+		"command": "gs_doc",
+		"args": {"mode": "usage"},
+		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+	},
+	{
 		"keys": ["super+.", "super+."],
 		"command": "show_overlay",
 		"args": {"overlay": "command_palette", "text": "GoSublime: "}

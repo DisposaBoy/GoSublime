@@ -10,6 +10,14 @@ package const0
 var x = 0
 const c0 = x /* ERROR "not constant" */
 
+// typed constants must have constant types
+const _ interface /* ERROR invalid constant type */ {} = 0
+
+func _ () {
+	const _ interface /* ERROR invalid constant type */ {} = 0
+	for i := 0; i < 10; i++ {} // don't crash with non-nil iota here
+}
+
 // untyped constants
 const (
 	// boolean values
@@ -42,6 +50,7 @@ const (
 	ui16 = ui2 & ui3
 	ui17 = ui2 | ui3
 	ui18 = ui2 ^ ui3
+	ui19 = 1 /* ERROR "invalid operation" */ % 1.0
 
 	// floating point values
 	uf0 = 0.
@@ -99,7 +108,7 @@ const (
 	tb0 bool = false
 	tb1 bool = true
 	tb2 mybool = 2 < 1
-	tb3 mybool = ti1 /* ERROR "cannot compare" */ == tf1
+	tb3 mybool = ti1 /* ERROR "mismatched types" */ == tf1
 
 	// integer values
 	ti0 int8 = ui0
@@ -111,8 +120,8 @@ const (
 	ti5 = ti0 /* ERROR "mismatched types" */ + ti1
 	ti6 = ti1 - ti1
 	ti7 = ti2 /* ERROR "mismatched types" */ * ti1
-	//ti8 = ti3 / ti3 // TODO(gri) enable this
-	//ti9 = ti3 % ti3 // TODO(gri) enable this
+	ti8 = ti3 / ti3
+	ti9 = ti3 % ti3
 
 	ti10 = 1 / 0 /* ERROR "division by zero" */
 	ti11 = ti1 / 0 /* ERROR "division by zero" */
@@ -135,7 +144,7 @@ const (
 	tf5 = tf0 + tf1
 	tf6 = tf1 - tf1
 	tf7 = tf2 /* ERROR "mismatched types" */ * tf1
-	// tf8 = tf3 / tf3 // TODO(gri) enable this
+	tf8 = tf3 / tf3
 	tf9 = tf3 /* ERROR "not defined" */ % tf3
 
 	tf10 = 1 / 0 /* ERROR "division by zero" */
@@ -170,8 +179,8 @@ const (
 
 // initialization cycles
 const (
-	a /* ERROR "cycle" */ = a
-	b /* ERROR "cycle" */ , c /* ERROR "cycle" */, d, e = e, d, c, b // TODO(gri) should only have one cycle error
+	a /* ERROR "initialization cycle" */ = a
+	b /* ERROR "initialization cycle" */ , c /* ERROR "initialization cycle" */, d, e = e, d, c, b // TODO(gri) should only have one cycle error
 	f float64 = d
 )
 
@@ -179,6 +188,8 @@ const (
 const (
 	a1, a2, a3 = 7, 3.1415926, "foo"
 	b1, b2, b3 = b3, b1, 42
+	c1, c2, c3  /* ERROR "missing init expr for c3" */ = 1, 2
+	d1, d2, d3 = 1, 2, 3, 4 /* ERROR "extra init expr 4" */
 	_p0 = assert(a1 == 7)
 	_p1 = assert(a2 == 3.1415926)
 	_p2 = assert(a3 == "foo")
@@ -186,6 +197,21 @@ const (
 	_p4 = assert(b2 == 42)
 	_p5 = assert(b3 == 42)
 )
+
+func _() {
+	const (
+		a1, a2, a3 = 7, 3.1415926, "foo"
+		b1, b2, b3 = b3, b1, 42
+		c1, c2, c3  /* ERROR "missing init expr for c3" */ = 1, 2
+		d1, d2, d3 = 1, 2, 3, 4 /* ERROR "extra init expr 4" */
+		_p0 = assert(a1 == 7)
+		_p1 = assert(a2 == 3.1415926)
+		_p2 = assert(a3 == "foo")
+		_p3 = assert(b1 == 42)
+		_p4 = assert(b2 == 42)
+		_p5 = assert(b3 == 42)
+	)
+}
 
 // iota
 const (
@@ -206,10 +232,51 @@ const (
 const (
 	_b0 = iota
 	_b1 = assert(iota + iota2 == 5)
+	_b2 = len([iota]int{}) // iota may appear in a type!
+	_b3 = assert(_b2 == 2)
+	_b4 = len(A{})
 )
+
+type A [iota /* ERROR "cannot use iota" */ ]int
+
+// constant expressions with operands accross different
+// constant declarations must use the right iota values
+const (
+	_c0 = iota
+	_c1
+	_c2
+	_x = _c2 + _d1 + _e0 // 3
+)
+
+const (
+	_d0 = iota
+	_d1
+)
+
+const (
+	_e0 = iota
+)
+
+var _ = assert(_x == 3)
 
 // special cases
 const (
-	_n0 = nil /* ERROR "invalid constant type" */
+	_n0 = nil /* ERROR "not constant" */
 	_n1 = [ /* ERROR "not constant" */ ]int{}
 )
+
+// iotas must not be usable in expressions outside constant declarations
+type _ [iota /* ERROR "iota outside constant decl" */ ]byte
+var _ = iota /* ERROR "iota outside constant decl" */
+func _() {
+	_ = iota /* ERROR "iota outside constant decl" */
+	const _ = iota
+	_ = iota /* ERROR "iota outside constant decl" */
+}
+
+func _() {
+	iota := 123
+	const x = iota /* ERROR "is not constant" */
+	var y = iota
+	_ = y
+}

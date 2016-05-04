@@ -62,8 +62,17 @@
 		"args": {"mode": "hint"}
 	},
 	{
+		"caption": "GoSublime: Show Usages",
+		"command": "gs_doc",
+		"args": {"mode": "usage"}
+	},
+	{
 		"caption": "GoSublime: Fmt the current file (without saving it)",
 		"command": "gs_fmt"
+	},
+	{
+		"caption": "GoSublime: Rename the current selection (gorename)",
+		"command": "gs_gorename"
 	},
 	{
 		"caption": "GoSublime: New Go File",

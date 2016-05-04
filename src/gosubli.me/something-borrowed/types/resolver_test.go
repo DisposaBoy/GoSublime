@@ -2,13 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package types
+package types_test
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"sort"
 	"testing"
+
+	_ "golang.org/x/tools/go/gcimporter"
+	. "golang.org/x/tools/go/types"
 )
 
 var sources = []string{
@@ -25,6 +30,7 @@ var sources = []string{
 	`
 	package p
 	import "fmt"
+	type errorStringer struct { fmt.Stringer; error }
 	func f() string {
 		_ = "foo"
 		return fmt.Sprintf("%d", g())
@@ -35,13 +41,45 @@ var sources = []string{
 	package p
 	import . "go/parser"
 	import "sync"
-	func g() Mode { return ImportsOnly }
+	func h() Mode { return ImportsOnly }
 	var _, x int = 1, 2
 	func init() {}
-	type T struct{ sync.Mutex; a, b, c int}
+	type T struct{ *sync.Mutex; a, b, c int}
 	type I interface{ m() }
 	var _ = T{a: 1, b: 2, c: 3}
 	func (_ T) m() {}
+	func (T) _() {}
+	var i I
+	var _ = i.m
+	func _(s []int) { for i, x := range s { _, _ = i, x } }
+	func _(x interface{}) {
+		switch x := x.(type) {
+		case int:
+			_ = x
+		}
+		switch {} // implicit 'true' tag
+	}
+	`,
+	`
+	package p
+	type S struct{}
+	func (T) _() {}
+	func (T) _() {}
+	`,
+	`
+	package p
+	func _() {
+	L0:
+	L1:
+		goto L0
+		for {
+			goto L1
+		}
+		if true {
+			goto L2
+		}
+	L2:
+	}
 	`,
 }
 
@@ -50,12 +88,12 @@ var pkgnames = []string{
 	"math",
 }
 
-func TestResolveQualifiedIdents(t *testing.T) {
+func TestResolveIdents(t *testing.T) {
 	// parse package files
 	fset := token.NewFileSet()
 	var files []*ast.File
-	for _, src := range sources {
-		f, err := parser.ParseFile(fset, "", src, parser.DeclarationErrors)
+	for i, src := range sources {
+		f, err := parser.ParseFile(fset, fmt.Sprintf("sources[%d]", i), src, parser.DeclarationErrors)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -63,25 +101,18 @@ func TestResolveQualifiedIdents(t *testing.T) {
 	}
 
 	// resolve and type-check package AST
-	idents := make(map[*ast.Ident]Object)
-	var ctxt Context
-	ctxt.Ident = func(id *ast.Ident, obj Object) { idents[id] = obj }
-	pkg, err := ctxt.Check(fset, files)
+	var conf Config
+	uses := make(map[*ast.Ident]Object)
+	defs := make(map[*ast.Ident]Object)
+	_, err := conf.Check("testResolveIdents", fset, files, &Info{Defs: defs, Uses: uses})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// check that all packages were imported
 	for _, name := range pkgnames {
-		if pkg.Imports[name] == nil {
+		if conf.Packages[name] == nil {
 			t.Errorf("package %s not imported", name)
-		}
-	}
-
-	// check that there are no top-level unresolved identifiers
-	for _, f := range files {
-		for _, x := range f.Unresolved {
-			t.Errorf("%s: unresolved global identifier %s", fset.Position(x.Pos()), x.Name)
 		}
 	}
 
@@ -90,12 +121,12 @@ func TestResolveQualifiedIdents(t *testing.T) {
 		ast.Inspect(f, func(n ast.Node) bool {
 			if s, ok := n.(*ast.SelectorExpr); ok {
 				if x, ok := s.X.(*ast.Ident); ok {
-					obj := idents[x]
+					obj := uses[x]
 					if obj == nil {
 						t.Errorf("%s: unresolved qualified identifier %s", fset.Position(x.Pos()), x.Name)
 						return false
 					}
-					if _, ok := obj.(*Package); ok && idents[s.Sel] == nil {
+					if _, ok := obj.(*PkgName); ok && uses[s.Sel] == nil {
 						t.Errorf("%s: unresolved selector %s", fset.Position(s.Sel.Pos()), s.Sel.Name)
 						return false
 					}
@@ -107,48 +138,30 @@ func TestResolveQualifiedIdents(t *testing.T) {
 		})
 	}
 
-	// Currently, the Check API doesn't call Ident for fields, methods, and composite literal keys.
-	// Introduce them artifically so that we can run the check below.
-	for _, f := range files {
-		ast.Inspect(f, func(n ast.Node) bool {
-			switch x := n.(type) {
-			case *ast.StructType:
-				for _, list := range x.Fields.List {
-					for _, f := range list.Names {
-						assert(idents[f] == nil)
-						idents[f] = &Var{Pkg: pkg, Name: f.Name}
-					}
-				}
-			case *ast.InterfaceType:
-				for _, list := range x.Methods.List {
-					for _, f := range list.Names {
-						assert(idents[f] == nil)
-						idents[f] = &Func{Pkg: pkg, Name: f.Name}
-					}
-				}
-			case *ast.CompositeLit:
-				for _, e := range x.Elts {
-					if kv, ok := e.(*ast.KeyValueExpr); ok {
-						if k, ok := kv.Key.(*ast.Ident); ok {
-							assert(idents[k] == nil)
-							idents[k] = &Var{Pkg: pkg, Name: k.Name}
-						}
-					}
-				}
-			}
-			return true
-		})
+	for id, obj := range uses {
+		if obj == nil {
+			t.Errorf("%s: Uses[%s] == nil", fset.Position(id.Pos()), id.Name)
+		}
 	}
 
-	// check that each identifier in the source is enumerated by the Context.Ident callback
+	// check that each identifier in the source is found in uses or defs or both
+	var both []string
 	for _, f := range files {
 		ast.Inspect(f, func(n ast.Node) bool {
-			if x, ok := n.(*ast.Ident); ok && x.Name != "_" && x.Name != "." {
-				obj := idents[x]
-				if obj == nil {
+			if x, ok := n.(*ast.Ident); ok {
+				var objects int
+				if _, found := uses[x]; found {
+					objects |= 1
+					delete(uses, x)
+				}
+				if _, found := defs[x]; found {
+					objects |= 2
+					delete(defs, x)
+				}
+				if objects == 0 {
 					t.Errorf("%s: unresolved identifier %s", fset.Position(x.Pos()), x.Name)
-				} else {
-					delete(idents, x)
+				} else if objects == 3 {
+					both = append(both, x.Name)
 				}
 				return false
 			}
@@ -156,12 +169,19 @@ func TestResolveQualifiedIdents(t *testing.T) {
 		})
 	}
 
-	// TODO(gri) enable code below
-	// At the moment, the type checker introduces artifical identifiers which are not
-	// present in the source. Once it doesn't do that anymore, enable the checks below.
-	/*
-		for x := range idents {
-			t.Errorf("%s: identifier %s not present in source", fset.Position(x.Pos()), x.Name)
-		}
-	*/
+	// check the expected set of idents that are simultaneously uses and defs
+	sort.Strings(both)
+	if got, want := fmt.Sprint(both), "[Mutex Stringer error]"; got != want {
+		t.Errorf("simultaneous uses/defs = %s, want %s", got, want)
+	}
+
+	// any left-over identifiers didn't exist in the source
+	for x := range uses {
+		t.Errorf("%s: identifier %s not present in source", fset.Position(x.Pos()), x.Name)
+	}
+	for x := range defs {
+		t.Errorf("%s: identifier %s not present in source", fset.Position(x.Pos()), x.Name)
+	}
+
+	// TODO(gri) add tests to check ImplicitObj callbacks
 }

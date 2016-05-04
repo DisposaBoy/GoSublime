@@ -6,6 +6,9 @@
 
 package decls3
 
+import "unsafe"
+import "fmt"
+
 // fields with the same name at the same level cancel each other out
 
 func _() {
@@ -16,7 +19,7 @@ func _() {
 	)
 
 	var t T3
-	_ = t /* ERROR "no single field or method" */ .X
+	_ = t /* ERROR "ambiguous selector" */ .X
 }
 
 func _() {
@@ -28,7 +31,7 @@ func _() {
 	)
 
 	var t T4
-	_ = t /* ERROR "no single field or method" */ .X
+	_ = t /* ERROR "ambiguous selector" */ .X
 }
 
 func issue4355() {
@@ -41,7 +44,17 @@ func issue4355() {
 	)	
 
 	var t T5
-	_ = t /* ERROR "no single field or method" */ .X
+	_ = t /* ERROR "ambiguous selector" */ .X
+}
+
+func _() {
+	type State int
+	type A struct{ State }
+	type B struct{ fmt.State }
+	type T struct{ A; B }
+
+	var t T
+	_ = t /* ERROR "ambiguous selector" */ .State
 }
 
 // Embedded fields can be predeclared types.
@@ -64,6 +77,49 @@ func _() {
 	_ = y.int
 	_ = y.float32
 	_ = y.f
+}
+
+// Restrictions on embedded field types.
+
+func _() {
+	type I1 interface{}
+	type I2 interface{}
+	type P1 *int
+	type P2 *int
+	type UP unsafe.Pointer
+
+	type T1 struct {
+		I1
+		* /* ERROR "cannot be a pointer to an interface" */ I2
+		* /* ERROR "cannot be a pointer to an interface" */ error
+		P1 /* ERROR "cannot be a pointer" */
+		* /* ERROR "cannot be a pointer" */ P2
+	}
+
+	// unsafe.Pointers are treated like regular pointers when embedded
+	type T2 struct {
+		unsafe /* ERROR "cannot be unsafe.Pointer" */ .Pointer
+		*/* ERROR "cannot be unsafe.Pointer" */ unsafe.Pointer
+		UP /* ERROR "cannot be unsafe.Pointer" */
+		* /* ERROR "cannot be unsafe.Pointer" */ UP
+	}
+}
+
+// Named types that are pointers.
+
+type S struct{ x int }
+func (*S) m() {}
+type P *S
+
+func _() {
+	var s *S
+	_ = s.x
+	_ = s.m
+
+	var p P
+	_ = p.x
+	_ = p /* ERROR "no field or method" */ .m
+	_ = P /* ERROR "no field or method" */ .m
 }
 
 // Borrowed from the FieldByName test cases in reflect/all_test.go.
@@ -153,9 +209,9 @@ type S13 struct {
 }
 
 func _() {
-	_ = struct /* ERROR "no single field or method" */ {}{}.Foo
+	_ = struct /* ERROR "no field or method" */ {}{}.Foo
 	_ = S0{}.A
-	_ = S0 /* ERROR "no single field or method" */ {}.D
+	_ = S0 /* ERROR "no field or method" */ {}.D
 	_ = S1{}.A
 	_ = S1{}.B
 	_ = S1{}.S0
@@ -164,17 +220,17 @@ func _() {
 	_ = S2{}.S1
 	_ = S2{}.B
 	_ = S2{}.C
-	_ = S2 /* ERROR "no single field or method" */ {}.D
-	_ = S3 /* ERROR "no single field or method" */ {}.S1
+	_ = S2 /* ERROR "no field or method" */ {}.D
+	_ = S3 /* ERROR "ambiguous selector" */ {}.S1
 	_ = S3{}.A
-	_ = S3 /* ERROR "no single field or method" */ {}.B
+	_ = S3 /* ERROR "ambiguous selector" */ {}.B
 	_ = S3{}.D
 	_ = S3{}.E
 	_ = S4{}.A
-	_ = S4 /* ERROR "no single field or method" */ {}.B
-	_ = S5 /* ERROR "no single field or method" */ {}.X
+	_ = S4 /* ERROR "no field or method" */ {}.B
+	_ = S5 /* ERROR "ambiguous selector" */ {}.X
 	_ = S5{}.Y
-	_ = S10 /* ERROR "no single field or method" */ {}.X
+	_ = S10 /* ERROR "ambiguous selector" */ {}.X
 	_ = S10{}.Y
 }
 
@@ -250,4 +306,4 @@ type R22 R21
 type R23 R21
 type R24 R21
 
-var _ = R0 /* ERROR "no single field or method" */ {}.X
+var _ = R0 /* ERROR "ambiguous selector" */ {}.X

@@ -410,13 +410,17 @@ def imports(fn, src, toggle):
 		'tabWidth': gs.setting('fmt_tab_width'),
 	})
 
-def doc(fn, src, offset, f):
+def doc(fn, src, offset, f, mode='doc'):
 	tid = gs.begin(DOMAIN, 'Fetching doc info')
 	def cb(res, err):
 		gs.end(tid)
 		f(res, err)
 
-	acall('doc', {
+	#default to doc
+	if mode not in ['usage', 'doc']:
+		mode = 'doc'
+
+	acall(mode, {
 		'fn': fn or '',
 		'src': src or '',
 		'offset': offset or 0,

@@ -8,43 +8,51 @@ package types
 
 import (
 	"bytes"
-	"fmt"
 	"go/ast"
 	"go/token"
+
+	"gosubli.me/something-borrowed/exact" //"golang.org/x/tools/go/exact"
 )
 
 // An operandMode specifies the (addressing) mode of an operand.
-type operandMode int
+type operandMode byte
 
 const (
-	invalid  operandMode = iota // operand is invalid (due to an earlier error) - ignore
+	invalid  operandMode = iota // operand is invalid
 	novalue                     // operand represents no value (result of a function call w/o result)
+	builtin                     // operand is a built-in function
 	typexpr                     // operand is a type
 	constant                    // operand is a constant; the operand's typ is a Basic type
 	variable                    // operand is an addressable variable
+	mapindex                    // operand is a map index expression (acts like a variable on lhs, commaok on rhs of an assignment)
 	value                       // operand is a computed value
-	valueok                     // like mode == value, but operand may be used in a comma,ok expression
+	commaok                     // like value, but operand may be used in a comma,ok expression
 )
 
 var operandModeString = [...]string{
-	invalid:  "invalid",
+	invalid:  "invalid operand",
 	novalue:  "no value",
+	builtin:  "built-in",
 	typexpr:  "type",
 	constant: "constant",
 	variable: "variable",
+	mapindex: "map index expression",
 	value:    "value",
-	valueok:  "value,ok",
+	commaok:  "comma, ok expression",
 }
 
 // An operand represents an intermediate value during type checking.
 // Operands have an (addressing) mode, the expression evaluating to
-// the operand, the operand's type, and for constants a constant value.
+// the operand, the operand's type, a value for constants, and an id
+// for built-in functions.
+// The zero value of operand is a ready to use invalid operand.
 //
 type operand struct {
 	mode operandMode
 	expr ast.Expr
 	typ  Type
-	val  interface{}
+	val  exact.Value
+	id   builtinId
 }
 
 // pos returns the position of the expression corresponding to x.
@@ -58,78 +66,144 @@ func (x *operand) pos() token.Pos {
 	return x.expr.Pos()
 }
 
-func (x *operand) String() string {
-	if x.mode == invalid {
-		return "invalid operand"
-	}
+// Operand string formats
+// (not all "untyped" cases can appear due to the type system,
+// but they fall out naturally here)
+//
+// mode       format
+//
+// invalid    <expr> (               <mode>                    )
+// novalue    <expr> (               <mode>                    )
+// builtin    <expr> (               <mode>                    )
+// typexpr    <expr> (               <mode>                    )
+//
+// constant   <expr> (<untyped kind> <mode>                    )
+// constant   <expr> (               <mode>       of type <typ>)
+// constant   <expr> (<untyped kind> <mode> <val>              )
+// constant   <expr> (               <mode> <val> of type <typ>)
+//
+// variable   <expr> (<untyped kind> <mode>                    )
+// variable   <expr> (               <mode>       of type <typ>)
+//
+// mapindex   <expr> (<untyped kind> <mode>                    )
+// mapindex   <expr> (               <mode>       of type <typ>)
+//
+// value      <expr> (<untyped kind> <mode>                    )
+// value      <expr> (               <mode>       of type <typ>)
+//
+// commaok    <expr> (<untyped kind> <mode>                    )
+// commaok    <expr> (               <mode>       of type <typ>)
+//
+func operandString(this *Package, x *operand) string {
 	var buf bytes.Buffer
+
+	var expr string
 	if x.expr != nil {
-		buf.WriteString(exprString(x.expr))
+		expr = ExprString(x.expr)
+	} else {
+		switch x.mode {
+		case builtin:
+			expr = predeclaredFuncs[x.id].name
+		case typexpr:
+			expr = TypeString(this, x.typ)
+		case constant:
+			expr = x.val.String()
+		}
+	}
+
+	// <expr> (
+	if expr != "" {
+		buf.WriteString(expr)
 		buf.WriteString(" (")
 	}
-	buf.WriteString(operandModeString[x.mode])
-	if x.mode == constant {
-		format := " %v"
-		if isString(x.typ) {
-			format = " %q"
+
+	// <untyped kind>
+	hasType := false
+	switch x.mode {
+	case invalid, novalue, builtin, typexpr:
+		// no type
+	default:
+		// has type
+		if isUntyped(x.typ) {
+			buf.WriteString(x.typ.(*Basic).name)
+			buf.WriteByte(' ')
+			break
 		}
-		fmt.Fprintf(&buf, format, x.val)
+		hasType = true
 	}
-	if x.mode != novalue && (x.mode != constant || !isUntyped(x.typ)) {
-		fmt.Fprintf(&buf, " of type %s", typeString(x.typ))
+
+	// <mode>
+	buf.WriteString(operandModeString[x.mode])
+
+	// <val>
+	if x.mode == constant {
+		if s := x.val.String(); s != expr {
+			buf.WriteByte(' ')
+			buf.WriteString(s)
+		}
 	}
-	if x.expr != nil {
+
+	// <typ>
+	if hasType {
+		if x.typ != Typ[Invalid] {
+			buf.WriteString(" of type ")
+			WriteType(&buf, this, x.typ)
+		} else {
+			buf.WriteString(" with invalid type")
+		}
+	}
+
+	// )
+	if expr != "" {
 		buf.WriteByte(')')
 	}
+
 	return buf.String()
+}
+
+func (x *operand) String() string {
+	return operandString(nil, x)
 }
 
 // setConst sets x to the untyped constant for literal lit.
 func (x *operand) setConst(tok token.Token, lit string) {
-	x.mode = invalid
+	val := exact.MakeFromLiteral(lit, tok)
+	if val == nil {
+		// TODO(gri) Should we make it an unknown constant instead?
+		x.mode = invalid
+		return
+	}
 
 	var kind BasicKind
-	var val interface{}
 	switch tok {
 	case token.INT:
 		kind = UntypedInt
-		val = makeIntConst(lit)
-
 	case token.FLOAT:
 		kind = UntypedFloat
-		val = makeFloatConst(lit)
-
 	case token.IMAG:
 		kind = UntypedComplex
-		val = makeComplexConst(lit)
-
 	case token.CHAR:
 		kind = UntypedRune
-		val = makeRuneConst(lit)
-
 	case token.STRING:
 		kind = UntypedString
-		val = makeStringConst(lit)
 	}
 
-	if val != nil {
-		x.mode = constant
-		x.typ = Typ[kind]
-		x.val = val
-	}
+	x.mode = constant
+	x.typ = Typ[kind]
+	x.val = val
 }
 
-// isNil reports whether x is the predeclared nil constant.
+// isNil reports whether x is the nil value.
 func (x *operand) isNil() bool {
-	return x.mode == constant && x.val == nilConst
+	return x.mode == value && x.typ == Typ[UntypedNil]
 }
 
-// TODO(gri) The functions operand.isAssignable, checker.convertUntyped,
-//           checker.isRepresentable, and checker.assignOperand are
+// TODO(gri) The functions operand.assignableTo, checker.convertUntyped,
+//           checker.representable, and checker.assignment are
 //           overlapping in functionality. Need to simplify and clean up.
 
-// isAssignable reports whether x is assignable to a variable of type T.
-func (x *operand) isAssignable(ctxt *Context, T Type) bool {
+// assignableTo reports whether x is assignable to a variable of type T.
+func (x *operand) assignableTo(conf *Config, T Type) bool {
 	if x.mode == invalid || T == Typ[Invalid] {
 		return true // avoid spurious errors
 	}
@@ -137,31 +211,32 @@ func (x *operand) isAssignable(ctxt *Context, T Type) bool {
 	V := x.typ
 
 	// x's type is identical to T
-	if IsIdentical(V, T) {
+	if Identical(V, T) {
 		return true
 	}
 
-	Vu := underlying(V)
-	Tu := underlying(T)
+	Vu := V.Underlying()
+	Tu := T.Underlying()
+
+	// T is an interface type and x implements T
+	// (Do this check first as it might succeed early.)
+	if Ti, ok := Tu.(*Interface); ok {
+		if Implements(x.typ, Ti) {
+			return true
+		}
+	}
 
 	// x's type V and T have identical underlying types
 	// and at least one of V or T is not a named type
-	if IsIdentical(Vu, Tu) {
-		return !isNamed(V) || !isNamed(T)
-	}
-
-	// T is an interface type and x implements T
-	if Ti, ok := Tu.(*Interface); ok {
-		if m, _ := missingMethod(x.typ, Ti); m == nil {
-			return true
-		}
+	if Identical(Vu, Tu) && (!isNamed(V) || !isNamed(T)) {
+		return true
 	}
 
 	// x is a bidirectional channel value, T is a channel
 	// type, x's type V and T have identical element types,
 	// and at least one of V or T is not a named type
-	if Vc, ok := Vu.(*Chan); ok && Vc.Dir == ast.SEND|ast.RECV {
-		if Tc, ok := Tu.(*Chan); ok && IsIdentical(Vc.Elt, Tc.Elt) {
+	if Vc, ok := Vu.(*Chan); ok && Vc.dir == SendRecv {
+		if Tc, ok := Tu.(*Chan); ok && Identical(Vc.elem, Tc.elem) {
 			return !isNamed(V) || !isNamed(T)
 		}
 	}
@@ -171,7 +246,7 @@ func (x *operand) isAssignable(ctxt *Context, T Type) bool {
 	if x.isNil() {
 		switch t := Tu.(type) {
 		case *Basic:
-			if t.Kind == UnsafePointer {
+			if t.kind == UnsafePointer {
 				return true
 			}
 		case *Pointer, *Signature, *Slice, *Map, *Chan, *Interface:
@@ -182,20 +257,20 @@ func (x *operand) isAssignable(ctxt *Context, T Type) bool {
 
 	// x is an untyped constant representable by a value of type T
 	// TODO(gri) This is borrowing from checker.convertUntyped and
-	//           checker.isRepresentable. Need to clean up.
+	//           checker.representable. Need to clean up.
 	if isUntyped(Vu) {
 		switch t := Tu.(type) {
 		case *Basic:
 			if x.mode == constant {
-				return isRepresentableConst(x.val, ctxt, t.Kind)
+				return representableConst(x.val, conf, t.kind, nil)
 			}
 			// The result of a comparison is an untyped boolean,
 			// but may not be a constant.
 			if Vb, _ := Vu.(*Basic); Vb != nil {
-				return Vb.Kind == UntypedBool && isBoolean(Tu)
+				return Vb.kind == UntypedBool && isBoolean(Tu)
 			}
 		case *Interface:
-			return x.isNil() || len(t.Methods) == 0
+			return x.isNil() || t.Empty()
 		case *Pointer, *Signature, *Slice, *Map, *Chan:
 			return x.isNil()
 		}
@@ -205,207 +280,8 @@ func (x *operand) isAssignable(ctxt *Context, T Type) bool {
 }
 
 // isInteger reports whether x is a (typed or untyped) integer value.
-func (x *operand) isInteger(ctxt *Context) bool {
+func (x *operand) isInteger() bool {
 	return x.mode == invalid ||
 		isInteger(x.typ) ||
-		x.mode == constant && isRepresentableConst(x.val, ctxt, UntypedInt)
-}
-
-// lookupResult represents the result of a struct field/method lookup.
-type lookupResult struct {
-	mode  operandMode
-	typ   Type
-	index []int // field index sequence; nil for methods
-}
-
-type embeddedType struct {
-	typ       *NamedType
-	index     []int // field index sequence
-	multiples bool  // if set, typ is embedded multiple times at the same level
-}
-
-// lookupFieldBreadthFirst searches all types in list for a single entry (field
-// or method) of the given name from the given package. If such a field is found,
-// the result describes the field mode and type; otherwise the result mode is invalid.
-// (This function is similar in structure to FieldByNameFunc in reflect/type.go)
-//
-func lookupFieldBreadthFirst(list []embeddedType, name QualifiedName) (res lookupResult) {
-	// visited records the types that have been searched already.
-	visited := make(map[*NamedType]bool)
-
-	// embedded types of the next lower level
-	var next []embeddedType
-
-	// potentialMatch is invoked every time a match is found.
-	potentialMatch := func(multiples bool, mode operandMode, typ Type) bool {
-		if multiples || res.mode != invalid {
-			// name appeared already at this level - annihilate
-			res.mode = invalid
-			return false
-		}
-		// first appearance of name
-		res.mode = mode
-		res.typ = typ
-		res.index = nil
-		return true
-	}
-
-	// Search the current level if there is any work to do and collect
-	// embedded types of the next lower level in the next list.
-	for len(list) > 0 {
-		// The res.mode indicates whether we have found a match already
-		// on this level (mode != invalid), or not (mode == invalid).
-		assert(res.mode == invalid)
-
-		// start with empty next list (don't waste underlying array)
-		next = next[:0]
-
-		// look for name in all types at this level
-		for _, e := range list {
-			typ := e.typ
-			if visited[typ] {
-				continue
-			}
-			visited[typ] = true
-
-			// look for a matching attached method
-			for _, m := range typ.Methods {
-				if name.IsSame(m.QualifiedName) {
-					assert(m.Type != nil)
-					if !potentialMatch(e.multiples, value, m.Type) {
-						return // name collision
-					}
-				}
-			}
-
-			switch t := typ.Underlying.(type) {
-			case *Struct:
-				// look for a matching field and collect embedded types
-				for i, f := range t.Fields {
-					if name.IsSame(f.QualifiedName) {
-						assert(f.Type != nil)
-						if !potentialMatch(e.multiples, variable, f.Type) {
-							return // name collision
-						}
-						var index []int
-						index = append(index, e.index...) // copy e.index
-						index = append(index, i)
-						res.index = index
-						continue
-					}
-					// Collect embedded struct fields for searching the next
-					// lower level, but only if we have not seen a match yet
-					// (if we have a match it is either the desired field or
-					// we have a name collision on the same level; in either
-					// case we don't need to look further).
-					// Embedded fields are always of the form T or *T where
-					// T is a named type. If typ appeared multiple times at
-					// this level, f.Type appears multiple times at the next
-					// level.
-					if f.IsAnonymous && res.mode == invalid {
-						// Ignore embedded basic types - only user-defined
-						// named types can have methods or have struct fields.
-						if t, _ := deref(f.Type).(*NamedType); t != nil {
-							var index []int
-							index = append(index, e.index...) // copy e.index
-							index = append(index, i)
-							next = append(next, embeddedType{t, index, e.multiples})
-						}
-					}
-				}
-
-			case *Interface:
-				// look for a matching method
-				for _, m := range t.Methods {
-					if name.IsSame(m.QualifiedName) {
-						assert(m.Type != nil)
-						if !potentialMatch(e.multiples, value, m.Type) {
-							return // name collision
-						}
-					}
-				}
-			}
-		}
-
-		if res.mode != invalid {
-			// we found a single match on this level
-			return
-		}
-
-		// No match and no collision so far.
-		// Compute the list to search for the next level.
-		list = list[:0] // don't waste underlying array
-		for _, e := range next {
-			// Instead of adding the same type multiple times, look for
-			// it in the list and mark it as multiple if it was added
-			// before.
-			// We use a sequential search (instead of a map for next)
-			// because the lists tend to be small, can easily be reused,
-			// and explicit search appears to be faster in this case.
-			if alt := findType(list, e.typ); alt != nil {
-				alt.multiples = true
-			} else {
-				list = append(list, e)
-			}
-		}
-
-	}
-
-	return
-}
-
-func findType(list []embeddedType, typ *NamedType) *embeddedType {
-	for i := range list {
-		if p := &list[i]; p.typ == typ {
-			return p
-		}
-	}
-	return nil
-}
-
-func lookupField(typ Type, name QualifiedName) lookupResult {
-	typ = deref(typ)
-
-	if t, ok := typ.(*NamedType); ok {
-		for _, m := range t.Methods {
-			if name.IsSame(m.QualifiedName) {
-				assert(m.Type != nil)
-				return lookupResult{value, m.Type, nil}
-			}
-		}
-		typ = t.Underlying
-	}
-
-	switch t := typ.(type) {
-	case *Struct:
-		var next []embeddedType
-		for i, f := range t.Fields {
-			if name.IsSame(f.QualifiedName) {
-				return lookupResult{variable, f.Type, []int{i}}
-			}
-			if f.IsAnonymous {
-				// Possible optimization: If the embedded type
-				// is a pointer to the current type we could
-				// ignore it.
-				// Ignore embedded basic types - only user-defined
-				// named types can have methods or have struct fields.
-				if t, _ := deref(f.Type).(*NamedType); t != nil {
-					next = append(next, embeddedType{t, []int{i}, false})
-				}
-			}
-		}
-		if len(next) > 0 {
-			return lookupFieldBreadthFirst(next, name)
-		}
-
-	case *Interface:
-		for _, m := range t.Methods {
-			if name.IsSame(m.QualifiedName) {
-				return lookupResult{value, m.Type, nil}
-			}
-		}
-	}
-
-	// not found
-	return lookupResult{mode: invalid}
+		x.mode == constant && representableConst(x.val, nil, UntypedInt, nil) // no *Config required for UntypedInt
 }

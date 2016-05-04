@@ -2,77 +2,144 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// This file implements Scopes.
+
 package types
 
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"sort"
+	"strings"
 )
 
-// A Scope maintains the set of named language entities declared
-// in the scope and a link to the immediately surrounding (outer)
-// scope.
-//
+// TODO(gri) Provide scopes with a name or other mechanism so that
+//           objects can use that information for better printing.
+
+// A Scope maintains a set of objects and links to its containing
+// (parent) and contained (children) scopes. Objects may be inserted
+// and looked up by name. The zero value for Scope is a ready-to-use
+// empty scope.
 type Scope struct {
-	Outer   *Scope
-	Entries []Object          // scope entries in insertion order
-	large   map[string]Object // for fast lookup - only used for larger scopes
+	parent   *Scope
+	children []*Scope
+	comment  string            // for debugging only
+	elems    map[string]Object // lazily allocated
 }
 
-// Lookup returns the object with the given name if it is
-// found in scope s, otherwise it returns nil. Outer scopes
-// are ignored.
-//
-func (s *Scope) Lookup(name string) Object {
-	if s.large != nil {
-		return s.large[name]
+// NewScope returns a new, empty scope contained in the given parent
+// scope, if any.  The comment is for debugging only.
+func NewScope(parent *Scope, comment string) *Scope {
+	s := &Scope{parent: parent, comment: comment}
+	// don't add children to Universe scope!
+	if parent != nil && parent != Universe {
+		parent.children = append(parent.children, s)
 	}
-	for _, obj := range s.Entries {
-		if obj.GetName() == name {
-			return obj
+	return s
+}
+
+// Parent returns the scope's containing (parent) scope.
+func (s *Scope) Parent() *Scope { return s.parent }
+
+// Len() returns the number of scope elements.
+func (s *Scope) Len() int { return len(s.elems) }
+
+// Names returns the scope's element names in sorted order.
+func (s *Scope) Names() []string {
+	names := make([]string, len(s.elems))
+	i := 0
+	for name := range s.elems {
+		names[i] = name
+		i++
+	}
+	sort.Strings(names)
+	return names
+}
+
+// NumChildren() returns the number of scopes nested in s.
+func (s *Scope) NumChildren() int { return len(s.children) }
+
+// Child returns the i'th child scope for 0 <= i < NumChildren().
+func (s *Scope) Child(i int) *Scope { return s.children[i] }
+
+// Lookup returns the object in scope s with the given name if such an
+// object exists; otherwise the result is nil.
+func (s *Scope) Lookup(name string) Object {
+	return s.elems[name]
+}
+
+// LookupParent follows the parent chain of scopes starting with s until
+// it finds a scope where Lookup(name) returns a non-nil object, and then
+// returns that scope and object. If no such scope exists, the result is (nil, nil).
+//
+// Note that obj.Parent() may be different from the returned scope if the
+// object was inserted into the scope and already had a parent at that
+// time (see Insert, below). This can only happen for dot-imported objects
+// whose scope is the scope of the package that exported them.
+func (s *Scope) LookupParent(name string) (*Scope, Object) {
+	for ; s != nil; s = s.parent {
+		if obj := s.elems[name]; obj != nil {
+			return s, obj
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // Insert attempts to insert an object obj into scope s.
-// If s already contains an object with the same name,
-// Insert leaves s unchanged and returns that object.
-// Otherwise it inserts obj and returns nil.
-//
+// If s already contains an alternative object alt with
+// the same name, Insert leaves s unchanged and returns alt.
+// Otherwise it inserts obj, sets the object's parent scope
+// if not already set, and returns nil.
 func (s *Scope) Insert(obj Object) Object {
-	name := obj.GetName()
-	if alt := s.Lookup(name); alt != nil {
+	name := obj.Name()
+	if alt := s.elems[name]; alt != nil {
 		return alt
 	}
-	s.Entries = append(s.Entries, obj)
-
-	// If the scope size reaches a threshold, use a map for faster lookups.
-	const threshold = 20
-	if len(s.Entries) > threshold {
-		if s.large == nil {
-			m := make(map[string]Object, len(s.Entries))
-			for _, obj := range s.Entries {
-				m[obj.GetName()] = obj
-			}
-			s.large = m
-		}
-		s.large[name] = obj
+	if s.elems == nil {
+		s.elems = make(map[string]Object)
 	}
-
+	s.elems[name] = obj
+	if obj.Parent() == nil {
+		obj.setParent(s)
+	}
 	return nil
 }
 
-// Debugging support
-func (s *Scope) String() string {
-	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "scope %p {", s)
-	if s != nil && len(s.Entries) > 0 {
-		fmt.Fprintln(&buf)
-		for _, obj := range s.Entries {
-			fmt.Fprintf(&buf, "\t%s\t%T\n", obj.GetName(), obj)
+// WriteTo writes a string representation of the scope to w,
+// with the scope elements sorted by name.
+// The level of indentation is controlled by n >= 0, with
+// n == 0 for no indentation.
+// If recurse is set, it also writes nested (children) scopes.
+func (s *Scope) WriteTo(w io.Writer, n int, recurse bool) {
+	const ind = ".  "
+	indn := strings.Repeat(ind, n)
+
+	fmt.Fprintf(w, "%s%s scope %p {", indn, s.comment, s)
+	if len(s.elems) == 0 {
+		fmt.Fprintf(w, "}\n")
+		return
+	}
+
+	fmt.Fprintln(w)
+	indn1 := indn + ind
+	for _, name := range s.Names() {
+		fmt.Fprintf(w, "%s%s\n", indn1, s.elems[name])
+	}
+
+	if recurse {
+		for _, s := range s.children {
+			fmt.Fprintln(w)
+			s.WriteTo(w, n+1, recurse)
 		}
 	}
-	fmt.Fprintf(&buf, "}\n")
+
+	fmt.Fprintf(w, "%s}", indn)
+}
+
+// String returns a string representation of the scope, for debugging.
+func (s *Scope) String() string {
+	var buf bytes.Buffer
+	s.WriteTo(&buf, 0, false)
 	return buf.String()
 }

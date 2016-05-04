@@ -2,26 +2,28 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// This file contains tests verifying the types associated with an AST after
-// type checking.
-
-package types
+package types_test
 
 import (
 	"go/ast"
 	"go/parser"
+	"go/token"
 	"testing"
+
+	_ "golang.org/x/tools/go/gcimporter"
+	. "golang.org/x/tools/go/types"
 )
 
 const filename = "<src>"
 
 func makePkg(t *testing.T, src string) (*Package, error) {
+	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, filename, src, parser.DeclarationErrors)
 	if err != nil {
 		return nil, err
 	}
-	pkg, err := Check(fset, []*ast.File{file})
-	return pkg, err
+	// use the package name as package path
+	return Check(file.Name.Name, fset, []*ast.File{file})
 }
 
 type testEntry struct {
@@ -33,7 +35,8 @@ func dup(s string) testEntry {
 	return testEntry{s, s}
 }
 
-var testTypes = []testEntry{
+// types that don't depend on any other type declarations
+var independentTestTypes = []testEntry{
 	// basic types
 	dup("int"),
 	dup("float32"),
@@ -55,8 +58,8 @@ var testTypes = []testEntry{
 	}`, `struct{x int; y int; z float32 "foo"}`},
 	{`struct {
 		string
-		elems []T
-	}`, `struct{string; elems []T}`},
+		elems []complex128
+	}`, `struct{string; elems []complex128}`},
 
 	// pointers
 	dup("*int"),
@@ -89,83 +92,67 @@ var testTypes = []testEntry{
 	// interfaces
 	dup("interface{}"),
 	dup("interface{m()}"),
-	dup(`interface{m(int) float32; String() string}`),
-	// TODO(gri) add test for interface w/ anonymous field
+	dup(`interface{String() string; m(int) float32}`),
 
 	// maps
 	dup("map[string]int"),
 	{"map[struct{x, y int}][]byte", "map[struct{x int; y int}][]byte"},
 
 	// channels
-	dup("chan int"),
+	dup("chan<- chan int"),
+	dup("chan<- <-chan int"),
+	dup("<-chan <-chan int"),
+	dup("chan (<-chan int)"),
 	dup("chan<- func()"),
 	dup("<-chan []func() int"),
 }
 
-func TestTypes(t *testing.T) {
-	for _, test := range testTypes {
-		src := "package p; type T " + test.src
+// types that depend on other type declarations (src in TestTypes)
+var dependentTestTypes = []testEntry{
+	// interfaces
+	dup(`interface{io.Reader; io.Writer}`),
+	dup(`interface{m() int; io.Writer}`),
+	{`interface{m() interface{T}}`, `interface{m() interface{p.T}}`},
+}
+
+func TestTypeString(t *testing.T) {
+	var tests []testEntry
+	tests = append(tests, independentTestTypes...)
+	tests = append(tests, dependentTestTypes...)
+
+	for _, test := range tests {
+		src := `package p; import "io"; type _ io.Writer; type T ` + test.src
 		pkg, err := makePkg(t, src)
 		if err != nil {
 			t.Errorf("%s: %s", src, err)
 			continue
 		}
-		typ := underlying(pkg.Scope.Lookup("T").GetType())
-		str := typeString(typ)
-		if str != test.str {
-			t.Errorf("%s: got %s, want %s", test.src, str, test.str)
+		typ := pkg.Scope().Lookup("T").Type().Underlying()
+		if got := typ.String(); got != test.str {
+			t.Errorf("%s: got %s, want %s", test.src, got, test.str)
 		}
 	}
 }
 
-var testExprs = []testEntry{
-	// basic type literals
-	dup("x"),
-	dup("true"),
-	dup("42"),
-	dup("3.1415"),
-	dup("2.71828i"),
-	dup(`'a'`),
-	dup(`"foo"`),
-	dup("`bar`"),
+func TestQualifiedTypeString(t *testing.T) {
+	p, _ := pkgFor("p.go", "package p; type T int", nil)
+	q, _ := pkgFor("q.go", "package q", nil)
 
-	// arbitrary expressions
-	dup("&x"),
-	dup("*&x"),
-	dup("(x)"),
-	dup("x + y"),
-	dup("x + y * 10"),
-	dup("t.foo"),
-	dup("s[0]"),
-	dup("s[x:y]"),
-	dup("s[:y]"),
-	dup("s[x:]"),
-	dup("s[:]"),
-	dup("f(1, 2.3)"),
-	dup("-f(10, 20)"),
-	dup("f(x + y, +3.1415)"),
-	{"func(a, b int) {}", "(func literal)"},
-	{"func(a, b int) []int {}(1, 2)[x]", "(func literal)(1, 2)[x]"},
-	{"[]int{1, 2, 3}", "(composite literal)"},
-	{"[]int{1, 2, 3}[x:]", "(composite literal)[x:]"},
-	{"i.([]string)", "i.(...)"},
-}
-
-func TestExprs(t *testing.T) {
-	for _, test := range testExprs {
-		src := "package p; var _ = " + test.src + "; var (x, y int; s []string; f func(int, float32) int; i interface{}; t interface { foo() })"
-		file, err := parser.ParseFile(fset, filename, src, parser.DeclarationErrors)
-		if err != nil {
-			t.Errorf("%s: %s", src, err)
-			continue
-		}
-		// TODO(gri) writing the code below w/o the decl variable will
-		//           cause a 386 compiler error (out of fixed registers)
-		decl := file.Decls[0].(*ast.GenDecl)
-		expr := decl.Specs[0].(*ast.ValueSpec).Values[0]
-		str := exprString(expr)
-		if str != test.str {
-			t.Errorf("%s: got %s, want %s", test.src, str, test.str)
+	pT := p.Scope().Lookup("T").Type()
+	for _, test := range []struct {
+		typ  Type
+		this *Package
+		want string
+	}{
+		{pT, nil, "p.T"},
+		{pT, p, "T"},
+		{pT, q, "p.T"},
+		{NewPointer(pT), p, "*T"},
+		{NewPointer(pT), q, "*p.T"},
+	} {
+		if got := TypeString(test.this, test.typ); got != test.want {
+			t.Errorf("TypeString(%s, %s) = %s, want %s",
+				test.this, test.typ, got, test.want)
 		}
 	}
 }

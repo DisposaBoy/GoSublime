@@ -6,67 +6,81 @@
 
 package types
 
-import (
-	"go/ast"
-)
+import "gosubli.me/something-borrowed/exact" //"golang.org/x/tools/go/exact"
 
-// conversion typechecks the type conversion conv to type typ. iota is the current
-// value of iota or -1 if iota doesn't have a value in the current context. The result
-// of the conversion is returned via x. If the conversion has type errors, the returned
-// x is marked as invalid (x.mode == invalid).
-//
-func (check *checker) conversion(x *operand, conv *ast.CallExpr, typ Type, iota int) {
-	// all conversions have one argument
-	if len(conv.Args) != 1 {
-		check.invalidOp(conv.Pos(), "%s conversion requires exactly one argument", conv)
-		goto Error
-	}
+// Conversion type-checks the conversion T(x).
+// The result is in x.
+func (check *Checker) conversion(x *operand, T Type) {
+	constArg := x.mode == constant
 
-	// evaluate argument
-	check.expr(x, conv.Args[0], nil, iota)
-	if x.mode == invalid {
-		goto Error
-	}
-
-	if x.mode == constant && isConstType(typ) {
+	var ok bool
+	switch {
+	case constArg && isConstType(T):
 		// constant conversion
-		// TODO(gri) implement this
-	} else {
-		// non-constant conversion
-		if !x.isConvertible(check.ctxt, typ) {
-			check.invalidOp(conv.Pos(), "cannot convert %s to %s", x, typ)
-			goto Error
+		switch t := T.Underlying().(*Basic); {
+		case representableConst(x.val, check.conf, t.kind, &x.val):
+			ok = true
+		case x.isInteger() && isString(t):
+			codepoint := int64(-1)
+			if i, ok := exact.Int64Val(x.val); ok {
+				codepoint = i
+			}
+			// If codepoint < 0 the absolute value is too large (or unknown) for
+			// conversion. This is the same as converting any other out-of-range
+			// value - let string(codepoint) do the work.
+			x.val = exact.MakeString(string(codepoint))
+			ok = true
 		}
+	case x.convertibleTo(check.conf, T):
+		// non-constant conversion
 		x.mode = value
+		ok = true
 	}
 
-	check.conversions[conv] = true // for cap/len checking
-	x.expr = conv
-	x.typ = typ
-	return
+	if !ok {
+		check.errorf(x.pos(), "cannot convert %s to %s", x, T)
+		x.mode = invalid
+		return
+	}
 
-Error:
-	x.mode = invalid
+	// The conversion argument types are final. For untyped values the
+	// conversion provides the type, per the spec: "A constant may be
+	// given a type explicitly by a constant declaration or conversion,...".
+	final := x.typ
+	if isUntyped(x.typ) {
+		final = T
+		// - For conversions to interfaces, use the argument's default type.
+		// - For conversions of untyped constants to non-constant types, also
+		//   use the default type (e.g., []byte("foo") should report string
+		//   not []byte as type for the constant "foo").
+		// - Keep untyped nil for untyped nil arguments.
+		if isInterface(T) || constArg && !isConstType(T) {
+			final = defaultType(x.typ)
+		}
+		check.updateExprType(x.expr, final, true)
+	}
+
+	x.typ = T
 }
 
-func (x *operand) isConvertible(ctxt *Context, T Type) bool {
+func (x *operand) convertibleTo(conf *Config, T Type) bool {
 	// "x is assignable to T"
-	if x.isAssignable(ctxt, T) {
+	if x.assignableTo(conf, T) {
 		return true
 	}
 
 	// "x's type and T have identical underlying types"
 	V := x.typ
-	Vu := underlying(V)
-	Tu := underlying(T)
-	if IsIdentical(Vu, Tu) {
+	Vu := V.Underlying()
+	Tu := T.Underlying()
+	if Identical(Vu, Tu) {
 		return true
 	}
 
 	// "x's type and T are unnamed pointer types and their pointer base types have identical underlying types"
 	if V, ok := V.(*Pointer); ok {
 		if T, ok := T.(*Pointer); ok {
-			if IsIdentical(underlying(V.Base), underlying(T.Base)) {
+			if Identical(V.base.Underlying(), T.base.Underlying()) {
 				return true
 			}
 		}
@@ -106,24 +120,27 @@ func (x *operand) isConvertible(ctxt *Context, T Type) bool {
 }
 
 func isUintptr(typ Type) bool {
-	t, ok := typ.(*Basic)
-	return ok && t.Kind == Uintptr
+	t, ok := typ.Underlying().(*Basic)
+	return ok && t.kind == Uintptr
 }
 
 func isUnsafePointer(typ Type) bool {
-	t, ok := typ.(*Basic)
-	return ok && t.Kind == UnsafePointer
+	// TODO(gri): Is this (typ.Underlying() instead of just typ) correct?
+	//            The spec does not say so, but gc claims it is. See also
+	//            issue 6326.
+	t, ok := typ.Underlying().(*Basic)
+	return ok && t.kind == UnsafePointer
 }
 
 func isPointer(typ Type) bool {
-	_, ok := typ.(*Pointer)
+	_, ok := typ.Underlying().(*Pointer)
 	return ok
 }
 
 func isBytesOrRunes(typ Type) bool {
 	if s, ok := typ.(*Slice); ok {
-		t, ok := underlying(s.Elt).(*Basic)
-		return ok && (t.Kind == Byte || t.Kind == Rune)
+		t, ok := s.elem.Underlying().(*Basic)
+		return ok && (t.kind == Byte || t.kind == Rune)
 	}
 	return false
 }

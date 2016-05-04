@@ -25,7 +25,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 
 	def run(self, _, mode=''):
 		view = self.view
-		if (not gs.is_go_source_view(view)) or (mode not in ['goto', 'hint']):
+		if (not gs.is_go_source_view(view)) or (mode not in ['goto', 'hint', 'usage']):
 			return
 
 		pt = gs.sel(view).begin()
@@ -36,11 +36,12 @@ class GsDocCommand(sublime_plugin.TextCommand):
 			if err:
 				self.show_output('// Error: %s' % err)
 			elif docs:
-				if mode == "goto":
+				if mode == "goto" or mode == "usage":
 					fn = ''
 					flags = 0
-					if len(docs) > 0:
-						d = docs[0]
+
+					#method to open doc
+					def open(d):
 						fn = d.get('fn', '')
 						row = d.get('row', 0)
 						col = d.get('col', 0)
@@ -48,7 +49,31 @@ class GsDocCommand(sublime_plugin.TextCommand):
 							gs.println('opening %s:%s:%s' % (fn, row, col))
 							gs.focus(fn, row, col)
 							return
-					self.show_output("%s: cannot find definition" % DOMAIN)
+						self.show_output("%s: cannot find definition" % DOMAIN)
+
+					if len(docs) > 1:
+						def callback(idx):
+							open(docs[idx])
+
+						def highlight(idx):
+							d = docs[idx]
+							fn = d.get('fn', '')
+							row = d.get('row', 0) + 1
+							col = d.get('col', 0) + 1
+							sublime.active_window().open_file('%s:%s:%s' % (fn, row or 0, col or 0), sublime.TRANSIENT | sublime.ENCODED_POSITION)
+
+						#list of usages
+						lines = []
+						for d in docs:
+							lines.append(d.get('fn', '') + ':' + str(d.get('row', 0) + 1) + ':' + str(d.get('col', 0) + 1))
+						
+						sublime.active_window().show_quick_panel(lines, callback, on_highlight=highlight)
+						return
+						
+					elif len(docs) == 1:
+						open(docs[0])
+						return
+
 				elif mode == "hint":
 					s = []
 					for d in docs:
@@ -67,7 +92,7 @@ class GsDocCommand(sublime_plugin.TextCommand):
 					doc = '\n\n\n'.join(s).strip()
 			self.show_output(doc or "// %s: no docs found" % DOMAIN)
 
-		mg9.doc(view.file_name(), src, pt, f)
+		mg9.doc(view.file_name(), src, pt, f, mode)
 
 class GsBrowseDeclarationsCommand(sublime_plugin.WindowCommand):
 	def run(self, dir=''):

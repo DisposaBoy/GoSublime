@@ -5,9 +5,10 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"gosubli.me/something-borrowed/types"
 	"regexp"
 	"strconv"
+
+	"gosubli.me/something-borrowed/types"
 )
 
 type mLintReport struct {
@@ -150,7 +151,7 @@ func mLintCheckTypes(kind string, m *mLint) {
 		}
 	}
 
-	ctx := types.Context{
+	ctx := types.Config{
 		Error: func(err error) {
 			s := mLintErrPat.FindStringSubmatch(err.Error())
 			if len(s) == 5 {
@@ -168,5 +169,5 @@ func mLintCheckTypes(kind string, m *mLint) {
 		},
 	}
 
-	ctx.Check(m.fset, files)
+	ctx.Check(m.v.dir, m.fset, files, nil)
 }
