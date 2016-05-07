@@ -741,6 +741,9 @@ def packages_dir():
 def dist_path(*a):
 	return os.path.join(packages_dir(), 'GoSublime', *a)
 
+def user_path(*a):
+	return os.path.join(packages_dir(), 'User', 'GoSublime', *a)
+
 def mkdirp(fn):
 	try:
 		os.makedirs(fn)
