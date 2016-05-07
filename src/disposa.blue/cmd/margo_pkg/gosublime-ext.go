@@ -1,6 +1,6 @@
 // +build gosublime
 
-package main
+package margo_pkg
 
 import (
 	_ "gosublime"

@@ -1,5 +1,5 @@
 // +build go1.4
 
-package main
+package margo_pkg
 
 const SrcPkg = "src"

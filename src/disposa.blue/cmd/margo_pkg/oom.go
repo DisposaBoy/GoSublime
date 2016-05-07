@@ -1,4 +1,4 @@
-package main
+package margo_pkg
 
 import (
 	"log"
