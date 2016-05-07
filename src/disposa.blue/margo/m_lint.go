@@ -1,11 +1,11 @@
 package main
 
 import (
+	"disposa.blue/something-borrowed/types"
 	"go/ast"
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"gosubli.me/something-borrowed/types"
 	"regexp"
 	"strconv"
 )

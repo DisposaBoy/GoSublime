@@ -1,10 +1,10 @@
 package main
 
 import (
+	"disposa.blue/something-borrowed/gocode"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"gosubli.me/something-borrowed/gocode"
 	"io/ioutil"
 	"path/filepath"
 	"strings"

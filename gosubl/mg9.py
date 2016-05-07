@@ -5,6 +5,7 @@ from gosubl import gsq
 from gosubl import sh
 import atexit
 import base64
+import glob
 import hashlib
 import json
 import os
@@ -157,7 +158,7 @@ def install(aso_install_vesion, force_install, _reinstall=False):
 		gs.notify('GoSublime', 'Installing MarGo')
 		start = time.time()
 
-		cmd = sh.Command(['go', 'build', '-v', '-x', '-o', INSTALL_EXE, 'gosubli.me/margo'])
+		cmd = sh.Command(['go', 'build', '-v', '-x', '-o', INSTALL_EXE, 'disposa.blue/margo'])
 		cmd.wd = gs.home_dir_path('bin')
 		cmd.env = {
 			'CGO_ENABLED': '0',
