@@ -31,7 +31,7 @@ import (
 )
 
 func init() {
-	margo.Init(func(o *margo.Opts) {
+	margo.Configure(func(o *margo.Opts) {
 	})
 }
 '''.lstrip()
