@@ -173,7 +173,6 @@ def install(aso_install_vesion, force_install, _reinstall=False):
 		cmd = sh.Command([
 			'go', 'build',
 			'-tags', 'gosublime' if ext_main_file() else '',
-			'-i',
 			'-v',
 			'-o', INSTALL_EXE,
 			'disposa.blue/cmd/margo',
