@@ -1,5 +1,6 @@
-package main
+package margo
 
+// knownFileExts is a map of file extensions commonly found in Go projects
 var knownFileExts = map[string]bool{
 	".bash":            true,
 	".c":               true,
