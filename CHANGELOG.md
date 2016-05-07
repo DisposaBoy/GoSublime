@@ -1,3 +1,11 @@
+**WARNING:**
+
+If you automatically update GoSublime (or any other plugin with run-time state)
+you run the risk of breaking the plugin or crashing Sublime Text,
+because Sublime Text (and Package Control) cannot update such plugins properly without a restart.
+
+You are advised to only *manually* update such plugins and *restart Sublime Text*
+
 **Note:**
 
 * It is assumed that you have read and understood the contents of SUPPORT.md
@@ -8,6 +16,35 @@
 
 GoSublime Changes
 -----------------
+
+## 16.05.07-1
+	* Add initial support for MarGo extensions.
+	  Press ctrl+.,ctrl+./super+.,super+. and type "Edit MarGo Extension" to open the the extension file.
+	  If you your $GOPATH/src contains directories with lots of files or you'd otherwise like
+	  to skip when looking up import paths, you can do so by configuring the `ImportPaths` option:
+
+		package gosublime
+
+		import (
+			"disposa.blue/margo"
+			"disposa.blue/margo/meth/importpaths"
+			"path/filepath"
+			"strings"
+		)
+
+		func init() {
+			margo.Configure(func(o *margo.Opts) {
+				o.ImportPaths = importpaths.MakeImportPathsFunc(func(path string) bool {
+					// note: the default filter includes node_modules
+
+					// use the default filter
+					return importpaths.PathFilter(path) &&
+						// don't descened into huge node_modules directory
+						!strings.Contains(path, filepath.Base("node_modules"))
+				})
+			})
+		}
+
 
 ## 16.05.03-2
 	* fallback to the internal MarGo fmt if `fmt_cmd` fails

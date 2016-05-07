@@ -39,9 +39,7 @@ Installation
 It is assumed that you have a working installation of [Git](https://git-scm.com/) and know how to use it to clone and update repositories.
 
 Run the command `git clone https://github.com/DisposaBoy/GoSublime` from within the Sublime Text `Packages` directory.
-The location of your Sublime Text Packages can be found by clicking the menu: `Preferences` > `Browse Packages...`.
-
-GoSublime should also be available via [Package Control](https://packagecontrol.io/installation) but I not use it or check for compatibility.
+The location of your Sublime Text Packages directory can be found by clicking the menu: `Preferences` > `Browse Packages...`.
 
 Usage
 -----
