@@ -1,5 +1,9 @@
 [
 	{
+		"caption": "GoSublime: Edit MarGo extension",
+		"command": "gs_open_margo_extension_package",
+	},
+	{
 		"caption": "GoSublime: Add/Remove package",
 		"command": "gs_palette",
 		"args": {"palette": "imports", "direct": true}

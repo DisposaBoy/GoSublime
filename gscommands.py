@@ -95,6 +95,12 @@ class GsGotoRowColCommand(sublime_plugin.TextCommand):
 			sublime.set_timeout(show, s)
 			sublime.set_timeout(hide, h)
 
+class GsOpenMargoExtensionPackageCommand(sublime_plugin.WindowCommand):
+	def run(self):
+		fn = mg9.ext_main_file(True)
+		if fn:
+			gs.focus(fn)
+
 class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		pkg_name = 'main'
