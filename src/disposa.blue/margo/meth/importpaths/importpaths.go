@@ -31,7 +31,7 @@ type qidNode struct {
 func PathFilter(path string) bool {
 	return margo.FilterPath(path) &&
 		margo.FilterPathExt(path) &&
-		!strings.Contains("node_modules", filepath.Base(path))
+		!strings.Contains(filepath.Base(path), "node_modules")
 }
 
 func MakeImportPathsFunc(pathFilter margo.PathFilterFunc) margo.ImportPathsFunc {
