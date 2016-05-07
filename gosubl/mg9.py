@@ -164,7 +164,7 @@ def install(aso_install_vesion, force_install, _reinstall=False):
 			'-i',
 			'-v',
 			'-o', INSTALL_EXE,
-			'disposa.blue/margo',
+			'disposa.blue/cmd/margo',
 		])
 		cmd.wd = gs.home_dir_path('bin')
 		cmd.env = {
