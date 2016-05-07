@@ -227,7 +227,7 @@ func importsName(p *build.Package) string {
 }
 
 func importablePackages(root string, importDir func(path string) *build.Package, pathFilter margo.PathFilterFunc) []*build.Package {
-	dirs := allDirNames(root, func(nm string) bool { return pathFilter(nm) })
+	dirs := allDirNames(root, pathFilter)
 	var ents []*build.Package
 	for _, dir := range dirs {
 		if p := importDir(dir); p != nil {
@@ -237,15 +237,15 @@ func importablePackages(root string, importDir func(path string) *build.Package,
 	return ents
 }
 
-func allDirNames(dir string, match func(basename string) bool) []string {
-	dirs := dirNames(dir, match)
+func allDirNames(dir string, pathFilter margo.PathFilterFunc) []string {
+	dirs := dirNames(dir, pathFilter)
 	for _, dir := range dirs {
-		dirs = append(dirs, allDirNames(dir, match)...)
+		dirs = append(dirs, allDirNames(dir, pathFilter)...)
 	}
 	return dirs
 }
 
-func dirNames(dir string, match func(basename string) bool) []string {
+func dirNames(dir string, pathFilter func(basename string) bool) []string {
 	f, err := os.Open(dir)
 	if err != nil {
 		return nil
@@ -259,11 +259,10 @@ func dirNames(dir string, match func(basename string) bool) []string {
 			break
 		}
 		for _, nm := range names {
-			if !match(nm) {
+			path := filepath.Join(dir, nm)
+			if !pathFilter(path) {
 				continue
 			}
-
-			path := filepath.Join(dir, nm)
 			fi := fileInfo(path)
 			if fi != nil && fi.IsDir() {
 				dirs = append(dirs, path)
