@@ -17,6 +17,10 @@ You are advised to only *manually* update such plugins and *restart Sublime Text
 GoSublime Changes
 -----------------
 
+## 16.06.02-1
+	* update gocode
+	* if you're using Go 1.7 beta and experience issues with completion, you're advised to downgrade back to 1.6
+
 ## 16.05.07-1
 	* Add initial support for MarGo extensions.
 	  Press ctrl+.,ctrl+./super+.,super+. and type "Edit MarGo Extension" to open the the extension file.
