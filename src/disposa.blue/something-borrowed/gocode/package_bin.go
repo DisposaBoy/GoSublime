@@ -51,8 +51,9 @@ type aliasedPkgName struct {
 }
 
 type gc_bin_parser struct {
-	data []byte
-	buf  []byte // for reading strings
+	data    []byte
+	buf     []byte // for reading strings
+	version string
 
 	// object lists
 	strList       []string         // in order of appearance
@@ -97,8 +98,9 @@ func (p *gc_bin_parser) parse_export(callback func(string, ast.Decl)) {
 
 	// --- generic export data ---
 
-	if v := p.string(); v != "v0" {
-		panic(fmt.Errorf("unknown export data version: %s", v))
+	p.version = p.string()
+	if p.version != "v0" && p.version != "v1" {
+		panic(fmt.Errorf("unknown export data version: %s", p.version))
 	}
 
 	// populate typList with predeclared "known" types
@@ -293,7 +295,7 @@ func (p *gc_bin_parser) typ(parent aliasedPkgName) ast.Expr {
 		t0 := p.typ(parent)
 		tdecl.Specs[0].(*ast.TypeSpec).Type = t0
 
-		p.callback(parent.alias, tdecl)
+		p.callback(parent.path, tdecl)
 
 		// interfaces have no methods
 		if _, ok := t0.(*ast.InterfaceType); ok {
@@ -313,8 +315,12 @@ func (p *gc_bin_parser) typ(parent aliasedPkgName) ast.Expr {
 			params := p.paramList()
 			results := p.paramList()
 
+			if p.version == "v1" {
+				p.int() // nointerface flag - discarded
+			}
+
 			strip_method_receiver(recv)
-			p.callback(parent.alias, &ast.FuncDecl{
+			p.callback(parent.path, &ast.FuncDecl{
 				Recv: recv,
 				Name: ast.NewIdent(name),
 				Type: &ast.FuncType{Params: params, Results: results},
