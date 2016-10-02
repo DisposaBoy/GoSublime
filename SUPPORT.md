@@ -30,7 +30,7 @@ discuss it here https://github.com/DisposaBoy/GoSublime/issues/689
 
 * I do not use Package Control and therefore not able to offer support for any issue related to it.
 * As a user, *you* are expected take care when updating GoSublime.
-* You are advised *not* to utomatically update GoSublime.
+* You are advised *not* to automatically update GoSublime.
 
 # Go
 
