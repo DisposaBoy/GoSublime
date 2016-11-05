@@ -205,6 +205,8 @@ def delref(fn):
 
 def do_comp_lint(dirname, fn):
 	fr = ref(fn, False)
+	view = fr.view
+	view.erase_phantoms("Error")
 	reports = {}
 	if not fr:
 		return
@@ -244,6 +246,9 @@ def do_comp_lint(dirname, fn):
 							reports[row].col = max(reports[row].col, col)
 						else:
 							reports[row] = Report(row, col, msg)
+							a = int(str(row)+str(col+1))
+							region = sublime.Region(a, a)
+							view.add_phantom("Error", region, msg, sublime.LAYOUT_BLOCK)
 				except:
 					pass
 		except:
