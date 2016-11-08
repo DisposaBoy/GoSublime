@@ -246,8 +246,8 @@ def do_comp_lint(dirname, fn):
 							reports[row].col = max(reports[row].col, col)
 						else:
 							reports[row] = Report(row, col, msg)
-							a = int(str(row)+str(col+1))
-							region = sublime.Region(a, a)
+							error_point = view.text_point(row, col)
+							region = sublime.Region(error_point, error_point)
 							view.add_phantom("Error", region, msg, sublime.LAYOUT_BLOCK)
 				except:
 					pass
