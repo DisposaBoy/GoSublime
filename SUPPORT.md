@@ -34,7 +34,7 @@ discuss it here https://github.com/DisposaBoy/GoSublime/issues/689
 
 # Go
 
-Please not that GoSublime is backed by a Go program named MarGo to which the following points apply.
+Please note that GoSublime is backed by a Go program named MarGo to which the following points apply.
 
 * The minimum supported version of Go is go1.6.
 * Older versions of Go might be able to compile MarGo without issue, but I will not test these older versions.
