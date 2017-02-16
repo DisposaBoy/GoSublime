@@ -7,7 +7,6 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -230,44 +229,45 @@ func (c *auto_complete_context) get_candidates_from_decl(cc cursor_context, clas
 }
 
 func (c *auto_complete_context) get_import_candidates(partial string, b *out_buffers) {
-	pkgdir := fmt.Sprintf("%s_%s", g_daemon.context.GOOS, g_daemon.context.GOARCH)
-	srcdirs := g_daemon.context.SrcDirs()
-	for _, srcpath := range srcdirs {
+	pkgdirs := g_daemon.context.pkg_dirs()
+	resultSet := map[string]struct{}{}
+	for _, pkgdir := range pkgdirs {
 		// convert srcpath to pkgpath and get candidates
-		pkgpath := path.Join(path.Dir(filepath.ToSlash(srcpath)), "pkg", pkgdir)
-		get_import_candidates_dir(pkgpath, partial, b)
+		get_import_candidates_dir(pkgdir, filepath.FromSlash(partial), b.ignorecase, resultSet)
+	}
+	for k := range resultSet {
+		b.candidates = append(b.candidates, candidate{Name: k, Class: decl_import})
 	}
 }
 
-func get_import_candidates_dir(root, partial string, b *out_buffers) {
+func get_import_candidates_dir(root, partial string, ignorecase bool, r map[string]struct{}) {
 	var fpath string
 	var match bool
 	if strings.HasSuffix(partial, "/") {
-		fpath = path.Join(root, partial)
+		fpath = filepath.Join(root, partial)
 	} else {
-		fpath = path.Join(root, path.Dir(partial))
+		fpath = filepath.Join(root, filepath.Dir(partial))
 		match = true
 	}
 	fi := readdir(fpath)
 	for i := range fi {
 		name := fi[i].Name()
-		rel, err := filepath.Rel(root, path.Join(fpath, name))
+		rel, err := filepath.Rel(root, filepath.Join(fpath, name))
 		if err != nil {
 			panic(err)
 		}
-		rel = filepath.ToSlash(rel)
-		if match && !has_prefix(rel, partial, b.ignorecase) {
+		if match && !has_prefix(rel, partial, ignorecase) {
 			continue
 		} else if fi[i].IsDir() {
-			get_import_candidates_dir(root, rel+"/", b)
+			get_import_candidates_dir(root, rel+string(filepath.Separator), ignorecase, r)
 		} else {
-			ext := path.Ext(name)
+			ext := filepath.Ext(name)
 			if ext != ".a" {
 				continue
 			} else {
 				rel = rel[0 : len(rel)-2]
 			}
-			b.candidates = append(b.candidates, candidate{Name: rel, Class: decl_import})
+			r[vendorlessImportPath(filepath.ToSlash(rel))] = struct{}{}
 		}
 	}
 }
@@ -309,7 +309,14 @@ func (c *auto_complete_context) apropos(file []byte, filename string, cursor int
 	partial := 0
 	cc, ok := c.deduce_cursor_context(file, cursor)
 	if !ok {
-		return nil, 0
+		var d *decl
+		if ident, ok := cc.expr.(*ast.Ident); ok && g_config.UnimportedPackages {
+			d = resolveKnownPackageIdent(ident.Name, c.current.name, c.current.context)
+		}
+		if d == nil {
+			return nil, 0
+		}
+		cc.decl = d
 	}
 
 	class := decl_invalid

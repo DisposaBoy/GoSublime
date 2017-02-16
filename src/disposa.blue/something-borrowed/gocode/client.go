@@ -50,6 +50,9 @@ func do_client() int {
 			cmd_drop_cache(client)
 		case "set":
 			cmd_set(client)
+		default:
+			fmt.Printf("unknown argument: %q, try running \"gocode -h\"\n", flag.Arg(0))
+			return 1
 		}
 	}
 	return 0
