@@ -17,6 +17,9 @@ You are advised to only *manually* update such plugins and *restart Sublime Text
 GoSublime Changes
 -----------------
 
+## 17.02.16
+	* update gocode
+
 ## 16.07.09-1
 	* update gocode
 
