@@ -70,6 +70,11 @@ func file_exists(filename string) bool {
 	return true
 }
 
+func is_dir(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.IsDir()
+}
+
 func char_to_byte_offset(s []byte, offset_c int) (offset_b int) {
 	for offset_b = 0; offset_c > 0 && offset_b < len(s); offset_b++ {
 		if utf8.RuneStart(s[offset_b]) {
@@ -95,6 +100,32 @@ func has_prefix(s, prefix string, ignorecase bool) bool {
 	return strings.HasPrefix(s, prefix)
 }
 
+func find_bzl_project_root(libpath, path string) (string, error) {
+	if libpath == "" {
+		return "", fmt.Errorf("could not find project root, libpath is empty")
+	}
+
+	pathMap := map[string]struct{}{}
+	for _, lp := range strings.Split(libpath, ":") {
+		lp := strings.TrimSpace(lp)
+		pathMap[filepath.Clean(lp)] = struct{}{}
+	}
+
+	path = filepath.Dir(path)
+	if path == "" {
+		return "", fmt.Errorf("project root is blank")
+	}
+
+	start := path
+	for path != "/" {
+		if _, ok := pathMap[filepath.Clean(path)]; ok {
+			return path, nil
+		}
+		path = filepath.Dir(path)
+	}
+	return "", fmt.Errorf("could not find project root in %q or its parents", start)
+}
+
 // Code taken directly from `gb`, I hope author doesn't mind.
 func find_gb_project_root(path string) (string, error) {
 	path = filepath.Dir(path)
@@ -118,6 +149,19 @@ func find_gb_project_root(path string) (string, error) {
 		return path, nil
 	}
 	return "", fmt.Errorf("could not find project root in %q or its parents", start)
+}
+
+// vendorlessImportPath returns the devendorized version of the provided import path.
+// e.g. "foo/bar/vendor/a/b" => "a/b"
+func vendorlessImportPath(ipath string) string {
+	// Devendorize for use in import statement.
+	if i := strings.LastIndex(ipath, "/vendor/"); i >= 0 {
+		return ipath[i+len("/vendor/"):]
+	}
+	if strings.HasPrefix(ipath, "vendor/") {
+		return ipath[len("vendor/"):]
+	}
+	return ipath
 }
 
 //-------------------------------------------------------------------------
