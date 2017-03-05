@@ -70,6 +70,10 @@
 		"command": "gs_fmt"
 	},
 	{
+		"caption": "GoSublime: Rename the current selection (gorename)",
+		"command": "gs_gorename"
+	},
+	{
 		"caption": "GoSublime: New Go File",
 		"command": "gs_new_go_file"
 	},

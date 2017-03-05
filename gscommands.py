@@ -2,6 +2,7 @@ from gosubl import gs
 from gosubl import gspatch
 from gosubl import mg9
 import datetime
+import subprocess
 import os
 import sublime
 import sublime_plugin
@@ -219,3 +220,69 @@ class GsPatchImportsCommand(sublime_plugin.TextCommand):
 				gs.set_attr(k, added_path)
 			else:
 				gs.del_attr(k)
+
+class GsGorenameCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		return self._is_go_source(self.view)
+
+	def run(self, edit):
+		view = self.view
+
+		region = view.sel()[0]
+
+		# If the current selection is empty, try to expand
+		# it to the word under the cursor
+		if region.empty():
+			region = view.word(region)
+
+		if region.empty(): 
+			sublime.message_dialog('Select an identifier you would like to rename and try again.')
+			return
+
+		current_selection = view.substr(region)
+		filename = view.file_name()
+		
+		def on_done(new_name):
+			if new_name == current_selection:
+				return
+
+			view.window().run_command("show_panel", {"panel": "console"})
+
+			gs.println(DOMAIN, 'Requested New Name: {0}'.format(new_name))
+
+			offset =  '{0}:#{1}'.format(filename, region.begin())
+			command = ['gorename', '-v', '-offset', offset, '-to', new_name]
+
+			gs.println(DOMAIN, 'CMD: {0}'.format(' '.join(command)))
+
+			# Save all Go views
+			for win in sublime.windows():
+				for v in win.views():
+					if not self._is_go_source(v):
+						continue
+					v.run_command("save")
+
+			out = err = ""
+			try:
+				p = gs.popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+				out = p.communicate()[0]
+				gs.println('GsGorename', out)
+
+				if p.returncode != 0:
+					raise OSError("GoRename failed")
+
+			except Exception as e:
+				msg = gs.tbck.format_exc()
+				gs.println(DOMAIN, msg)
+
+		view.window().show_input_panel("New name:", current_selection, on_done, None, None)
+
+	@staticmethod
+	def _is_go_source(view):
+		fn = view.file_name()
+		if fn:
+			scope_ok = fn.lower().endswith('.go')
+		else:
+			scope_ok = gs.is_go_source_view(view)
+		return scope_ok
+
