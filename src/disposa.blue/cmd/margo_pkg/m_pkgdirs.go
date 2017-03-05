@@ -77,7 +77,7 @@ func walkRootDir(root string, m map[string]string, basePath string) {
 				if isDir {
 					walkRootDir(fn, m, basePath)
 				}
-			} else if fi, err := os.Stat(fn); err == nil {
+			} else if fi, err := os.Lstat(fn); err == nil {
 				pkgDirsLck.Lock()
 				pkgDirsCache[fn] = fi.IsDir()
 				pkgDirsLck.Unlock()

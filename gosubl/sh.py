@@ -359,6 +359,11 @@ def env(m={}):
 		'_nm': fn.replace('\\', '/').split('/')[-1],
 	})
 
+	if not e.get('GOPATH'):
+		gp = os.path.expanduser('~/go')
+		e['GOPATH'] = gp
+		_print('GOPATH is not set... setting it to the default: %s' % gp)
+
 	# Ensure no unicode objects leak through. The reason is twofold:
 	# 	* On Windows, Python 2.6 (used by Sublime Text) subprocess.Popen
 	# 	  can only take bytestrings as environment variables in the
