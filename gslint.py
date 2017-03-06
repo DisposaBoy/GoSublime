@@ -102,12 +102,12 @@ def highlight(fr):
 				regions.append(sublime.Region(pos, pos))
 
 		if regions:
-			fr.view.add_regions(DOMAIN, regions, 'comment', 'dot', sublime.DRAW_EMPTY_AS_OVERWRITE)
+			fr.view.add_regions(DOMAIN, regions, 'keyword', 'dot', sublime.DRAW_EMPTY_AS_OVERWRITE)
 		else:
 			fr.view.erase_regions(DOMAIN)
 
 		if regions0:
-			fr.view.add_regions(domain0, regions0, 'comment', 'dot', sublime.HIDDEN)
+			fr.view.add_regions(domain0, regions0, 'keyword', 'dot', sublime.HIDDEN)
 		else:
 			fr.view.erase_regions(domain0)
 
