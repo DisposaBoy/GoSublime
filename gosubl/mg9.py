@@ -210,7 +210,7 @@ def install(aso_install_vesion, force_install, _reinstall=False):
 			sl = [
 				('GoSublime error', '\n'.join((
 					err_prefix,
-					'This is possibly a bug or miss-configuration of your environment.',
+					'This is possibly a bug or misconfiguration of your environment.',
 					'For more help, please file an issue with the following build output',
 					'at: https://github.com/DisposaBoy/GoSublime/issues/new',
 					'or alternatively, you may send an email to: gosublime@dby.me',
