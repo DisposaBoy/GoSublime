@@ -246,7 +246,8 @@
 					"text": "func http handler",
 					"title": "func(rw, req)",
 					"value": "func ${1:name}(rw http.ResponseWriter, req *http.Request) {\n\t$0\n}"
-				}
+				},
+				{"text" : "fmt Println", "title" : "fmt.Println", "value" : "fmt.Println(\"$1\")"}
 			]
 		},
 		{
