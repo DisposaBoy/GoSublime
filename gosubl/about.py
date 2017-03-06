@@ -4,7 +4,7 @@ import sublime
 ANN = 'a17.03.05-1'
 VERSION = 'r17.03.05-1'
 VERSION_PAT = re.compile(r'\d{2}[.]\d{2}[.]\d{2}-\d+', re.IGNORECASE)
-DEFAULT_GO_VERSION = 'go?'
+DEFAULT_GO_VERSION = 'go_default'
 GO_VERSION_OUTPUT_PAT = re.compile(r'go\s+version\s+(\S+(?:\s+[+]\w+|\s+\([^)]+)?)', re.IGNORECASE)
 GO_VERSION_NORM_PAT = re.compile(r'[^\w.+-]+', re.IGNORECASE)
 PLATFORM = '%s-%s' % (sublime.platform(), sublime.arch())
