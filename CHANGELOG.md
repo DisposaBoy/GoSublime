@@ -17,6 +17,10 @@ You are advised to only *manually* update such plugins and *restart Sublime Text
 GoSublime Changes
 -----------------
 
+## 17.08.23
+
+	* update gocode
+
 ## 17.03.05
 	* assign default GOPATH as is done in go1.8
 	* don't follow symlinks when scanning for package lists
