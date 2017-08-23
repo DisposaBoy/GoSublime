@@ -56,11 +56,14 @@ func (this decl_class) String() string {
 type decl_flags int16
 
 const (
-	decl_foreign = decl_flags(1 << iota) // imported from another package
+	decl_foreign decl_flags = 1 << iota // imported from another package
 
 	// means that the decl is a part of the range statement
 	// its type is inferred in a special way
 	decl_rangevar
+
+	// decl of decl_type class is a type alias
+	decl_alias
 
 	// for preventing infinite recursions and loops in type inference code
 	decl_visited
@@ -116,6 +119,19 @@ func ast_decl_type(d ast.Decl) ast.Expr {
 	}
 	panic("unreachable")
 	return nil
+}
+
+func ast_decl_flags(d ast.Decl) decl_flags {
+	switch t := d.(type) {
+	case *ast.GenDecl:
+		switch t.Tok {
+		case token.TYPE:
+			if isAliasTypeSpec(t.Specs[0].(*ast.TypeSpec)) {
+				return decl_alias
+			}
+		}
+	}
+	return 0
 }
 
 func ast_decl_class(d ast.Decl) decl_class {
@@ -324,7 +340,7 @@ func new_decl_var(name string, typ ast.Expr, value ast.Expr, vindex int, scope *
 
 func method_of(d ast.Decl) string {
 	if t, ok := d.(*ast.FuncDecl); ok {
-		if t.Recv != nil {
+		if t.Recv != nil && len(t.Recv.List) != 0 {
 			switch t := t.Recv.List[0].Type.(type) {
 			case *ast.StarExpr:
 				if se, ok := t.X.(*ast.SelectorExpr); ok {
@@ -348,6 +364,7 @@ func (other *decl) deep_copy() *decl {
 	d := new(decl)
 	d.name = other.name
 	d.class = other.class
+	d.flags = other.flags
 	d.typ = other.typ
 	d.value = other.value
 	d.value_index = other.value_index
@@ -363,20 +380,36 @@ func (other *decl) deep_copy() *decl {
 	return d
 }
 
+func (d *decl) is_rangevar() bool {
+	return d.flags&decl_rangevar != 0
+}
+
+func (d *decl) is_alias() bool {
+	return d.flags&decl_alias != 0
+}
+
+func (d *decl) is_visited() bool {
+	return d.flags&decl_visited != 0
+}
+
+func (d *decl) set_visited() {
+	d.flags |= decl_visited
+}
+
 func (d *decl) clear_visited() {
 	d.flags &^= decl_visited
 }
 
 func (d *decl) expand_or_replace(other *decl) {
-	// expand only if it's a methods stub, otherwise simply copy
+	// expand only if it's a methods stub, otherwise simply keep it as is
 	if d.class != decl_methods_stub && other.class != decl_methods_stub {
-		d = other
 		return
 	}
 
 	if d.class == decl_methods_stub {
 		d.typ = other.typ
 		d.class = other.class
+		d.flags = other.flags
 	}
 
 	if other.children != nil {
@@ -398,7 +431,7 @@ func (d *decl) matches() bool {
 	return true
 }
 
-func (d *decl) pretty_print_type(out io.Writer) {
+func (d *decl) pretty_print_type(out io.Writer, canonical_aliases map[string]string) {
 	switch d.class {
 	case decl_type:
 		switch d.typ.(type) {
@@ -410,15 +443,15 @@ func (d *decl) pretty_print_type(out io.Writer) {
 			fmt.Fprintf(out, "interface")
 		default:
 			if d.typ != nil {
-				pretty_print_type_expr(out, d.typ)
+				pretty_print_type_expr(out, d.typ, canonical_aliases)
 			}
 		}
 	case decl_var:
 		if d.typ != nil {
-			pretty_print_type_expr(out, d.typ)
+			pretty_print_type_expr(out, d.typ, canonical_aliases)
 		}
 	case decl_func:
-		pretty_print_type_expr(out, d.typ)
+		pretty_print_type_expr(out, d.typ, canonical_aliases)
 	}
 }
 
@@ -599,20 +632,20 @@ func advance_to_type(pred type_predicate, v ast.Expr, scope *scope) (ast.Expr, *
 		return nil, nil
 	}
 
-	if decl.flags&decl_visited != 0 {
+	if decl.is_visited() {
 		return nil, nil
 	}
-	decl.flags |= decl_visited
+	decl.set_visited()
 	defer decl.clear_visited()
 
 	return advance_to_type(pred, decl.typ, decl.scope)
 }
 
 func advance_to_struct_or_interface(decl *decl) *decl {
-	if decl.flags&decl_visited != 0 {
+	if decl.is_visited() {
 		return nil
 	}
-	decl.flags |= decl_visited
+	decl.set_visited()
 	defer decl.clear_visited()
 
 	if struct_interface_predicate(decl.typ) {
@@ -917,7 +950,7 @@ func infer_type(v ast.Expr, scope *scope, index int) (ast.Expr, *scope, bool) {
 // makes sense.
 func (d *decl) infer_type() (ast.Expr, *scope) {
 	// special case for range vars
-	if d.flags&decl_rangevar != 0 {
+	if d.is_rangevar() {
 		var scope *scope
 		d.typ, scope = infer_range_type(d.value, d.scope, d.value_index)
 		return d.typ, scope
@@ -937,10 +970,10 @@ func (d *decl) infer_type() (ast.Expr, *scope) {
 	}
 
 	// prevent loops
-	if d.flags&decl_visited != 0 {
+	if d.is_visited() {
 		return nil, nil
 	}
-	d.flags |= decl_visited
+	d.set_visited()
 	defer d.clear_visited()
 
 	var scope *scope
@@ -948,12 +981,33 @@ func (d *decl) infer_type() (ast.Expr, *scope) {
 	return d.typ, scope
 }
 
-func (d *decl) find_child(name string) *decl {
-	if d.flags&decl_visited != 0 {
+func (d *decl) type_dealias() *decl {
+	if d.is_visited() {
 		return nil
 	}
-	d.flags |= decl_visited
+	d.set_visited()
 	defer d.clear_visited()
+
+	dd := type_to_decl(d.typ, d.scope)
+	if dd != nil && dd.is_alias() {
+		return dd.type_dealias()
+	}
+	return dd
+}
+
+func (d *decl) find_child(name string) *decl {
+	// type aliases don't really have any children on their own, but they
+	// point to a different type, let's try to find one
+	if d.is_alias() {
+		dd := d.type_dealias()
+		if dd != nil {
+			return dd.find_child(name)
+		}
+
+		// note that type alias can also point to a type literal, something like
+		// type A = struct { A int }
+		// in this case we rely on "advance_to_struct_or_interface" below
+	}
 
 	if d.children != nil {
 		if c, ok := d.children[name]; ok {
@@ -963,6 +1017,12 @@ func (d *decl) find_child(name string) *decl {
 
 	decl := advance_to_struct_or_interface(d)
 	if decl != nil && decl != d {
+		if d.is_visited() {
+			return nil
+		}
+		d.set_visited()
+		defer d.clear_visited()
+
 		return decl.find_child(name)
 	}
 	return nil
@@ -1053,11 +1113,11 @@ func get_array_len(e ast.Expr) string {
 	return ""
 }
 
-func pretty_print_type_expr(out io.Writer, e ast.Expr) {
+func pretty_print_type_expr(out io.Writer, e ast.Expr, canonical_aliases map[string]string) {
 	switch t := e.(type) {
 	case *ast.StarExpr:
 		fmt.Fprintf(out, "*")
-		pretty_print_type_expr(out, t.X)
+		pretty_print_type_expr(out, t.X, canonical_aliases)
 	case *ast.Ident:
 		if strings.HasPrefix(t.Name, "$") {
 			// beautify anonymous types
@@ -1070,15 +1130,19 @@ func pretty_print_type_expr(out io.Writer, e ast.Expr) {
 				// it's always true
 				fmt.Fprintf(out, "interface{}")
 			}
-		} else if !*g_debug && strings.HasPrefix(t.Name, "#") {
-			fmt.Fprintf(out, t.Name[1:])
 		} else if !*g_debug && strings.HasPrefix(t.Name, "!") {
 			// these are full package names for disambiguating and pretty
 			// printing packages withing packages, e.g.
 			// !go/ast!ast vs. !github.com/nsf/my/ast!ast
 			// another ugly hack, if people are punished in hell for ugly hacks
 			// I'm screwed...
-			fmt.Fprintf(out, t.Name[strings.LastIndex(t.Name, "!")+1:])
+			emarkIdx := strings.LastIndex(t.Name, "!")
+			path := t.Name[1:emarkIdx]
+			alias := canonical_aliases[path]
+			if alias == "" {
+				alias = t.Name[emarkIdx+1:]
+			}
+			fmt.Fprintf(out, alias)
 		} else {
 			fmt.Fprintf(out, t.Name)
 		}
@@ -1092,17 +1156,17 @@ func pretty_print_type_expr(out io.Writer, e ast.Expr) {
 		} else {
 			fmt.Fprintf(out, "[]")
 		}
-		pretty_print_type_expr(out, t.Elt)
+		pretty_print_type_expr(out, t.Elt, canonical_aliases)
 	case *ast.SelectorExpr:
-		pretty_print_type_expr(out, t.X)
+		pretty_print_type_expr(out, t.X, canonical_aliases)
 		fmt.Fprintf(out, ".%s", t.Sel.Name)
 	case *ast.FuncType:
 		fmt.Fprintf(out, "func(")
-		pretty_print_func_field_list(out, t.Params)
+		pretty_print_func_field_list(out, t.Params, canonical_aliases)
 		fmt.Fprintf(out, ")")
 
 		buf := bytes.NewBuffer(make([]byte, 0, 256))
-		nresults := pretty_print_func_field_list(buf, t.Results)
+		nresults := pretty_print_func_field_list(buf, t.Results, canonical_aliases)
 		if nresults > 0 {
 			results := buf.String()
 			if strings.IndexAny(results, ", ") != -1 {
@@ -1112,14 +1176,14 @@ func pretty_print_type_expr(out io.Writer, e ast.Expr) {
 		}
 	case *ast.MapType:
 		fmt.Fprintf(out, "map[")
-		pretty_print_type_expr(out, t.Key)
+		pretty_print_type_expr(out, t.Key, canonical_aliases)
 		fmt.Fprintf(out, "]")
-		pretty_print_type_expr(out, t.Value)
+		pretty_print_type_expr(out, t.Value, canonical_aliases)
 	case *ast.InterfaceType:
 		fmt.Fprintf(out, "interface{}")
 	case *ast.Ellipsis:
 		fmt.Fprintf(out, "...")
-		pretty_print_type_expr(out, t.Elt)
+		pretty_print_type_expr(out, t.Elt, canonical_aliases)
 	case *ast.StructType:
 		fmt.Fprintf(out, "struct")
 	case *ast.ChanType:
@@ -1131,10 +1195,10 @@ func pretty_print_type_expr(out io.Writer, e ast.Expr) {
 		case ast.SEND | ast.RECV:
 			fmt.Fprintf(out, "chan ")
 		}
-		pretty_print_type_expr(out, t.Value)
+		pretty_print_type_expr(out, t.Value, canonical_aliases)
 	case *ast.ParenExpr:
 		fmt.Fprintf(out, "(")
-		pretty_print_type_expr(out, t.X)
+		pretty_print_type_expr(out, t.X, canonical_aliases)
 		fmt.Fprintf(out, ")")
 	case *ast.BadExpr:
 		// TODO: probably I should check that in a separate function
@@ -1145,7 +1209,7 @@ func pretty_print_type_expr(out io.Writer, e ast.Expr) {
 	}
 }
 
-func pretty_print_func_field_list(out io.Writer, f *ast.FieldList) int {
+func pretty_print_func_field_list(out io.Writer, f *ast.FieldList, canonical_aliases map[string]string) int {
 	count := 0
 	if f == nil {
 		return count
@@ -1172,7 +1236,7 @@ func pretty_print_func_field_list(out io.Writer, f *ast.FieldList) int {
 		}
 
 		// type
-		pretty_print_type_expr(out, field.Type)
+		pretty_print_type_expr(out, field.Type, canonical_aliases)
 
 		// ,
 		if i != len(f.List)-1 {

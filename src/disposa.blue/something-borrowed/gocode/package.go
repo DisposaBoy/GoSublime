@@ -126,9 +126,10 @@ func (m *package_file_cache) process_package_data(data []byte) {
 		pp = &p
 	}
 
+	prefix := "!" + m.name + "!"
 	pp.parse_export(func(pkg string, decl ast.Decl) {
 		anonymify_ast(decl, decl_foreign, m.scope)
-		if pkg == "" || strings.HasPrefix(pkg, "#") {
+		if pkg == "" || strings.HasPrefix(pkg, prefix) {
 			// main package
 			add_ast_decl_to_package(m.main, decl, m.scope)
 		} else {
@@ -141,12 +142,12 @@ func (m *package_file_cache) process_package_data(data []byte) {
 	})
 
 	// hack, add ourselves to the package scope
-	mainName := "#" + m.defalias
+	mainName := "!" + m.name + "!" + m.defalias
 	m.add_package_to_scope(mainName, m.name)
 
 	// replace dummy package decls in package scope to actual packages
 	for key := range m.scope.entities {
-		if !strings.HasPrefix(key, "#") && !strings.HasPrefix(key, "!") {
+		if !strings.HasPrefix(key, "!") {
 			continue
 		}
 		pkg, ok := m.others[key]
@@ -168,7 +169,7 @@ func add_ast_decl_to_package(pkg *decl, decl ast.Decl, scope *scope) {
 		for i, name := range data.names {
 			typ, v, vi := data.type_value_index(i)
 
-			d := new_decl_full(name.Name, class, decl_foreign, typ, v, vi, scope)
+			d := new_decl_full(name.Name, class, decl_foreign|ast_decl_flags(data.decl), typ, v, vi, scope)
 			if d == nil {
 				return
 			}
@@ -240,11 +241,6 @@ package unsafe
 	func @"".Offsetof (? any) uintptr
 	func @"".Sizeof (? any) uintptr
 	func @"".Alignof (? any) uintptr
-	func @"".Typeof (i interface { }) interface { }
-	func @"".Reflect (i interface { }) (typ interface { }, addr @"".Pointer)
-	func @"".Unreflect (typ interface { }, addr @"".Pointer) interface { }
-	func @"".New (typ interface { }) @"".Pointer
-	func @"".NewArray (typ interface { }, n int) @"".Pointer
 
 $$
 `)

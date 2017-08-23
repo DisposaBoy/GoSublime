@@ -49,10 +49,11 @@ import (
 type gc_bin_parser struct {
 	data    []byte
 	buf     []byte // for reading strings
-	version int
+	version int    // export format version
 
 	// object lists
 	strList       []string   // in order of appearance
+	pathList      []string   // in order of appearance
 	pkgList       []string   // in order of appearance
 	typList       []ast.Expr // in order of appearance
 	callback      func(pkg string, decl ast.Decl)
@@ -72,8 +73,9 @@ type gc_bin_parser struct {
 
 func (p *gc_bin_parser) init(data []byte, pfc *package_file_cache) {
 	p.data = data
-	p.version = -1           // unknown version
-	p.strList = []string{""} // empty string is mapped to 0
+	p.version = -1            // unknown version
+	p.strList = []string{""}  // empty string is mapped to 0
+	p.pathList = []string{""} // empty string is mapped to 0
 	p.pfc = pfc
 }
 
@@ -111,17 +113,10 @@ func (p *gc_bin_parser) parse_export(callback func(string, ast.Decl)) {
 
 	// read version specific flags - extend as necessary
 	switch p.version {
-	// case 4:
+	// case 6:
 	// 	...
 	//	fallthrough
-	case 3, 2, 1:
-		// Support for Go 1.8 type aliases will be added very
-		// soon (Oct 2016).  In the meantime, we make a
-		// best-effort attempt to read v3 export data, failing
-		// if we encounter a type alias.  This allows the
-		// automated builders to make progress since
-		// type aliases are not yet used in practice.
-		// TODO(gri): add support for type aliases.
+	case 5, 4, 3, 2, 1:
 		p.debugFormat = p.rawStringln(p.rawByte()) == "debug"
 		p.trackAllTypes = p.int() != 0
 		p.posInfoFormat = p.int() != 0
@@ -137,7 +132,8 @@ func (p *gc_bin_parser) parse_export(callback func(string, ast.Decl)) {
 	p.typList = append(p.typList, predeclared...)
 
 	// read package data
-	p.pfc.defalias = p.pkg()[1:]
+	pkgName := p.pkg()
+	p.pfc.defalias = pkgName[strings.LastIndex(pkgName, "!")+1:]
 
 	// read objects of phase 1 only (see cmd/compiler/internal/gc/bexport.go)
 	objcount := 0
@@ -165,12 +161,17 @@ func (p *gc_bin_parser) pkg() string {
 
 	// otherwise, i is the package tag (< 0)
 	if i != packageTag {
-		panic(fmt.Sprintf("unexpected package tag %d", i))
+		panic(fmt.Sprintf("unexpected package tag %d version %d", i, p.version))
 	}
 
 	// read package data
 	name := p.string()
-	path := p.string()
+	var path string
+	if p.version >= 5 {
+		path = p.path()
+	} else {
+		path = p.string()
+	}
 
 	// we should never see an empty package name
 	if name == "" {
@@ -188,7 +189,7 @@ func (p *gc_bin_parser) pkg() string {
 		fullName = "!" + path + "!" + name
 		p.pfc.add_package_to_scope(fullName, path)
 	} else {
-		fullName = "#" + name
+		fullName = "!" + p.pfc.name + "!" + name
 	}
 
 	// if the package was imported before, use that one; otherwise create a new one
@@ -213,6 +214,17 @@ func (p *gc_bin_parser) obj(tag int) {
 				},
 			},
 		})
+
+	case aliasTag:
+		// TODO(gri) verify type alias hookup is correct
+		p.pos()
+		pkg, name := p.qualifiedName()
+		typ := p.typ("")
+		p.callback(pkg, &ast.GenDecl{
+			Tok:   token.TYPE,
+			Specs: []ast.Spec{typeAliasSpec(name, typ)},
+		})
+
 	case typeTag:
 		_ = p.typ("")
 
@@ -229,6 +241,7 @@ func (p *gc_bin_parser) obj(tag int) {
 				},
 			},
 		})
+
 	case funcTag:
 		p.pos()
 		pkg, name := p.qualifiedName()
@@ -244,6 +257,8 @@ func (p *gc_bin_parser) obj(tag int) {
 	}
 }
 
+const deltaNewFile = -64 // see cmd/compile/internal/gc/bexport.go
+
 func (p *gc_bin_parser) pos() {
 	if !p.posInfoFormat {
 		return
@@ -251,15 +266,26 @@ func (p *gc_bin_parser) pos() {
 
 	file := p.prevFile
 	line := p.prevLine
-	if delta := p.int(); delta != 0 {
-		// line changed
-		line += delta
-	} else if n := p.int(); n >= 0 {
-		// file changed
-		file = p.prevFile[:n] + p.string()
-		p.prevFile = file
-		line = p.int()
+	delta := p.int()
+	line += delta
+	if p.version >= 5 {
+		if delta == deltaNewFile {
+			if n := p.int(); n >= 0 {
+				// file changed
+				file = p.path()
+				line = n
+			}
+		}
+	} else {
+		if delta == 0 {
+			if n := p.int(); n >= 0 {
+				// file changed
+				file = p.prevFile[:n] + p.string()
+				line = p.int()
+			}
+		}
 	}
+	p.prevFile = file
 	p.prevLine = line
 
 	// TODO(gri) register new position
@@ -391,10 +417,17 @@ func (p *gc_bin_parser) typ(parent string) ast.Expr {
 
 	case interfaceTag:
 		i := p.reserveMaybe()
-		if p.int() != 0 {
-			panic("unexpected embedded interface")
+		var embeddeds []*ast.SelectorExpr
+		for n := p.int(); n > 0; n-- {
+			p.pos()
+			if named, ok := p.typ(parent).(*ast.SelectorExpr); ok {
+				embeddeds = append(embeddeds, named)
+			}
 		}
 		methods := p.methodList(parent)
+		for _, field := range embeddeds {
+			methods = append(methods, &ast.Field{Type: field})
+		}
 		return p.recordMaybe(i, &ast.InterfaceType{Methods: &ast.FieldList{List: methods}})
 
 	case mapTag:
@@ -429,17 +462,17 @@ func (p *gc_bin_parser) structType(parent string) *ast.StructType {
 	if n := p.int(); n > 0 {
 		fields = make([]*ast.Field, n)
 		for i := range fields {
-			fields[i] = p.field(parent)
-			p.string() // tag, not interested in tags
+			fields[i], _ = p.field(parent) // (*ast.Field, tag), not interested in tags
 		}
 	}
 	return &ast.StructType{Fields: &ast.FieldList{List: fields}}
 }
 
-func (p *gc_bin_parser) field(parent string) *ast.Field {
+func (p *gc_bin_parser) field(parent string) (*ast.Field, string) {
 	p.pos()
-	_, name := p.fieldName(parent)
+	_, name, _ := p.fieldName(parent)
 	typ := p.typ(parent)
+	tag := p.string()
 
 	var names []*ast.Ident
 	if name != "" {
@@ -448,7 +481,7 @@ func (p *gc_bin_parser) field(parent string) *ast.Field {
 	return &ast.Field{
 		Names: names,
 		Type:  typ,
-	}
+	}, tag
 }
 
 func (p *gc_bin_parser) methodList(parent string) (methods []*ast.Field) {
@@ -463,7 +496,7 @@ func (p *gc_bin_parser) methodList(parent string) (methods []*ast.Field) {
 
 func (p *gc_bin_parser) method(parent string) *ast.Field {
 	p.pos()
-	_, name := p.fieldName(parent)
+	_, name, _ := p.fieldName(parent)
 	params := p.paramList()
 	results := p.paramList()
 	return &ast.Field{
@@ -472,22 +505,32 @@ func (p *gc_bin_parser) method(parent string) *ast.Field {
 	}
 }
 
-func (p *gc_bin_parser) fieldName(parent string) (string, string) {
+func (p *gc_bin_parser) fieldName(parent string) (string, string, bool) {
 	name := p.string()
 	pkg := parent
 	if p.version == 0 && name == "_" {
-		// versions < 1 don't export a package for _ fields
-		// TODO: remove once versions are not supported anymore
-		return pkg, name
+		// version 0 didn't export a package for _ fields
+		return pkg, name, false
 	}
-	if name != "" && !exported(name) {
-		// explicitly qualified field
-		if name == "?" {
-			name = ""
-		}
+	var alias bool
+	switch name {
+	case "":
+		// 1) field name matches base type name and is exported: nothing to do
+	case "?":
+		// 2) field name matches base type name and is not exported: need package
+		name = ""
 		pkg = p.pkg()
+	case "@":
+		// 3) field name doesn't match type name (alias)
+		name = p.string()
+		alias = true
+		fallthrough
+	default:
+		if !exported(name) {
+			pkg = p.pkg()
+		}
 	}
-	return pkg, name
+	return pkg, name, alias
 }
 
 func (p *gc_bin_parser) paramList() *ast.FieldList {
@@ -592,6 +635,26 @@ func (p *gc_bin_parser) int64() int64 {
 	}
 
 	return p.rawInt64()
+}
+
+func (p *gc_bin_parser) path() string {
+	if p.debugFormat {
+		p.marker('p')
+	}
+	// if the path was seen before, i is its index (>= 0)
+	// (the empty string is at index 0)
+	i := p.rawInt64()
+	if i >= 0 {
+		return p.pathList[i]
+	}
+	// otherwise, i is the negative path length (< 0)
+	a := make([]string, -i)
+	for n := range a {
+		a[n] = p.string()
+	}
+	s := strings.Join(a, "/")
+	p.pathList = append(p.pathList, s)
+	return s
 }
 
 func (p *gc_bin_parser) string() string {
@@ -710,7 +773,11 @@ const (
 	fractionTag // not used by gc
 	complexTag
 	stringTag
+	nilTag     // only used by gc (appears in exported inlined function bodies)
 	unknownTag // not used by gc (only appears in packages with errors)
+
+	// Type aliases
+	aliasTag
 )
 
 var predeclared = []ast.Expr{
@@ -733,7 +800,7 @@ var predeclared = []ast.Expr{
 	ast.NewIdent("complex128"),
 	ast.NewIdent("string"),
 
-	// aliases
+	// basic type aliases
 	ast.NewIdent("byte"),
 	ast.NewIdent("rune"),
 

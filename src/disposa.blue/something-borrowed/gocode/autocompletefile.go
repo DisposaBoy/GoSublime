@@ -141,7 +141,7 @@ func (f *auto_complete_file) process_decl(decl ast.Decl) {
 		for i, name := range data.names {
 			typ, v, vi := data.type_value_index(i)
 
-			d := new_decl_full(name.Name, class, 0, typ, v, vi, prevscope)
+			d := new_decl_full(name.Name, class, ast_decl_flags(data.decl), typ, v, vi, prevscope)
 			if d == nil {
 				return
 			}
@@ -243,7 +243,9 @@ func (f *auto_complete_file) process_select_stmt(a *ast.SelectStmt) {
 			if astmt, ok := last_cursor_after.Comm.(*ast.AssignStmt); ok && astmt.Tok == token.DEFINE {
 				vname := astmt.Lhs[0].(*ast.Ident).Name
 				v := new_decl_var(vname, nil, astmt.Rhs[0], -1, prevscope)
-				f.scope.add_named_decl(v)
+				if v != nil {
+					f.scope.add_named_decl(v)
+				}
 			}
 		}
 		for _, s := range last_cursor_after.Body {

@@ -121,7 +121,7 @@ func append_to_top_decls(decls map[string]*decl, decl ast.Decl, scope *scope) {
 		for i, name := range data.names {
 			typ, v, vi := data.type_value_index(i)
 
-			d := new_decl_full(name.Name, class, 0, typ, v, vi, scope)
+			d := new_decl_full(name.Name, class, ast_decl_flags(data.decl), typ, v, vi, scope)
 			if d == nil {
 				return
 			}
@@ -314,7 +314,11 @@ func find_global_file(imp string, context *package_lookup_context) (string, bool
 	// gb-specific lookup mode, only if the root dir was found
 	if g_config.PackageLookupMode == "gb" && context.GBProjectRoot != "" {
 		root := context.GBProjectRoot
-		pkg_path := filepath.Join(root, "pkg", context.GOOS+"-"+context.GOARCH, pkgfile)
+		pkgdir := filepath.Join(root, "pkg", context.GOOS+"-"+context.GOARCH)
+		if !is_dir(pkgdir) {
+			pkgdir = filepath.Join(root, "pkg", context.GOOS+"-"+context.GOARCH+"-race")
+		}
+		pkg_path := filepath.Join(pkgdir, pkgfile)
 		if file_exists(pkg_path) {
 			log_found_package_maybe(imp, pkg_path)
 			return pkg_path, true
@@ -453,9 +457,10 @@ func (ctxt *package_lookup_context) gopath() []string {
 	return all
 }
 
-func (ctxt *package_lookup_context) pkg_dirs() []string {
+func (ctxt *package_lookup_context) pkg_dirs() (string, []string) {
 	pkgdir := fmt.Sprintf("%s_%s", ctxt.GOOS, ctxt.GOARCH)
 
+	var currentPackagePath string
 	var all []string
 	if ctxt.GOROOT != "" {
 		dir := filepath.Join(ctxt.GOROOT, "pkg", pkgdir)
@@ -466,6 +471,7 @@ func (ctxt *package_lookup_context) pkg_dirs() []string {
 
 	switch g_config.PackageLookupMode {
 	case "go":
+		currentPackagePath = ctxt.CurrentPackagePath
 		for _, p := range ctxt.gopath() {
 			dir := filepath.Join(p, "pkg", pkgdir)
 			if is_dir(dir) {
@@ -475,6 +481,9 @@ func (ctxt *package_lookup_context) pkg_dirs() []string {
 	case "gb":
 		if ctxt.GBProjectRoot != "" {
 			pkgdir := fmt.Sprintf("%s-%s", ctxt.GOOS, ctxt.GOARCH)
+			if !is_dir(pkgdir) {
+				pkgdir = fmt.Sprintf("%s-%s-race", ctxt.GOOS, ctxt.GOARCH)
+			}
 			dir := filepath.Join(ctxt.GBProjectRoot, "pkg", pkgdir)
 			if is_dir(dir) {
 				all = append(all, dir)
@@ -483,7 +492,7 @@ func (ctxt *package_lookup_context) pkg_dirs() []string {
 	case "bzl":
 		// TODO: Support bazel mode
 	}
-	return all
+	return currentPackagePath, all
 }
 
 type decl_cache struct {
