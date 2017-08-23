@@ -1,3 +1,5 @@
+//go:generate go run generate._margo_.go
+
 package gocode
 
 import (
