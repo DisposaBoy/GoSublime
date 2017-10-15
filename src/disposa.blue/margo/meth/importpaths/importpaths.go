@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -106,6 +107,8 @@ func quickImportPath(srcDir string) string {
 	return ""
 }
 
+var buildIgnoreRx = regexp.MustCompile(`^\+build\s+ignore`)
+
 func quickImportDir(bctx *build.Context, rootDirs []string, srcDir string) *build.Package {
 	srcDir = filepath.Clean(srcDir)
 	qidCache.Lock()
@@ -155,6 +158,7 @@ func quickImportDir(bctx *build.Context, rootDirs []string, srcDir string) *buil
 	defer f.Close()
 
 	fset := token.NewFileSet()
+search:
 	for {
 		names, _ := f.Readdirnames(100)
 		if len(names) == 0 {
@@ -178,6 +182,18 @@ func quickImportDir(bctx *build.Context, rootDirs []string, srcDir string) *buil
 
 			mode := parser.PackageClauseOnly | parser.ParseComments
 			af, _ := parser.ParseFile(fset, path, nil, mode)
+			if af == nil {
+				continue
+			}
+
+			for _, cg := range af.Comments {
+				for _, c := range cg.List {
+					if buildIgnoreRx.MatchString(c.Text) {
+						continue search
+					}
+				}
+			}
+
 			qn.Pkg.Name = astFileName(af)
 			if qn.Pkg.Name != "" {
 				qn.EntName = nm
