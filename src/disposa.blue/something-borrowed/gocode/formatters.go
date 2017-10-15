@@ -129,6 +129,18 @@ func (*csv_formatter) write_candidates(candidates []candidate, num int) {
 }
 
 //-------------------------------------------------------------------------
+// csv_with_package_formatter
+//-------------------------------------------------------------------------
+
+type csv_with_package_formatter struct{}
+
+func (*csv_with_package_formatter) write_candidates(candidates []candidate, num int) {
+	for _, c := range candidates {
+		fmt.Printf("%s,,%s,,%s,,%s\n", c.Class, c.Name, c.Type, c.Package)
+	}
+}
+
+//-------------------------------------------------------------------------
 // json_formatter
 //-------------------------------------------------------------------------
 
@@ -145,8 +157,8 @@ func (*json_formatter) write_candidates(candidates []candidate, num int) {
 		if i != 0 {
 			fmt.Printf(", ")
 		}
-		fmt.Printf(`{"class": "%s", "name": "%s", "type": "%s"}`,
-			c.Class, c.Name, c.Type)
+		fmt.Printf(`{"class": "%s", "name": "%s", "type": "%s", "package": "%s"}`,
+			c.Class, c.Name, c.Type, c.Package)
 	}
 	fmt.Print("]]")
 }
@@ -163,6 +175,8 @@ func get_formatter(name string) formatter {
 		return new(nice_formatter)
 	case "csv":
 		return new(csv_formatter)
+	case "csv-with-package":
+		return new(csv_with_package_formatter)
 	case "json":
 		return new(json_formatter)
 	case "godit":
