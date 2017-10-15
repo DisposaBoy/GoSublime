@@ -17,6 +17,10 @@ You are advised to only *manually* update such plugins and *restart Sublime Text
 GoSublime Changes
 -----------------
 
+## 17.10.15
+	* update gocode
+	* fix failure to display `time` (and other packages) in the imports list
+
 ## 17.08.23
 
 	* update gocode
