@@ -176,16 +176,20 @@ func (d *mDeclarations) decl(fset *token.FileSet, id *ast.Ident, name, kind stri
 
 	return &mDeclarationsDecl{
 		Name: name,
-		Kind: d.kind(id, kind),
+		Kind: d.kind(tp.Filename, id, kind),
 		Fn:   tp.Filename,
 		Row:  tp.Line - 1,
 		Col:  tp.Column - 1,
 	}
 }
 
-func (m *mDeclarations) kind(id *ast.Ident, k string) string {
-	if id.IsExported() {
+func (m *mDeclarations) kind(fn string, id *ast.Ident, k string) string {
+	switch {
+	case strings.HasSuffix(fn, "_test.go"):
+		return "~ " + k
+	case id.IsExported():
 		return "+ " + k
+	default:
+		return "- " + k
 	}
-	return "- " + k
 }
