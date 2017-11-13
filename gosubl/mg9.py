@@ -116,7 +116,7 @@ def sanity_check(env={}, error_log=False):
 		('go.version', sh.GO_VERSION),
 		('GOROOT', '%s' % env.get('GOROOT', ns)),
 		('GOPATH', '%s' % env.get('GOPATH', ns)),
-		('GOBIN', '%s (should usually be `%s`)' % (env.get('GOBIN', ns), ns)),
+		('GOBIN', '%s' % env.get('GOBIN', ns)),
 		('set.shell', str(gs.lst(gs.setting('shell')))),
 		('env.shell', env.get('SHELL', '')),
 		('shell.cmd', str(sh.cmd('${CMD}'))),
