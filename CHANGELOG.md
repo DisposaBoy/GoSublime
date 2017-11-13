@@ -17,6 +17,28 @@ You are advised to only *manually* update such plugins and *restart Sublime Text
 GoSublime Changes
 -----------------
 
+## 17.11.13-1
+	* Change the prefix for identifiers in `*_test.go` files to tilde(~)
+	  to prevent cluttering the declartion palette when searching for (un-)exported identifiers
+
+	* Move sh.py/shell bootstrapping into Go and always run it through the shell.
+
+	  This should fix 2 bugs:
+
+	  1. If you had multiple versions of Go installed, one chosen seemingly at random:
+
+	  * Go is installed via your package manager and is setup correctly
+	  * You then installed a custom version of Go and set GOROOT (in your shell)
+	  * It has no effect even though your custom binary appear first in $PATH
+
+	  This might also fix other cases where the sanity check shows correct settings but compilation fails.
+
+	  2. multi-path GOPATH, PATH, etc. in Fish and similar shells are seemingly ignored
+
+	  In Fish and similar shells where PATH (and other colon separated vars) are lists;
+	  when these vars are echoed, they are output as `"dir1" "dir2"` instead of `"dir1":"dir2"`
+	  so when GS sees it, it thinks it's 1 non-existend dir `"dir1 dir2"`.
+
 ## 17.10.15
 	* update gocode
 	* fix failure to display `time` (and other packages) in the imports list
