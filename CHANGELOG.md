@@ -17,6 +17,10 @@ You are advised to only *manually* update such plugins and *restart Sublime Text
 GoSublime Changes
 -----------------
 
+
+## 17.11.14-1
+	* Fix failure to list individual Test|Benchmark|Example functions in the test palette
+
 ## 17.11.13-1
 	* Change the prefix for identifiers in `*_test.go` files to tilde(~)
 	  to prevent cluttering the declartion palette when searching for (un-)exported identifiers
