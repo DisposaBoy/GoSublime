@@ -26,7 +26,7 @@ class GsTestCommand(sublime_plugin.WindowCommand):
 			for d in decls:
 				name = d['name']
 				prefix, _ =  match_prefix_name(name)
-				kind = d['kind'].lstrip('+- ')
+				kind = d['kind'].lstrip('+-~ ')
 				if prefix and kind == 'func' and d['repr'] == '':
 					mats[prefix] = True
 					args[name] = name
