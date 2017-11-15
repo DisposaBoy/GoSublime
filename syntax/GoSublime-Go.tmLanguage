@@ -303,11 +303,11 @@
 				<dict>
 					<key>match</key>
 					<string>(?x)%
-                        (\d+\$)?                                    # field (argument #)
                         [#0\- +']*                                  # flags
                         [,;:_]?                                     # separator character (AltiVec)
-                        ((-?\d+)|\*(-?\d+\$)?)?                     # minimum field width
-                        (\.((-?\d+)|\*(-?\d+\$)?)?)?                # precision
+                        ((-?\d+)|(\[\d+\])?\*)?                     # minimum field width
+                        (\.((-?\d+)|(\[\d+\])?\*)?)?                # precision
+                        (\[\d+\])?                                  # field (argument #)
                         [diouxXDOUeEfFgGaAcCsSqpnvtTbyYhHmMzZ%]     # conversion type
                     </string>
 					<key>name</key>
