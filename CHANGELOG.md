@@ -18,6 +18,11 @@ GoSublime Changes
 -----------------
 
 
+## 17.11.25-1
+	* use the latest Sublime Text Go syntax
+    * convert all our existing syntax definitions to .sublime-synta
+    * keep track of the sh.bootstrap output and include it in the Sanity Check
+
 ## 17.11.14-1
 	* Fix failure to list individual Test|Benchmark|Example functions in the test palette
 
