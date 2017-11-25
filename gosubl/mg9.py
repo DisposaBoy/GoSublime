@@ -120,6 +120,7 @@ def sanity_check(env={}, error_log=False):
 		('set.shell', str(gs.lst(gs.setting('shell')))),
 		('env.shell', env.get('SHELL', '')),
 		('shell.cmd', str(sh.cmd('${CMD}'))),
+		('sh.bootstrap', '\n%s\n' % '\n'.join(['\t%s' % s for s in sh._print_log])),
 	]
 
 	if error_log:

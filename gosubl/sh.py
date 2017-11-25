@@ -264,7 +264,9 @@ def gs_init(_={}):
 
 	init_done = True
 
+_print_log = []
 def _print(s):
+	_print_log.append(s)
 	print('GoSublime %s sh: %s' % (about.VERSION, s))
 
 def getenv(name, default='', m={}):
