@@ -716,18 +716,11 @@ def dval(v, d):
 
 def tm_path(name):
 	d = {
-		'9o': 'syntax/GoSublime-9o.tmLanguage',
-		'doc': 'GsDoc.hidden-tmLanguage',
-		'go': 'syntax/GoSublime-Go.tmLanguage',
-		'gohtml': 'syntax/GoSublime-HTML.tmLanguage',
+		'9o': 'syntax/GoSublime-9o.sublime-syntax',
+		'doc': 'syntax/GoSublime-GsDoc.sublime-syntax',
+		'go': 'syntax/GoSublime-Go.sublime-syntax',
+		'gohtml': 'syntax/GoSublime-HTML.sublime-syntax',
 	}
-
-	try:
-		so = sublime.load_settings('GoSublime-next.sublime-settings')
-		if 'go' in so.get('extensions', []):
-			d['go'] = 'GoSublime-next.tmLanguage'
-	except Exception:
-		pass
 
 	return 'Packages/GoSublime/%s' % d[name]
 

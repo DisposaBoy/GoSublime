@@ -1,0 +1,247 @@
+%YAML 1.2
+---
+name: 'GoSublime GsDoc (Go)'
+hidden: true
+first_line_match: "-[*]-( Mode:)? Go -[*]-"
+scope: GsDoc.go
+contexts:
+  main:
+    - include: receiver_function_declaration
+    - include: plain_function_declaration
+    - include: basic_things
+    - include: exported_variables
+    - match: ^\s*(import\s*.+?)\n\n
+      captures:
+        1: keyword.control.import.go
+      push:
+        - meta_scope: meta.preprocessor.go.import
+        - match: (?=(?://|/\*))|$
+          pop: true
+        - match: '"'
+          captures:
+            0: punctuation.definition.string.begin.go
+          push:
+            - meta_scope: string.quoted.double.import.go
+            - match: '"'
+              captures:
+                0: punctuation.definition.string.end.go
+              pop: true
+    - include: block
+    - include: root_parens
+    - include: function_calls
+  access:
+    - match: '(?<=\.)[[:alpha:]_][[:alnum:]_]*\b(?!\s*\()'
+      scope: variable.other.dot-access.go
+  basic_things:
+    - include: comments
+    - include: initializers
+    - include: access
+    - include: strings
+    - include: keywords
+  block:
+    - match: '\{'
+      push:
+        - meta_scope: meta.block.go
+        - match: '\}'
+          pop: true
+        - include: block_innards
+  block_innards:
+    - include: function_block_innards
+    - include: exported_variables
+  comments:
+    - match: ^/\* =(\s*.*?)\s*= \*/$\n?
+      scope: comment.block.go
+      captures:
+        1: meta.toc-list.banner.block.go
+    - match: /\*
+      captures:
+        0: punctuation.definition.comment.go
+      push:
+        - meta_scope: comment.block.go
+        - match: \*/
+          captures:
+            0: punctuation.definition.comment.go
+          pop: true
+    - match: \*/.*\n
+      scope: invalid.illegal.stray-commend-end.go
+    - match: ^// =(\s*.*?)\s*=\s*$\n?
+      scope: comment.line.double-slash.banner.go
+      captures:
+        1: meta.toc-list.banner.line.go
+    - match: //
+      captures:
+        0: punctuation.definition.comment.go
+      push:
+        - meta_scope: comment.line.double-slash.go
+        - match: $\n?
+          pop: true
+        - match: (?>\\\s*\n)
+          scope: punctuation.separator.continuation.go
+  exported_variables:
+    - match: '(?<=\s|\[\])([[:upper:]][[:alnum:]_]*)(?=\W+)'
+      comment: This is kinda hacky, in order to get the 'var' scoped the right way again.
+      scope: variable.exported.go
+  fn_parens:
+    - match: \(
+      push:
+        - meta_scope: meta.parens.go
+        - match: \)
+          pop: true
+        - include: basic_things
+        - include: function_calls
+  function_block:
+    - match: '\{'
+      push:
+        - meta_scope: meta.block.go
+        - match: '\}'
+          pop: true
+        - include: function_block_innards
+  function_block_innards:
+    - include: basic_things
+    - match: (\s*)\b(new|c(lose|ap|opy)|p(anic(ln)?|rint(ln)?)|len|make|delete|re(al|cover)|imag|append)(?:\b|\()
+      captures:
+        1: punctuation.whitespace.support.function.leading.go
+        2: support.function.builtin.go
+    - include: function_block
+    - include: function_calls
+    - include: fn_parens
+  function_calls:
+    - match: |-
+        (?x)
+            (?: (?= \s ) (?:(?<=else|new|return) | (?<!\w)) (\s+) )?
+            (\b
+                (?!(for|if|else|switch|return)\s*\()
+                (?:[[:alpha:]_][[:alnum:]_]*+\b)            # method name
+            )
+            \s*(\()
+      scope: meta.function-call.go
+      captures:
+        1: punctuation.whitespace.function-call.leading.go
+        2: support.function.any-method.go
+        3: punctuation.definition.parameters.go
+  initializers:
+    - match: '^[[:blank:]]*(var)\s+(?:[[:alpha:]_][[:alnum:]_]*)(?:,\s+[[:alpha:]_][[:alnum:]_]*)*'
+      comment: This matches the 'var x int = 0' style of variable declaration.
+      scope: meta.initialization.explicit.go
+      captures:
+        0: variable.other.go
+        1: keyword.control.go
+    - match: '(?:[[:alpha:]_][[:alnum:]_]*)(?:,\s+[[:alpha:]_][[:alnum:]_]*)*\s*(:=)'
+      comment: This matches the 'x := 0' style of variable declaration.
+      scope: meta.initialization.short.go
+      captures:
+        0: variable.other.go
+        1: keyword.operator.initialize.go
+  keywords:
+    - match: \b(s(truct|elect|witch)|c(ontinue|ase)|type|i(nterface|f|mport)|def(er|ault)|package|else|var|f(or|unc|allthrough)|r(eturn|ange)|go(to)?|map|break)\b
+      scope: keyword.control.go
+    - match: '(\b|(?<=\]))(int(16|8|32|64)?|uint(16|8|32|ptr|64)?|float(32|64)?|b(yte|ool)|string|error|rune|complex(64|128))\b'
+      scope: storage.type.go
+    - match: \b(const|chan)\b
+      scope: storage.modifier.go
+    - match: \b(nil|true|false|iota)\b
+      scope: constant.language.go
+    - match: '\b((0(x|X)[0-9a-fA-F]*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b'
+      scope: constant.numeric.go
+    - match: (\<\-)|(\-\>)
+      scope: support.channel-operator.go
+  plain_function_declaration:
+    - match: |-
+        (?x)
+                ^[[:blank:]]*(func)\s*
+                (?: ([[:alpha:]_][[:alnum:]_]*)? )          # name of function is optional
+                (?: \( ((?:[\[\]\w\d\s\/,._*&<>-]|(?:interface\{\}))*)? \) )             # required braces for parameters (even if empty)
+                \s*
+                (?: \(? ((?:[\[\]\w\d\s,._*&<>-]|(?:interface\{\}))*) \)? )?             # optional return types, optionally within braces
+      captures:
+        1: keyword.control.go
+        2: entity.name.function.go
+        3: variable.parameters.go
+        4: variable.return-types.go
+      push:
+        - meta_scope: meta.function.plain.go
+        - match: '(?<=\})'
+          pop: true
+        - include: comments
+        - include: function_block
+  receiver_function_declaration:
+    - match: |-
+        (?x)
+                (func)\s*
+                (?: \( ((?:[\[\]\w\d\s,._*&<>-]|(?:interface\{\}))*) \)\s+ )                # receiver variable declarations, in brackets
+                (?: ([[:alpha:]_][[:alnum:]_]*)? )          # name of function is optional
+                (?: \( ((?:[\[\]\w\d\s,._*&<>-]|(?:interface\{\}))*)? \) )               # required braces for parameters (even if empty)
+                \s*
+                (?: \(? ((?:[\[\]\w\d\s,._*&<>-]|(?:interface\{\}))*) \)? )?             # optional return types, optionally within braces
+      comment: Version of above with support for declaring a receiver variable.
+      captures:
+        1: keyword.control.go
+        2: variable.receiver.go
+        3: entity.name.function.go
+        4: variable.parameters.go
+        5: variable.return-types.go
+      push:
+        - meta_scope: meta.function.receiver.go
+        - match: '(?<=\})'
+          pop: true
+        - include: comments
+        - include: function_block
+  root_parens:
+    - match: \(
+      push:
+        - meta_scope: meta.parens.go
+        - match: (?<=\()(\))?|(?:\))
+          captures:
+            1: meta.parens.empty.go
+          pop: true
+        - include: basic_things
+        - include: exported_variables
+        - include: function_calls
+  string_escaped_char:
+    - match: '\\(\\|[abfnrutv''"]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3})'
+      scope: constant.character.escape.go
+    - match: \\.
+      scope: invalid.illegal.unknown-escape.go
+  string_placeholder:
+    - match: |-
+        (?x)%
+            (\d+\$)?                                    # field (argument #)
+            [#0\- +']*                                  # flags
+            [,;:_]?                                     # separator character (AltiVec)
+            ((-?\d+)|\*(-?\d+\$)?)?                     # minimum field width
+            (\.((-?\d+)|\*(-?\d+\$)?)?)?                # precision
+            [diouxXDOUeEfFgGaAcCsSqpnvtTbyYhHmMzZ%]     # conversion type
+      scope: constant.other.placeholder.go
+    - match: "%"
+      scope: invalid.illegal.placeholder.go
+  strings:
+    - match: '"'
+      captures:
+        0: punctuation.definition.string.begin.go
+      push:
+        - meta_scope: string.quoted.double.go
+        - match: '"'
+          captures:
+            0: punctuation.definition.string.end.go
+          pop: true
+        - include: string_placeholder
+        - include: string_escaped_char
+    - match: "'"
+      captures:
+        0: punctuation.definition.string.begin.go
+      push:
+        - meta_scope: string.quoted.single.go
+        - match: "'"
+          captures:
+            0: punctuation.definition.string.end.go
+          pop: true
+        - include: string_escaped_char
+    - match: "`"
+      captures:
+        0: punctuation.definition.string.begin.go
+      push:
+        - meta_scope: string.quoted.raw.go
+        - match: "`"
+          captures:
+            0: punctuation.definition.string.end.go
+          pop: true

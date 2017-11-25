@@ -1,0 +1,17 @@
+%YAML 1.2
+---
+name: 'GoSublime: 9o'
+file_extensions:
+  - 9o
+scope: text.9o
+contexts:
+  main:
+    - match: '([\w.-]+://\S+)'
+      scope: path.9o storage.type.class.9o
+    - match: '((?:(?:[\w.-]+:|[.]*)?[\\/]\S+?|(\S+))(?:[.][^\d][-~\w]*)+(?:[:]\d+){0,2})'
+      scope: path.9o storage.type.class.9o
+    - match: '#'
+      push:
+        - meta_scope: prompt.9o string.9o
+        - match: \z
+          pop: true
