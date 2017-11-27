@@ -7,4 +7,4 @@ scope: source.go
 contexts:
   main:
     - match: ''
-      push: Packages/GoSublime/something_borrowed/Go/Go.sublime-syntax
+      push: Packages/GoSublime/syntax/GoSublime-Go-Legacy.sublime-syntax

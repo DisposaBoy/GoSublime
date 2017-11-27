@@ -7,5 +7,15 @@ file_extensions:
 scope: text.html.gohtml
 contexts:
   main:
-    - include: scope:text.html.basic
-    - include: scope:source.gotemplate
+      - match: ''
+        push: 'Packages/HTML/HTML.sublime-syntax'
+        with_prototype:
+          - match: '{{'
+            captures:
+              0: punctuation.section.embedded.begin.gotemplate
+            push: Packages/GoSublime/syntax/GoSublime-Template.sublime-syntax
+            with_prototype:
+              - match: '}}'
+                captures:
+                  0: punctuation.section.embedded.end.gotemplate
+                pop: true

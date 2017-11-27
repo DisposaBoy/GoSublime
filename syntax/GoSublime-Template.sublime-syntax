@@ -2,52 +2,45 @@
 ---
 name: 'GoSublime: Template'
 scope: source.gotemplate
+hidden: true
 contexts:
   main:
-    - match: '\{\{'
-      captures:
-        0: punctuation.section.embedded.begin.gotemplate
+    - match: ":="
+      scope: keyword.operator.initialize.gotemplate
+    - match: \|
+      scope: keyword.operator.pipe.gotemplate
+    - match: '[.$][\w]*'
+      scope: variable.other.gotemplate
+    - match: \b(if|else|range|template|with|end|nil|define)\b
+      scope: keyword.control.gotemplate
+    - match: \b(and|call|html|index|js|len|not|or|print|printf|println|urlquery|eq|ne|lt|le|gt|ge)\b
+      scope: support.function.builtin.gotemplate
+    - match: /\*
       push:
-        - match: '\}\}'
-          captures:
-            0: punctuation.section.embedded.end.gotemplate
+        - meta_scope: comment.block.gotemplate
+        - match: \*/
           pop: true
-        - match: ":="
-          scope: keyword.operator.initialize.gotemplate
-        - match: \|
-          scope: keyword.operator.pipe.gotemplate
-        - match: '[.$][\w]*'
-          scope: variable.other.gotemplate
-        - match: \b(if|else|range|template|with|end|nil|with|define)\b
-          scope: keyword.control.gotemplate
-        - match: \b(and|call|html|index|js|len|not|or|print|printf|println|urlquery|eq|ne|lt|le|gt|ge)\b
-          scope: support.function.builtin.gotemplate
-        - match: /\*
-          push:
-            - meta_scope: comment.block.gotemplate
-            - match: \*/
-              pop: true
+    - match: '"'
+      captures:
+        0: punctuation.definition.string.begin.gotemplate
+      push:
+        - meta_scope: string.quoted.double.gotemplate
         - match: '"'
           captures:
-            0: punctuation.definition.string.begin.gotemplate
-          push:
-            - meta_scope: string.quoted.double.gotemplate
-            - match: '"'
-              captures:
-                0: punctuation.definition.string.end.gotemplate
-              pop: true
-            - include: string_placeholder
-            - include: string_escaped_char
+            0: punctuation.definition.string.end.gotemplate
+          pop: true
+        - include: string_placeholder
+        - include: string_escaped_char
+    - match: "`"
+      captures:
+        0: punctuation.definition.string.begin.gotemplate
+      push:
+        - meta_scope: string.quoted.raw.gotemplate
         - match: "`"
           captures:
-            0: punctuation.definition.string.begin.gotemplate
-          push:
-            - meta_scope: string.quoted.raw.gotemplate
-            - match: "`"
-              captures:
-                0: punctuation.definition.string.end.gotemplate
-              pop: true
-            - include: string_placeholder
+            0: punctuation.definition.string.end.gotemplate
+          pop: true
+        - include: string_placeholder
   string_escaped_char:
     - match: '\\(\\|[abfnrtv''"]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[0-7]{3})'
       scope: constant.character.escape.gotemplate
