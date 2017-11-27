@@ -18,6 +18,9 @@ GoSublime Changes
 -----------------
 
 
+## 17.11.27-1
+	* use the old GS syntax definitions instead of the new ones from ST to avoid regressions
+
 ## 17.11.25-1
 	* use the latest Sublime Text Go syntax
     * convert all our existing syntax definitions to .sublime-synta
