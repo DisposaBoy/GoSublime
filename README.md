@@ -69,3 +69,17 @@ Supporters
 
 GoSublime has received support from many kind individuals and as a thank you I've added most to [THANKS.md](THANKS.md) file as a way of saying *Thank You*. Some donors donated anonymously and so are not listed, however. If you have donated and would like to add an entry to this file, feel free to open a pull request.
 
+Donations
+=========
+
+Supporting me means I can spend more time working on GoSublime and other Open Source projects, hopefully leading to more consistent and regular development.
+
+Donate using Liberapay
+
+<a href="https://liberapay.com/DisposaBoy/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
+
+
+
+Donate using PayPal
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4RFMYNTYTUQJU"><img alt="Donate using PayPal" src="https://www.paypalobjects.com/en_GB/i/btn/btn_donate_LG.gif"/></a>
