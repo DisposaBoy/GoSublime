@@ -3,7 +3,7 @@ This is the official list of GoSublime authors for copyright purposes.
 * Alexey "AlekSi" Palazhchenko https://github.com/AlekSi
 * Cameron Walters https://github.com/cee-dub
 * Christoph Hack https://github.com/tux21b
-* Dave Brophy https://github.com/davelondon
+* Dave Brophy https://github.com/dave
 * dersebi https://github.com/dersebi
 * DisposaBoy https://github.com/DisposaBoy
 * Geert-Johan Riemer https://github.com/GeertJohan
