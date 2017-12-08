@@ -11,28 +11,47 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
+type dlFile struct {
+	name string
+	url  string
+	dirs []string
+}
+
 func main() {
-	urls := map[string]string{
-		"Comments.tmPreferences":          "https://raw.githubusercontent.com/sublimehq/Packages/master/Go/Comments.tmPreferences",
-		"Indentation Rules.tmPreferences": "https://raw.githubusercontent.com/sublimehq/Packages/master/Go/Indentation%20Rules.tmPreferences",
-		"Go.sublime-syntax":               "https://raw.githubusercontent.com/sublimehq/Packages/master/Go/Go.sublime-syntax",
+	urls := []dlFile{
+		{
+			name: "Comments.tmPreferences",
+			url:  "https://raw.githubusercontent.com/sublimehq/Packages/master/Go/Comments.tmPreferences",
+			dirs: []string{"../..", "."},
+		},
+		{
+			name: "Indentation Rules.tmPreferences",
+			url:  "https://raw.githubusercontent.com/sublimehq/Packages/master/Go/Indentation%20Rules.tmPreferences",
+			dirs: []string{"../..", "."},
+		},
+		{
+			name: "Go.sublime-syntax",
+			url:  "https://raw.githubusercontent.com/sublimehq/Packages/master/Go/Go.sublime-syntax",
+			dirs: []string{"."},
+		},
 	}
-	for name, url := range urls {
-		dl(name, url)
+	for _, f := range urls {
+		dl(f)
 	}
 
-	cmd := exec.Command("git", "status", ".")
+	cmd := exec.Command("git", "status", "--short")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
 }
 
-func dl(name, url string) {
-	fmt.Printf("Sync %s: ", name)
+func dl(f dlFile) {
+	fmt.Printf("Sync %s: ", f.name)
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(f.url)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -45,10 +64,12 @@ func dl(name, url string) {
 		return
 	}
 
-	ioutil.WriteFile(name, content, 0644)
-	if err != nil {
-		fmt.Println(err)
-		return
+	for _, dir := range f.dirs {
+		ioutil.WriteFile(filepath.Join(dir, f.name), content, 0644)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 
 	fmt.Println("ok")
