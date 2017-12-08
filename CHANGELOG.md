@@ -18,6 +18,9 @@ GoSublime Changes
 -----------------
 
 
+## 17.12.08-1
+	* fix broken commenting when the Go package is disabled
+
 ## 17.11.27-1
 	* use the old GS syntax definitions instead of the new ones from ST to avoid regressions
 
