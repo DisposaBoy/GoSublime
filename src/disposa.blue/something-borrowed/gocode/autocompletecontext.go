@@ -284,7 +284,6 @@ func (c *auto_complete_context) get_candidates_from_decl(cc cursor_context, clas
 
 func (c *auto_complete_context) get_import_candidates(partial string, b *out_buffers) {
 	currentPackagePath, pkgdirs := g_daemon.context.pkg_dirs()
-	fmt.Println(pkgdirs)
 	resultSet := map[string]struct{}{}
 	for _, pkgdir := range pkgdirs {
 		// convert srcpath to pkgpath and get candidates
@@ -368,7 +367,9 @@ func (c *auto_complete_context) apropos(file []byte, filename string, cursor int
 	if !ok {
 		var d *decl
 		if ident, ok := cc.expr.(*ast.Ident); ok && g_config.UnimportedPackages {
-			d = resolveKnownPackageIdent(ident.Name, c.current.name, c.current.context)
+			p := resolveKnownPackageIdent(ident.Name, c.current.name, c.current.context)
+			c.pcache[p.name] = p
+			d = p.main
 		}
 		if d == nil {
 			return nil, 0
