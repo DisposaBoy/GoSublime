@@ -18,6 +18,10 @@ GoSublime Changes
 -----------------
 
 
+## 17.12.17-1
+	* fix failure to list some packges in the imports palette
+	* update gocode
+
 ## 17.12.08-1
 	* fix broken commenting when the Go package is disabled
 
