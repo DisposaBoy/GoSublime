@@ -15,10 +15,11 @@ import (
 var Margo = newMargoState()
 
 type MargoConfig struct {
-	Builtins      bool
-	InstallSuffix string
-	GOROOT        string
-	GOPATHS       []string
+	Builtins           bool
+	InstallSuffix      string
+	UnimportedPackages bool
+	GOROOT             string
+	GOPATHS            []string
 }
 
 type margoEnv struct {
@@ -119,6 +120,7 @@ func (m *margoState) updateConfig(c MargoConfig, filename string) {
 	}
 	nv.assign(&g_config, m.env)
 	g_config.ProposeBuiltins = c.Builtins
+	g_config.UnimportedPackages = c.UnimportedPackages
 	m.env.CurrentPackagePath = ""
 	p, _ := m.env.ImportDir(filepath.Dir(filename), build.FindOnly)
 	if p != nil {

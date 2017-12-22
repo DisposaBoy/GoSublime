@@ -11,15 +11,16 @@ import (
 )
 
 type mGocode struct {
-	Autoinst      bool
-	InstallSuffix string
-	Env           map[string]string
-	Home          string
-	Dir           string
-	Builtins      bool
-	Fn            string
-	Src           string
-	Pos           int
+	Autoinst           bool
+	InstallSuffix      string
+	Env                map[string]string
+	Home               string
+	Dir                string
+	Builtins           bool
+	Fn                 string
+	Src                string
+	Pos                int
+	UnimportedPackages bool
 
 	calltip bool
 }
@@ -91,6 +92,7 @@ func (g *mGocode) completions(src []byte, fn string, pos int) []gocode.MargoCand
 	c := gocode.MargoConfig{}
 	c.InstallSuffix = g.InstallSuffix
 	c.Builtins = g.Builtins
+	c.UnimportedPackages = g.UnimportedPackages
 	c.GOROOT, c.GOPATHS = envRootList(g.Env)
 	return gocode.Margo.Complete(c, src, fn, pos)
 }

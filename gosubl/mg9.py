@@ -343,6 +343,7 @@ def _complete_opts(fn, src, pos, builtins):
 		'Home': sh.vdir(),
 		'Autoinst': gs.setting('autoinst'),
 		'InstallSuffix': gs.setting('installsuffix', ''),
+		'UnimportedPackages': gs.setting('autocomplete_suggest_imports'),
 		'Env': {
 			'GOROOT': nv.get('GOROOT', ''),
 			'GOPATH': nv.get('GOPATH', ''),
