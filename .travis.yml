@@ -5,4 +5,4 @@ go:
   - master
 install: true
 script:
-  - env GOPATH=$PWD go -v install gosublime/cmd/margo
+  - env GOPATH=$PWD go install -v gosublime/cmd/margo
