@@ -1,11 +1,11 @@
 package margo_pkg
 
 import (
-	"disposa.blue/something-borrowed/types"
 	"go/ast"
 	"go/parser"
 	"go/scanner"
 	"go/token"
+	"gosublime/something-borrowed/types"
 	"regexp"
 	"strconv"
 )

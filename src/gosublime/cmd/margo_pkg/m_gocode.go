@@ -1,10 +1,10 @@
 package margo_pkg
 
 import (
-	"disposa.blue/something-borrowed/gocode"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"gosublime/something-borrowed/gocode"
 	"io/ioutil"
 	"path/filepath"
 	"strings"

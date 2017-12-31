@@ -1,11 +1,11 @@
 package margo_pkg
 
 import (
-	"disposa.blue/margo"
-	"disposa.blue/margo/meth/importpaths"
 	"go/ast"
 	"go/build"
 	"go/parser"
+	"gosublime/margo"
+	"gosublime/margo/meth/importpaths"
 	"path/filepath"
 )
 

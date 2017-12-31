@@ -23,7 +23,7 @@ type Opts struct {
 	ImportPaths ImportPathsFunc
 }
 
-// Configure each func in funcs to configure the shared Opts
+// Configure calls each func in funcs to configure the shared Opts
 func Configure(funcs ...func(*Opts)) {
 	opts.Lock()
 	defer opts.Unlock()

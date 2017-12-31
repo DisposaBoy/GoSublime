@@ -1,11 +1,11 @@
 package importpaths
 
 import (
-	"disposa.blue/margo"
 	"go/ast"
 	"go/build"
 	"go/parser"
 	"go/token"
+	"gosublime/margo"
 	"os"
 	"path/filepath"
 	"strings"

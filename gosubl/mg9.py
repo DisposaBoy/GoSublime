@@ -27,7 +27,7 @@ DEFAULT_EXT_SRC = '''
 package gosublime
 
 import (
-	"disposa.blue/margo"
+	"gosublime/margo"
 )
 
 func init() {
@@ -176,7 +176,7 @@ def install(aso_install_vesion, force_install, _reinstall=False):
 			'-tags', 'gosublime' if ext_main_file() else '',
 			'-v',
 			'-o', INSTALL_EXE,
-			'disposa.blue/cmd/margo',
+			'gosublime/cmd/margo',
 		])
 		cmd.wd = gs.home_dir_path('bin')
 		cmd.env = {

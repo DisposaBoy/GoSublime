@@ -1,7 +1,7 @@
 package main
 
 import (
-	"disposa.blue/cmd/margo_pkg"
+	"gosublime/cmd/margo_pkg"
 )
 
 func main() {
