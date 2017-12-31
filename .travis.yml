@@ -1,0 +1,8 @@
+language: go
+go:
+  - 1.8
+  - 1.x
+  - master
+install: true
+script:
+  - env GOPATH=$PWD go -v install gosublime/cmd/margo
