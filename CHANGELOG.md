@@ -1,4 +1,4 @@
-** Donate: **
+**Donate:**
 
 I'm currently toying with the idea of doing Open Source development full or part-time.
 
