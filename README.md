@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/DisposaBoy/GoSublime.svg?branch=master)](https://travis-ci.org/DisposaBoy/GoSublime)
+
+
+[![Backers](https://opencollective.com/gosublime/tiers/backer/badge.svg?color=brightgreen)](https://opencollective.com/gosublime) [![Build Status](https://travis-ci.org/DisposaBoy/GoSublime.svg?branch=master)](https://travis-ci.org/DisposaBoy/GoSublime)
 <hr>
 
 GoSublime
@@ -86,3 +88,13 @@ Donate using Liberapay
 Donate using PayPal
 
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4RFMYNTYTUQJU"><img alt="Donate using PayPal" src="https://www.paypalobjects.com/en_GB/i/btn/btn_donate_LG.gif"/></a>
+
+
+
+
+
+Become a backer or a sponsor on OpenCollective
+
+[![Open Collective](https://opencollective.com/gosublime/tiers/backer.svg?avatarHeight=50")](https://opencollective.com/gosublime)
+
+
