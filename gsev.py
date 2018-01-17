@@ -74,6 +74,8 @@ def do_sync_active_view(view):
 			m = gs.mirror_settings(psettings)
 		gs.set_attr('last_active_project_settings', gs.dval(m, {}))
 
+		gs.sync_settings()
+
 def do_set_gohtml_syntax(view):
 	fn = view.file_name()
 	xl = gs.setting('gohtml_extensions', [])
