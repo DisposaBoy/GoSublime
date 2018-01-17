@@ -97,6 +97,7 @@ _default_settings = {
 	"use_named_imports": False,
 	"installsuffix": "",
 	"ipc_timeout": 1,
+	"export_env_vars": [],
 }
 _settings = copy.copy(_default_settings)
 
@@ -471,8 +472,13 @@ def mirror_settings(so):
 			m[k] = copy.copy(v)
 	return m
 
+sync_settings_callbacks = []
+
 def sync_settings():
 	_settings.update(mirror_settings(settings_obj()))
+
+	for cb in sync_settings_callbacks:
+		cb()
 
 def view_fn(view):
 	if view is not None:

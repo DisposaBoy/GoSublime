@@ -9,6 +9,8 @@ import sublime
 import subprocess
 import time
 
+st_environ = os.environ.copy()
+
 try:
 	STARTUPINFO = subprocess.STARTUPINFO()
 	STARTUPINFO.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -237,7 +239,7 @@ def gs_init(_={}):
 
 	for k in _env_keys:
 		v = _env_ext[k]
-		x = os.environ.get(k)
+		x = st_environ.get(k)
 		if k != 'PATH' and x and x != v:
 			_print('WARNING: %s is different between your shell and ST/GUI environments' % (k))
 			_print('     shell.%s: %s' % (k, v))
@@ -261,6 +263,9 @@ def gs_init(_={}):
 		'env': _env_ext,
 		'dur': dur,
 	})
+
+	export_env()
+	gs.sync_settings_callbacks.append(export_env)
 
 	init_done = True
 
@@ -288,7 +293,7 @@ def env(m={}):
 	Assemble environment information needed for correct operation. In particular,
 	ensure that directories containing binaries are included in PATH.
 	"""
-	e = os.environ.copy()
+	e = st_environ.copy()
 	e.update(_env_ext)
 	e.update(m)
 
@@ -441,6 +446,14 @@ def exe(nm):
 		nm = '%s.exe' % nm
 
 	return os.path.join(bin_dir(), nm)
+
+def export_env():
+	e = env()
+	for k in gs.setting('export_env_vars'):
+		v = e.get(k)
+		if v:
+			# note-to-self: don't get any clever ideas about changing this to os.putenv()! because Python...
+			os.environ[k] = v
 
 init_done = False
 GO_VERSION = about.DEFAULT_GO_VERSION
