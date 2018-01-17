@@ -15,6 +15,12 @@ If you use the current implementation of margo extensions and get a compilation 
 GoSublime Changes
 -----------------
 
+## 18.01.17
+	* update gocode
+	* sync the settings when the active view changes to avoid them going out-of-sync when switching projects
+	* add support for exporting env vars into ST.
+	  see docs for the setting `export_env_vars` (`ctrl+., ctrl+4`, `super+., super+4` on mac)
+	* sync all project settings, not just `env`
 
 ## 17.12.17-1
 	* fix failure to list some packges in the imports palette
