@@ -228,15 +228,14 @@ def save_aso():
 
 def settings_dict():
 	m = copy.copy(_settings)
-
-	for k in m:
-		v = attr(k, None)
-		if v is not None:
-			m[k] = v
+	project_settings = attr('last_active_project_settings', {})
+	for d in [_settings, project_settings]:
+		for k in d:
+			v = attr(k, None)
+			m[k] = v if v is not None else d[k]
 
 	nv = dval(copy.copy(_settings.get('env')), {})
-	lpe = dval(attr('last_active_project_settings', {}).get('env'), {})
-	nv.update(lpe)
+	nv.update(dval(project_settings.get('env'), {}))
 	m['env'] = nv
 
 	return m
