@@ -355,7 +355,7 @@ def env(m={}):
 		if s not in add_path:
 			add_path.append(s)
 
-	e['PATH'] = psep.join(add_path)
+	e['PATH'] = psep.join(filter(bool, add_path))
 
 	fn = gs.attr('active_fn', '')
 	wd =  gs.getwd()
