@@ -329,9 +329,10 @@ def env(m={}):
 	if gobin and gobin not in add_path:
 		add_path.append(gobin)
 
-	for s in e.get('PATH', '').split(psep):
-		if s and s not in add_path:
-			add_path.append(s)
+	for pathm in (m, e):
+		for s in pathm.get('PATH', '').split(psep):
+			if s and s not in add_path:
+				add_path.append(s)
 
 	if gs.os_is_windows():
 		l = [
