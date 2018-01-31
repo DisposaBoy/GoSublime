@@ -491,6 +491,15 @@ def view_src(view):
 		return view.substr(sublime.Region(0, view.size()))
 	return ''
 
+def active_view(win=None, view=None):
+	if view is not None:
+		return view
+
+	if win is None:
+		win = sublime.active_window()
+
+	return win.active_view()
+
 def win_view(vfn=None, win=None):
 	if not win:
 		win = sublime.active_window()
