@@ -22,10 +22,10 @@ except Exception:
 	print("GoSublime: %s" % execErr)
 
 def loadable_mods():
-	from gosubl import gs
-	from gosubl import sh
-	from gosubl import margo
-	from gosubl import mg9
+	from .gosubl import gs
+	from .gosubl import sh
+	from .gosubl import margo
+	from .gosubl import mg9
 
 	return [
 		('gs', gs),
@@ -35,10 +35,10 @@ def loadable_mods():
 	]
 
 def plugin_loaded():
-	from gosubl import about
-	from gosubl import sh
-	from gosubl import ev
-	from gosubl import gs
+	from .gosubl import about
+	from .gosubl import sh
+	from .gosubl import ev
+	from .gosubl import gs
 
 	if VERSION != about.VERSION:
 		gs.show_output('GoSublime-main', '\n'.join([

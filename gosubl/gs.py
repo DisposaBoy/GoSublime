@@ -1,7 +1,7 @@
 # Sublime modelines - https://github.com/SublimeText/Modelines
 # sublime: translate_tabs_to_spaces false; rulers [100,120]
 
-from gosubl import about
+from . import about
 from subprocess import Popen, PIPE
 import copy
 import datetime

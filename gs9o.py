@@ -1,9 +1,9 @@
-from gosubl import about
-from gosubl import gs
-from gosubl import gsq
-from gosubl import gsshell
-from gosubl import mg9
-from gosubl import sh
+from .gosubl import about
+from .gosubl import gs
+from .gosubl import gsq
+from .gosubl import gsshell
+from .gosubl import mg9
+from .gosubl import sh
 import datetime
 import json
 import os

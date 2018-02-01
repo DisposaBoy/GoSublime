@@ -1,4 +1,4 @@
-from gosubl import gs
+from .gosubl import gs
 from . import gstest
 import sublime
 import sublime_plugin

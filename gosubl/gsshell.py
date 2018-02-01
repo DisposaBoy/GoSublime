@@ -1,5 +1,5 @@
-from gosubl import gs
-from gosubl import sh
+from . import gs
+from . import sh
 import hashlib
 import os
 import re
