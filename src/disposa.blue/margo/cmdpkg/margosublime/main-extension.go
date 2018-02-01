@@ -7,5 +7,5 @@ import (
 )
 
 func init() {
-	initFuncs = append(initFuncs, margo.Init)
+	margoExt = margo.Margo
 }

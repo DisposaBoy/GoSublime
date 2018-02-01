@@ -12,27 +12,41 @@ type Store struct {
 	mu        sync.Mutex
 	state     State
 	listeners []*struct{ Listener }
+	listener  Listener
 	reducers  []Reducer
+	cfg       func() EditorConfig
 }
 
-func (s *Store) Dispatch(a Action) {
-	go s.reduce(a)
+func (s *Store) Dispatch(act Action) {
+	go s.dispatch(act, true)
 }
 
-func (s *Store) reduce(a Action) {
+func (s *Store) dispatch(act Action, callListener bool) State {
+	state := s.prepState()
+
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	reducers := s.reducers
+	s.mu.Unlock()
 
-	state := s.state
-	state.EphemeralState = EphemeralState{}
-	for _, r := range s.reducers {
-		state = r(state, a)
+	for _, r := range reducers {
+		state = r(state, act)
 	}
-	s.state = state
 
-	for _, p := range s.listeners {
+	s.mu.Lock()
+	listener := s.listener
+	listeners := s.listeners
+	s.state = state
+	s.mu.Unlock()
+
+	if callListener && listener != nil {
+		listener(state)
+	}
+
+	for _, p := range listeners {
 		p.Listener(state)
 	}
+
+	return state
 }
 
 func (s *Store) State() State {
@@ -42,8 +56,20 @@ func (s *Store) State() State {
 	return s.state
 }
 
-func NewStore() *Store {
-	return &Store{}
+func (s *Store) prepState() State {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	st := s.state
+	st.EphemeralState = EphemeralState{}
+	if s.cfg != nil {
+		st.Config = s.cfg()
+	}
+	return st
+}
+
+func newStore(l Listener) *Store {
+	return &Store{listener: l}
 }
 
 func (s *Store) Subscribe(l Listener) (unsubscribe func()) {
@@ -67,11 +93,18 @@ func (s *Store) Subscribe(l Listener) (unsubscribe func()) {
 	}
 }
 
-func (s *Store) Reducers(reducers ...Reducer) {
+func (s *Store) Use(reducers ...Reducer) *Store {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if len(reducers) != 0 {
-		s.reducers = reducers
-	}
+	s.reducers = append(s.reducers[:len(s.reducers):len(s.reducers)], reducers...)
+	return s
+}
+
+func (s *Store) EditorConfig(f func() EditorConfig) *Store {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.cfg = f
+	return s
 }

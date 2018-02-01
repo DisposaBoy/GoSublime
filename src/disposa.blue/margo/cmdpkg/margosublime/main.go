@@ -3,11 +3,12 @@ package margosublime
 import (
 	"disposa.blue/margo/mg"
 	"disposa.blue/margo/mgcli"
+	"disposa.blue/margo/sublime"
 	"fmt"
 	"github.com/urfave/cli"
 )
 
-var initFuncs []func(*mg.Store)
+var margoExt mg.MargoFunc = sublime.Margo
 
 func Main() {
 	cfg := mg.AgentConfig{}
@@ -29,9 +30,12 @@ func Main() {
 		if err != nil {
 			return mgcli.Error("agent creation failed:", err)
 		}
-		for _, cf := range initFuncs {
-			cf(ag.Store)
+
+		ag.Store.EditorConfig(sublime.EditorConfig)
+		if margoExt != nil {
+			margoExt(ag.Args())
 		}
+
 		if err := ag.Run(); err != nil {
 			return mgcli.Error("agent failed:", err)
 		}

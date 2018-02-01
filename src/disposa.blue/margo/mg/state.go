@@ -1,14 +1,44 @@
 package mg
 
+type EditorProps struct {
+	Name    string
+	Version string
+}
+
+type EditorConfig interface {
+	EditorConfig() interface{}
+}
+
 type EphemeralState struct {
-	Status []string
+	Config      EditorConfig
+	Status      StrSet
+	Completions []Completion
+	Tooltips    []Tooltip
 }
 
 type State struct {
 	EphemeralState
+	View     View
+	Obsolete bool
 }
 
-func (s State) AppendStatus(l ...string) State {
-	s.Status = append(s.Status[:len(s.Status):len(s.Status)], l...)
+func (s State) AddStatus(l ...string) State {
+	s.Status = s.Status.Add(l...)
 	return s
+}
+
+func (s State) SetConfig(c EditorConfig) State {
+	s.Config = c
+	return s
+}
+
+func (s State) SetSrc(src []byte) State {
+	s.View = s.View.SetSrc(src)
+	return s
+}
+
+type clientProps struct {
+	Editor EditorProps
+	Env    EnvMap
+	View   View
 }

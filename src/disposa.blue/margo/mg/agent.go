@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 )
 
 var (
@@ -56,23 +57,29 @@ type AgentConfig struct {
 	Codec string
 }
 
-type agentRequest struct {
+type AgentReq struct {
 	Cookie string
 	Action struct {
 		Name string
 		Data codec.Raw
 	}
+	Props clientProps
 }
 
-type agentResponse struct {
+type AgentRes struct {
 	Cookie string
 	Error  string
-	State  State
+	State  struct {
+		State
+		Config interface{}
+	}
 }
 
 type Agent struct {
 	*log.Logger
-	*Store
+	Store *Store
+	
+	mu sync.Mutex
 
 	stdin  io.ReadCloser
 	stdout io.WriteCloser
@@ -89,42 +96,54 @@ func (ag *Agent) Run() error {
 	return ag.communicate()
 }
 
-func (ag *Agent) sync(req agentRequest) {
+func (ag *Agent) sync(req AgentReq) {
 	ag.syncState(req)
 	ag.syncAction(req)
 }
 
-func (ag *Agent) syncState(req agentRequest) {
+func (ag *Agent) syncState(req AgentReq) {
+	sto := ag.Store
+	sto.mu.Lock()
+	defer sto.mu.Unlock()
+
+	st := sto.state
+	st.View = req.Props.View
+	sto.state = st
 }
 
-func (ag *Agent) syncAction(req agentRequest) {
+func (ag *Agent) syncAction(req AgentReq) {
 	name := req.Action.Name
 	data := req.Action.Data
-	a := createAction(name)
+	act := ag.createAction(name)
 
-	if a == nil {
-		ag.Println("unknown action:", name)
+	res := AgentRes{
+		Cookie: req.Cookie,
+	}
+	res.State.State = ag.Store.State()
+	defer func() { ag.send(res) }()
+
+	if act == nil {
+		res.Error = fmt.Sprintf("unknown client action: %s", name)
 		return
 	}
 
 	if len(data) != 0 {
-		err := codec.NewDecoderBytes(data, ag.handle).Decode(a)
+		err := codec.NewDecoderBytes(data, ag.handle).Decode(act)
 		if err != nil {
-			ag.Printf("cannot decode action: %s: %s\n", name, err)
+			res.Error = fmt.Sprintf("cannot decode client action: %s: %s", name, err)
 			return
 		}
 	}
 
-	ag.Dispatch(a)
+	res.State.State = ag.Store.dispatch(act, false)
 }
 
 func (ag *Agent) communicate() error {
-	ag.Subscribe(func(st State) { ag.send(st) })
 	ag.Println("ready")
-	ag.Dispatch(StartAction{})
+	ag.Store.Dispatch(Started{})
 
 	for {
-		req := agentRequest{}
+		req := AgentReq{}
 		if err := ag.dec.Decode(&req); err != nil {
 			if err == io.EOF {
 				return nil
@@ -132,26 +151,51 @@ func (ag *Agent) communicate() error {
 			return fmt.Errorf("ipc.decode: %s", err)
 		}
 
+		// TODO: put this on a channel in the future.
+		// faster, later, requests can finish before slower ones
+		// we currently only have 1 client (GoSublime) that we also control so it's ok for now...
 		ag.sync(req)
 	}
 	return nil
 }
 
-func (ag *Agent) send(s State) error {
-	return ag.enc.Encode(agentResponse{
-		State: s,
-	})
+func (ag *Agent) createAction(name string) Action {
+	if f := actionCreators[name]; f != nil {
+		return f()
+	}
+	return nil
+}
+
+func (ag *Agent) listener(st State) {
+	res := AgentRes{}
+	res.State.State = st
+	ag.send(res)
+}
+
+func (ag *Agent) send(res AgentRes) error {
+	ag.mu.Lock()
+	defer ag.mu.Unlock()
+
+	if res.State.View.changed == 0 {
+		res.State.View = View{}
+	}
+
+	if ec := res.State.State.Config; ec != nil {
+		res.State.Config = ec.EditorConfig()
+	}
+
+	return ag.enc.Encode(res)
 }
 
 func NewAgent(cfg AgentConfig) (*Agent, error) {
 	ag := &Agent{
-		Logger: log.New(os.Stderr, "margo@", log.Lshortfile|log.Ltime),
-		Store:  NewStore(),
+		Logger: Log,
 		stdin:  os.Stdin,
 		stdout: os.Stdout,
 		stderr: os.Stderr,
 		handle: codecHandles[cfg.Codec],
 	}
+	ag.Store = newStore(ag.listener).Use(DefaultReducers...)
 
 	if ag.handle == nil {
 		return ag, fmt.Errorf("Invalid codec '%s'. Expected %s", cfg.Codec, CodecNamesStr)
@@ -160,4 +204,10 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	ag.dec = codec.NewDecoder(bufio.NewReader(ag.stdin), ag.handle)
 
 	return ag, nil
+}
+
+func (ag *Agent) Args() Args {
+	return Args{
+		Store: ag.Store,
+	}
 }

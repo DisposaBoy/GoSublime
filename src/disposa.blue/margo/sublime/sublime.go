@@ -40,13 +40,8 @@ func (c cmdHelper) run() error {
 	cmd.Stderr = os.Stderr
 	cmd.Env = c.env
 
-	err := cmd.Run()
-	status := "ok"
-	if err != nil {
-		status = "error: " + err.Error()
-	}
-	fmt.Fprintf(os.Stderr, "run%q: %s\n", append([]string{c.name}, c.args...), status)
-	return err
+	fmt.Fprintf(os.Stderr, "run%q\n", append([]string{c.name}, c.args...))
+	return cmd.Run()
 }
 
 func mainAction(c *cli.Context) error {
@@ -58,7 +53,11 @@ func mainAction(c *cli.Context) error {
 	if err := goInstallAgent(os.Getenv("MARGO_SUBLIME_GOPATH"), tags); err != nil {
 		return fmt.Errorf("cannot install margo.sublime: %s", err)
 	}
-	return cmdHelper{name: "margo.sublime", args: args}.run()
+	name := "margo.sublime"
+	if exe, err := exec.LookPath(name); err == nil {
+		name = exe
+	}
+	return cmdHelper{name: name, args: args}.run()
 }
 
 func goInstallAgent(gp string, tags []string) error {
@@ -79,11 +78,16 @@ func goInstallAgent(gp string, tags []string) error {
 		cmdpath = s
 	}
 
+	race := os.Getenv("MARGO_INSTALL_FLAGS_RACE") == "1"
 	var err error
 	for _, tag := range tags {
+		args := []string{"install", "-v", "-tags", tag, cmdpath}
+		if race {
+			args = append([]string{"install", "-race"}, args[1:]...)
+		}
 		err = cmdHelper{
 			name:     "go",
-			args:     []string{"install", "-v", "-tags", tag, cmdpath},
+			args:     args,
 			outToErr: true,
 			env:      env,
 		}.run()

@@ -2,7 +2,6 @@ language: go
 go:
   - 1.9
   - 1.x
-  - master
 
 script:
-  - go test -v ./...
+  - go test -race -v ./...
