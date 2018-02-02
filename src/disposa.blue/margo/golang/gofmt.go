@@ -13,16 +13,15 @@ func GoFmt(st mg.State, act mg.Action) mg.State {
 		return st
 	}
 
+	fn := st.View.Filename()
 	src, err := st.View.ReadAll()
 	if err != nil {
-		mg.Log.Printf("gofmt: failed to read %s: %s\n", st.View.Path, err)
-		return st
+		return st.Errorf("gofmt: failed to read %s: %s\n", fn, err)
 	}
 
 	src, err = format.Source(src)
 	if err != nil {
-		mg.Log.Printf("gofmt: failed to format %s: %s\n", st.View.Path, err)
-		return st
+		return st.Errorf("gofmt: failed to format %s: %s\n", fn, err)
 	}
 
 	return st.SetSrc(src)

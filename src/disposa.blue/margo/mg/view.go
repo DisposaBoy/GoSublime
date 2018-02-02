@@ -1,6 +1,7 @@
 package mg
 
 import (
+	"path/filepath"
 	"bytes"
 	"encoding/base64"
 	"golang.org/x/crypto/blake2b"
@@ -35,6 +36,13 @@ func (v View) LangIs(names ...string) bool {
 		}
 	}
 	return false
+}
+
+func (v View) Filename() string {
+	if v.Path !=""{
+		return v.Path
+	}
+	return filepath.Join(v.Dir, v.Name)
 }
 
 func (v View) ReadAll() ([]byte, error) {

@@ -1,3 +1,4 @@
+go_import_path: disposa.blue/margo
 language: go
 go:
   - 1.9

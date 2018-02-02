@@ -78,7 +78,7 @@ type AgentRes struct {
 type Agent struct {
 	*log.Logger
 	Store *Store
-	
+
 	mu sync.Mutex
 
 	stdin  io.ReadCloser
@@ -175,6 +175,10 @@ func (ag *Agent) listener(st State) {
 func (ag *Agent) send(res AgentRes) error {
 	ag.mu.Lock()
 	defer ag.mu.Unlock()
+
+	if res.Error == "" {
+		res.Error = strings.Join([]string(res.State.Errors), "\n")
+	}
 
 	if res.State.View.changed == 0 {
 		res.State.View = View{}

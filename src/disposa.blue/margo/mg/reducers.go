@@ -30,7 +30,7 @@ func RestartOnSave(st State, act Action) State {
 		}
 
 		pkg, _ := build.Default.ImportDir(dir, 0)
-		if pkg == nil {
+		if pkg == nil || pkg.Name == "" {
 			break
 		}
 
