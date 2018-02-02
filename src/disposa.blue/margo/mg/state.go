@@ -55,6 +55,16 @@ func (s State) SetSrc(src []byte) State {
 	return s
 }
 
+func (s State) AddCompletions(l ...Completion) State {
+	s.Completions = append(s.Completions[:len(s.Completions):len(s.Completions)], l...)
+	return s
+}
+
+func (s State) AddTooltips(l ...Tooltip) State {
+	s.Tooltips = append(s.Tooltips[:len(s.Tooltips):len(s.Tooltips)], l...)
+	return s
+}
+
 type clientProps struct {
 	Editor EditorProps
 	Env    EnvMap
