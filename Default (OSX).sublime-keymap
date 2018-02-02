@@ -88,8 +88,7 @@
 	},
 	{
 		"keys": ["super+.", "super+f"],
-		"command": "gs_fmt",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "margo_fmt",
 	},
 	{
 		"keys": ["super+.", "super+n"],
