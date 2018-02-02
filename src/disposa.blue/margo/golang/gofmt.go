@@ -2,10 +2,15 @@ package golang
 
 import (
 	"disposa.blue/margo/mg"
+	"disposa.blue/margo/sublime"
 	"go/format"
 )
 
-func GoFmt(st mg.State, act mg.Action) mg.State {
+func fmt(st mg.State, act mg.Action, fmt func(mg.View) ([]byte, error)) mg.State {
+	if cfg, ok := st.Config.(sublime.Config); ok {
+		st = st.SetConfig(cfg.DisableGsFmt())
+	}
+
 	if !st.View.LangIs("go") {
 		return st
 	}
@@ -13,16 +18,19 @@ func GoFmt(st mg.State, act mg.Action) mg.State {
 		return st
 	}
 
-	fn := st.View.Filename()
-	src, err := st.View.ReadAll()
+	src, err := fmt(st.View)
 	if err != nil {
-		return st.Errorf("gofmt: failed to read %s: %s\n", fn, err)
+		return st.Errorf("failed to fmt %s: %s\n", st.View.Filename(), err)
 	}
-
-	src, err = format.Source(src)
-	if err != nil {
-		return st.Errorf("gofmt: failed to format %s: %s\n", fn, err)
-	}
-
 	return st.SetSrc(src)
+}
+
+func GoFmt(st mg.State, act mg.Action) mg.State {
+	return fmt(st, act, func(v mg.View) ([]byte, error) {
+		src, err := st.View.ReadAll()
+		if err != nil {
+			return nil, err
+		}
+		return format.Source(src)
+	})
 }

@@ -10,9 +10,10 @@ var (
 
 type Config struct {
 	Values struct {
-		TriggerEvents              bool
+		Enabled                    bool
 		InhibitExplicitCompletions bool
 		InhibitWordCompletions     bool
+		OverrideSettings           map[string]interface{}
 	}
 }
 
@@ -20,8 +21,12 @@ func (c Config) EditorConfig() interface{} {
 	return c.Values
 }
 
-func (c Config) TriggerEvents() Config {
-	c.Values.TriggerEvents = true
+func (c Config) Config() mg.EditorConfig {
+	return c
+}
+
+func (c Config) EnableEvents() Config {
+	c.Values.Enabled = true
 	return c
 }
 
@@ -35,16 +40,24 @@ func (c Config) InhibitWordCompletions() Config {
 	return c
 }
 
-func EditorConfig() mg.EditorConfig {
-	return DefaultConfig
+func (c Config) overrideSetting(k string, v interface{}) Config {
+	m := map[string]interface{}{}
+	for k, v := range c.Values.OverrideSettings {
+		m[k] = v
+	}
+	m[k] = v
+	c.Values.OverrideSettings = m
+	return c
 }
 
-func ConfigReducer(f func(c Config) Config) mg.Reducer {
-	return func(st mg.State, act mg.Action) mg.State {
-		switch c := st.Config.(type) {
-		case Config:
-			return st.SetConfig(f(c))
-		}
-		return st
-	}
+func (c Config) DisableGsFmt() Config {
+	return c.overrideSetting("fmt_enabled", false)
+}
+
+func (c Config) DisableGsComplete() Config {
+	return c.overrideSetting("gscomplete_enabled", false)
+}
+
+func (c Config) DisableGsLint() Config {
+	return c.overrideSetting("gslint_enabled", false)
 }

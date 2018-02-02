@@ -6,17 +6,7 @@ import (
 )
 
 func GoImports(st mg.State, act mg.Action) mg.State {
-	if !st.View.LangIs("go") {
-		return st
-	}
-	if _, ok := act.(mg.ViewFmt); !ok {
-		return st
-	}
-
-	fn := st.View.Filename()
-	src, err := imports.Process(fn, st.View.Src, nil)
-	if err != nil {
-		return st.Errorf("goimports: failed to format %s: %s\n", fn, err)
-	}
-	return st.SetSrc(src)
+	return fmt(st, act, func(v mg.View) ([]byte, error) {
+		return imports.Process(st.View.Filename(), st.View.Src, nil)
+	})
 }
