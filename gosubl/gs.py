@@ -100,7 +100,7 @@ _default_settings = {
 	"export_env_vars": [],
 }
 _settings = copy.copy(_default_settings)
-
+_mg_override_settings = {}
 
 CLASS_PREFIXES = {
 	'const': u'\u0196',
@@ -233,6 +233,8 @@ def settings_dict():
 		for k in d:
 			v = attr(k, None)
 			m[k] = v if v is not None else d[k]
+
+	m.update(_mg_override_settings)
 
 	nv = dval(copy.copy(_settings.get('env')), {})
 	nv.update(dval(project_settings.get('env'), {}))
