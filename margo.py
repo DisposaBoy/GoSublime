@@ -1,3 +1,4 @@
+from .gosubl import gs
 from .gosubl.margo import mg
 from .gosubl.margo_render import render_src
 import sublime_plugin
@@ -42,5 +43,9 @@ class MargoRestartAgentCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		mg.restart()
 
-
+class MargoOpenExtensionCommand(sublime_plugin.WindowCommand):
+	def run(self):
+		fn = mg.extension_file(True)
+		if fn:
+			gs.focus(fn)
 

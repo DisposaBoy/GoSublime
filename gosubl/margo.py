@@ -4,9 +4,10 @@ from .margo_common import OutputLogger, TokenCounter
 from .margo_render import render, render_src
 from .margo_state import actions, Config
 from collections import namedtuple
+import glob
 import os
-import time
 import sublime
+import time
 
 class MargoSingleton(object):
 	def __init__(self):
@@ -155,6 +156,30 @@ class MargoSingleton(object):
 
 	def on_close(self, view):
 		self.send(view=view, action=actions.ViewClosed)
+
+	def extension_file(self, install=False):
+		src_dir = gs.user_path('src', 'margo')
+
+		def ext_fn():
+			l = sorted(glob.glob('%s/*.go' % src_dir))
+			return l[0] if l else ''
+
+		fn = ext_fn()
+		if fn or not install:
+			return fn
+
+		try:
+			gs.mkdirp(src_dir)
+			with open('%s/margo.go' % src_dir, 'x') as f:
+				s = open(gs.dist_path('src/disposa.blue/margo/extension-example/extension-example.go'), 'r').read()
+				f.write(s)
+		except FileExistsError:
+			pass
+		except Exception:
+			gs.error_traceback('mg.extension_file', status_txt='Cannot create default margo extension package')
+
+		return ext_fn()
+
 
 mg = MargoSingleton()
 

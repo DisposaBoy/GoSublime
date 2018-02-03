@@ -1,5 +1,9 @@
 [
 	{
+		"keys": ["super+.", "super+x"],
+		"command": "margo_open_extension",
+	},
+	{
 		"keys": ["super+.", "super+1"],
 		"command": "open_file",
 		"args": { "file": "${packages}/GoSublime/README.md" }
