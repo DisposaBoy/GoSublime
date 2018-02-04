@@ -1,3 +1,13 @@
+## Pre-release notice
+
+In the next couple days I will push a new release that contains a new version of margo.
+
+Nothing should change except the appearance of two new process (`margo` and `margo.sublime`)
+and some more noise in the console.
+
+This and future releases will also require CGO.
+
+
 **Donate:**
 
 I'm currently toying with the idea of doing Open Source development full or part-time.
