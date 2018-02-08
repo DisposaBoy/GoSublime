@@ -6,6 +6,6 @@ import (
 )
 
 var (
-	Log = log.New(os.Stderr, "margo@", log.Lshortfile|log.Ltime)
-	Dbg = log.New(os.Stderr, "margo/dbg@", log.Lshortfile|log.Ltime)
+	Log = log.New(os.Stderr, "", log.Lshortfile)
+	Dbg = log.New(os.Stderr, "DBG: ", log.Lshortfile)
 )

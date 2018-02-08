@@ -8,33 +8,35 @@ import (
 
 var (
 	DefaultReducers = []Reducer{
-		RestartOnSave,
+		RestartOnSave{},
 	}
 )
 
-func RestartOnSave(st State, act Action) State {
-	switch act.(type) {
-	case ViewSaved:
-		dir := filepath.Dir(st.View.Path)
-		if dir == "" {
-			break
-		}
+type RestartOnSave struct{}
 
-		// if we use build..ImportPath, it will be wrong if we work on the code outside the GS GOPATH
-		imp := ""
-		if i := strings.LastIndex(dir, "/src/"); i >= 0 {
-			imp = dir[i+5:]
-		}
-		if imp != "margo" && !strings.HasPrefix(imp+"/", "disposa.blue/margo/") {
-			break
-		}
-
-		pkg, _ := build.Default.ImportDir(dir, 0)
-		if pkg == nil || pkg.Name == "" {
-			break
-		}
-
-		st.Obsolete = true
+func (_ RestartOnSave) Reduce(mx *Ctx) *State {
+	if _, ok := mx.Action.(ViewSaved); !ok {
+		return mx.State
 	}
-	return st
+
+	dir := filepath.ToSlash(filepath.Dir(mx.View.Path))
+	if dir == "" {
+		return mx.State
+	}
+
+	// if we use build..ImportPath, it will be wrong if we work on the code outside the GS GOPATH
+	imp := ""
+	if i := strings.LastIndex(dir, "/src/"); i >= 0 {
+		imp = dir[i+5:]
+	}
+	if imp != "margo" && !strings.HasPrefix(imp+"/", "disposa.blue/margo/") {
+		return mx.State
+	}
+
+	pkg, _ := build.Default.ImportDir(dir, 0)
+	if pkg == nil || pkg.Name == "" {
+		return mx.State
+	}
+
+	return mx.MarkObsolete()
 }

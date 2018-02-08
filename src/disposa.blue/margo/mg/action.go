@@ -9,6 +9,7 @@ var (
 		"ViewFmt":          func() Action { return ViewFmt{} },
 		"ViewLoaded":       func() Action { return ViewLoaded{} },
 		"ViewModified":     func() Action { return ViewModified{} },
+		"ViewPosChanged":   func() Action { return ViewPosChanged{} },
 		"ViewSaved":        func() Action { return ViewSaved{} },
 	}
 )
@@ -35,6 +36,8 @@ type QueryTooltips struct{ ActionType }
 type ViewActivated struct{ ActionType }
 
 type ViewModified struct{ ActionType }
+
+type ViewPosChanged struct{ ActionType }
 
 type ViewFmt struct{ ActionType }
 

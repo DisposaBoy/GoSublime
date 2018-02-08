@@ -1,13 +1,13 @@
 package mg
 
 import (
-	"path/filepath"
 	"bytes"
 	"encoding/base64"
 	"golang.org/x/crypto/blake2b"
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 type View struct {
@@ -26,7 +26,19 @@ type View struct {
 	changed int
 }
 
-func (v View) LangIs(names ...string) bool {
+func newView() *View {
+	return &View{}
+}
+
+func (v *View) Copy(updaters ...func(*View)) *View {
+	x := *v
+	for _, f := range updaters {
+		f(&x)
+	}
+	return &x
+}
+
+func (v *View) LangIs(names ...string) bool {
 	for _, s := range names {
 		if s == v.Lang {
 			return true
@@ -38,14 +50,14 @@ func (v View) LangIs(names ...string) bool {
 	return false
 }
 
-func (v View) Filename() string {
-	if v.Path !=""{
+func (v *View) Filename() string {
+	if v.Path != "" {
 		return v.Path
 	}
 	return filepath.Join(v.Dir, v.Name)
 }
 
-func (v View) ReadAll() ([]byte, error) {
+func (v *View) ReadAll() ([]byte, error) {
 	if len(v.Src) != 0 {
 		return v.Src, nil
 	}
@@ -59,11 +71,11 @@ func (v View) ReadAll() ([]byte, error) {
 	return ioutil.ReadAll(r)
 }
 
-func (v View) Valid() bool {
+func (v *View) Valid() bool {
 	return v.Name != ""
 }
 
-func (v View) Open() (io.ReadCloser, error) {
+func (v *View) Open() (io.ReadCloser, error) {
 	if len(v.Src) != 0 {
 		return ioutil.NopCloser(bytes.NewReader(v.Src)), nil
 	}
@@ -75,14 +87,15 @@ func (v View) Open() (io.ReadCloser, error) {
 	return os.Open(v.Path)
 }
 
-func (v View) SetSrc(s []byte) View {
-	hash := blake2b.Sum256(s)
-	v.Pos = 0
-	v.Row = 0
-	v.Col = 0
-	v.Src = s
-	v.Hash = "data:blake2b/Sum256;base64," + base64.StdEncoding.EncodeToString(hash[:])
-	v.Dirty = true
-	v.changed++
-	return v
+func (v *View) SetSrc(s []byte) *View {
+	return v.Copy(func(v *View) {
+		hash := blake2b.Sum256(s)
+		v.Pos = 0
+		v.Row = 0
+		v.Col = 0
+		v.Src = s
+		v.Hash = "data:blake2b/Sum256;base64," + base64.StdEncoding.EncodeToString(hash[:])
+		v.Dirty = true
+		v.changed++
+	})
 }

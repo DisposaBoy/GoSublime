@@ -32,3 +32,10 @@ func (e EnvMap) Environ() []string {
 	}
 	return l
 }
+
+func (e EnvMap) Get(k, def string) string {
+	if v := e[k]; v != "" {
+		return v
+	}
+	return def
+}

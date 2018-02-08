@@ -3,7 +3,8 @@
 package margosublime
 
 import (
-	"margo"
+	// we don't really care what the declared package name is
+	margo "margo"
 )
 
 func init() {

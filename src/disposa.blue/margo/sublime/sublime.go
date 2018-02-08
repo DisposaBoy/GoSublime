@@ -46,21 +46,23 @@ func (c cmdHelper) run() error {
 
 func mainAction(c *cli.Context) error {
 	args := c.Args()
-	tags := []string{"margo"}
+	tags := "margo"
 	if extensionPkgExists() {
-		tags = []string{"margo margo_extension", "margo"}
+		tags = "margo margo_extension"
 	}
+	var env []string
 	if err := goInstallAgent(os.Getenv("MARGO_SUBLIME_GOPATH"), tags); err != nil {
-		return fmt.Errorf("cannot install margo.sublime: %s", err)
+		env = append(env, "MARGO_SUBLIME_INSTALL_FAILED=margo install failed. check console for errors")
+		fmt.Fprintln(os.Stderr, "cannot install margo.sublime:", err)
 	}
 	name := "margo.sublime"
 	if exe, err := exec.LookPath(name); err == nil {
 		name = exe
 	}
-	return cmdHelper{name: name, args: args}.run()
+	return cmdHelper{name: name, args: args, env: env}.run()
 }
 
-func goInstallAgent(gp string, tags []string) error {
+func goInstallAgent(gp string, tags string) error {
 	var env []string
 	if gp != "" {
 		env = make([]string, 0, len(os.Environ())+1)
@@ -79,23 +81,16 @@ func goInstallAgent(gp string, tags []string) error {
 	}
 
 	race := os.Getenv("MARGO_INSTALL_FLAGS_RACE") == "1"
-	var err error
-	for _, tag := range tags {
-		args := []string{"install", "-v", "-tags", tag, cmdpath}
-		if race {
-			args = append([]string{"install", "-race"}, args[1:]...)
-		}
-		err = cmdHelper{
-			name:     "go",
-			args:     args,
-			outToErr: true,
-			env:      env,
-		}.run()
-		if err == nil {
-			return nil
-		}
+	args := []string{"install", "-v", "-tags", tags, cmdpath}
+	if race {
+		args = append([]string{"install", "-race"}, args[1:]...)
 	}
-	return err
+	return cmdHelper{
+		name:     "go",
+		args:     args,
+		outToErr: true,
+		env:      env,
+	}.run()
 }
 
 func extensionPkgExists() bool {
