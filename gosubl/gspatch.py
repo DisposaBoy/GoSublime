@@ -1,4 +1,4 @@
-from gosubl import gs
+from . import gs
 import sublime
 import sys
 

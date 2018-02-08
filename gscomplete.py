@@ -1,5 +1,5 @@
-from gosubl import gs
-from gosubl import mg9
+from .gosubl import gs
+from .gosubl import mg9
 from os.path import basename
 from os.path import dirname
 import json

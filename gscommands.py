@@ -1,6 +1,6 @@
-from gosubl import gs
-from gosubl import gspatch
-from gosubl import mg9
+from .gosubl import gs
+from .gosubl import gspatch
+from .gosubl import mg9
 import datetime
 import os
 import sublime

@@ -1,5 +1,9 @@
 [
 	{
+		"caption": "GoSublime: Restart Margo",
+		"command": "margo_restart_agent",
+	},
+	{
 		"caption": "GoSublime: Edit MarGo extension",
 		"command": "gs_open_margo_extension_package",
 	},

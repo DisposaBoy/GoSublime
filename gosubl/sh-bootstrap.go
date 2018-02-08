@@ -22,6 +22,12 @@ func main() {
 		"PATH":        os.Getenv("PATH"),
 		"CGO_ENABLED": os.Getenv("CGO_ENABLED"),
 	}
+	for _, s := range os.Environ() {
+		l := strings.SplitN(s, "=", 2)
+		if len(l) == 2 && strings.HasPrefix(l[0], "MARGO_") {
+			env[l[0]] = l[1]
+		}
+	}
 
 	for k, v := range env {
 		if strings.TrimSpace(v) == "" {

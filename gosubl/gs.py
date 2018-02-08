@@ -1,7 +1,7 @@
 # Sublime modelines - https://github.com/SublimeText/Modelines
 # sublime: translate_tabs_to_spaces false; rulers [100,120]
 
-from gosubl import about
+from . import about
 from subprocess import Popen, PIPE
 import copy
 import datetime
@@ -100,7 +100,7 @@ _default_settings = {
 	"export_env_vars": [],
 }
 _settings = copy.copy(_default_settings)
-
+_mg_override_settings = {}
 
 CLASS_PREFIXES = {
 	'const': u'\u0196',
@@ -233,6 +233,8 @@ def settings_dict():
 		for k in d:
 			v = attr(k, None)
 			m[k] = v if v is not None else d[k]
+
+	m.update(_mg_override_settings)
 
 	nv = dval(copy.copy(_settings.get('env')), {})
 	nv.update(dval(project_settings.get('env'), {}))
@@ -490,6 +492,15 @@ def view_src(view):
 	if view:
 		return view.substr(sublime.Region(0, view.size()))
 	return ''
+
+def active_view(win=None, view=None):
+	if view is not None:
+		return view
+
+	if win is None:
+		win = sublime.active_window()
+
+	return win.active_view()
 
 def win_view(vfn=None, win=None):
 	if not win:

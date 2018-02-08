@@ -61,7 +61,9 @@ class _command(object):
 			nv0[gs.astr(k)] = gs.astr(self.env[k])
 
 		nv = env(nv0)
-		nv.update(nv0)
+		# this line used to be `nv.update(nv0)` but I think it's a mistake
+		# because e.g. if you set self.env['PATH'], sh.env() will merge it
+		# and then we  go ahead and overwrite it again
 		cmd_lst = self.cmd(nv)
 		orig_cmd = cmd_lst[0]
 		cmd_lst[0] = _which(orig_cmd, nv.get('PATH'))
@@ -293,6 +295,22 @@ def env(m={}):
 	Assemble environment information needed for correct operation. In particular,
 	ensure that directories containing binaries are included in PATH.
 	"""
+
+	# TODO: cleanup this function, it just keeps growing crap
+
+	add_path = []
+	
+	if 'PATH' in m:
+		for s in m['PATH'].split(psep):
+			if s and s not in add_path:
+				add_path.append(s)
+
+		# remove PATH so we don't overwrite the `e[PATH]` below
+		m = m.copy()
+		del m['PATH']
+
+	add_path.append(bin_dir())
+
 	e = st_environ.copy()
 	e.update(_env_ext)
 	e.update(m)
@@ -316,9 +334,6 @@ def env(m={}):
 	# For custom values of GOPATH, installed binaries via go install
 	# will go into the "bin" dir of the corresponding GOPATH path.
 	# Therefore, make sure these paths are included in PATH.
-
-	add_path = [bin_dir()]
-
 	for s in gs.lst(e.get('GOROOT', ''), e.get('GOPATH', '').split(psep)):
 		if s:
 			s = os.path.join(s, 'bin')
@@ -354,7 +369,7 @@ def env(m={}):
 		if s not in add_path:
 			add_path.append(s)
 
-	e['PATH'] = psep.join(add_path)
+	e['PATH'] = psep.join(filter(bool, add_path))
 
 	fn = gs.attr('active_fn', '')
 	wd =  gs.getwd()
@@ -395,8 +410,8 @@ def which_ok(fn):
 	except Exception:
 		return False
 
-def which(cmd):
-	return _which(cmd, getenv('PATH', ''))
+def which(cmd, m={}):
+	return _which(cmd, getenv('PATH', '', m=m))
 
 def _which(cmd, env_path):
 	if os.path.isabs(cmd):

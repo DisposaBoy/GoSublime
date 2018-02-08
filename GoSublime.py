@@ -21,12 +21,24 @@ except Exception:
 	execErr = "Error: failed to exec about.py: Exception: %s" % traceback.format_exc()
 	print("GoSublime: %s" % execErr)
 
+def loadable_mods():
+	from .gosubl import gs
+	from .gosubl import sh
+	from .gosubl import margo
+	from .gosubl import mg9
+
+	return [
+		('gs', gs),
+		('sh', sh),
+		('margo', margo),
+		('mg9', mg9),
+	]
+
 def plugin_loaded():
-	from gosubl import about
-	from gosubl import sh
-	from gosubl import ev
-	from gosubl import gs
-	from gosubl import mg9
+	from .gosubl import about
+	from .gosubl import sh
+	from .gosubl import ev
+	from .gosubl import gs
 
 	if VERSION != about.VERSION:
 		gs.show_output('GoSublime-main', '\n'.join([
@@ -45,17 +57,11 @@ def plugin_loaded():
 		]))
 		return
 
-	mods = [
-		('gs', gs),
-		('sh', sh),
-		('mg9', mg9),
-	]
-
 	gs.set_attr('about.version', VERSION)
 	gs.set_attr('about.ann', ANN)
 
-	for mod_name, mod in mods:
-		print('GoSublime %s: init mod(%s)' % (VERSION, mod_name))
+	for mod_name, mod in loadable_mods():
+		print('GoSublime %s: %s.init()' % (VERSION, mod_name))
 
 		try:
 			mod.gs_init({
@@ -63,6 +69,8 @@ def plugin_loaded():
 				'ann': ANN,
 				'margo_exe': MARGO_EXE,
 			})
+		except AttributeError:
+			pass
 		except TypeError:
 			# old versions didn't take an arg
 			mod.gs_init()
@@ -82,6 +90,16 @@ def plugin_loaded():
 
 	sublime.set_timeout(cb, 0)
 
+def plugin_unloaded():
+	for mod_name, mod in loadable_mods():
+		try:
+			fini = mod.gs_fini
+		except AttributeError:
+			continue
+
+		print('GoSublime %s: %s.fini()' % (VERSION, mod_name))
+		fini({
+		})
 
 class GosublimeDoesntSupportSublimeText2(sublime_plugin.TextCommand):
 	def run(self, edit):

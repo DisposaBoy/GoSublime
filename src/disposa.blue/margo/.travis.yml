@@ -1,0 +1,8 @@
+go_import_path: disposa.blue/margo
+language: go
+go:
+  - 1.9
+  - 1.x
+
+script:
+  - go test -race -v ./...

@@ -1,5 +1,9 @@
 [
 	{
+		"keys": ["ctrl+.", "ctrl+x"],
+		"command": "margo_open_extension",
+	},
+	{
 		"keys": ["ctrl+.", "ctrl+1"],
 		"command": "open_file",
 		"args": { "file": "${packages}/GoSublime/README.md" }
@@ -94,8 +98,7 @@
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+f"],
-		"command": "gs_fmt",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "margo_fmt",
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+n"],
