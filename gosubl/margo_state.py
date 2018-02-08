@@ -8,6 +8,7 @@ actions = NS(**{k: {'Name': k} for k in (
 	'QueryTooltips',
 	'ViewActivated',
 	'ViewModified',
+	'ViewPosChanged',
 	'ViewFmt',
 	'ViewSaved',
 	'ViewLoaded',

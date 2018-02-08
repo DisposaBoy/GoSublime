@@ -47,5 +47,5 @@ class MargoOpenExtensionCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		fn = mg.extension_file(True)
 		if fn:
-			gs.focus(fn)
+			gs.focus(fn, focus_pat='func Margo')
 

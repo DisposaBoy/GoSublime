@@ -47,7 +47,7 @@ class MargoAgent(threading.Thread):
 	def stop(self):
 		if self.stopped.is_set():
 			return
-			
+
 		self.stopped.set()
 		self.req_chan.close()
 		self._stop_proc()
@@ -60,7 +60,7 @@ class MargoAgent(threading.Thread):
 	def _release_handlers(self):
 		with self.lock:
 			hdls, self.req_handlers = self.req_handlers, {}
-			
+
 		rs = AgentRes(error='agent stopping. request aborted')
 		for rq in hdls.values():
 			rq.done(rs)
@@ -83,7 +83,7 @@ class MargoAgent(threading.Thread):
 		for v in (cr.out, cr.err, cr.exc):
 			if v:
 				self.out.println('%s:\n%s' % (install_cmd, v))
-		
+
 		mg_cmd = [
 			sh.which('margo', m={'PATH': gs_gobin}) or 'margo',
 			'sublime', '-codec', ipc_codec,
@@ -126,7 +126,7 @@ class MargoAgent(threading.Thread):
 		try:
 			ipc_enc(rq.data(), self.proc.stdin)
 			exc = None
-		except ipc_ignore_exception as exc:
+		except ipc_ignore_exceptions as exc:
 			pass
 		except Exception as exc:
 			if not self.stopped.is_set():
@@ -170,10 +170,10 @@ class MargoAgent(threading.Thread):
 				return rq.done
 
 		if rs.cookie in self.global_handlers:
-			return self.global_handlers[rs.cookie]	
-		
+			return self.global_handlers[rs.cookie]
+
 		return lambda rs: self.out.println('unexpected response: %s' % rs)
-		
+
 
 	def _handle_recv_ipc(self, v):
 		rs = AgentRes(v=v)

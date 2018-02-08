@@ -98,7 +98,7 @@ class MargoSingleton(object):
 		action['Pos'] = locations[0]
 		rs = self.send(view=view, action=action).wait(0.300)
 		if not rs:
-			self.out.println('aborting QueryCompletions. it did not response in time')
+			self.out.println('aborting QueryCompletions. it did not respond in time')
 			return None
 
 		cl = [c.entry() for c in rs.state.completions]
@@ -114,6 +114,9 @@ class MargoSingleton(object):
 	def on_modified(self, view):
 		self.send(view=view, action=actions.ViewModified)
 
+	def on_selection_modified(self, view):
+		self.send(view=view, action=actions.ViewPosChanged)
+
 	def fmt(self, view):
 		id_nm = '%d: %s' % (view.id(), view.file_name() or view.name())
 		rq = self.send(view=view, action=actions.ViewFmt)
@@ -123,7 +126,7 @@ class MargoSingleton(object):
 			return
 
 		if rs.error:
-			self.out.println('fmt error on view %s: %s' % (id_nm, rs.error))
+			self.out.println('fmt error in view %s: %s' % (id_nm, rs.error))
 			return
 
 		req = rq.props.get('View', {})
