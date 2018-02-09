@@ -1,16 +1,11 @@
-## Pre-release notice
+**margo**
 
-In the next couple days I will push a new release that contains a new version of margo.
+This, and future, versions of GoSublime include a new version of margo that will run side-by-side with the old version until it can be completely replaced.
 
-Nothing should change except the appearance of two new process (`margo` and `margo.sublime`)
-and some more noise in the console.
-
-This and future releases will also require CGO.
+Nothing should change at this time except the appearance of two new processes (`margo` and `margo.sublime`), some more noise in the console and `{• _ •}` in the status bar.
 
 
 **Donate:**
-
-I'm currently toying with the idea of doing Open Source development full or part-time.
 
 If you find GoSublime useful and would like to support me and future development of GoSublime,
 please donate via one of the available methods on https://github.com/DisposaBoy/GoSublime#donations
@@ -18,9 +13,6 @@ or reach out to disposaboy@dby.me to discuss other options.
 
 
 
-**Note:**
-
-If you use the current implementation of margo extensions and get a compilation error referencing the import path `disposa.blue/margo`, update your extension package to use the new path `gosublime/margo` instead.
 
 GoSublime Changes
 -----------------
