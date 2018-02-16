@@ -4,8 +4,8 @@
 		"command": "margo_restart_agent",
 	},
 	{
-		"caption": "GoSublime: Edit MarGo extension",
-		"command": "gs_open_margo_extension_package",
+		"caption": "GoSublime: Edit Margo Extension",
+		"command": "margo_open_extension",
 	},
 	{
 		"caption": "GoSublime: Add/Remove package",
