@@ -38,6 +38,7 @@ class State(object):
 		self.obsolete = v.get('Obsolete') is True
 		self.completions = [Completion(c) for c in (v.get('Completions') or [])]
 		self.tooltips = [Tooltip(t) for t in (v.get('Tooltips') or [])]
+		self.issues = [Issue(l) for l in (v.get('Issues') or [])]
 
 	def __repr__(self):
 		return repr(self.__dict__)
@@ -65,6 +66,30 @@ class Tooltip(object):
 	def __repr__(self):
 		return repr(self.__dict__)
 
+class Issue(object):
+	def __init__(self, v):
+		self.path = v.get('Path') or ''
+		self.name = v.get('Name') or ''
+		self.hash = v.get('Hash') or 0
+		self.row = v.get('Row') or 0
+		self.col = v.get('Col') or 0
+		self.end = v.get('End') or 0
+		self.tag = v.get('Tag') or 0
+		self.message = v.get('Message') or ''
+
+	def __repr__(self):
+		return repr(self.__dict__)
+
+# in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
+# but keep this number low (realistic source files sizes) at least until we optimize things
+MAX_VIEW_SIZE = 512 << 10
+
+# TODO: only send the content when it actually changes
+# TODO: do chunked copying i.e. copy e.g. 1MiB at a time
+#       testing in the past revealed that ST will choke under Python memory problems
+#       if we attempt to copy large files because it has to convert into utf*
+#       which could use up to x4 to convert into the string it gives us
+#       and then we have to re-encode that into bytes to send it
 def make_props(view=None):
 	props = {
 		'Editor': {
@@ -158,7 +183,7 @@ def _view_src(view):
 	if not view.is_dirty():
 		return ''
 
-	if view.size() > 10<<20:
+	if view.size() > MAX_VIEW_SIZE:
 		return ''
 
 	return gs.view_src(view)

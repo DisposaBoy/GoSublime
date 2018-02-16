@@ -35,7 +35,7 @@ class TokenCounter(object):
 		with self.lock:
 			self.n += 1
 			return self.n, self.format.format(self.name, self.n)
-			
+
 class Chan(object):
 	def __init__(self, zero=None):
 		self.lock = threading.Lock()
@@ -87,3 +87,28 @@ class Chan(object):
 class NS(object):
 	def __init__(self, **fields):
 		self.__dict__ = fields
+
+class Debounce(object):
+	def __init__(self, cb, delay):
+		self.cb = cb
+		self.args = []
+		self.kwargs = {}
+		self.time = 0
+		self.delay = delay
+		self.waiting = False
+
+	def __call__(self, *args, **kwargs):
+		self.args = args
+		self.kwargs = kwargs
+		self.time = time.time() + self.delay
+		if not self.waiting:
+			self._sched()
+
+	def _sched(self):
+		d = self.time - time.time()
+		self.waiting = d > 0
+		if self.waiting:
+			sublime.set_timeout_async(self._sched, d)
+		else:
+			cb, args, kwargs = self.cb, self.args, self.kwargs
+			sublime.set_timeout_async(lambda: cb(*args, **kwargs), 0)

@@ -31,6 +31,7 @@ class MargoAgent(threading.Thread):
 		self.starting.set()
 		self.started = threading.Event()
 		self.stopped = threading.Event()
+		self.ready = threading.Event()
 		gopaths = [
 			os.path.join(sublime.packages_path(), 'User', 'margo'),
 			mg.package_dir,
@@ -48,6 +49,7 @@ class MargoAgent(threading.Thread):
 		if self.stopped.is_set():
 			return
 
+		self.starting.clear()
 		self.stopped.set()
 		self.req_chan.close()
 		self._stop_proc()
@@ -69,6 +71,7 @@ class MargoAgent(threading.Thread):
 		self._start_proc()
 
 	def _start_proc(self):
+		self.mg.agent_starting(self)
 		self.out.println('starting')
 
 		gs_gopath = sh.psep.join((gs.user_path(), gs.dist_path()))
@@ -96,15 +99,16 @@ class MargoAgent(threading.Thread):
 		}
 		pr = cmd.proc()
 		if not pr.ok:
+			self.stop()
 			self.out.println('Cannot start margo: %s' % pr.exc)
 			return
 
 		self.proc = pr.p
-		self.started.set()
-		self.starting.clear()
 		gsq.launch(self.domain, self._handle_send)
 		gsq.launch(self.domain, self._handle_recv)
-		self._handle_log()
+		gsq.launch(self.domain, self._handle_log)
+		self.started.set()
+		self.starting.clear()
 		self.proc.wait()
 
 	def _stop_proc(self):
@@ -174,8 +178,15 @@ class MargoAgent(threading.Thread):
 
 		return lambda rs: self.out.println('unexpected response: %s' % rs)
 
+	def _notify_ready(self):
+		if self.ready.is_set():
+			return
+
+		self.ready.set()
+		self.mg.agent_ready(self)
 
 	def _handle_recv_ipc(self, v):
+		self._notify_ready()
 		rs = AgentRes(v=v)
 		# call the handler first. it might be on a timeout (like fmt)
 		for handle in [self._handler(rs), self.mg.render]:

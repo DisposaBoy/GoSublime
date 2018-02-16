@@ -1,8 +1,8 @@
 from . import gs, gsq
 from .margo_agent import MargoAgent
-from .margo_common import OutputLogger, TokenCounter
+from .margo_common import OutputLogger, TokenCounter, Debounce
 from .margo_render import render, render_src
-from .margo_state import actions, Config
+from .margo_state import State, actions, Config
 from collections import namedtuple
 import glob
 import os
@@ -15,22 +15,35 @@ class MargoSingleton(object):
 		self.out = OutputLogger('margo')
 		self.agent_tokens = TokenCounter('agent', format='{}#{:03d}', start=6)
 		self.agent = None
+		self.on_modified = Debounce(self._on_modified, 1.000)
+		self.on_selection_modified = Debounce(self._on_selection_modified, 0.500)
 		self._trigger_events = False
+		self.state = State()
+		self.status = []
 
-	def render(self, rs):
-		cfg = rs.state.config
+	def render(self, rs=None):
+		if rs:
+			self.state = rs.state
+			cfg = rs.state.config
 
-		if cfg.trigger_events:
-			self._trigger_events = True
+			if cfg.trigger_events:
+				self._trigger_events = True
 
-		if cfg.override_settings:
-			gs._mg_override_settings = cfg.override_settings
+			if cfg.override_settings:
+				gs._mg_override_settings = cfg.override_settings
 
-		render(gs.active_view(), rs.state)
+			if rs.state.obsolete:
+				self.out.println('restarting: agent is obsolete')
+				self.restart()
 
-		if rs.state.obsolete:
-			self.out.println('restarting: agent is obsolete')
-			self.restart()
+		sublime.set_timeout(lambda: render(view=gs.active_view(), state=self.state, status=self.status), 0)
+
+	def render_status(self, *a):
+		self.status = list(a)
+		self.render()
+
+	def clear_status(self):
+		self.render_status()
 
 	def start(self):
 		self.restart()
@@ -83,9 +96,25 @@ class MargoSingleton(object):
 			gs.error_traceback('mg.event:%s' % handler)
 			return None
 
+	def agent_starting(self, ag):
+		if ag is not self.agent:
+			return
+
+		self.render_status('starting margo')
+
+	def agent_ready(self, ag):
+		if ag is not self.agent:
+			return
+
+		self.clear_status()
+		self.on_activated(gs.active_view())
+
 	def agent_stopped(self, ag):
-		if ag == self.agent:
-			self.agent = None
+		if ag is not self.agent:
+			return
+
+		self.agent = None
+		self.clear_status()
 
 	def send(self, action={}, cb=None, view=None):
 		if not self.agent:
@@ -95,7 +124,6 @@ class MargoSingleton(object):
 
 	def on_query_completions(self, view, prefix, locations):
 		action = actions.QueryCompletions.copy()
-		action['Pos'] = locations[0]
 		rs = self.send(view=view, action=action).wait(0.300)
 		if not rs:
 			self.out.println('aborting QueryCompletions. it did not respond in time')
@@ -106,15 +134,16 @@ class MargoSingleton(object):
 		return (cl, opts) if opts != 0 else cl
 
 	def on_hover(self, view, point, hover_zone):
-		pass
+		if hover_zone != sublime.HOVER_TEXT:
+			return
 
 	def on_activated(self, view):
 		self.send(view=view, action=actions.ViewActivated)
 
-	def on_modified(self, view):
+	def _on_modified(self, view):
 		self.send(view=view, action=actions.ViewModified)
 
-	def on_selection_modified(self, view):
+	def _on_selection_modified(self, view):
 		self.send(view=view, action=actions.ViewPosChanged)
 
 	def fmt(self, view):

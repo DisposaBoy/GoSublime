@@ -16,6 +16,9 @@ class MargoEvents(sublime_plugin.EventListener):
 	def on_modified_async(self, view):
 		return mg.event('modified', view, mg.on_modified, [view])
 
+	def on_selection_modified_async(self, view):
+		return mg.event('selection_modified', view, mg.on_selection_modified, [view])
+
 	def on_pre_save(self, view):
 		return mg.event('pre_save', view, mg.on_pre_save, [view])
 
