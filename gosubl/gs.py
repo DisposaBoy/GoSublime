@@ -75,6 +75,7 @@ _default_settings = {
 	"autocomplete_tests": False,
 	"autocomplete_closures": False,
 	"autocomplete_filter_name": "",
+	"autocomplete_verbose": False,
 	"autocomplete_suggest_imports": False,
 	"on_save": [],
 	"shell": [],

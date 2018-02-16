@@ -203,6 +203,9 @@ class GoSublime(sublime_plugin.EventListener):
 				ret = ret.strip('() ')
 
 				if is_func:
+					if gs.setting('autocomplete_verbose'):
+						ret = '(%s)\t%s' % (param_str(params), ret)
+
 					if func_name_only:
 						comps.append((
 							'%s\t%s %s' % (nm, ret, f_sfx),
@@ -234,6 +237,12 @@ class GoSublime(sublime_plugin.EventListener):
 	def typeclass_prefix(self, typeclass, typename):
 		return gs.NAME_PREFIXES.get(typename, gs.CLASS_PREFIXES.get(typeclass, ' '))
 
+
+def param_str(params):
+	ret = []
+	for p in params:
+		ret.append(' '.join(p))
+	return ', '.join(ret)
 
 def declex(s):
 	params = []

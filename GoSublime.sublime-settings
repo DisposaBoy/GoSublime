@@ -177,6 +177,14 @@
 	// note: this feature only comes into effect when autocomplete was triggered after a dot, e.g. `fmt.|`
 	"autocomplete_suggest_imports": false,
 
+	// whether or not function autocompletion suggestions will include the arguments and their types or
+	// just return types
+	// e.g. `Printf` autocompleted with verbose enabled will be
+	//     Printf	(format string, a ...interface{})	n int, err error ƒ
+	// while `Printf` autocompleted without verbose enabled will be
+	// 	   Printf	n int, err error ƒ
+	"autocomplete_verbose": false,
+
 	// whether or not to show function call tip in the status bar
 	// the same can be achieved ctrl+dot,ctrl+space using an output panel
 	"calltips": true,
