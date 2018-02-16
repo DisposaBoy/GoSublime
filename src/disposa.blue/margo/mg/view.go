@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"unicode/utf8"
 )
 
 type View struct {
@@ -98,4 +99,17 @@ func (v *View) SetSrc(s []byte) *View {
 		v.Dirty = true
 		v.changed++
 	})
+}
+
+func BytePos(src []byte, charPos int) int {
+	for i, c := range src {
+		if !utf8.RuneStart(c) {
+			continue
+		}
+		charPos--
+		if charPos < 0 {
+			return i
+		}
+	}
+	return len(src)
 }

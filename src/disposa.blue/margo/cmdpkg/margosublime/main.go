@@ -8,7 +8,10 @@ import (
 	"github.com/urfave/cli"
 )
 
-var margoExt mg.MargoFunc = sublime.Margo
+var (
+	margoExt mg.MargoFunc = sublime.Margo
+	sublCfg               = sublime.DefaultConfig
+)
 
 func Main() {
 	cfg := mg.AgentConfig{}
@@ -31,7 +34,7 @@ func Main() {
 			return mgcli.Error("agent creation failed:", err)
 		}
 
-		ag.Store.EditorConfig(sublime.DefaultConfig.Config)
+		ag.Store.EditorConfig(sublCfg.Config)
 		if margoExt != nil {
 			margoExt(ag.Args())
 		}

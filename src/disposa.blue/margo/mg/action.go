@@ -26,6 +26,8 @@ type Action interface {
 	Type() ActionType
 }
 
+var Render Action = nil
+
 // Started is dispatched to indicate the start of IPC communication
 type Started struct{ ActionType }
 

@@ -8,6 +8,8 @@ import (
 	"go/token"
 	"path/filepath"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 func BuildContext(e mg.EnvMap) *build.Context {
@@ -43,91 +45,89 @@ func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
 	if node == nil {
 		return false
 	}
-	/**/
-	//
-	_ = ""
-	_ = ast.Comment{}
-	np := node.Pos()
+	if np := node.Pos(); !np.IsValid() || pos <= np {
+		return false
+	}
 	ne := node.End()
-	if c, ok := node.(*ast.Comment); ok && !strings.HasSuffix(c.Text, "*/") {
-		// line comments don't include the newline
+	if c, ok := node.(*ast.Comment); ok && strings.HasPrefix(c.Text, "//") {
+		// line comments' end don't include the newline
 		ne++
 	}
-	return (np.IsValid() && pos > np) && (pos < ne || !ne.IsValid())
+	return pos < ne || !ne.IsValid()
 }
 
-type NearestNode struct {
+type CursorNode struct {
 	Fset *token.FileSet
 
 	Pos       token.Pos
 	AstFile   *ast.File
 	TokenFile *token.File
 
-	Comment      *ast.Comment
-	CommentGroup *ast.CommentGroup
-	BlockStmt    *ast.BlockStmt
-	CallExpr     *ast.CallExpr
-	BasicLit     *ast.BasicLit
-	Node         ast.Node
+	ImportSpec *ast.ImportSpec
+	Comment    *ast.Comment
+	BlockStmt  *ast.BlockStmt
+	CallExpr   *ast.CallExpr
+	BasicLit   *ast.BasicLit
+	Node       ast.Node
 }
 
-func (nn *NearestNode) ScanFile(af *ast.File) {
-	ast.Walk(nn, af)
+func (cn *CursorNode) ScanFile(af *ast.File) {
+	ast.Walk(cn, af)
 	for _, cg := range af.Comments {
-		if !NodeEnclosesPos(cg, nn.Pos) {
-			continue
-		}
-		nn.CommentGroup = cg
-		nn.Node = cg
 		for _, c := range cg.List {
-			if NodeEnclosesPos(c, nn.Pos) {
-				nn.Comment = c
-				nn.Node = c
-				return
+			if NodeEnclosesPos(c, cn.Pos) {
+				cn.Comment = c
+				cn.Node = c
 			}
 		}
-		return
 	}
 }
 
-func (nn *NearestNode) Visit(node ast.Node) ast.Visitor {
+func (cn *CursorNode) Visit(node ast.Node) ast.Visitor {
 	if node == nil {
-		return nn
+		return cn
 	}
 	// if we're inside e.g. an unclosed string, the end will be invalid
-	if !NodeEnclosesPos(node, nn.Pos) {
-		return nn
+	if !NodeEnclosesPos(node, cn.Pos) {
+		return cn
 	}
 
-	nn.Node = node
+	cn.Node = node
 	switch x := node.(type) {
 	case *ast.BlockStmt:
-		nn.BlockStmt = x
+		cn.BlockStmt = x
 	case *ast.BasicLit:
-		nn.BasicLit = x
+		cn.BasicLit = x
 	case *ast.CallExpr:
-		nn.CallExpr = x
+		cn.CallExpr = x
 	case *ast.Comment:
-		nn.Comment = x
+		// comments that appear here are only those that are attached to something else
+		// we will traverse *all* comments after .Walk()
+	case *ast.ImportSpec:
+		cn.ImportSpec = x
 	}
-	return nn
+	return cn
 }
 
-func ParseNearestNode(src []byte, offset int) *NearestNode {
-	nn := &NearestNode{Fset: token.NewFileSet()}
+func ParseCursorNode(src []byte, offset int) *CursorNode {
+	cn := &CursorNode{Fset: token.NewFileSet()}
 
 	// TODO: caching
-	nn.AstFile, _ = parser.ParseFile(nn.Fset, "_.go", src, parser.ParseComments)
-	if nn.AstFile == nil {
-		return nn
+	cn.AstFile, _ = parser.ParseFile(cn.Fset, "_.go", src, parser.ParseComments)
+	if cn.AstFile == nil {
+		return cn
 	}
 
-	nn.TokenFile = nn.Fset.File(nn.AstFile.Pos())
-	if nn.TokenFile == nil {
-		return nn
+	cn.TokenFile = cn.Fset.File(cn.AstFile.Pos())
+	if cn.TokenFile == nil {
+		return cn
 	}
 
-	nn.Pos = nn.TokenFile.Pos(offset)
-	nn.ScanFile(nn.AstFile)
-	return nn
+	cn.Pos = cn.TokenFile.Pos(offset)
+	cn.ScanFile(cn.AstFile)
+	return cn
+}
+
+func IsLetter(ch rune) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' || ch >= utf8.RuneSelf && unicode.IsLetter(ch)
 }

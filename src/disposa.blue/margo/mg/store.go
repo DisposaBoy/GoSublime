@@ -12,7 +12,9 @@ type Store struct {
 	state     *State
 	listeners []*struct{ Listener }
 	listener  Listener
-	reducers  []Reducer
+	before    []Reducer
+	use       []Reducer
+	after     []Reducer
 	cfg       func() EditorConfig
 }
 
@@ -51,11 +53,16 @@ func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
 }
 
 func (sto *Store) reduce(mx *Ctx, callListener bool) *State {
-	for _, r := range sto.reducers {
-		mx = mx.Copy(func(mx *Ctx) {
-			mx.State = r.Reduce(mx)
-		})
+	apply := func(rl []Reducer) {
+		for _, r := range rl {
+			mx = mx.Copy(func(mx *Ctx) {
+				mx.State = r.Reduce(mx)
+			})
+		}
 	}
+	apply(sto.before)
+	apply(sto.use)
+	apply(sto.after)
 
 	if callListener && sto.listener != nil {
 		sto.listener(mx.State)
@@ -111,11 +118,24 @@ func (sto *Store) Subscribe(l Listener) (unsubscribe func()) {
 	}
 }
 
+func (sto *Store) Before(reducers ...Reducer) *Store {
+	return sto.useReducers(&sto.before, reducers)
+}
+
 func (sto *Store) Use(reducers ...Reducer) *Store {
+	return sto.useReducers(&sto.use, reducers)
+}
+
+func (sto *Store) After(reducers ...Reducer) *Store {
+	return sto.useReducers(&sto.after, reducers)
+}
+
+func (sto *Store) useReducers(p *[]Reducer, reducers []Reducer) *Store {
 	sto.mu.Lock()
 	defer sto.mu.Unlock()
 
-	sto.reducers = append(sto.reducers[:len(sto.reducers):len(sto.reducers)], reducers...)
+	l := *p
+	*p = append(l[:len(l):len(l)], reducers...)
 	return sto
 }
 

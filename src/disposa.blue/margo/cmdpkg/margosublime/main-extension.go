@@ -9,4 +9,5 @@ import (
 
 func init() {
 	margoExt = margo.Margo
+	sublCfg = sublCfg.EnableEvents()
 }

@@ -7,14 +7,21 @@ import (
 )
 
 var (
-	DefaultReducers = []Reducer{
-		RestartOnSave{},
+	defaultReducers = struct {
+		before, use, after []Reducer
+	}{
+		before: []Reducer{
+			restartSupport{},
+		},
+		after: []Reducer{
+			issueSupport{},
+		},
 	}
 )
 
-type RestartOnSave struct{}
+type restartSupport struct{}
 
-func (_ RestartOnSave) Reduce(mx *Ctx) *State {
+func (_ restartSupport) Reduce(mx *Ctx) *State {
 	if _, ok := mx.Action.(ViewSaved); !ok {
 		return mx.State
 	}
@@ -39,4 +46,15 @@ func (_ RestartOnSave) Reduce(mx *Ctx) *State {
 	}
 
 	return mx.MarkObsolete()
+}
+
+type issueSupport struct{}
+
+func (_ issueSupport) Reduce(mx *Ctx) *State {
+	for _, i := range mx.Issues {
+		if i.InView(mx.View) && i.Row == mx.View.Row {
+			return mx.AddStatusf("%s: %s", i.Tag, i.Message)
+		}
+	}
+	return mx.State
 }

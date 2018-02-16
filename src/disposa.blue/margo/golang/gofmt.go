@@ -17,28 +17,27 @@ type fmter struct {
 }
 
 func (fm *fmter) Reduce(mx *mg.Ctx) *mg.State {
+	st := mx.State
 	if cfg, ok := mx.Config.(sublime.Config); ok {
-		mx = mx.Copy(func(mx *mg.Ctx) {
-			mx.State = mx.SetConfig(cfg.DisableGsFmt())
-		})
+		st = st.SetConfig(cfg.DisableGsFmt())
 	}
 
 	if !mx.View.LangIs("go") {
-		return mx.State
+		return st
 	}
 	if _, ok := mx.Action.(mg.ViewFmt); !ok {
-		return mx.State
+		return st
 	}
 
-	fn := mx.View.Filename()
-	src, err := mx.View.ReadAll()
+	fn := st.View.Filename()
+	src, err := st.View.ReadAll()
 	if err != nil {
-		return mx.Errorf("failed to read %s: %s\n", fn, err)
+		return st.Errorf("failed to read %s: %s\n", fn, err)
 	}
 
 	src, err = fm.fmt(fn, src)
 	if err != nil {
-		return mx.Errorf("failed to fmt %s: %s\n", fn, err)
+		return st.Errorf("failed to fmt %s: %s\n", fn, err)
 	}
-	return mx.SetSrc(src)
+	return st.SetSrc(src)
 }

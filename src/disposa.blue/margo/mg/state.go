@@ -68,6 +68,7 @@ type EphemeralState struct {
 	Errors      StrSet
 	Completions []Completion
 	Tooltips    []Tooltip
+	Issues      IssueSet
 }
 
 type State struct {
@@ -144,6 +145,15 @@ func (st *State) AddTooltips(l ...Tooltip) *State {
 	})
 }
 
+func (st *State) AddIssues(l ...Issue) *State {
+	if len(l) == 0 {
+		return st
+	}
+	return st.Copy(func(st *State) {
+		st.Issues = st.Issues.Add(l...)
+	})
+}
+
 func (st *State) MarkObsolete() *State {
 	return st.Copy(func(st *State) {
 		st.Obsolete = true
@@ -173,6 +183,10 @@ func (c *clientProps) updateCtx(mx *Ctx) *Ctx {
 			mx.State = mx.State.Copy(func(st *State) {
 				st.View = c.View
 			})
+			// TODO: convert View.Pos to bytes
+			// at moment gocode is most affected,
+			// but to fix it here means we have to read the file off-disk
+			// so I'd rather not do that until we have some caching in place
 		}
 	})
 }

@@ -14,6 +14,10 @@ import (
 
 var Margo = newMargoState()
 
+func init() {
+	g_daemon = &daemon{}
+}
+
 type MargoConfig struct {
 	ProposeBuiltins    bool
 	InstallSuffix      string
@@ -132,4 +136,9 @@ func (m *margoState) updateConfig(c MargoConfig, filename string) {
 		m.prevEnv = nv
 		fmt.Fprintf(os.Stderr, "Gocode env: %#v\n", nv)
 	}
+
+	g_daemon.autocomplete = m.ctx
+	g_daemon.pkgcache = m.pkgCache
+	g_daemon.declcache = m.declCache
+	g_daemon.context = *m.env
 }

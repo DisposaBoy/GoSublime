@@ -170,7 +170,11 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 		stderr: os.Stderr,
 		handle: codecHandles[cfg.Codec],
 	}
-	ag.Store = newStore(ag.listener).Use(DefaultReducers...)
+	ag.Store = newStore(ag.listener).
+		Before(defaultReducers.before...).
+		Use(defaultReducers.use...).
+		After(defaultReducers.after...)
+
 	if e := os.Getenv("MARGO_SUBLIME_INSTALL_FAILED"); e != "" {
 		ag.Store.Use(Reduce(func(mx *Ctx) *State {
 			return mx.AddStatus(e)

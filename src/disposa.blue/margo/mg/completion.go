@@ -3,6 +3,7 @@ package mg
 type CompletionTag string
 
 const (
+	UnknownTag  = CompletionTag("·?")
 	SnippetTag  = CompletionTag("·ʂ")
 	VariableTag = CompletionTag("·ν")
 	TypeTag     = CompletionTag("·ʈ")
