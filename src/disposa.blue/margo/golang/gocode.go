@@ -219,6 +219,10 @@ type gocodeCtx struct {
 
 func initGocodeReducer(mx *mg.Ctx, g *Gocode) (*mg.State, *gocodeCtx) {
 	st := mx.State
+	if !st.View.LangIs("go") {
+		return st, nil
+	}
+
 	if cfg, ok := st.Config.(sublime.Config); ok {
 		cfg = cfg.DisableGsComplete()
 		if !g.AllowExplicitCompletions {
@@ -228,10 +232,6 @@ func initGocodeReducer(mx *mg.Ctx, g *Gocode) (*mg.State, *gocodeCtx) {
 			cfg = cfg.InhibitWordCompletions()
 		}
 		st = st.SetConfig(cfg)
-	}
-
-	if !st.View.LangIs("go") {
-		return st, nil
 	}
 
 	// TODO: use QueryCompletions.Pos when support is added
