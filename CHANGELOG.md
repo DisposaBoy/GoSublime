@@ -6,7 +6,10 @@ please donate via one of the available methods on https://github.com/DisposaBoy/
 
 **Changes:**
 
-## 18.02.16
+## 18.02.17-1
+	* fix a compilation error introduced in r18.02.16-1
+
+## 18.02.16-1
 	* The new version of margo is close to being ready for real usage.
 	  If you'd like to test it out, press `ctrl+.`,`ctrl+x` or `cmd+.`,`cmd+x`
 	  to open the extension file and then save it or restart sublime text
@@ -15,7 +18,7 @@ please donate via one of the available methods on https://github.com/DisposaBoy/
 		* it comes with integrated support for GoImports
 		* gocode integration now supports more options like autobuild, showing function params and autocompleting packages that have not been imported
 
-## 18.01.17
+## 18.01.17-1
 	* update gocode
 	* sync the settings when the active view changes to avoid them going out-of-sync when switching projects
 	* add support for exporting env vars into ST.
