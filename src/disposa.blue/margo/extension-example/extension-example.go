@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-func Margo(mx mg.Ctx) {
-	mx.Store.
+func Margo(ma mg.Args) {
+	ma.Store.
 		// add our reducers (plugins)
 		// reducers are run in the specified order
 		Use(
