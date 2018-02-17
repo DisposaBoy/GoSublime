@@ -6,6 +6,9 @@ please donate via one of the available methods on https://github.com/DisposaBoy/
 
 **Changes:**
 
+## 18.02.17-2
+	* stop linking sqlite3 to avoid cgo-related compilation errors
+
 ## 18.02.17-1
 	* fix a compilation error introduced in r18.02.16-1
 
