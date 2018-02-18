@@ -1,6 +1,6 @@
-from .gosubl import gs
-from .gosubl.margo import mg
-from .gosubl.margo_render import render_src
+from . import gs
+from .margo import mg
+from .margo_render import render_src
 import sublime_plugin
 
 class MargoEvents(sublime_plugin.EventListener):
