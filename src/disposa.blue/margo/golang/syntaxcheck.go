@@ -19,7 +19,7 @@ func (sc *SyntaxCheck) Reduce(mx *mg.Ctx) *mg.State {
 		return st
 	}
 	switch mx.Action.(type) {
-	case mg.ViewActivated, mg.ViewModified, mg.ViewSaved:
+	case mg.ViewActivated, mg.ViewModified, mg.ViewSaved, mg.QueryIssues:
 		st = sc.checkSyntax(st)
 	}
 	return st.AddIssues(sc.issues.AllInView(st.View)...)
@@ -47,6 +47,7 @@ func (sc *SyntaxCheck) checkSyntax(st *mg.State) *mg.State {
 			Col:     e.Pos.Column - 1,
 			Message: e.Msg,
 			Tag:     mg.IssueError,
+			Label:   "Go/SyntaxCheck",
 		}
 	}
 	return st

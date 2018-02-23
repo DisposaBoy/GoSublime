@@ -3,6 +3,7 @@ package mg
 import (
 	"fmt"
 	"log"
+	"reflect"
 )
 
 type Ctx struct {
@@ -33,6 +34,20 @@ func newCtx(st *State, act Action, sto *Store) *Ctx {
 		Log: Log,
 		Dbg: Dbg,
 	}
+}
+
+func (mx *Ctx) ActionIs(actions ...Action) bool {
+	typ := reflect.TypeOf(mx.Action)
+	for _, act := range actions {
+		if reflect.TypeOf(act) == typ {
+			return true
+		}
+	}
+	return false
+}
+
+func (mx *Ctx) LangIs(names ...string) bool {
+	return mx.View.LangIs(names...)
 }
 
 func (mx *Ctx) Copy(updaters ...func(*Ctx)) *Ctx {

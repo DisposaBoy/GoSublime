@@ -13,7 +13,6 @@ import (
 
 type View struct {
 	Path  string
-	Dir   string
 	Name  string
 	Hash  string
 	Src   []byte
@@ -56,6 +55,13 @@ func (v *View) Filename() string {
 		return v.Path
 	}
 	return filepath.Join(v.Dir, v.Name)
+}
+
+func (v *View) Dir() string {
+	if v.Path == "" {
+		return ""
+	}
+	return filepath.Dir(v.Path)
 }
 
 func (v *View) ReadAll() ([]byte, error) {

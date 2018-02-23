@@ -2,10 +2,39 @@
 
 
 [[projects]]
-  name = "github.com/mattn/go-sqlite3"
+  name = "github.com/alecthomas/gometalinter"
   packages = ["."]
-  revision = "6c771bb9887719704b210e87e934f08be014bdb1"
-  version = "v1.6.0"
+  revision = "46cc1ea3778b247666c2949669a3333c532fa9c6"
+  version = "v2.0.5"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/alecthomas/units"
+  packages = ["."]
+  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/google/shlex"
+  packages = ["."]
+  revision = "6f45313302b9c56850fc17f99e40caebce98c716"
+
+[[projects]]
+  name = "github.com/nicksnyder/go-i18n"
+  packages = [
+    "i18n",
+    "i18n/bundle",
+    "i18n/language",
+    "i18n/translation"
+  ]
+  revision = "0dc1626d56435e9d605a29875701721c54bc9bbd"
+  version = "v1.10.0"
+
+[[projects]]
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/ugorji/go"
@@ -34,9 +63,21 @@
   ]
   revision = "25101aadb97aa42907eee6a238d6d26a6cb3c756"
 
+[[projects]]
+  branch = "v3-unstable"
+  name = "gopkg.in/alecthomas/kingpin.v3-unstable"
+  packages = ["."]
+  revision = "ad203666f07b1bdf7ff3053c871a1b71b3caa196"
+
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "228db52208d6b1517ea640dd8a772c05eca54d8e0f4a1b0cb9c13d6cecb8911c"
+  inputs-digest = "757bf498f884f316214fa2fe151755aa2bbc1ce4cdb00fe77a91f077318f5e62"
   solver-name = "gps-cdcl"
   solver-version = 1

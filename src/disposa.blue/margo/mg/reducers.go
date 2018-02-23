@@ -47,14 +47,3 @@ func (_ restartSupport) Reduce(mx *Ctx) *State {
 
 	return mx.MarkObsolete()
 }
-
-type issueSupport struct{}
-
-func (_ issueSupport) Reduce(mx *Ctx) *State {
-	for _, i := range mx.Issues {
-		if i.InView(mx.View) && i.Row == mx.View.Row {
-			return mx.AddStatusf("%s: %s", i.Tag, i.Message)
-		}
-	}
-	return mx.State
-}
