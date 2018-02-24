@@ -143,7 +143,7 @@ def _view_props(view):
 		src = _view_src(view)
 
 	props.update({
-		'Dir': wd,
+		'Wd': wd,
 		'Pos': pos,
 		'Row': row,
 		'Col': col,
