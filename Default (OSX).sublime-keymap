@@ -42,8 +42,7 @@
 	{
 		"keys": ["super+.", "super+e"],
 		"command": "gs_palette",
-		"args": {"palette": "errors", "direct": true},
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "margo_issues",
 	},
 	{
 		"keys": ["super+.", "super+["],

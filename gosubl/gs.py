@@ -153,7 +153,7 @@ IGNORED_SCOPES = frozenset([
 	'constant.other.rune.go',
 ])
 
-VFN_ID_PAT = re.compile(r'^(?:gs\.)?view://(\d+)(.*?)$', re.IGNORECASE)
+VFN_ID_PAT = re.compile(r'^(?:gs\.)?view(?:#|://)(\d+)(.*?)$', re.IGNORECASE)
 ROWCOL_PAT = re.compile(r'^[:]*(\d+)(?:[:](\d+))?[:]*$')
 
 USER_DIR = os.path.expanduser('~')

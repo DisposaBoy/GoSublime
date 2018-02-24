@@ -1,11 +1,13 @@
 from . import gs, sh
 from .margo_common import NS
+import os
 import re
 import sublime
 
 actions = NS(**{k: {'Name': k} for k in (
 	'QueryCompletions',
 	'QueryTooltips',
+	'QueryIssues',
 	'ViewActivated',
 	'ViewModified',
 	'ViewPosChanged',
@@ -70,15 +72,26 @@ class Issue(object):
 	def __init__(self, v):
 		self.path = v.get('Path') or ''
 		self.name = v.get('Name') or ''
-		self.hash = v.get('Hash') or 0
+		self.hash = v.get('Hash') or ''
 		self.row = v.get('Row') or 0
 		self.col = v.get('Col') or 0
 		self.end = v.get('End') or 0
-		self.tag = v.get('Tag') or 0
+		self.tag = v.get('Tag') or ''
+		self.label = v.get('Label') or ''
 		self.message = v.get('Message') or ''
 
 	def __repr__(self):
 		return repr(self.__dict__)
+
+	def relpath(self, dir):
+		if not self.path:
+			return self.name
+
+		if not dir:
+			return self.path
+
+		return os.path.relpath(self.path, dir)
+
 
 # in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
 # but keep this number low (realistic source files sizes) at least until we optimize things
@@ -140,14 +153,37 @@ def _view_props(view):
 
 	return props
 
+def view_name(view, ext='', lang=''):
+	if view is None:
+		return ''
+
+	if not ext:
+		ext = _view_ext(view, lang=lang)
+
+	return 'view#' + _view_id(view) + ext
+
+def view_path(view):
+	if view is None:
+		return ''
+
+	return view.file_name() or ''
+
+def _view_ext(view, lang=''):
+	if view is None:
+		return ''
+
+	if not lang:
+		_, lang = _view_scope_lang(view, 0)
+
+	return '.%s' % ((view.name() or view_path(view)).split('.')[-1] or lang)
 
 def _view_header(view, pos):
 	scope, lang = _view_scope_lang(view, pos)
-	fn = view.file_name() or ''
-	ext = '.%s' % ((view.name() or fn).split('.')[-1] or lang)
-	return scope, lang, fn, {
-		'Path': fn,
-		'Name': 'view#' + _view_id(view) + ext,
+	path = view_path(view)
+	ext = _view_ext(view, lang=lang)
+	return scope, lang, path, {
+		'Path': path,
+		'Name': view_name(view, ext=ext, lang=lang),
 		'Ext': ext,
 		'Hash': _view_hash(view),
 		'Lang': lang,

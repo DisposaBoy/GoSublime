@@ -62,7 +62,7 @@ def _render_issues(view, issues):
 	regions = {cfg.key: (cfg, []) for cfg in issue_cfgs.values()}
 
 	for isu in issues:
-		cfg = issue_cfgs[isu.tag] or issue_cfg_default
+		cfg = issue_cfgs.get(isu.tag) or issue_cfg_default
 		regions[cfg.key][1].append(_render_issue(view, isu))
 
 	for cfg, rl in regions.values():
