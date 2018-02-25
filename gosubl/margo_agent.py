@@ -130,9 +130,10 @@ class MargoAgent(threading.Thread):
 		try:
 			ipc_enc(rq.data(), self.proc.stdin)
 			exc = None
-		except ipc_ignore_exceptions as exc:
-			pass
-		except Exception as exc:
+		except ipc_ignore_exceptions as e:
+			exc = e
+		except Exception as e:
+			exc = e
 			if not self.stopped.is_set():
 				gs.error_traceback(self.domain)
 
