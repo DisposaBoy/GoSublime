@@ -1,5 +1,6 @@
 from . import gs
 from . import gspatch
+from .margo_state import view_name, view_path
 import sublime
 
 STATUS_KEY = '#mg.Status'
@@ -65,10 +66,12 @@ issue_cfgs = {
 
 def _render_issues(view, issues):
 	regions = {cfg.key: (cfg, []) for cfg in issue_cfgs.values()}
-
+	path = view_path(view)
+	name = view_name(view)
 	for isu in issues:
-		cfg = issue_cfgs.get(isu.tag) or issue_cfg_default
-		regions[cfg.key][1].append(_render_issue(view, isu))
+		if path == isu.path or name == isu.name:
+			cfg = issue_cfgs.get(isu.tag) or issue_cfg_default
+			regions[cfg.key][1].append(_render_issue(view, isu))
 
 	for cfg, rl in regions.values():
 		if rl:
