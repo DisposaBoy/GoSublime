@@ -23,9 +23,8 @@
 		"args": {"dir": "."}
 	},
 	{
-		"caption": "GoSublime: Show errors",
-		"command": "gs_palette",
-		"args": {"palette": "errors", "direct": true}
+		"caption": "GoSublime: Show Issues",
+		"command": "margo_issues",
 	},
 	{
 		"caption": "GoSublime: Go to last bookmark",
