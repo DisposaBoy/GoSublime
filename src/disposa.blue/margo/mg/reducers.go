@@ -26,8 +26,8 @@ func (_ restartSupport) Reduce(mx *Ctx) *State {
 		return mx.State
 	}
 
-	dir := filepath.ToSlash(filepath.Dir(mx.View.Path))
-	if dir == "" {
+	dir := filepath.ToSlash(mx.View.Dir())
+	if !filepath.IsAbs(dir) {
 		return mx.State
 	}
 

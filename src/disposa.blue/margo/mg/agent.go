@@ -55,6 +55,10 @@ type AgentConfig struct {
 	// Valid values are json, cbor or msgpack
 	// Default: json
 	Codec string
+
+	Stdin  io.ReadCloser
+	Stdout io.WriteCloser
+	Stderr io.WriteCloser
 }
 
 type agentReq struct {
@@ -102,7 +106,8 @@ func (rs agentRes) finalize() interface{} {
 }
 
 type Agent struct {
-	*log.Logger
+	Log   *log.Logger
+	Dbg   *log.Logger
 	Store *Store
 
 	mu sync.Mutex
@@ -123,8 +128,8 @@ func (ag *Agent) Run() error {
 }
 
 func (ag *Agent) communicate() error {
-	ag.Println("ready")
-	ag.Store.Dispatch(Started{})
+	ag.Log.Println("started")
+	ag.Store.dispatch(Started{})
 
 	for {
 		rq := newAgentReq()
@@ -164,13 +169,23 @@ func (ag *Agent) send(res agentRes) error {
 
 func NewAgent(cfg AgentConfig) (*Agent, error) {
 	ag := &Agent{
-		Logger: Log,
-		stdin:  os.Stdin,
-		stdout: os.Stdout,
-		stderr: os.Stderr,
+		stdin:  cfg.Stdin,
+		stdout: cfg.Stdout,
+		stderr: cfg.Stderr,
 		handle: codecHandles[cfg.Codec],
 	}
-	ag.Store = newStore(ag.listener).
+	if ag.stdin == nil {
+		ag.stdin = os.Stdin
+	}
+	if ag.stdout == nil {
+		ag.stdout = os.Stdout
+	}
+	if ag.stderr == nil {
+		ag.stderr = os.Stderr
+	}
+	ag.Log = log.New(ag.stderr, "", log.Lshortfile)
+	ag.Dbg = log.New(ag.stderr, "DBG: ", log.Lshortfile)
+	ag.Store = newStore(ag, ag.listener).
 		Before(defaultReducers.before...).
 		Use(defaultReducers.use...).
 		After(defaultReducers.after...)
@@ -193,5 +208,7 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 func (ag *Agent) Args() Args {
 	return Args{
 		Store: ag.Store,
+		Log:   ag.Log,
+		Dbg:   ag.Dbg,
 	}
 }

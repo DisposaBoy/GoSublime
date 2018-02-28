@@ -5,6 +5,10 @@ import (
 	"sync"
 )
 
+var _ Dispatcher = (&Store{}).Dispatch
+
+type Dispatcher func(Action)
+
 type Listener func(*State)
 
 type Store struct {
@@ -16,6 +20,7 @@ type Store struct {
 	use       []Reducer
 	after     []Reducer
 	cfg       func() EditorConfig
+	ag        *Agent
 }
 
 func (sto *Store) Dispatch(act Action) {
@@ -26,7 +31,7 @@ func (sto *Store) dispatch(act Action) {
 	sto.mu.Lock()
 	defer sto.mu.Unlock()
 
-	sto.reduce(newCtx(sto.prepState(sto.state), act, sto), true)
+	sto.reduce(newCtx(sto.ag, sto.prepState(sto.state), act, sto), true)
 }
 
 func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
@@ -34,7 +39,7 @@ func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
 	defer sto.mu.Unlock()
 
 	name := rq.Action.Name
-	mx := newCtx(sto.state, ag.createAction(name), sto)
+	mx := newCtx(sto.ag, sto.state, ag.createAction(name), sto)
 
 	rs := agentRes{Cookie: rq.Cookie}
 	rs.State = mx.State
@@ -93,8 +98,12 @@ func (sto *Store) prepState(st *State) *State {
 	return st
 }
 
-func newStore(l Listener) *Store {
-	return &Store{listener: l, state: NewState()}
+func newStore(ag *Agent, l Listener) *Store {
+	return &Store{
+		listener: l,
+		state:    NewState(),
+		ag:       ag,
+	}
 }
 
 func (sto *Store) Subscribe(l Listener) (unsubscribe func()) {

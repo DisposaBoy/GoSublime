@@ -25,6 +25,15 @@ func (s StrSet) Has(p string) bool {
 
 type EnvMap map[string]string
 
+func (e EnvMap) Add(k, v string) EnvMap {
+	m := make(EnvMap, len(e)+1)
+	for k, v := range e {
+		m[k] = v
+	}
+	m[k] = v
+	return m
+}
+
 func (e EnvMap) Environ() []string {
 	l := make([]string, 0, len(e))
 	for k, v := range e {

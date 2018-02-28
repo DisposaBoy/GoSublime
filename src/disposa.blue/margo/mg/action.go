@@ -29,7 +29,9 @@ type Action interface {
 
 var Render Action = nil
 
-// Started is dispatched to indicate the start of IPC communication
+// Started is dispatched to indicate the start of IPC communication.
+// It's the first action that is dispatched.
+// Reducers may do lazy initialization during this action.
 type Started struct{ ActionType }
 
 type QueryCompletions struct{ ActionType }

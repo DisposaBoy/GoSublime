@@ -11,14 +11,13 @@ type Ctx struct {
 	Action Action
 
 	Editor EditorProps
-	Env    EnvMap
 	Store  *Store
 
 	Log *log.Logger
 	Dbg *log.Logger
 }
 
-func newCtx(st *State, act Action, sto *Store) *Ctx {
+func newCtx(ag *Agent, st *State, act Action, sto *Store) *Ctx {
 	if st == nil {
 		panic("newCtx: state must not be nil")
 	}
@@ -31,8 +30,8 @@ func newCtx(st *State, act Action, sto *Store) *Ctx {
 
 		Store: sto,
 
-		Log: Log,
-		Dbg: Dbg,
+		Log: ag.Log,
+		Dbg: ag.Dbg,
 	}
 }
 
@@ -89,6 +88,7 @@ type EphemeralState struct {
 type State struct {
 	EphemeralState
 	View     *View
+	Env      EnvMap
 	Obsolete bool
 }
 

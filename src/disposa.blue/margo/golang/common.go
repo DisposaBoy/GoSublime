@@ -6,10 +6,18 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+)
+
+var (
+	CommonPatterns = append(mg.CommonPatterns[:len(mg.CommonPatterns):len(mg.CommonPatterns)],
+		regexp.MustCompile(`(?P<message>can't load package: package .+: found packages .+ \((?P<path>.+?\.go)\).+)`),
+	)
 )
 
 func BuildContext(e mg.EnvMap) *build.Context {
@@ -130,4 +138,23 @@ func ParseCursorNode(src []byte, offset int) *CursorNode {
 
 func IsLetter(ch rune) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' || ch >= utf8.RuneSelf && unicode.IsLetter(ch)
+}
+
+func IsPkgDir(dir string) bool {
+	if dir == "" || dir == "." {
+		return false
+	}
+
+	f, err := os.Open(dir)
+	if err != nil {
+		return false
+	}
+
+	l, _ := f.Readdirnames(-1)
+	for _, fn := range l {
+		if strings.HasSuffix(fn, ".go") {
+			return true
+		}
+	}
+	return false
 }
