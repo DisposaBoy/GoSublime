@@ -201,13 +201,22 @@ def gs_init(_={}):
 		'CGO_ENABLED',
 	]
 
-	cmd = ShellCommand('go run sh-bootstrap.go')
-	cmd.wd = gs.dist_path('gosubl')
+	root_dir = gs.dist_path()
+	bs_fn = 'gosubl/sh-bootstrap.go'
+	bs_exe = 'bin/gosubl-sh-bootstrap.exe'
+	cmd = ShellCommand('go build -o %s %s' % (bs_exe, bs_fn))
+	cmd.wd = root_dir
+	cr = cmd.run()
+	if cr.exc or cr.err:
+		_print('error building %s: %s' % (bs_fn, cr.exc or cr.err))
+
+	cmd = ShellCommand(bs_exe)
+	cmd.wd = root_dir
 	cr = cmd.run()
 	raw_ver = ''
 	ver = ''
 	if cr.exc or cr.err:
-		_print('error running sh-bootstrap.go: %s' % (cr.exc or cr.err))
+		_print('error running %s: %s' % (bs_fn, cr.exc or cr.err))
 
 	for ln in cr.out.split('\n'):
 		ln = ln.strip()
@@ -216,16 +225,16 @@ def gs_init(_={}):
 
 		v, err = gs.json_decode(ln, {})
 		if err:
-			_print('cannot decode sh-bootstrap.go output: `%s`' % (ln))
+			_print('cannot decode %s output: `%s`' % (bs_fn, ln))
 			continue
 
 		if not gs.is_a(v, {}):
-			_print('cannot decode sh-bootstrap.go output: `%s`. value: `%s` is not a dict' % (ln, v))
+			_print('cannot decode %s output: `%s`. value: `%s` is not a dict' % (bs_fn, ln, v))
 			continue
 
 		env = v.get('Env')
 		if not gs.is_a(env, {}):
-			_print('cannot decode sh-bootstrap.go output: `%s`. Env: `%s` is not a dict' % (ln, env))
+			_print('cannot decode %s output: `%s`. Env: `%s` is not a dict' % (bs_fn, ln, env))
 			continue
 
 		ver = v.get('Version') or ver
@@ -299,7 +308,7 @@ def env(m={}):
 	# TODO: cleanup this function, it just keeps growing crap
 
 	add_path = []
-	
+
 	if 'PATH' in m:
 		for s in m['PATH'].split(psep):
 			if s and s not in add_path:
