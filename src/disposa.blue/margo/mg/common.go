@@ -1,5 +1,10 @@
 package mg
 
+import (
+	"io"
+	"sync"
+)
+
 type StrSet []string
 
 func (s StrSet) Add(l ...string) StrSet {
@@ -47,4 +52,23 @@ func (e EnvMap) Get(k, def string) string {
 		return v
 	}
 	return def
+}
+
+type LockedWriterCloser struct {
+	io.WriteCloser
+	mu sync.Mutex
+}
+
+func (w *LockedWriterCloser) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	return w.WriteCloser.Write(p)
+}
+
+func (w *LockedWriterCloser) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	return w.WriteCloser.Close()
 }

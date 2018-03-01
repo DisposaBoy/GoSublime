@@ -48,7 +48,7 @@ func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	candidates := gx.candidates()
 	completions := make([]mg.Completion, 0, len(candidates))
 	for _, v := range candidates {
-		if c, ok := g.completion(gx, v); ok {
+		if c, ok := g.completion(mx, gx, v); ok {
 			completions = append(completions, c)
 		}
 	}
@@ -144,10 +144,10 @@ func (g *Gocode) printFields(w io.Writer, fset *token.FileSet, list []*ast.Field
 	}
 }
 
-func (g *Gocode) completion(gx *gocodeCtx, v gocode.MargoCandidate) (c mg.Completion, ok bool) {
+func (g *Gocode) completion(mx *mg.Ctx, gx *gocodeCtx, v gocode.MargoCandidate) (c mg.Completion, ok bool) {
 	buf := bytes.NewBuffer(nil)
 	if v.Class.String() == "PANIC" {
-		mg.Log.Printf("gocode panicked in '%s' at pos '%d'\n", gx.fn, gx.pos)
+		mx.Log.Printf("gocode panicked in '%s' at pos '%d'\n", gx.fn, gx.pos)
 		return c, false
 	}
 	if !g.ProposeTests && g.matchTests(v) {
@@ -241,7 +241,7 @@ func initGocodeReducer(mx *mg.Ctx, g *Gocode) (*mg.State, *gocodeCtx) {
 		return st, nil
 	}
 
-	bctx := BuildContext(mx.Env)
+	bctx := BuildContext(mx)
 	src, _ := st.View.ReadAll()
 	pos := clampSrcPos(src, st.View.Pos)
 	pos = mg.BytePos(src, pos)

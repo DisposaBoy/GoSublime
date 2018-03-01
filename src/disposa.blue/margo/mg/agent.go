@@ -106,8 +106,7 @@ func (rs agentRes) finalize() interface{} {
 }
 
 type Agent struct {
-	Log   *log.Logger
-	Dbg   *log.Logger
+	Log   *Logger
 	Store *Store
 
 	mu sync.Mutex
@@ -183,8 +182,11 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	if ag.stderr == nil {
 		ag.stderr = os.Stderr
 	}
-	ag.Log = log.New(ag.stderr, "", log.Lshortfile)
-	ag.Dbg = log.New(ag.stderr, "DBG: ", log.Lshortfile)
+	ag.stderr = &LockedWriterCloser{WriteCloser: ag.stderr}
+	ag.Log = &Logger{
+		Logger: log.New(ag.stderr, "", log.Lshortfile),
+		Dbg:    log.New(ag.stderr, "DBG: ", log.Lshortfile),
+	}
 	ag.Store = newStore(ag, ag.listener).
 		Before(defaultReducers.before...).
 		Use(defaultReducers.use...).
@@ -209,6 +211,5 @@ func (ag *Agent) Args() Args {
 	return Args{
 		Store: ag.Store,
 		Log:   ag.Log,
-		Dbg:   ag.Dbg,
 	}
 }

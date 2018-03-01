@@ -2,7 +2,6 @@ package mg
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 )
 
@@ -13,8 +12,7 @@ type Ctx struct {
 	Editor EditorProps
 	Store  *Store
 
-	Log *log.Logger
-	Dbg *log.Logger
+	Log *Logger
 }
 
 func newCtx(ag *Agent, st *State, act Action, sto *Store) *Ctx {
@@ -31,7 +29,6 @@ func newCtx(ag *Agent, st *State, act Action, sto *Store) *Ctx {
 		Store: sto,
 
 		Log: ag.Log,
-		Dbg: ag.Dbg,
 	}
 }
 

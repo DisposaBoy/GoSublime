@@ -19,6 +19,7 @@ type LintArgs struct {
 type LintFunc func(LintArgs) error
 
 type LinterOpts struct {
+	Log      *mg.Logger
 	Actions  []mg.Action
 	Patterns []*regexp.Regexp
 	Lint     LintFunc
@@ -103,7 +104,7 @@ func (ls *linterSupport) lint(lo LinterOpts, dispatch mg.Dispatcher, st *mg.Stat
 	issues := w.Issues()
 	if len(issues) == 0 && err != nil {
 		out := bytes.TrimSpace(buf.Bytes())
-		mg.Log.Printf("golang.linterSupport: '%s' in '%s' failed: %s\n%s\n", lo.Label, dir, err, out)
+		lo.Log.Printf("golang.linterSupport: '%s' in '%s' failed: %s\n%s\n", lo.Label, dir, err, out)
 	}
 
 	ls.mu.Lock()
@@ -123,6 +124,7 @@ type Linter struct {
 
 func (lt *Linter) Reduce(mx *mg.Ctx) *mg.State {
 	return lt.linterSupport.Reduce(LinterOpts{
+		Log:      mx.Log,
 		Actions:  []mg.Action{mg.ViewSaved{}},
 		Patterns: CommonPatterns,
 		Lint:     lt.lint,

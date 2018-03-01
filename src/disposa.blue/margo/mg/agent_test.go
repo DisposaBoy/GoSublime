@@ -18,6 +18,11 @@ func TestDefaults(t *testing.T) {
 		return
 	}
 
+	stderr := ag.stderr
+	if w, ok := stderr.(*LockedWriterCloser); ok {
+		stderr = w.WriteCloser
+	}
+
 	cases := []struct {
 		name   string
 		expect interface{}
@@ -28,7 +33,7 @@ func TestDefaults(t *testing.T) {
 		{`codecHandles[""] == codecHandles[DefaultCodec]`, true, codecHandles[""] == codecHandles[DefaultCodec]},
 		{`default Agent.stdin`, os.Stdin, ag.stdin},
 		{`default Agent.stdout`, os.Stdout, ag.stdout},
-		{`default Agent.stderr`, os.Stderr, ag.stderr},
+		{`default Agent.stderr`, os.Stderr, stderr},
 	}
 
 	for _, c := range cases {

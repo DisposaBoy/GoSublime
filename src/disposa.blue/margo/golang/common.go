@@ -20,17 +20,17 @@ var (
 	)
 )
 
-func BuildContext(e mg.EnvMap) *build.Context {
+func BuildContext(mx *mg.Ctx) *build.Context {
 	c := build.Default
-	c.GOARCH = e.Get("GOARCH", c.GOARCH)
-	c.GOOS = e.Get("GOOS", c.GOOS)
+	c.GOARCH = mx.Env.Get("GOARCH", c.GOARCH)
+	c.GOOS = mx.Env.Get("GOOS", c.GOOS)
 	// these must be passed by the client
 	// if we leave them unset, there's a risk something will end up using os.Getenv(...)
 	logUndefined := func(k string) string {
-		v := e[k]
+		v := mx.Env[k]
 		if v == "" {
 			v = k + "-is-not-defined"
-			mg.Log.Println(v)
+			mx.Log.Println(v)
 		}
 		return v
 	}
