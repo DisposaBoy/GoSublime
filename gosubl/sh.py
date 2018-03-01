@@ -204,13 +204,8 @@ def gs_init(_={}):
 	root_dir = gs.dist_path()
 	bs_fn = 'gosubl/sh-bootstrap.go'
 	bs_exe = 'bin/gosubl-sh-bootstrap.exe'
-	cmd = ShellCommand('go build -o %s %s' % (bs_exe, bs_fn))
-	cmd.wd = root_dir
-	cr = cmd.run()
-	if cr.exc or cr.err:
-		_print('error building %s: %s' % (bs_fn, cr.exc or cr.err))
 
-	cmd = ShellCommand(bs_exe)
+	cmd = ShellCommand('go run gosubl/sh-bootstrap.go')
 	cmd.wd = root_dir
 	cr = cmd.run()
 	raw_ver = ''
