@@ -202,16 +202,21 @@ def gs_init(_={}):
 	]
 
 	root_dir = gs.dist_path()
-	bs_fn = 'gosubl/sh-bootstrap.go'
-	bs_exe = 'bin/gosubl-sh-bootstrap.exe'
+	bs_fn = gs.file_path('gosubl/sh-bootstrap.go')
+	bs_exe = gs.file_path('bin/gosubl-sh-bootstrap.exe')
+	cmd = ShellCommand('go build -o %s %s' % (bs_exe, bs_fn))
+	cmd.wd = root_dir
+	cr = cmd.run()
+	if cr.exc or cr.err:
+		_print('error building %s: %s' % (bs_fn, cr.exc or cr.err))
 
-	cmd = ShellCommand('go run gosubl/sh-bootstrap.go')
+	cmd = ShellCommand(bs_exe)
 	cmd.wd = root_dir
 	cr = cmd.run()
 	raw_ver = ''
 	ver = ''
 	if cr.exc or cr.err:
-		_print('error running %s: %s' % (bs_fn, cr.exc or cr.err))
+		_print('error running %s: %s' % (bs_exe, cr.exc or cr.err))
 
 	for ln in cr.out.split('\n'):
 		ln = ln.strip()
@@ -220,16 +225,16 @@ def gs_init(_={}):
 
 		v, err = gs.json_decode(ln, {})
 		if err:
-			_print('cannot decode %s output: `%s`' % (bs_fn, ln))
+			_print('cannot decode %s output: `%s`' % (bs_exe, ln))
 			continue
 
 		if not gs.is_a(v, {}):
-			_print('cannot decode %s output: `%s`. value: `%s` is not a dict' % (bs_fn, ln, v))
+			_print('cannot decode %s output: `%s`. value: `%s` is not a dict' % (bs_exe, ln, v))
 			continue
 
 		env = v.get('Env')
 		if not gs.is_a(env, {}):
-			_print('cannot decode %s output: `%s`. Env: `%s` is not a dict' % (bs_fn, ln, env))
+			_print('cannot decode %s output: `%s`. Env: `%s` is not a dict' % (bs_exe, ln, env))
 			continue
 
 		ver = v.get('Version') or ver

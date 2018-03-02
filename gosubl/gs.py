@@ -171,11 +171,11 @@ def apath(fn, cwd=None):
 	if not os.path.isabs(fn):
 		if not cwd:
 			cwd = getwd()
-		fn = os.path.join(cwd, fn)
+		fn = file_path(cwd, fn)
 	return os.path.normcase(os.path.normpath(fn))
 
 def temp_dir(subdir=''):
-	tmpdir = os.path.join(tempfile.gettempdir(), NAME, subdir)
+	tmpdir = file_path(tempfile.gettempdir(), NAME, subdir)
 	err = ''
 	try:
 		os.makedirs(tmpdir)
@@ -401,7 +401,7 @@ def env(m={}):
 
 	for s in lst(e.get('GOROOT', ''), e.get('GOPATH', '').split(os.pathsep)):
 		if s:
-			s = os.path.join(s, 'bin')
+			s = file_path(s, 'bin')
 			if s not in add_path:
 				add_path.append(s)
 
@@ -661,7 +661,7 @@ def list_dir_tree(dirname, filter, exclude_prefix=('.', '_')):
 				continue
 
 			basename = fn.lower()
-			fn = os.path.join(dirname, fn)
+			fn = file_path(dirname, fn)
 
 			if os.path.isdir(fn):
 				lst.extend(list_dir_tree(fn, filter, exclude_prefix))
@@ -747,11 +747,25 @@ def packages_dir():
 		set_attr('gs.packages_dir', fn)
 	return fn
 
+def split_nix_paths(*a):
+	res = []
+	if a and a[0].startswith('/'):
+		res.append('/')
+
+	for path in a:
+		for p in str(path).split('/'):
+			if p:
+				res.append(p)
+	return res
+
+def file_path(*a):
+	return os.path.join(*split_nix_paths(*a))
+
 def dist_path(*a):
-	return os.path.join(packages_dir(), 'GoSublime', *a)
+	return file_path(packages_dir(), 'GoSublime', *a)
 
 def user_path(*a):
-	return os.path.join(packages_dir(), 'User', 'GoSublime', *a)
+	return file_path(packages_dir(), 'User', 'GoSublime', *a)
 
 def mkdirp(fn):
 	try:
@@ -760,7 +774,7 @@ def mkdirp(fn):
 		pass
 
 def _home_path(*a):
-	return os.path.join(packages_dir(), 'User', 'GoSublime', about.PLATFORM, *a)
+	return file_path(packages_dir(), 'User', 'GoSublime', about.PLATFORM, *a)
 
 def home_dir_path(*a):
 	fn = _home_path(*a)
@@ -845,7 +859,7 @@ def which(cmd):
 
 	seen = {}
 	for p in getenv('PATH', '').split(os.pathsep):
-		p = os.path.join(p, cmd)
+		p = file_path(p, cmd)
 		if p not in seen and which_ok(p):
 			return p
 
