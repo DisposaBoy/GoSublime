@@ -188,17 +188,17 @@ func makeClientProps() clientProps {
 func (c *clientProps) updateCtx(mx *Ctx) *Ctx {
 	return mx.Copy(func(mx *Ctx) {
 		mx.Editor = c.Editor
-		if c.Env != nil {
-			mx.Env = c.Env
-		}
-		if c.View != nil {
-			mx.State = mx.State.Copy(func(st *State) {
+		mx.State = mx.State.Copy(func(st *State) {
+			if c.Env != nil {
+				st.Env = c.Env
+			}
+			if c.View != nil {
 				st.View = c.View
-			})
-			// TODO: convert View.Pos to bytes
-			// at moment gocode is most affected,
-			// but to fix it here means we have to read the file off-disk
-			// so I'd rather not do that until we have some caching in place
-		}
+				// TODO: convert View.Pos to bytes
+				// at moment gocode is most affected,
+				// but to fix it here means we have to read the file off-disk
+				// so I'd rather not do that until we have some caching in place
+			}
+		})
 	})
 }

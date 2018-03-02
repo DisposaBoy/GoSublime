@@ -1,8 +1,8 @@
 package mg
 
 import (
-	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -18,8 +18,16 @@ func TestDefaults(t *testing.T) {
 		return
 	}
 
+	stdin := ag.stdin
+	if w, ok := stdin.(*LockedReadCloser); ok {
+		stdin = w.ReadCloser
+	}
+	stdout := ag.stdout
+	if w, ok := stdout.(*LockedWriteCloser); ok {
+		stdout = w.WriteCloser
+	}
 	stderr := ag.stderr
-	if w, ok := stderr.(*LockedWriterCloser); ok {
+	if w, ok := stderr.(*LockedWriteCloser); ok {
 		stderr = w.WriteCloser
 	}
 
@@ -31,8 +39,8 @@ func TestDefaults(t *testing.T) {
 		{`DefaultCodec == json`, true, DefaultCodec == "json"},
 		{`codecHandles[DefaultCodec] exists`, true, codecHandles[DefaultCodec] != nil},
 		{`codecHandles[""] == codecHandles[DefaultCodec]`, true, codecHandles[""] == codecHandles[DefaultCodec]},
-		{`default Agent.stdin`, os.Stdin, ag.stdin},
-		{`default Agent.stdout`, os.Stdout, ag.stdout},
+		{`default Agent.stdin`, os.Stdin, stdin},
+		{`default Agent.stdout`, os.Stdout, stdout},
 		{`default Agent.stderr`, os.Stderr, stderr},
 	}
 
@@ -44,7 +52,9 @@ func TestDefaults(t *testing.T) {
 }
 
 func TestStartedAction(t *testing.T) {
-	nrwc := nopReadWriteCloser{}
+	nrwc := NopReadWriteCloser{
+		Reader: strings.NewReader("{}\n"),
+	}
 	ag, err := NewAgent(AgentConfig{
 		Stdin:  nrwc,
 		Stdout: nrwc,
@@ -70,18 +80,4 @@ func TestStartedAction(t *testing.T) {
 	default:
 		t.Errorf("Expected first action to be `Started`, but it was %T\n", act)
 	}
-}
-
-type nopReadWriteCloser struct{}
-
-func (nopReadWriteCloser) Read(p []byte) (int, error) {
-	return 0, io.EOF
-}
-
-func (nopReadWriteCloser) Write(p []byte) (int, error) {
-	return len(p), nil
-}
-
-func (nopReadWriteCloser) Close() error {
-	return nil
 }

@@ -121,8 +121,7 @@ type Agent struct {
 }
 
 func (ag *Agent) Run() error {
-	defer ag.stdin.Close()
-	defer ag.stdout.Close()
+	defer ag.shutdownIPC()
 	return ag.communicate()
 }
 
@@ -156,7 +155,11 @@ func (ag *Agent) createAction(name string) Action {
 }
 
 func (ag *Agent) listener(st *State) {
-	ag.send(agentRes{State: st})
+	err := ag.send(agentRes{State: st})
+	if err != nil {
+		ag.Log.Println("agent.send failed. shutting down ipc:", err)
+		go ag.shutdownIPC()
+	}
 }
 
 func (ag *Agent) send(res agentRes) error {
@@ -164,6 +167,11 @@ func (ag *Agent) send(res agentRes) error {
 	defer ag.mu.Unlock()
 
 	return ag.enc.Encode(res.finalize())
+}
+
+func (ag *Agent) shutdownIPC() {
+	defer ag.stdin.Close()
+	defer ag.stdout.Close()
 }
 
 func NewAgent(cfg AgentConfig) (*Agent, error) {
@@ -182,7 +190,9 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	if ag.stderr == nil {
 		ag.stderr = os.Stderr
 	}
-	ag.stderr = &LockedWriterCloser{WriteCloser: ag.stderr}
+	ag.stdin = &LockedReadCloser{ReadCloser: ag.stdin}
+	ag.stdout = &LockedWriteCloser{WriteCloser: ag.stdout}
+	ag.stderr = &LockedWriteCloser{WriteCloser: ag.stderr}
 	ag.Log = &Logger{
 		Logger: log.New(ag.stderr, "", log.Lshortfile),
 		Dbg:    log.New(ag.stderr, "DBG: ", log.Lshortfile),
