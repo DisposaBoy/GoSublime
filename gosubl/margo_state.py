@@ -12,6 +12,7 @@ actions = NS(**{k: {'Name': k} for k in (
 	'ViewModified',
 	'ViewPosChanged',
 	'ViewFmt',
+	'ViewPreSave',
 	'ViewSaved',
 	'ViewLoaded',
 	'ViewClosed',
