@@ -4,7 +4,27 @@ If you find GoSublime useful and would like to support me and future development
 please donate via one of the available methods on https://github.com/DisposaBoy/GoSublime#donations
 
 
+**margo:**
+
+The new version of margo is close to being ready for real usage.
+If you'd like to test it out, press `ctrl+.`,`ctrl+x` or `cmd+.`,`cmd+x`
+to open the extension file and then save it and restart sublime text.
+
+Please make sure to read all the comments, as enabling it will affect GoSublime features.
+
 **Changes:**
+
+## 18.03.05-1
+	* if no status is set, the status markers (dots) are no longer shown
+	* sh-bootstrap.go is now built with `go build` to improve startup time in go1.10
+	* path handling on Windows was improved
+	* linter support should now be almost complete.
+	  * add support for displaying issues via `ctrl+.`,`ctrl+e` or `cmd+.`,`cmd+e`
+	  * errors for all files in the package are tracked
+	  * the error count in the status bar is always visible if there are errors in other files
+
+	  see the example extension https://github.com/disposablue/margo/blob/master/extension-example/extension-example.go for examples of builtin linters.
+
 
 ## 18.02.17-2
 	* stop linking sqlite3 to avoid cgo-related compilation errors
