@@ -11,6 +11,7 @@ var (
 		"ViewLoaded":       func() Action { return ViewLoaded{} },
 		"ViewModified":     func() Action { return ViewModified{} },
 		"ViewPosChanged":   func() Action { return ViewPosChanged{} },
+		"ViewPreSave":      func() Action { return ViewPreSave{} },
 		"ViewSaved":        func() Action { return ViewSaved{} },
 	}
 )
@@ -47,6 +48,8 @@ type ViewModified struct{ ActionType }
 type ViewPosChanged struct{ ActionType }
 
 type ViewFmt struct{ ActionType }
+
+type ViewPreSave struct{ ActionType }
 
 type ViewSaved struct{ ActionType }
 

@@ -16,7 +16,10 @@ func Margo(ma mg.Args) {
 		// DayTimeStatus,
 
 		// both GoFmt and GoImports will automatically disable the GoSublime version
-		golang.GoFmt,
+		// you will need to install the `goimports` tool manually
+		// https://godoc.org/golang.org/x/tools/cmd/goimports
+		//
+		// golang.GoFmt,
 		// or
 		// golang.GoImports,
 
@@ -37,17 +40,19 @@ func Margo(ma mg.Args) {
 		&golang.SyntaxCheck{},
 
 		// run `go install` on save
+		// or use GoInstallDiscardBinaries which will additionally set $GOBIN
+		// to a temp directory so binaries are not installed into your $PATH
+		//
 		// golang.GoInstall(),
-		// or use GoInstallDiscardBinaries will additionally set $GOBIN to a temp directory
-		// so binaries are not installed into your $PATH
+		// or
 		// golang.GoInstallDiscardBinaries(),
 
 		// run `go vet` on save. go vet is ran automatically as part of `go test` in go1.10
 		// golang.GoVet(),
 
-		// run `go test` on save
+		// run `go test -race` on save
 		// in go1.10, go vet is ran automatically
-		golang.GoTest(),
+		golang.GoTest("-race"),
 
 		// run `golint` on save
 		// &golang.Linter{Name: "golint", Label: "Go/Lint"},
