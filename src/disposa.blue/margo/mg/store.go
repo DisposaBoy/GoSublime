@@ -33,6 +33,7 @@ func (sr storeReducers) Copy(updaters ...func(*storeReducers)) storeReducers {
 
 type Store struct {
 	mu        sync.Mutex
+	readyCh   chan struct{}
 	state     *State
 	listeners []*struct{ Listener }
 	listener  Listener
@@ -45,8 +46,15 @@ type Store struct {
 	tasks *taskTracker
 }
 
+func (sto *Store) ready() {
+	close(sto.readyCh)
+}
+
 func (sto *Store) Dispatch(act Action) {
-	go sto.dispatch(act)
+	go func() {
+		<-sto.readyCh
+		sto.dispatch(act)
+	}()
 }
 
 func (sto *Store) dispatch(act Action) {
@@ -111,6 +119,7 @@ func (sto *Store) prepState(st *State) *State {
 
 func newStore(ag *Agent, l Listener) *Store {
 	sto := &Store{
+		readyCh:  make(chan struct{}),
 		listener: l,
 		state:    NewState(),
 		ag:       ag,

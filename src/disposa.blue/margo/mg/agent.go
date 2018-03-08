@@ -128,6 +128,7 @@ func (ag *Agent) Run() error {
 func (ag *Agent) communicate() error {
 	ag.Log.Println("started")
 	ag.Store.dispatch(Started{})
+	ag.Store.ready()
 
 	for {
 		rq := newAgentReq()

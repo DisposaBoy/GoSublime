@@ -19,18 +19,9 @@
   packages = ["blake2b"]
   revision = "91a49db82a88618983a78a06c1cbd4e00ab749ab"
 
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/tools"
-  packages = [
-    "go/ast/astutil",
-    "imports"
-  ]
-  revision = "73e16cff9e0d4a802937444bebb562458548241d"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eab518d52c54e7725bd45c375f421fb2fcbd8ebf5d90baf5b98629d25df97ab4"
+  inputs-digest = "abcbbea5d46799cef82db8ef20f2f68d7d9580d20996b07df2f68d66cad13a49"
   solver-name = "gps-cdcl"
   solver-version = 1

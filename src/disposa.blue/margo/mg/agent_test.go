@@ -51,7 +51,7 @@ func TestDefaults(t *testing.T) {
 	}
 }
 
-func TestStartedAction(t *testing.T) {
+func TestFirstAction(t *testing.T) {
 	nrwc := NopReadWriteCloser{
 		Reader: strings.NewReader("{}\n"),
 	}
@@ -65,7 +65,7 @@ func TestStartedAction(t *testing.T) {
 		return
 	}
 
-	actions := make(chan Action)
+	actions := make(chan Action, 1)
 	ag.Store.Use(Reduce(func(mx *Ctx) *State {
 		select {
 		case actions <- mx.Action:
@@ -73,11 +73,17 @@ func TestStartedAction(t *testing.T) {
 		}
 		return mx.State
 	}))
+
+	// there is a small chance that some other package might dispatch an action
+	// before we're ready e.g. in init()
+	type impossibru struct{ ActionType }
+	ag.Store.Dispatch(impossibru{})
+
 	go ag.Run()
 	act := <-actions
 	switch act.(type) {
 	case Started:
 	default:
-		t.Errorf("Expected first action to be `Started`, but it was %T\n", act)
+		t.Errorf("Expected first action to be `%T`, but it was %T\n", Started{}, act)
 	}
 }
