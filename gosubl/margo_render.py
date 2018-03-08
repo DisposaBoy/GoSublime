@@ -27,7 +27,7 @@ def _render_status(view, status):
 		status_text = ''
 
 	for w in sublime.windows():
-		for v in w.views():
+		for v in (w.views() or [w.active_view()]):
 			v.set_status(STATUS_KEY, status_text)
 
 def render_src(view, edit, src):
