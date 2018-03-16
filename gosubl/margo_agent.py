@@ -139,7 +139,7 @@ class MargoAgent(threading.Thread):
 
 		if exc:
 			with self.lock:
-				del self.req_handlers[rq.cookie]
+				self.req_handlers.pop(rq.cookie, None)
 
 			rq.done(AgentRes(error='Exception: %s' % exc, rq=rq))
 
@@ -168,9 +168,8 @@ class MargoAgent(threading.Thread):
 			return self._nop_handler
 
 		with self.lock:
-			if rs.cookie in self.req_handlers:
-				rq = self.req_handlers[rs.cookie]
-				del self.req_handlers[rs.cookie]
+			rq = self.req_handlers.pop(rs.cookie, None)
+			if rq:
 				rs.set_rq(rq)
 				return rq.done
 
