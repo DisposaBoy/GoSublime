@@ -14,6 +14,12 @@ Please make sure to read all the comments, as enabling it will affect GoSublime 
 
 **Changes:**
 
+## 18.03.16-1
+	* support for context-aware snippets have now been added in the new version of margo.
+	  just add `golang.Snippets,` to your reducers to enable it.
+
+	  see https://github.com/disposablue/margo/blob/master/extension-example/extension-example.go
+
 ## 18.03.05-1
 	* if no status is set, the status markers (dots) are no longer shown
 	* sh-bootstrap.go is now built with `go build` to improve startup time in go1.10
