@@ -2,45 +2,44 @@ package golang
 
 import (
 	"disposa.blue/margo/mg"
-	"go/parser"
 	"go/scanner"
-	"go/token"
 )
 
-type SyntaxCheck struct {
-	hash   string
-	name   string
-	issues mg.IssueSet
-}
+type SyntaxCheck struct{}
 
 func (sc *SyntaxCheck) Reduce(mx *mg.Ctx) *mg.State {
 	st := mx.State
 	if !st.View.LangIs("go") {
 		return st
 	}
-	switch mx.Action.(type) {
-	case mg.ViewActivated, mg.ViewModified, mg.ViewSaved, mg.QueryIssues:
-		st = sc.checkSyntax(st)
-	}
-	return st.AddIssues(sc.issues.AllInView(st.View)...)
-}
 
-func (sc *SyntaxCheck) checkSyntax(st *mg.State) *mg.State {
-	// TODO: caching
 	v := st.View
 	src, err := v.ReadAll()
 	if err != nil {
 		return st.Errorf("cannot read: %s: %s", v.Filename(), err)
 	}
 
-	fset := token.NewFileSet()
-	_, err = parser.ParseFile(fset, v.Filename(), src, parser.DeclarationErrors)
-	el, _ := err.(scanner.ErrorList)
-	sc.name = v.Name
-	sc.hash = v.Hash
-	sc.issues = make([]mg.Issue, len(el))
+	type key struct{ hash string }
+	k := key{mg.SrcHash(src)}
+	if issues, ok := mx.Store.Get(k).(mg.IssueSet); ok {
+		return st.AddIssues(issues...)
+	}
+
+	if !mx.ActionIs(mg.ViewActivated{}, mg.ViewModified{}, mg.ViewSaved{}, mg.QueryIssues{}) {
+		return st
+	}
+
+	pf := ParseFile(mx.Store, v.Filename(), src)
+	issues := sc.errsToIssues(v, pf.ErrorList)
+	mx.Store.Put(k, issues)
+
+	return st.AddIssues(issues...)
+}
+
+func (_ *SyntaxCheck) errsToIssues(v *mg.View, el scanner.ErrorList) mg.IssueSet {
+	issues := make(mg.IssueSet, len(el))
 	for i, e := range el {
-		sc.issues[i] = mg.Issue{
+		issues[i] = mg.Issue{
 			Path:    v.Path,
 			Name:    v.Name,
 			Row:     e.Pos.Line - 1,
@@ -50,5 +49,5 @@ func (sc *SyntaxCheck) checkSyntax(st *mg.State) *mg.State {
 			Label:   "Go/SyntaxCheck",
 		}
 	}
-	return st
+	return issues
 }

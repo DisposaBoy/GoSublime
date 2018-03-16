@@ -243,11 +243,18 @@ func initGocodeReducer(mx *mg.Ctx, g *Gocode) (*mg.State, *gocodeCtx) {
 
 	bctx := BuildContext(mx)
 	src, _ := st.View.ReadAll()
+	if len(src) == 0 {
+		return st, nil
+	}
 	pos := clampSrcPos(src, st.View.Pos)
 	pos = mg.BytePos(src, pos)
 
+	cx := NewCompletionCtx(mx, src, pos)
+	if cx.Scope.Any(PackageScope, FileScope) {
+		return st, nil
+	}
+	cn := cx.CursorNode
 	// don't do completion inside comments
-	cn := ParseCursorNode(src, pos)
 	if cn.Comment != nil {
 		return st, nil
 	}

@@ -4,10 +4,10 @@ import (
 	"disposa.blue/margo/mg"
 	"go/ast"
 	"go/build"
-	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"unicode"
@@ -53,6 +53,10 @@ func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
 	if node == nil {
 		return false
 	}
+	// apparently node can be (*T)(nil)
+	if reflect.ValueOf(node).IsNil() {
+		return false
+	}
 	if np := node.Pos(); !np.IsValid() || pos <= np {
 		return false
 	}
@@ -65,12 +69,11 @@ func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
 }
 
 type CursorNode struct {
-	Fset *token.FileSet
-
 	Pos       token.Pos
 	AstFile   *ast.File
 	TokenFile *token.File
 
+	GenDecl    *ast.GenDecl
 	ImportSpec *ast.ImportSpec
 	Comment    *ast.Comment
 	BlockStmt  *ast.BlockStmt
@@ -80,6 +83,16 @@ type CursorNode struct {
 }
 
 func (cn *CursorNode) ScanFile(af *ast.File) {
+	pos := af.Package
+	end := pos + token.Pos(len("package"))
+	if af.Name != nil {
+		end = pos + token.Pos(af.Name.End())
+	}
+	if cn.Pos >= pos && cn.Pos <= end {
+		return
+	}
+
+	cn.Node = af
 	ast.Walk(cn, af)
 	for _, cg := range af.Comments {
 		for _, c := range cg.List {
@@ -102,6 +115,8 @@ func (cn *CursorNode) Visit(node ast.Node) ast.Visitor {
 
 	cn.Node = node
 	switch x := node.(type) {
+	case *ast.GenDecl:
+		cn.GenDecl = x
 	case *ast.BlockStmt:
 		cn.BlockStmt = x
 	case *ast.BasicLit:
@@ -117,21 +132,13 @@ func (cn *CursorNode) Visit(node ast.Node) ast.Visitor {
 	return cn
 }
 
-func ParseCursorNode(src []byte, offset int) *CursorNode {
-	cn := &CursorNode{Fset: token.NewFileSet()}
-
-	// TODO: caching
-	cn.AstFile, _ = parser.ParseFile(cn.Fset, "_.go", src, parser.ParseComments)
-	if cn.AstFile == nil {
-		return cn
+func ParseCursorNode(sto *mg.Store, src []byte, offset int) *CursorNode {
+	pf := ParseFile(sto, "", src)
+	cn := &CursorNode{
+		AstFile:   pf.AstFile,
+		TokenFile: pf.TokenFile,
+		Pos:       token.Pos(pf.TokenFile.Base() + offset),
 	}
-
-	cn.TokenFile = cn.Fset.File(cn.AstFile.Pos())
-	if cn.TokenFile == nil {
-		return cn
-	}
-
-	cn.Pos = cn.TokenFile.Pos(offset)
 	cn.ScanFile(cn.AstFile)
 	return cn
 }

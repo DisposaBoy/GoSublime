@@ -66,7 +66,7 @@ func (v *View) Filename() string {
 }
 
 func (v *View) ReadAll() ([]byte, error) {
-	if len(v.Src) != 0 {
+	if v.Dirty || len(v.Src) != 0 {
 		return v.Src, nil
 	}
 
@@ -84,7 +84,7 @@ func (v *View) Valid() bool {
 }
 
 func (v *View) Open() (io.ReadCloser, error) {
-	if len(v.Src) != 0 {
+	if v.Dirty || len(v.Src) != 0 {
 		return ioutil.NopCloser(bytes.NewReader(v.Src)), nil
 	}
 
@@ -97,15 +97,19 @@ func (v *View) Open() (io.ReadCloser, error) {
 
 func (v *View) SetSrc(s []byte) *View {
 	return v.Copy(func(v *View) {
-		hash := blake2b.Sum256(s)
 		v.Pos = 0
 		v.Row = 0
 		v.Col = 0
 		v.Src = s
-		v.Hash = "data:blake2b/Sum256;base64," + base64.StdEncoding.EncodeToString(hash[:])
+		v.Hash = SrcHash(s)
 		v.Dirty = true
 		v.changed++
 	})
+}
+
+func SrcHash(s []byte) string {
+	hash := blake2b.Sum512(s)
+	return "hash:blake2b/Sum512;base64url," + base64.URLEncoding.EncodeToString(hash[:])
 }
 
 func BytePos(src []byte, charPos int) int {
