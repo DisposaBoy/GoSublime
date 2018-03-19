@@ -79,6 +79,7 @@ type CursorNode struct {
 	BlockStmt  *ast.BlockStmt
 	CallExpr   *ast.CallExpr
 	BasicLit   *ast.BasicLit
+	Nodes      []ast.Node
 	Node       ast.Node
 }
 
@@ -92,48 +93,57 @@ func (cn *CursorNode) ScanFile(af *ast.File) {
 		return
 	}
 
-	cn.Node = af
+	cn.Append(af)
 	ast.Walk(cn, af)
 	for _, cg := range af.Comments {
 		for _, c := range cg.List {
 			if NodeEnclosesPos(c, cn.Pos) {
-				cn.Comment = c
-				cn.Node = c
+				cn.Append(c)
 			}
 		}
 	}
+	cn.Node = cn.Nodes[len(cn.Nodes)-1]
+	cn.Set(&cn.GenDecl)
+	cn.Set(&cn.BlockStmt)
+	cn.Set(&cn.BasicLit)
+	cn.Set(&cn.CallExpr)
+	cn.Set(&cn.Comment)
+	cn.Set(&cn.ImportSpec)
 }
 
 func (cn *CursorNode) Visit(node ast.Node) ast.Visitor {
-	if node == nil {
-		return cn
-	}
-	// if we're inside e.g. an unclosed string, the end will be invalid
-	if !NodeEnclosesPos(node, cn.Pos) {
-		return cn
-	}
-
-	cn.Node = node
-	switch x := node.(type) {
-	case *ast.GenDecl:
-		cn.GenDecl = x
-	case *ast.BlockStmt:
-		cn.BlockStmt = x
-	case *ast.BasicLit:
-		cn.BasicLit = x
-	case *ast.CallExpr:
-		cn.CallExpr = x
-	case *ast.Comment:
-		// comments that appear here are only those that are attached to something else
-		// we will traverse *all* comments after .Walk()
-	case *ast.ImportSpec:
-		cn.ImportSpec = x
+	if NodeEnclosesPos(node, cn.Pos) {
+		cn.Append(node)
 	}
 	return cn
 }
 
-func ParseCursorNode(sto *mg.Store, src []byte, offset int) *CursorNode {
-	pf := ParseFile(sto, "", src)
+func (cn *CursorNode) Append(n ast.Node) {
+	for _, x := range cn.Nodes {
+		if n == x {
+			return
+		}
+	}
+	cn.Nodes = append(cn.Nodes, n)
+}
+
+func (cn *CursorNode) Set(destPtr interface{}) bool {
+	v := reflect.ValueOf(destPtr).Elem()
+	if !v.CanSet() {
+		return false
+	}
+	for i := len(cn.Nodes) - 1; i >= 0; i-- {
+		x := reflect.ValueOf(cn.Nodes[i])
+		if x.Type() == v.Type() {
+			v.Set(x)
+			return true
+		}
+	}
+	return false
+}
+
+func ParseCursorNode(kvs mg.KVStore, src []byte, offset int) *CursorNode {
+	pf := ParseFile(kvs, "", src)
 	cn := &CursorNode{
 		AstFile:   pf.AstFile,
 		TokenFile: pf.TokenFile,

@@ -27,7 +27,7 @@ type ParsedFile struct {
 	ErrorList scanner.ErrorList
 }
 
-func ParseFile(sto *mg.Store, fn string, src []byte) *ParsedFile {
+func ParseFile(kvs mg.KVStore, fn string, src []byte) *ParsedFile {
 	mode := ParseFileMode
 	if len(src) == 0 {
 		var err error
@@ -46,8 +46,8 @@ func ParseFile(sto *mg.Store, fn string, src []byte) *ParsedFile {
 
 	type key struct{ hash string }
 	k := key{mg.SrcHash(src)}
-	if sto != nil {
-		if pf, ok := sto.Get(k).(*ParsedFile); ok {
+	if kvs != nil {
+		if pf, ok := kvs.Get(k).(*ParsedFile); ok {
 			return pf
 		}
 	}
@@ -63,8 +63,8 @@ func ParseFile(sto *mg.Store, fn string, src []byte) *ParsedFile {
 		pf.TokenFile = NilTokenFile
 	}
 
-	if sto != nil {
-		sto.Put(k, pf)
+	if kvs != nil {
+		kvs.Put(k, pf)
 	}
 
 	return pf

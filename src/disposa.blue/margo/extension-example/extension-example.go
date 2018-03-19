@@ -94,7 +94,7 @@ var DayTimeStatus = mg.Reduce(func(mx *mg.Ctx) *mg.State {
 var MySnippets = golang.SnippetFuncs{
 	func(cx *golang.CompletionCtx) []mg.Completion {
 		// if we're not in a block (i.e. function), do nothing
-		if cx.Scope&golang.BlockScope == 0 {
+		if !cx.Scope.Is(golang.BlockScope) {
 			return nil
 		}
 

@@ -1,9 +1,18 @@
 package mg
 
 import (
+	"context"
+	"disposa.blue/margo/misc/pprof/pprofdo"
 	"fmt"
+	"go/build"
+	"path/filepath"
 	"reflect"
+	"runtime"
+	"strings"
+	"time"
 )
+
+var _ context.Context = (*Ctx)(nil)
 
 type Ctx struct {
 	*State
@@ -13,15 +22,42 @@ type Ctx struct {
 	Store  *Store
 
 	Log *Logger
+
+	Parent *Ctx
+	Values map[interface{}]interface{}
+	DoneC  <-chan struct{}
 }
 
-func newCtx(ag *Agent, st *State, act Action, sto *Store) *Ctx {
+func (_ *Ctx) Deadline() (time.Time, bool) {
+	return time.Time{}, false
+}
+
+func (mx *Ctx) Done() <-chan struct{} {
+	return mx.DoneC
+}
+
+func (_ *Ctx) Err() error {
+	return nil
+}
+
+func (mx *Ctx) Value(k interface{}) interface{} {
+	if v, ok := mx.Values[k]; ok {
+		return v
+	}
+	if mx.Parent != nil {
+		return mx.Parent.Value(k)
+	}
+	return nil
+}
+
+func newCtx(ag *Agent, st *State, act Action, sto *Store) (mx *Ctx, done chan struct{}) {
 	if st == nil {
 		panic("newCtx: state must not be nil")
 	}
 	if st == nil {
 		panic("newCtx: store must not be nil")
 	}
+	done = make(chan struct{})
 	return &Ctx{
 		State:  st,
 		Action: act,
@@ -29,7 +65,9 @@ func newCtx(ag *Agent, st *State, act Action, sto *Store) *Ctx {
 		Store: sto,
 
 		Log: ag.Log,
-	}
+
+		DoneC: done,
+	}, done
 }
 
 func (mx *Ctx) ActionIs(actions ...Action) bool {
@@ -48,6 +86,13 @@ func (mx *Ctx) LangIs(names ...string) bool {
 
 func (mx *Ctx) Copy(updaters ...func(*Ctx)) *Ctx {
 	x := *mx
+	x.Parent = mx
+	if len(mx.Values) != 0 {
+		x.Values = make(map[interface{}]interface{}, len(mx.Values))
+		for k, v := range mx.Values {
+			x.Values[k] = v
+		}
+	}
 	for _, f := range updaters {
 		f(&x)
 	}
@@ -67,10 +112,22 @@ type ReducerList []Reducer
 func (rl ReducerList) ReduceCtx(mx *Ctx) *Ctx {
 	for _, r := range rl {
 		mx = mx.Copy(func(mx *Ctx) {
-			mx.State = r.Reduce(mx)
+			pprofdo.Do(mx, rl.labels(r), func(_ context.Context) {
+				mx.State = r.Reduce(mx)
+			})
 		})
 	}
 	return mx
+}
+
+func (rl ReducerList) labels(r Reducer) []string {
+	lbl := ""
+	if rf, ok := r.(ReduceFunc); ok {
+		lbl = rf.Label
+	} else {
+		lbl = reflect.TypeOf(r).String()
+	}
+	return []string{"margo.reduce", lbl}
 }
 
 func (rl ReducerList) Reduce(mx *Ctx) *State {
@@ -81,10 +138,28 @@ func (rl ReducerList) Add(reducers ...Reducer) ReducerList {
 	return append(rl[:len(rl):len(rl)], reducers...)
 }
 
-type Reduce func(*Ctx) *State
+type ReduceFunc struct {
+	Func  func(*Ctx) *State
+	Label string
+}
 
-func (r Reduce) Reduce(mx *Ctx) *State {
-	return r(mx)
+func (rf ReduceFunc) Reduce(mx *Ctx) *State {
+	return rf.Func(mx)
+}
+
+func Reduce(f func(*Ctx) *State) ReduceFunc {
+	_, fn, line, _ := runtime.Caller(1)
+	for _, gp := range strings.Split(build.Default.GOPATH, string(filepath.ListSeparator)) {
+		s := strings.TrimPrefix(fn, filepath.Clean(gp)+string(filepath.Separator))
+		if s != fn {
+			fn = filepath.ToSlash(s)
+			break
+		}
+	}
+	return ReduceFunc{
+		Func:  f,
+		Label: fmt.Sprintf("%s:%d", fn, line),
+	}
 }
 
 type EditorProps struct {
