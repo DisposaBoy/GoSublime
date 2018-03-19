@@ -10,9 +10,6 @@ STATUS_SEP = ' •• '
 
 def render(view, state, status=[]):
 	sublime.set_timeout_async(lambda: _render(view, state, status), 0)
-	status_text = (STATUS_PFX +(
-			STATUS_SEP.join(status)
-		) + STATUS_SFX)
 
 def _render(view, state, status):
 	_render_status(view, status + state.status)
