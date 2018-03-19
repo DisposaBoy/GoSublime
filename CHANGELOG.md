@@ -14,6 +14,11 @@ Please make sure to read all the comments, as enabling it will affect GoSublime 
 
 **Changes:**
 
+## 18.03.19-1
+	* disable the `autoinst` setting by default
+	* fix a Python buffering issue that sometimes caused the ui to freeze
+	* speedup sh-bootstrap/Sublime Text startup
+
 ## 18.03.16-1
 	* support for context-aware snippets have now been added in the new version of margo.
 	  just add `golang.Snippets,` to your reducers to enable it.
