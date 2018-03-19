@@ -190,7 +190,10 @@
 
 	// whether or not MarGo may automatically run `go install` for packages that are missing
 	// when you `import`, or `autocomplete` them
-	"autoinst": true,
+	//
+	// NOTE: you're encouraged to enable the new version of margo
+	// and use a linter like `golang.GoInstall("-i")` instead of setting this to `true`.
+	"autoinst": false,
 
 	// commands to run on (post) save - list of objects of the form {"cmd": "...", "args": {...}}
 	// Any TextCommand may be run. Supported GS commands include:
@@ -323,7 +326,7 @@
 	"gohtml_extensions": [".html.go"],
 
 	// Export the listed environment variables to Sublime Text when the GoSublime settings change
-	// so the env vars GS loads through your shell and project are available to other plugins 
+	// so the env vars GS loads through your shell and project are available to other plugins
 	// e.g. "export_env_vars": ["PATH"]
 	"export_env_vars": [],
 }
