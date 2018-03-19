@@ -3,6 +3,7 @@ from . import ev
 from . import gs
 from . import gsq
 from . import sh
+from io import TextIOWrapper
 import atexit
 import base64
 import glob
@@ -660,11 +661,7 @@ def _cb_err(cb, err):
 
 def _read_stdout(proc):
 	try:
-		while True:
-			ln = proc.stdout.readline()
-			if not ln:
-				break
-
+		for ln in TextIOWrapper(proc.stdout, encoding='utf-8'):
 			gs.mg9_recv_q.put(gs.ustr(ln))
 	except Exception:
 		gs.println(gs.traceback())
