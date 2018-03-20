@@ -399,6 +399,8 @@ def env(m={}):
 	if not e.get('GOPATH'):
 		gp = os.path.expanduser('~/go')
 		e['GOPATH'] = gp
+		# we're posssibly racing with gs_init() so don't overwrite any existing value
+		_env_ext.setdefault('GOPATH', gp)
 		_print('GOPATH is not set... setting it to the default: %s' % gp)
 
 	# Ensure no unicode objects leak through. The reason is twofold:
