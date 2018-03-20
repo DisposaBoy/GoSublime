@@ -62,7 +62,7 @@ class MargoSingleton(object):
 			a.stop()
 
 	def enabled(self, view):
-		return self._trigger_events
+		return self._trigger_events and sh.init_done
 
 	def can_trigger_event(self, view, allow_9o=False):
 		if not self._trigger_events:
