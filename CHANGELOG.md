@@ -14,6 +14,12 @@ Please make sure to read all the comments, as enabling it will affect GoSublime 
 
 **Changes:**
 
+## 18.03.20-1
+	* fix a case where (old) margo compilation fails because the Go version cannot
+	  be determined, but the sanity check shows the correct version
+	* move some initializations off the ui thread to avoid ui freezes on startup
+	* fix the `golang.GoInstallDiscardBinaries` linter failing due to invalid dirname
+
 ## 18.03.19-1
 	* disable the `autoinst` setting by default
 	* fix a Python buffering issue that sometimes caused the ui to freeze
