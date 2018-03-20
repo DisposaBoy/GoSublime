@@ -571,6 +571,10 @@ def _send():
 			try:
 				method, arg, cb = gs.mg9_send_q.get()
 
+				if not sh.init_done:
+					_call(cb, {}, 'Abort. sh.init not done')
+					continue
+
 				proc = gs.attr(PROC_ATTR_NAME)
 				if not proc or proc.poll() is not None:
 					killSrv()
