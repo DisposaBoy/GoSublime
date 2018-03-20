@@ -36,7 +36,7 @@ class MargoSingleton(object):
 				self.out.println('restarting: agent is obsolete')
 				self.restart()
 
-		sublime.set_timeout(lambda: render(view=gs.active_view(), state=self.state, status=self.status), 0)
+		sublime.set_timeout_async(lambda: render(view=gs.active_view(), state=self.state, status=self.status), 0)
 
 	def render_status(self, *a):
 		self.status = list(a)
