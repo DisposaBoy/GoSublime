@@ -3,7 +3,6 @@ package golang
 import (
 	"bytes"
 	"disposa.blue/margo/mg"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -134,7 +133,7 @@ func (lt *Linter) Reduce(mx *mg.Ctx) *mg.State {
 
 func (lt *Linter) lint(la LintArgs) error {
 	if len(lt.TempDir) != 0 {
-		tmpDir, err := ioutil.TempDir("", "margo.golang.Linter."+lt.Label+",")
+		tmpDir, err := mg.MkTempDir(lt.Label)
 		if err != nil {
 			return err
 		}
