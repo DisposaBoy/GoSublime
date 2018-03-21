@@ -1,4 +1,4 @@
-from . import gs, gsq
+from . import gs, gsq, sh
 from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter, Debounce
 from .margo_render import render, render_src
