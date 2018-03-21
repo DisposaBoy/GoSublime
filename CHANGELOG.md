@@ -14,6 +14,9 @@ Please make sure to read all the comments, as enabling it will affect GoSublime 
 
 **Changes:**
 
+## 18.03.21-1
+	* fix exception due to missing import?
+
 ## 18.03.20-1
 	* fix a case where (old) margo compilation fails because the Go version cannot
 	  be determined, but the sanity check shows the correct version
