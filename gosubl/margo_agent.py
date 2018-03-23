@@ -72,7 +72,7 @@ class MargoAgent(threading.Thread):
 		with self.lock:
 			hdls, self.req_handlers = self.req_handlers, {}
 
-		rs = AgentRes(error='agent stopping. request aborted')
+		rs = AgentRes(error='agent stopping. request aborted', agent=self)
 		for rq in hdls.values():
 			rq.done(rs)
 
@@ -150,17 +150,17 @@ class MargoAgent(threading.Thread):
 			with self.lock:
 				self.req_handlers.pop(rq.cookie, None)
 
-			rq.done(AgentRes(error='Exception: %s' % exc, rq=rq))
+			rq.done(AgentRes(error='Exception: %s' % exc, rq=rq, agent=self))
 
 	def send(self, action={}, cb=None, view=None):
 		rq = AgentReq(self, action, cb=cb, view=view)
 		timeout = 0.200
 		if not self.started.wait(timeout):
-			rq.done(AgentRes(error='margo has not started after %0.3fs' % (timeout), timedout=timeout, rq=rq))
+			rq.done(AgentRes(error='margo has not started after %0.3fs' % (timeout), timedout=timeout, rq=rq, agent=self))
 			return rq
 
 		if not self.req_chan.put(rq):
-			rq.done(AgentRes(error='chan closed', rq=rq))
+			rq.done(AgentRes(error='chan closed', rq=rq, agent=self))
 
 		return rq
 
@@ -196,7 +196,7 @@ class MargoAgent(threading.Thread):
 
 	def _handle_recv_ipc(self, v):
 		self._notify_ready()
-		rs = AgentRes(v=v)
+		rs = AgentRes(v=v, agent=self)
 		# call the handler first. it might be on a timeout (like fmt)
 		for handle in [self._handler(rs), self.mg.render]:
 			try:
@@ -239,12 +239,13 @@ class MargoAgent(threading.Thread):
 		return ln.rstrip('\r\n')
 
 class AgentRes(object):
-	def __init__(self, v={}, error='', timedout=0, rq=None):
+	def __init__(self, v={}, error='', timedout=0, rq=None, agent=None):
 		self.data = v
 		self.cookie = v.get('Cookie')
 		self.state = State(v=v.get('State') or {})
 		self.error = v.get('Error') or error
 		self.timedout = timedout
+		self.agent = agent
 		self.set_rq(rq)
 
 	def set_rq(self, rq):
