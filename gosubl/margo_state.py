@@ -38,13 +38,17 @@ class State(object):
 		self.config = Config(v.get('Config') or {})
 		self.status = v.get('Status') or []
 		self.view = v.get('View') or {}
-		self.obsolete = v.get('Obsolete') is True
+		self.client_actions = [ClientAction(v=a) for a in (v.get('ClientActions') or [])]
 		self.completions = [Completion(c) for c in (v.get('Completions') or [])]
 		self.tooltips = [Tooltip(t) for t in (v.get('Tooltips') or [])]
 		self.issues = [Issue(l) for l in (v.get('Issues') or [])]
 
 	def __repr__(self):
 		return repr(self.__dict__)
+
+class ClientAction(object):
+	def __init__(self, v={}):
+		self.name = v.get('Name') or ''
 
 class Completion(object):
 	def __init__(self, v):
