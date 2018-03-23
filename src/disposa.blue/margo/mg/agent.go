@@ -88,11 +88,13 @@ func (rs agentRes) finalize() interface{} {
 		agentRes
 		State struct {
 			State
-			Config interface{}
+			Config        interface{}
+			ClientActions []clientAction
 		}
 	}{}
 	v.agentRes = rs
 	v.State.State = *rs.State
+	v.State.ClientActions = rs.State.clientActions
 
 	if v.Error == "" {
 		v.Error = strings.Join([]string(v.State.Errors), "\n")

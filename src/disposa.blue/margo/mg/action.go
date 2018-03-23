@@ -3,8 +3,10 @@ package mg
 var (
 	actionCreators = map[string]actionCreator{
 		"QueryCompletions": func() Action { return QueryCompletions{} },
-		"QueryTooltips":    func() Action { return QueryTooltips{} },
 		"QueryIssues":      func() Action { return QueryIssues{} },
+		"QueryTooltips":    func() Action { return QueryTooltips{} },
+		"Restart":          func() Action { return Restart{} },
+		"Shutdown":         func() Action { return Shutdown{} },
 		"ViewActivated":    func() Action { return ViewActivated{} },
 		"ViewClosed":       func() Action { return ViewClosed{} },
 		"ViewFmt":          func() Action { return ViewFmt{} },
@@ -37,9 +39,13 @@ type Started struct{ ActionType }
 
 type QueryCompletions struct{ ActionType }
 
+type QueryIssues struct{ ActionType }
+
 type QueryTooltips struct{ ActionType }
 
-type QueryIssues struct{ ActionType }
+type Restart struct{ ActionType }
+
+type Shutdown struct{ ActionType }
 
 type ViewActivated struct{ ActionType }
 

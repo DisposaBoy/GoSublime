@@ -2,6 +2,8 @@ package mg
 
 import (
 	"io"
+	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -52,6 +54,10 @@ func (e EnvMap) Get(k, def string) string {
 		return v
 	}
 	return def
+}
+
+func (e EnvMap) List(k string) []string {
+	return strings.Split(e[k], string(filepath.ListSeparator))
 }
 
 type LockedWriteCloser struct {
@@ -117,4 +123,9 @@ func (n NopReadWriteCloser) Close() error {
 		return n.Closer.Close()
 	}
 	return nil
+}
+
+func IsParentDir(parentDir, childPath string) bool {
+	p, err := filepath.Rel(parentDir, childPath)
+	return err == nil && p != "." && !strings.HasPrefix(p, ".."+string(filepath.Separator))
 }

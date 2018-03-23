@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ugorji/go/codec"
 	"go/build"
+	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -200,10 +201,11 @@ type EphemeralState struct {
 
 type State struct {
 	EphemeralState
-	View     *View
-	Env      EnvMap
-	Editor   EditorProps
-	Obsolete bool
+	View   *View
+	Env    EnvMap
+	Editor EditorProps
+
+	clientActions []clientAction
 }
 
 func NewState() *State {
@@ -283,9 +285,10 @@ func (st *State) AddIssues(l ...Issue) *State {
 	})
 }
 
-func (st *State) MarkObsolete() *State {
+func (st *State) addClientActions(l ...clientAction) *State {
 	return st.Copy(func(st *State) {
-		st.Obsolete = true
+		el := st.clientActions
+		st.clientActions = append(el[:len(el):len(el)], l...)
 	})
 }
 
@@ -325,6 +328,16 @@ func (c *clientProps) updateCtx(mx *Ctx) *Ctx {
 				// at moment gocode is most affected,
 				// but to fix it here means we have to read the file off-disk
 				// so I'd rather not do that until we have some caching in place
+			}
+			if st.View != nil {
+				osGopath := os.Getenv("GOPATH")
+				fn := st.View.Filename()
+				for _, dir := range strings.Split(osGopath, string(filepath.ListSeparator)) {
+					if IsParentDir(dir, fn) {
+						st.Env = st.Env.Add("GOPATH", osGopath)
+						break
+					}
+				}
 			}
 		})
 	})
