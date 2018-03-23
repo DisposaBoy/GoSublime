@@ -14,6 +14,61 @@ Please make sure to read all the comments, as enabling it will affect GoSublime 
 
 **Changes:**
 
+## 18.03.23-1
+	* GOPATH is automatically set to the internal GOPATH when editing margo source files
+	  this allows for things like linters and gocode to work when editing `margo.go`
+
+	* margo is now only automatically restarted if `go test` succeeds
+	  this further supports linters by not restarting when `margo.go` compilation fails
+
+	* add a default linter pattern for gometalinter
+	  the following reducer/linter should now work without any additional setup
+
+	  ```
+		&golang.Linter{Name: "gometalinter", Args: []string{"--fast"}},
+
+	  ```
+
+	* add support for sending settings to margo
+	  in the GoSublime settings, Sublime Text preferences or project settings
+	  the entry `"margo": {...}` will be send to margo where reducers can make use of it
+	  by accessing `mx.Editor.Settings` e.g.
+
+	  gosublime settings:
+	  ```
+		"margo": {
+			"message": "hello world from the GoSublime settings",
+		}
+	  ```
+
+	  project settings:
+	  ```
+		"margo": {
+			"message": "hello world from the project settings",
+		}
+	  ```
+
+	  margo.go
+	  ```
+		mg.Reduce(func(mx *mg.Ctx) *mg.State {
+			var settings struct {
+				// due to limitations in the codec pkg we need to add struct tags
+				// unless we use the exact (capitalized name) in the editor settings
+				Status string `codec:"status"`
+			}
+			err := mx.Editor.Settings(&settings)
+			switch err {
+			case mg.ErrNoSettings:
+				// when the `Started` action is dispatched, no client data is present
+				// and we therefore have no settings
+				return mx.State
+			case nil:
+				return mx.AddStatus(settings.Status)
+			default:
+				return mx.AddStatusf("cannot decode settings: %v", err)
+			}
+		}),
+	  ```
 ## 18.03.21-1
 	* fix exception due to missing import?
 
