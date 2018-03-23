@@ -98,6 +98,7 @@ _default_settings = {
 	"installsuffix": "",
 	"ipc_timeout": 1,
 	"export_env_vars": [],
+	"margo": {},
 }
 _settings = copy.copy(_default_settings)
 _mg_override_settings = {}

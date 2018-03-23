@@ -106,15 +106,23 @@ MAX_VIEW_SIZE = 512 << 10
 #       and then we have to re-encode that into bytes to send it
 def make_props(view=None):
 	props = {
-		'Editor': {
-			'Name': 'sublime',
-			'Version': sublime.version(),
-		},
+		'Editor': _editor_props(view),
 		'Env': sh.env(),
 		'View': _view_props(view),
 	}
 
 	return props
+
+def _editor_props(view):
+	sett = gs.setting('margo') or {}
+	if view is not None:
+		sett.update(view.settings().get('margo') or {})
+
+	return {
+		'Name': 'sublime',
+		'Version': sublime.version(),
+		'Settings': sett,
+	}
 
 def _view_props(view):
 	view = gs.active_view(view=view)
