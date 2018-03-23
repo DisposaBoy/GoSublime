@@ -95,8 +95,8 @@ func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
 	mx = rq.Props.updateCtx(mx)
 	sto.initCache(mx.View)
 	mx.State = sto.prepState(mx.State)
-	mx.State = sto.reducers.Reduce(mx)
-	rs.State = sto.updateState(mx.State, false)
+	st := sto.reducers.Reduce(mx)
+	rs.State = sto.updateState(st, false)
 }
 
 func (sto *Store) updateState(st *State, callListener bool) *State {

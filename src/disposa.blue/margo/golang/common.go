@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	CommonPatterns = append(mg.CommonPatterns[:len(mg.CommonPatterns):len(mg.CommonPatterns)],
+	CommonPatterns = append([]*regexp.Regexp{
+		regexp.MustCompile(`^\s*(?P<path>.+?\.\w+):(?P<line>\d+:)(?P<column>\d+:?)?(?:(?P<tag>warning|error)[:])?(?P<message>.+?)(?: [(](?P<label>[-\w]+)[)])?$`),
 		regexp.MustCompile(`(?P<message>can't load package: package .+: found packages .+ \((?P<path>.+?\.go)\).+)`),
-	)
+	}, mg.CommonPatterns...)
 )
 
 func BuildContext(mx *mg.Ctx) *build.Context {

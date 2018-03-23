@@ -80,11 +80,17 @@ func goInstallAgent(gp string, tags string) error {
 		cmdpath = s
 	}
 
-	race := os.Getenv("MARGO_INSTALL_FLAGS_RACE") == "1"
-	args := []string{"install", "-v", "-tags", tags, cmdpath}
-	if race {
-		args = append([]string{"install", "-race"}, args[1:]...)
+	args := []string{"install", "-v", "-tags=" + tags}
+	if os.Getenv("MARGO_INSTALL_FLAGS_RACE") == "1" {
+		args = append(args, "-race")
 	}
+	for _, tag := range build.Default.ReleaseTags {
+		if tag == "go1.10" {
+			args = append(args, "-i")
+			break
+		}
+	}
+	args = append(args, cmdpath)
 	return cmdHelper{
 		name:     "go",
 		args:     args,

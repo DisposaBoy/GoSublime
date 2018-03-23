@@ -271,6 +271,11 @@ func (w *IssueWriter) matchOne(p *regexp.Regexp, s []byte) *Issue {
 			isu.Message = str(v)
 		case "message":
 			isu.Message = str(v)
+		case "tag":
+			tag := IssueTag(str(v))
+			if tag == IssueWarning || tag == IssueError {
+				isu.Tag = tag
+			}
 		}
 	}
 	return &isu

@@ -120,10 +120,12 @@ type ReducerList []Reducer
 
 func (rl ReducerList) ReduceCtx(mx *Ctx) *Ctx {
 	for _, r := range rl {
+		var st *State
+		pprofdo.Do(mx, rl.labels(r), func(_ context.Context) {
+			st = r.Reduce(mx)
+		})
 		mx = mx.Copy(func(mx *Ctx) {
-			pprofdo.Do(mx, rl.labels(r), func(_ context.Context) {
-				mx.State = r.Reduce(mx)
-			})
+			mx.State = st
 		})
 	}
 	return mx

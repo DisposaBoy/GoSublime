@@ -115,7 +115,7 @@ func (g *Gocode) funcSrc(fx *ast.FuncType, buf *bytes.Buffer, v gocode.MargoCand
 				if j > 0 {
 					fmt.Fprint(buf, ", ")
 				}
-				fmt.Fprintf(buf, "${%d:%s}", i+1, name)
+				fmt.Fprintf(buf, "${%d:%s}", j+1, name)
 			}
 		}
 		buf.WriteString(")")

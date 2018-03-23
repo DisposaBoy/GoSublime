@@ -64,6 +64,12 @@ func Margo(ma mg.Args) {
 
 		// run `golint` on save
 		// &golang.Linter{Name: "golint", Label: "Go/Lint"},
+
+		// run gometalinter on save
+		// &golang.Linter{Name: "gometalinter", Args: []string{
+		// 	"--disable=gas",
+		// 	"--fast",
+		// }},
 	)
 }
 
