@@ -31,7 +31,7 @@ def render_src(view, edit, src):
 	_, err = gspatch.merge(view, view.size(), src, edit)
 	if err:
 		msg = 'PANIC: Cannot fmt file. Check your source for errors (and maybe undo any changes).'
-		sublime.error_message("%s: %s: Merge failure: `%s'" % (domain, msg, err))
+		sublime.error_message("margo.render %s: Merge failure: `%s'" % (msg, err))
 
 
 class IssueCfg(object):
