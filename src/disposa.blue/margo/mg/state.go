@@ -4,6 +4,7 @@ import (
 	"context"
 	"disposa.blue/margo/misc/pprof/pprofdo"
 	"fmt"
+	"github.com/ugorji/go/codec"
 	"go/build"
 	"path/filepath"
 	"reflect"
@@ -12,20 +13,25 @@ import (
 	"time"
 )
 
-var _ context.Context = (*Ctx)(nil)
+var (
+	ErrNoSettings = fmt.Errorf("no editor settings")
+
+	_ context.Context = (*Ctx)(nil)
+)
 
 type Ctx struct {
 	*State
 	Action Action
 
-	Editor EditorProps
-	Store  *Store
+	Store *Store
 
 	Log *Logger
 
 	Parent *Ctx
 	Values map[interface{}]interface{}
 	DoneC  <-chan struct{}
+
+	handle codec.Handle
 }
 
 func (_ *Ctx) Deadline() (time.Time, bool) {
@@ -67,6 +73,8 @@ func newCtx(ag *Agent, st *State, act Action, sto *Store) (mx *Ctx, done chan st
 		Log: ag.Log,
 
 		DoneC: done,
+
+		handle: ag.handle,
 	}, done
 }
 
@@ -165,6 +173,16 @@ func Reduce(f func(*Ctx) *State) ReduceFunc {
 type EditorProps struct {
 	Name    string
 	Version string
+
+	handle   codec.Handle
+	settings codec.Raw
+}
+
+func (ep *EditorProps) Settings(v interface{}) error {
+	if ep.handle == nil || len(ep.settings) == 0 {
+		return ErrNoSettings
+	}
+	return codec.NewDecoderBytes(ep.settings, ep.handle).Decode(v)
 }
 
 type EditorConfig interface {
@@ -184,6 +202,7 @@ type State struct {
 	EphemeralState
 	View     *View
 	Env      EnvMap
+	Editor   EditorProps
 	Obsolete bool
 }
 
@@ -271,9 +290,19 @@ func (st *State) MarkObsolete() *State {
 }
 
 type clientProps struct {
-	Editor EditorProps
-	Env    EnvMap
-	View   *View
+	Editor struct {
+		EditorProps
+		Settings codec.Raw
+	}
+	Env  EnvMap
+	View *View
+}
+
+func (cp *clientProps) finalize(ag *Agent) {
+	ce := &cp.Editor
+	ep := &cp.Editor.EditorProps
+	ep.handle = ag.handle
+	ep.settings = ce.Settings
 }
 
 func makeClientProps() clientProps {
@@ -285,8 +314,8 @@ func makeClientProps() clientProps {
 
 func (c *clientProps) updateCtx(mx *Ctx) *Ctx {
 	return mx.Copy(func(mx *Ctx) {
-		mx.Editor = c.Editor
 		mx.State = mx.State.Copy(func(st *State) {
+			st.Editor = c.Editor.EditorProps
 			if c.Env != nil {
 				st.Env = c.Env
 			}

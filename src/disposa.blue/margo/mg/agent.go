@@ -73,6 +73,10 @@ func newAgentReq() *agentReq {
 	return &agentReq{Props: makeClientProps()}
 }
 
+func (rq *agentReq) finalize(ag *Agent) {
+	rq.Props.finalize(ag)
+}
+
 type agentRes struct {
 	Cookie string
 	Error  string
@@ -117,6 +121,7 @@ type Agent struct {
 
 	handle codec.Handle
 	enc    *codec.Encoder
+	encWr  *bufio.Writer
 	dec    *codec.Decoder
 }
 
@@ -138,7 +143,7 @@ func (ag *Agent) communicate() error {
 			}
 			return fmt.Errorf("ipc.decode: %s", err)
 		}
-
+		rq.finalize(ag)
 		// TODO: put this on a channel in the future.
 		// at the moment we lock the store and block new requests to maintain request/response order
 		// but decoding time could become a problem if we start sending large requests from the client
@@ -167,6 +172,7 @@ func (ag *Agent) send(res agentRes) error {
 	ag.mu.Lock()
 	defer ag.mu.Unlock()
 
+	defer ag.encWr.Flush()
 	return ag.enc.Encode(res.finalize())
 }
 
@@ -212,7 +218,8 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	if ag.handle == nil {
 		return ag, fmt.Errorf("Invalid codec '%s'. Expected %s", cfg.Codec, CodecNamesStr)
 	}
-	ag.enc = codec.NewEncoder(bufio.NewWriter(ag.stdout), ag.handle)
+	ag.encWr = bufio.NewWriter(ag.stdout)
+	ag.enc = codec.NewEncoder(ag.encWr, ag.handle)
 	ag.dec = codec.NewDecoder(bufio.NewReader(ag.stdin), ag.handle)
 
 	return ag, nil
