@@ -1,3 +1,4 @@
+from . import _dbg
 from . import about
 from . import ev
 from . import gs

@@ -1,3 +1,4 @@
+from . import _dbg
 from . import sh, gs, gsq
 from .margo_common import TokenCounter, OutputLogger, Chan
 from .margo_state import State, make_props

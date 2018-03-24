@@ -1,3 +1,4 @@
+from . import _dbg
 from . import gs, gsq, sh
 from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter, Debounce
