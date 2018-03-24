@@ -1,11 +1,7 @@
 from . import gs
+from something_borrowed.diff_match_patch.python3.diff_match_patch import diff_match_patch
 import sublime
 import sys
-
-if gs.PY3K:
-	from something_borrowed.diff_match_patch.python3.diff_match_patch import diff_match_patch
-else:
-	from something_borrowed.diff_match_patch.python2.diff_match_patch import diff_match_patch
 
 class MergeException(Exception):
 	pass
@@ -58,8 +54,10 @@ def merge(view, size, text, edit):
 		dirty = True
 		err = "Could not merge changes into the buffer, edit aborted: %s" % ex[0]
 		view.replace(edit, sublime.Region(0, view.size()), origin_src)
+		gs.error_traceback('gosublime view patch: merge failure', status_txt=err)
 	except Exception as ex:
 		err = "where ma bees at?: %s" % ex
+		gs.error_traceback('gosublime view patch: exception', status_txt=err)
 	finally:
 		vs.set("translate_tabs_to_spaces", ttts)
 		return (dirty, err)
