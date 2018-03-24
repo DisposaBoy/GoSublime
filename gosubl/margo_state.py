@@ -22,7 +22,7 @@ actions = NS(**{k: {'Name': k} for k in (
 class Config(object):
 	def __init__(self, m):
 		self.override_settings = m.get('OverrideSettings') or {}
-		self.trigger_events = m.get('Enabled') is True
+		self.enabled_for_langs = m.get('EnabledForLangs') or []
 		self.inhibit_explicit_completions = m.get('InhibitExplicitCompletions') is True
 		self.inhibit_word_completions = m.get('InhibitWordCompletions') is True
 		self.auto_complete_opts = 0

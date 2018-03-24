@@ -3,7 +3,7 @@ from . import gs, gsq, sh
 from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter, Debounce
 from .margo_render import render, render_src
-from .margo_state import State, actions, Config
+from .margo_state import State, actions, Config, _view_scope_lang
 from collections import namedtuple
 import glob
 import os
@@ -18,7 +18,7 @@ class MargoSingleton(object):
 		self.agent = None
 		self.on_modified = Debounce(self._on_modified, 1.000)
 		self.on_selection_modified = Debounce(self._on_selection_modified, 0.500)
-		self._trigger_events = False
+		self.enabled_for_langs = []
 		self.state = State()
 		self.status = []
 
@@ -27,8 +27,7 @@ class MargoSingleton(object):
 			self.state = rs.state
 			cfg = rs.state.config
 
-			if cfg.trigger_events:
-				self._trigger_events = True
+			self.enabled_for_langs = cfg.enabled_for_langs
 
 			if cfg.override_settings:
 				gs._mg_override_settings = cfg.override_settings
@@ -76,10 +75,14 @@ class MargoSingleton(object):
 			a.stop()
 
 	def enabled(self, view):
-		return self._trigger_events and sh.init_done
+		if '*' in self.enabled_for_langs:
+			return True
+
+		_, lang = _view_scope_lang(view, 0)
+		return lang in self.enabled_for_langs
 
 	def can_trigger_event(self, view, allow_9o=False):
-		if not self._trigger_events:
+		if not self.enabled(view):
 			return False
 
 		if view is None:
