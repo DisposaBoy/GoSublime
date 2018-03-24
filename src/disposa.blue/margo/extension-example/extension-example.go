@@ -12,6 +12,15 @@ func Margo(ma mg.Args) {
 	// they are run in the specified order
 	// and should ideally not block for more than a couple milliseconds
 	ma.Store.Use(
+		// by default, events (e.g. ViewSaved) are triggered in all files
+		// uncomment the reducer below to restict event to Go(-lang) files
+		// please note, however, that this mode is not tested
+		// and saving a non-go file will not trigger linters, etc. for that go pkg
+		//
+		// mg.Reduce(func(mx *mg.Ctx) *mg.State {
+		// 	return mx.SetConfig(mx.Config.EnabledForLangs("go"))
+		// }),
+
 		// add the day and time to the status bar
 		// DayTimeStatus,
 

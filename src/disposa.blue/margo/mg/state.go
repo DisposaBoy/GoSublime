@@ -190,6 +190,7 @@ func (ep *EditorProps) Settings(v interface{}) error {
 
 type EditorConfig interface {
 	EditorConfig() interface{}
+	EnabledForLangs(langs ...string) EditorConfig
 }
 
 type EphemeralState struct {

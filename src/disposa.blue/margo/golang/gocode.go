@@ -107,15 +107,14 @@ func (g *Gocode) funcSrc(fx *ast.FuncType, buf *bytes.Buffer, v gocode.MargoCand
 	buf.WriteString(v.Name)
 	if outputArgs {
 		buf.WriteString("(")
-		for i, field := range fx.Params.List {
-			if i > 0 {
-				fmt.Fprint(buf, ", ")
-			}
-			for j, name := range field.Names {
-				if j > 0 {
-					fmt.Fprint(buf, ", ")
+		pos := 0
+		for _, field := range fx.Params.List {
+			for _, name := range field.Names {
+				pos++
+				if pos > 1 {
+					buf.WriteString(", ")
 				}
-				fmt.Fprintf(buf, "${%d:%s}", j+1, name)
+				fmt.Fprintf(buf, "${%d:%s}", pos, name)
 			}
 		}
 		buf.WriteString(")")

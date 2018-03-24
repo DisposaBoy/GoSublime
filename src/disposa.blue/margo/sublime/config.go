@@ -6,11 +6,13 @@ import (
 
 var (
 	DefaultConfig = Config{}
+
+	_ mg.EditorConfig = DefaultConfig
 )
 
 type Config struct {
 	Values struct {
-		Enabled                    bool
+		EnabledForLangs            []string
 		InhibitExplicitCompletions bool
 		InhibitWordCompletions     bool
 		OverrideSettings           map[string]interface{}
@@ -25,8 +27,8 @@ func (c Config) Config() mg.EditorConfig {
 	return c
 }
 
-func (c Config) EnableEvents() Config {
-	c.Values.Enabled = true
+func (c Config) EnabledForLangs(langs ...string) mg.EditorConfig {
+	c.Values.EnabledForLangs = langs
 	return c
 }
 
