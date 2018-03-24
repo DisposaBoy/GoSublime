@@ -184,7 +184,7 @@ class MargoSingleton(object):
 		req = rq.props.get('View', {})
 		res = rs.state.view
 		req_name, req_src = req.get('Name'), req.get('Src')
-		res_name, res_src = res.get('Name'), res.get('Src')
+		res_name, res_src = res.name, res.src
 
 		if not res_name or not res_src:
 			return
