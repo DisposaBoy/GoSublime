@@ -1,7 +1,7 @@
 from . import _dbg
 from . import sh, gs, gsq
 from .margo_common import TokenCounter, OutputLogger, Chan
-from .margo_state import State, make_props
+from .margo_state import State, make_props, actions
 import os
 import sublime
 import subprocess
@@ -51,6 +51,10 @@ class MargoAgent(threading.Thread):
 			'GOPATH': psep.join(gopaths),
 			'PATH': psep.join([os.path.join(p, 'bin') for p in gopaths]) + psep + os.environ.get('PATH'),
 		}
+
+		self._mod_ev = threading.Event()
+		self._mod_view = None
+		self._pos_view = None
 
 	def __del__(self):
 		self.stop()
@@ -115,6 +119,7 @@ class MargoAgent(threading.Thread):
 
 		self.proc = pr.p
 		gsq.launch(self.domain, self._handle_send)
+		gsq.launch(self.domain, self._handle_send_mod)
 		gsq.launch(self.domain, self._handle_recv)
 		gsq.launch(self.domain, self._handle_log)
 		self.started.set()
@@ -165,6 +170,36 @@ class MargoAgent(threading.Thread):
 
 		return rq
 
+	def view_modified(self, view):
+		self._mod_view = view
+		self._mod_ev.set()
+
+	def view_pos_changed(self, view):
+		self._pos_view = view
+		self._mod_ev.set()
+
+	def _send_mod(self):
+		mod_v, self._mod_view = self._mod_view, None
+		pos_v, self._pos_view = self._pos_view, None
+		if mod_v is None and pos_v is None:
+			return
+
+		view = pos_v
+		action = actions.ViewPosChanged
+		if mod_v is not None:
+			action = actions.ViewModified
+			view = mod_v
+
+		self.send(action=action, view=view).wait()
+
+	def _handle_send_mod(self):
+		delay = 0.500
+		while not self.stopped.is_set():
+			self._mod_ev.wait(delay)
+			if self._mod_ev.is_set():
+				self._mod_ev.clear()
+				time.sleep(delay * 1.5)
+				self._send_mod()
 
 	def _handle_send(self):
 		for rq in self.req_chan:
@@ -263,7 +298,8 @@ class AgentRes(object):
 class AgentReq(object):
 	def __init__(self, agent, action, cb=None, view=None):
 		self.start_time = time.time()
-		_, self.cookie = agent.cookies.next()
+		_, cookie = agent.cookies.next()
+		self.cookie = 'action:%s(%s)' % (action['Name'], cookie)
 		self.domain = self.cookie
 		self.action = action
 		self.cb = cb

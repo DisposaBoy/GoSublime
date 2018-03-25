@@ -1,7 +1,7 @@
 from . import _dbg
 from . import gs, gsq, sh
 from .margo_agent import MargoAgent
-from .margo_common import OutputLogger, TokenCounter, Debounce
+from .margo_common import OutputLogger, TokenCounter
 from .margo_render import render, render_src
 from .margo_state import State, actions, Config, _view_scope_lang
 from collections import namedtuple
@@ -16,8 +16,6 @@ class MargoSingleton(object):
 		self.out = OutputLogger('margo')
 		self.agent_tokens = TokenCounter('agent', format='{}#{:03d}', start=6)
 		self.agent = None
-		self.on_modified = Debounce(self._on_modified, 1.000)
-		self.on_selection_modified = Debounce(self._on_selection_modified, 0.500)
 		self.enabled_for_langs = []
 		self.state = State()
 		self.status = []
@@ -32,17 +30,14 @@ class MargoSingleton(object):
 			if cfg.override_settings:
 				gs._mg_override_settings = cfg.override_settings
 
-		def ren():
-			render(view=gs.active_view(), state=self.state, status=self.status)
+		render(view=gs.active_view(), state=self.state, status=self.status)
 
-			if rs:
-				if rs.agent is self.agent:
-					self._handle_client_actions(rs.state.client_actions)
+		if rs:
+			if rs.agent is self.agent:
+				sublime.set_timeout_async(lambda: self._handle_client_actions(rs.state.client_actions), 0)
 
-				if rs.agent and rs.agent is not self.agent:
-					rs.agent.stop()
-
-		sublime.set_timeout_async(ren, 0)
+			if rs.agent and rs.agent is not self.agent:
+				rs.agent.stop()
 
 	def _handle_client_actions(self, client_actions):
 		for a in client_actions:
@@ -133,10 +128,12 @@ class MargoSingleton(object):
 		self.agent = None
 		self.clear_status()
 
-	def send(self, action={}, cb=None, view=None):
+	def _send_start(self):
 		if not self.agent:
 			self.start()
 
+	def send(self, action={}, cb=None, view=None):
+		self._send_start()
 		return self.agent.send(action=action, cb=cb, view=view)
 
 	def on_query_completions(self, view, prefix, locations):
@@ -157,11 +154,13 @@ class MargoSingleton(object):
 	def on_activated(self, view):
 		self.send(view=view, action=actions.ViewActivated)
 
-	def _on_modified(self, view):
-		self.send(view=view, action=actions.ViewModified)
+	def on_modified(self, view):
+		self._send_start()
+		self.agent.view_modified(view)
 
-	def _on_selection_modified(self, view):
-		self.send(view=view, action=actions.ViewPosChanged)
+	def on_selection_modified(self, view):
+		self._send_start()
+		self.agent.view_pos_changed(view)
 
 	def fmt(self, view):
 		return self._fmt_save(view=view, action=actions.ViewFmt, name='fmt', timeout=5.000)
