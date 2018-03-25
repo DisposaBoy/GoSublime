@@ -203,9 +203,13 @@ func (sto *Store) initCache(v *View) {
 	cc.Lock()
 	defer cc.Unlock()
 
-	if cc.vHash != v.Hash || cc.vName != v.Name {
-		cc.m = map[interface{}]interface{}{}
+	if cc.vHash == v.Hash && cc.vName == v.Name {
+		return
 	}
+
+	cc.m = map[interface{}]interface{}{}
+	cc.vHash = v.Hash
+	cc.vName = v.Name
 }
 
 func (sto *Store) Put(k interface{}, v interface{}) {
