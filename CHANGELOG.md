@@ -14,6 +14,12 @@ Please make sure to read all the comments, as enabling it will affect GoSublime 
 
 **Changes:**
 
+## 18.03.26-1
+	* update gocode
+	* fix gocode completion showing duplicate function parameter names
+	* add support for restricting the files in which events are triggered
+	* (hopefully) fix an issue where some users were experiencing laggy input
+
 ## 18.03.23-1
 	* GOPATH is automatically set to the internal GOPATH when editing margo source files
 	  this allows for things like linters and gocode to work when editing `margo.go`
