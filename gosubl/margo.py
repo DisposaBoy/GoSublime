@@ -209,7 +209,7 @@ class MargoSingleton(object):
 		self.send(view=view, action=actions.ViewClosed)
 
 	def example_extension_file(self):
-		return gs.dist_path('src/disposa.blue/margo/extension-example/extension-example.go')
+		return gs.dist_path('src/margo.sh/extension-example/extension-example.go')
 
 	def extension_file(self, install=False):
 		src_dir = gs.user_path('src', 'margo')

@@ -1,0 +1,15 @@
+[[constraint]]
+  name = "github.com/ugorji/go"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/urfave/cli"
+  branch = "master"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+
+[prune]
+  go-tests = true
+  unused-packages = true

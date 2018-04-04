@@ -90,7 +90,8 @@ class MargoAgent(threading.Thread):
 
 		gs_gopath = sh.psep.join((gs.user_path(), gs.dist_path()))
 		gs_gobin = gs.dist_path('bin')
-		install_cmd = ['go', 'install', '-v', 'disposa.blue/margo/cmd/margo']
+		mg_exe = 'margo.sh'
+		install_cmd = ['go', 'install', '-v', mg_exe]
 		cmd = sh.Command(install_cmd)
 		cmd.env = {
 			'GOPATH': gs_gopath,
@@ -102,8 +103,8 @@ class MargoAgent(threading.Thread):
 				self.out.println('%s:\n%s' % (install_cmd, v))
 
 		mg_cmd = [
-			sh.which('margo', m={'PATH': gs_gobin}) or 'margo',
-			'sublime', '-codec', ipc_codec,
+			sh.which(mg_exe, m={'PATH': gs_gobin}) or mg_exe,
+			'start', 'margo.sublime', '-codec', ipc_codec,
 		]
 		self.out.println(mg_cmd)
 		cmd = sh.Command(mg_cmd)
