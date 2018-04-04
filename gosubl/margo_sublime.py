@@ -11,9 +11,6 @@ class MargoEvents(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
 		return mg.event('query_completions', view, mg.on_query_completions, [view, prefix, locations])
 
-	def on_hover(self, view, point, hover_zone):
-		return mg.event('hover', view, mg.on_hover, [view, point, hover_zone])
-
 	def on_activated_async(self, view):
 		return mg.event('activated', view, mg.on_activated, [view])
 
@@ -32,9 +29,6 @@ class MargoEvents(sublime_plugin.EventListener):
 	def on_load_async(self, view):
 		return mg.event('load', view, mg.on_load, [view])
 
-	def on_close(self, view):
-		return mg.event('close', view, mg.on_close, [view])
-
 class MargoRenderSrcCommand(sublime_plugin.TextCommand):
 	def run(self, edit, src):
 		render_src(self.view, edit, src)
@@ -49,7 +43,7 @@ class MargoIssuesCommand(sublime_plugin.TextCommand):
 			})
 
 	def _run(self):
-		mg.send(view=self.view, action=actions.QueryIssues, cb=self._cb)
+		mg.send(view=self.view, actions=[actions.QueryIssues], cb=self._cb)
 
 	def _cb(self, rs):
 		show_issues(self.view, rs.state.issues)

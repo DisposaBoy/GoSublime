@@ -52,9 +52,8 @@ class MargoAgent(threading.Thread):
 			'PATH': psep.join([os.path.join(p, 'bin') for p in gopaths]) + psep + os.environ.get('PATH'),
 		}
 
-		self._mod_ev = threading.Event()
-		self._mod_view = None
-		self._pos_view = None
+		self._acts_lock = threading.Lock()
+		self._acts = []
 
 	def __del__(self):
 		self.stop()
@@ -120,7 +119,7 @@ class MargoAgent(threading.Thread):
 
 		self.proc = pr.p
 		gsq.launch(self.domain, self._handle_send)
-		gsq.launch(self.domain, self._handle_send_mod)
+		gsq.launch(self.domain, self._handle_acts)
 		gsq.launch(self.domain, self._handle_recv)
 		gsq.launch(self.domain, self._handle_log)
 		self.started.set()
@@ -138,6 +137,7 @@ class MargoAgent(threading.Thread):
 				f.close()
 			except Exception as exc:
 				self.out.println(exc)
+				gs.error_traceback(self.domain)
 
 	def _handle_send_ipc(self, rq):
 		with self.lock:
@@ -159,8 +159,35 @@ class MargoAgent(threading.Thread):
 
 			rq.done(AgentRes(error='Exception: %s' % exc, rq=rq, agent=self))
 
-	def send(self, action={}, cb=None, view=None):
-		rq = AgentReq(self, action, cb=cb, view=view)
+	def _queued_acts(self, view):
+		with self._acts_lock:
+			q, self._acts = self._acts, []
+
+		acts = []
+		for act, vid in q:
+			if vid == view.id():
+				acts.append(act)
+
+		return acts
+
+	def queue(self, *, actions=[], view=None):
+		with self._acts_lock:
+			for act in actions:
+				p = (act, view.id())
+				try:
+					self._acts.remove(p)
+				except ValueError:
+					pass
+
+				self._acts.append(p)
+
+	def send(self, *, actions=[], cb=None, view=None):
+		view = gs.active_view(view=view)
+		acts = self._queued_acts(view)
+		if not isinstance(actions, list):
+			raise Exception('actions is %s' % type(actions))
+		acts.extend(actions)
+		rq = AgentReq(self, acts, cb=cb, view=view)
 		timeout = 0.200
 		if not self.started.wait(timeout):
 			rq.done(AgentRes(error='margo has not started after %0.3fs' % (timeout), timedout=timeout, rq=rq, agent=self))
@@ -171,36 +198,16 @@ class MargoAgent(threading.Thread):
 
 		return rq
 
-	def view_modified(self, view):
-		self._mod_view = view
-		self._mod_ev.set()
+	def _send_acts(self):
+		view = gs.active_view()
+		acts = self._queued_acts(view)
+		if acts:
+			self.send(actions=acts, view=view).wait()
 
-	def view_pos_changed(self, view):
-		self._pos_view = view
-		self._mod_ev.set()
-
-	def _send_mod(self):
-		mod_v, self._mod_view = self._mod_view, None
-		pos_v, self._pos_view = self._pos_view, None
-		if mod_v is None and pos_v is None:
-			return
-
-		view = pos_v
-		action = actions.ViewPosChanged
-		if mod_v is not None:
-			action = actions.ViewModified
-			view = mod_v
-
-		self.send(action=action, view=view).wait()
-
-	def _handle_send_mod(self):
-		delay = 0.500
+	def _handle_acts(self):
 		while not self.stopped.is_set():
-			self._mod_ev.wait(delay)
-			if self._mod_ev.is_set():
-				self._mod_ev.clear()
-				time.sleep(delay * 1.5)
-				self._send_mod()
+			time.sleep(0.750)
+			self._send_acts()
 
 	def _handle_send(self):
 		for rq in self.req_chan:
@@ -252,6 +259,7 @@ class MargoAgent(threading.Thread):
 			pass
 		except Exception as e:
 			self.out.println('ipc: recv: %s: %s' % (e, v))
+			gs.error_traceback(self.domain)
 		finally:
 			self.stop()
 
@@ -287,22 +295,19 @@ class AgentRes(object):
 
 	def set_rq(self, rq):
 		if self.error and rq:
-			act = rq.action
-			if act and act.get('Name'):
-				self.error = 'action: %s, error: %s' % (act.get('Name'), self.error)
-			else:
-				self.error = 'error: %s' % self.error
+			self.error = 'actions: %s, error: %s' % (rq.actions_str, self.error)
 
 	def get(self, k, default=None):
 		return self.state.get(k, default)
 
 class AgentReq(object):
-	def __init__(self, agent, action, cb=None, view=None):
+	def __init__(self, agent, actions, cb=None, view=None):
 		self.start_time = time.time()
+		self.actions = actions
+		self.actions_str = ' ~> '.join(a['Name'] for a in actions)
 		_, cookie = agent.cookies.next()
-		self.cookie = 'action:%s(%s)' % (action['Name'], cookie)
+		self.cookie = 'actions(%s),%s' % (self.actions_str, cookie)
 		self.domain = self.cookie
-		self.action = action
 		self.cb = cb
 		self.props = make_props(view=view)
 		self.rs = DEFAULT_RESPONSE
@@ -334,7 +339,7 @@ class AgentReq(object):
 		return {
 			'Cookie': self.cookie,
 			'Props': self.props,
-			'Action': self.action,
+			'Actions': self.actions,
 		}
 
 DEFAULT_RESPONSE = AgentRes(error='default agent response')

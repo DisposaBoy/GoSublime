@@ -132,13 +132,16 @@ class MargoSingleton(object):
 		if not self.agent:
 			self.start()
 
-	def send(self, action={}, cb=None, view=None):
+	def queue(self, *, actions=[], view=None):
 		self._send_start()
-		return self.agent.send(action=action, cb=cb, view=view)
+		self.agent.queue(actions=actions, view=view)
+
+	def send(self, *, actions=[], cb=None, view=None):
+		self._send_start()
+		return self.agent.send(actions=actions, cb=cb, view=view)
 
 	def on_query_completions(self, view, prefix, locations):
-		action = actions.QueryCompletions.copy()
-		rs = self.send(view=view, action=action).wait(0.300)
+		rs = self.send(view=view, actions=[actions.QueryCompletions]).wait(0.300)
 		if not rs:
 			self.out.println('aborting QueryCompletions. it did not respond in time')
 			return None
@@ -147,30 +150,24 @@ class MargoSingleton(object):
 		opts = rs.state.config.auto_complete_opts
 		return (cl, opts) if opts != 0 else cl
 
-	def on_hover(self, view, point, hover_zone):
-		if hover_zone != sublime.HOVER_TEXT:
-			return
-
 	def on_activated(self, view):
-		self.send(view=view, action=actions.ViewActivated)
+		self.queue(view=view, actions=[actions.ViewActivated])
 
 	def on_modified(self, view):
-		self._send_start()
-		self.agent.view_modified(view)
+		self.queue(view=view, actions=[actions.ViewModified])
 
 	def on_selection_modified(self, view):
-		self._send_start()
-		self.agent.view_pos_changed(view)
+		self.queue(view=view, actions=[actions.ViewPosChanged])
 
 	def fmt(self, view):
-		return self._fmt_save(view=view, action=actions.ViewFmt, name='fmt', timeout=5.000)
+		return self._fmt_save(view=view, actions=[actions.ViewFmt], name='fmt', timeout=5.000)
 
 	def on_pre_save(self, view):
-		return self._fmt_save(view=view, action=actions.ViewPreSave, name='pre-save', timeout=2.000)
+		return self._fmt_save(view=view, actions=[actions.ViewPreSave], name='pre-save', timeout=2.000)
 
-	def _fmt_save(self, *, view, action, name, timeout):
+	def _fmt_save(self, *, view, actions, name, timeout):
 		id_nm = '%d: %s' % (view.id(), view.file_name() or view.name())
-		rq = self.send(view=view, action=action)
+		rq = self.send(view=view, actions=actions)
 		rs = rq.wait(timeout)
 		if not rs:
 			self.out.println('%s timedout on view %s' % (name, id_nm))
@@ -200,13 +197,10 @@ class MargoSingleton(object):
 		view.run_command('margo_render_src', {'src': res_src})
 
 	def on_post_save(self, view):
-		self.send(view=view, action=actions.ViewSaved)
+		self.queue(view=view, actions=[actions.ViewSaved])
 
 	def on_load(self, view):
-		self.send(view=view, action=actions.ViewLoaded)
-
-	def on_close(self, view):
-		self.send(view=view, action=actions.ViewClosed)
+		self.queue(view=view, actions=[actions.ViewLoaded])
 
 	def example_extension_file(self):
 		return gs.dist_path('src/margo.sh/extension-example/extension-example.go')
