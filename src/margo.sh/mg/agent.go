@@ -63,12 +63,14 @@ type AgentConfig struct {
 	Stderr io.WriteCloser
 }
 
+type agentReqAction struct {
+	Name string
+}
+
 type agentReq struct {
-	Cookie string
-	Action struct {
-		Name string
-	}
-	Props clientProps
+	Cookie  string
+	Actions []agentReqAction
+	Props   clientProps
 }
 
 func newAgentReq() *agentReq {

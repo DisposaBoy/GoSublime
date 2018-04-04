@@ -77,26 +77,32 @@ func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
 	sto.mu.Lock()
 	defer sto.mu.Unlock()
 
-	name := rq.Action.Name
+	rs := agentRes{Cookie: rq.Cookie}
+	for _, ra := range rq.Actions {
+		st, err := sto.syncRqAct(ag, rq.Props, ra.Name)
+		rs.State = st
+		if err != nil {
+			rs.Error = err.Error()
+		}
+	}
+	rs.State = sto.updateState(rs.State, false)
+	ag.send(rs)
+}
+
+func (sto *Store) syncRqAct(ag *Agent, props clientProps, name string) (*State, error) {
 	mx, done := newCtx(sto.ag, sto.state, ag.createAction(name), sto)
 	defer close(done)
 
-	rs := agentRes{Cookie: rq.Cookie}
-	rs.State = mx.State
-	defer func() { ag.send(rs) }()
-
 	if mx.Action == nil {
-		rs.Error = fmt.Sprintf("unknown client action: %s", name)
-		return
+		return mx.State, fmt.Errorf("unknown client action: %s", name)
 	}
 
 	// TODO: add support for unpacking Action.Data
 
-	mx = rq.Props.updateCtx(mx)
+	mx = props.updateCtx(mx)
 	sto.initCache(mx.View)
 	mx.State = sto.prepState(mx.State)
-	st := sto.reducers.Reduce(mx)
-	rs.State = sto.updateState(st, false)
+	return sto.reducers.Reduce(mx), nil
 }
 
 func (sto *Store) updateState(st *State, callListener bool) *State {
