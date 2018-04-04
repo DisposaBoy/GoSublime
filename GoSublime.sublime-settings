@@ -325,7 +325,7 @@
 	// `GoSublime: HTML` files are html files with the template delimiters `{{` and `}}` tailored to
 	// Go templates (text/template, html/template)
 	// (`.gohtml` files are automatically set by the syntax definition)
-	"gohtml_extensions": [".html.go"],
+	"gohtml_extensions": [],
 
 	// Export the listed environment variables to Sublime Text when the GoSublime settings change
 	// so the env vars GS loads through your shell and project are available to other plugins
