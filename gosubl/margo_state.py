@@ -16,7 +16,6 @@ actions = NS(**{k: {'Name': k} for k in (
 	'ViewPreSave',
 	'ViewSaved',
 	'ViewLoaded',
-	'ViewClosed',
 )})
 
 class Config(object):
@@ -160,7 +159,7 @@ def _view_props(view):
 		wd = view.settings().get('9o.wd') or wd
 		props['Path'] = '_.9o'
 	else:
-		src = _view_src(view)
+		src = _view_src(view, lang)
 
 	props.update({
 		'Wd': wd,
@@ -229,11 +228,14 @@ def _view_scope_lang(view, pos):
 
 	scope = view.scope_name(pos).strip().lower()
 	l = _scope_lang_pat.findall(scope)
-	lang = l[-1] if l else scope.split('.')[-1]
+	lang = l[-1] if l else ''
 	return (scope, lang)
 
-def _view_src(view):
+def _view_src(view, lang):
 	if view is None:
+		return ''
+
+	if not lang:
 		return ''
 
 	if not view.is_dirty():
