@@ -160,6 +160,9 @@ class MargoAgent(threading.Thread):
 			rq.done(AgentRes(error='Exception: %s' % exc, rq=rq, agent=self))
 
 	def _queued_acts(self, view):
+		if view is None:
+			return []
+
 		with self._acts_lock:
 			q, self._acts = self._acts, []
 
