@@ -157,7 +157,8 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) b
 		}
 		return isnil
 	case reflect.Ptr:
-		isnil := urv.ptr == nil
+		// isnil := urv.ptr == nil (not sufficient, as a pointer value encodes the type)
+		isnil := urv.ptr == nil || *(*unsafe.Pointer)(urv.ptr) == nil
 		if deref {
 			if isnil {
 				return true

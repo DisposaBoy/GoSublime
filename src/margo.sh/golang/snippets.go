@@ -1,8 +1,9 @@
 package golang
 
 import (
-	"margo.sh/mg"
 	"go/ast"
+	"margo.sh/mg"
+	"regexp"
 	"unicode"
 	"unicode/utf8"
 )
@@ -18,6 +19,8 @@ var (
 		MapSnippet,
 		TypeSnippet,
 	}
+
+	pkgDirNamePat = regexp.MustCompile(`(\w+)\W*$`)
 )
 
 type SnippetFuncs []func(*CompletionCtx) []mg.Completion
@@ -59,25 +62,37 @@ func (sf SnippetFuncs) fixCompletion(c *mg.Completion) {
 }
 
 func PackageNameSnippet(cx *CompletionCtx) []mg.Completion {
-	if cx.PkgName != "" || !cx.Scope.Is(PackageScope) {
+	if cx.PkgName != NilPkgName || !cx.Scope.Is(PackageScope) {
 		return nil
 	}
 
-	name := "main"
-	bx := BuildContext(cx.Ctx)
-	pkg, _ := bx.ImportDir(cx.View.Dir(), 0)
-	if pkg != nil && pkg.Name != "" {
-		name = pkg.Name
+	var cl []mg.Completion
+	seen := map[string]bool{}
+	add := func(name string) {
+		if seen[name] {
+			return
+		}
+		seen[name] = true
+		cl = append(cl, mg.Completion{
+			Query: `package ` + name,
+			Src: `
+				package ` + name + `
+
+				$0
+			`,
+		})
 	}
 
-	return []mg.Completion{{
-		Query: `package ` + name,
-		Src: `
-			package ` + name + `
+	dir := cx.View.Dir()
+	pkg, _ := BuildContext(cx.Ctx).ImportDir(dir, 0)
+	if pkg != nil && pkg.Name != "" {
+		add(pkg.Name)
+	} else {
+		add(pkgDirNamePat.FindString(dir))
+	}
+	add("main")
 
-			$0
-		`,
-	}}
+	return cl
 }
 
 func MainFuncSnippet(cx *CompletionCtx) []mg.Completion {

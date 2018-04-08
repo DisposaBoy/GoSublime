@@ -1,9 +1,9 @@
 package golang
 
 import (
-	"margo.sh/mg"
 	"go/ast"
 	"go/token"
+	"margo.sh/mg"
 	"strings"
 )
 
@@ -69,7 +69,8 @@ func NewCompletionCtx(mx *mg.Ctx, src []byte, pos int) *CompletionCtx {
 	cx.IsTestFile = strings.HasSuffix(mx.View.Filename(), "_test.go") ||
 		strings.HasSuffix(cx.PkgName, "_test")
 
-	if cx.PkgName == "_" || cx.PkgName == "" {
+	if cx.PkgName == NilPkgName || cx.PkgName == "" {
+		cx.PkgName = NilPkgName
 		cx.Scope |= PackageScope
 		return cx
 	}

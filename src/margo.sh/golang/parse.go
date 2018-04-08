@@ -1,12 +1,12 @@
 package golang
 
 import (
-	"margo.sh/mg"
 	"go/ast"
 	"go/parser"
 	"go/scanner"
 	"go/token"
 	"io/ioutil"
+	"margo.sh/mg"
 )
 
 const (
@@ -14,8 +14,9 @@ const (
 )
 
 var (
+	NilPkgName    = "_"
 	NilFset       = token.NewFileSet()
-	NilAstFile, _ = parser.ParseFile(NilFset, "", `package _`, 0)
+	NilAstFile, _ = parser.ParseFile(NilFset, "", `package `+NilPkgName, 0)
 	NilTokenFile  = NilFset.File(NilAstFile.Pos())
 )
 

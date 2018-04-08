@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "02537d3a3e32ef636a53519265d211bd208ca488"
+  revision = "f3cacc17c85ecb7f1b6a9e373ee85d1480919868"
 
 [[projects]]
   branch = "master"
@@ -17,7 +17,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
-  revision = "12892e8c234f4fe6f6803f052061de9057903bb2"
+  revision = "b2aa35443fbc700ab74c586ae79b81c171851023"
 
 [solve-meta]
   analyzer-name = "dep"

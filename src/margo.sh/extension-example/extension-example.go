@@ -45,6 +45,9 @@ func Margo(ma mg.Args) {
 			ShowFuncParams: true,
 		},
 
+		// show func arguments/calltips in the status bar
+		&golang.GocodeCalltips{},
+
 		// add some default context aware-ish snippets
 		golang.Snippets,
 

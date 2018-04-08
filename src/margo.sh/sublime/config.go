@@ -60,6 +60,10 @@ func (c Config) DisableGsComplete() Config {
 	return c.overrideSetting("gscomplete_enabled", false)
 }
 
+func (c Config) DisableCalltips() Config {
+	return c.overrideSetting("calltips", false)
+}
+
 func (c Config) DisableGsLint() Config {
 	return c.overrideSetting("gslint_enabled", false)
 }

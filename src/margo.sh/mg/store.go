@@ -77,9 +77,10 @@ func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
 	sto.mu.Lock()
 	defer sto.mu.Unlock()
 
-	rs := agentRes{Cookie: rq.Cookie}
+	rs := agentRes{Cookie: rq.Cookie, State: sto.state}
 	for _, ra := range rq.Actions {
 		st, err := sto.syncRqAct(ag, rq.Props, ra.Name)
+		sto.state = st // normally sto.updateState would do this
 		rs.State = st
 		if err != nil {
 			rs.Error = err.Error()

@@ -41,6 +41,21 @@ func (e EnvMap) Add(k, v string) EnvMap {
 	return m
 }
 
+func (e EnvMap) Merge(p map[string]string) EnvMap {
+	if len(p) == 0 {
+		return e
+	}
+
+	m := make(EnvMap, len(e)+len(p))
+	for k, v := range e {
+		m[k] = v
+	}
+	for k, v := range p {
+		m[k] = v
+	}
+	return m
+}
+
 func (e EnvMap) Environ() []string {
 	l := make([]string, 0, len(e))
 	for k, v := range e {

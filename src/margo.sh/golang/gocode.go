@@ -2,9 +2,6 @@ package golang
 
 import (
 	"bytes"
-	"margo.sh/golang/internal/gocode"
-	"margo.sh/mg"
-	"margo.sh/sublime"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -12,6 +9,9 @@ import (
 	"go/printer"
 	"go/token"
 	"io"
+	"margo.sh/golang/internal/gocode"
+	"margo.sh/mg"
+	"margo.sh/sublime"
 	"strings"
 	"unicode"
 )
@@ -65,7 +65,7 @@ func (g *Gocode) funcTitle(fx *ast.FuncType, buf *bytes.Buffer, decl string) str
 	if fx.Params != nil {
 		switch {
 		case g.ShowFuncParams:
-			g.printFields(buf, fset, fx.Params.List, true)
+			printFields(buf, fset, fx.Params.List, true)
 		case fx.Params.NumFields() != 0:
 			buf.WriteString("…")
 		}
@@ -78,7 +78,7 @@ func (g *Gocode) funcTitle(fx *ast.FuncType, buf *bytes.Buffer, decl string) str
 		if hasNames {
 			buf.WriteString("(")
 		}
-		g.printFields(buf, fset, fl.List, g.ShowFuncResultNames)
+		printFields(buf, fset, fl.List, g.ShowFuncResultNames)
 		if hasNames {
 			buf.WriteString(")")
 		}
@@ -123,7 +123,7 @@ func (g *Gocode) funcSrc(fx *ast.FuncType, buf *bytes.Buffer, v gocode.MargoCand
 	return buf.String()
 }
 
-func (g *Gocode) printFields(w io.Writer, fset *token.FileSet, list []*ast.Field, printNames bool) {
+func printFields(w io.Writer, fset *token.FileSet, list []*ast.Field, printNames bool) {
 	for i, field := range list {
 		if i > 0 {
 			fmt.Fprint(w, ", ")

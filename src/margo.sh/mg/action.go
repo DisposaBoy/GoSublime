@@ -8,7 +8,6 @@ var (
 		"Restart":          func() Action { return Restart{} },
 		"Shutdown":         func() Action { return Shutdown{} },
 		"ViewActivated":    func() Action { return ViewActivated{} },
-		"ViewClosed":       func() Action { return ViewClosed{} },
 		"ViewFmt":          func() Action { return ViewFmt{} },
 		"ViewLoaded":       func() Action { return ViewLoaded{} },
 		"ViewModified":     func() Action { return ViewModified{} },
@@ -60,5 +59,3 @@ type ViewPreSave struct{ ActionType }
 type ViewSaved struct{ ActionType }
 
 type ViewLoaded struct{ ActionType }
-
-type ViewClosed struct{ ActionType }
