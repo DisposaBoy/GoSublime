@@ -56,7 +56,7 @@ issue_cfg_warning = IssueCfg(
 	icon = issue_cfg_error.icon,
 	flags = issue_cfg_error.flags,
 )
-issue_cfg_default = issue_cfg_warning
+issue_cfg_default = issue_cfg_error
 issue_cfgs = {
 	'error': issue_cfg_error,
 	'warning': issue_cfg_warning,
