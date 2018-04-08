@@ -117,7 +117,7 @@ class GsNewGoFileCommand(sublime_plugin.WindowCommand):
 			gs.error_traceback('GsNewGoFile')
 
 		self.window.new_file().run_command('gs_create_new_go_file', {
-			'pkg_name': pkg_name,
+			'pkg_name': '',
 			'file_name': 'main.go',
 		})
 
@@ -126,9 +126,17 @@ class GsCreateNewGoFileCommand(sublime_plugin.TextCommand):
 		view = self.view
 		view.set_name(file_name)
 		view.set_syntax_file(gs.tm_path('go'))
-		view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
-		view.sel().clear()
-		view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
+		if pkg_name == '':
+			view.sel().add(sublime.Region(0, 0))
+			view.run_command('auto_complete', {
+				'api_completions_only': True,
+				'disable_auto_insert': True,
+				'next_completion_if_showing': False,
+			})
+		else:
+			view.replace(edit, sublime.Region(0, view.size()), 'package %s\n' % pkg_name)
+			view.sel().clear()
+			view.sel().add(view.find(pkg_name, 0, sublime.LITERAL))
 
 class GsShowTasksCommand(sublime_plugin.WindowCommand):
 	def run(self):
