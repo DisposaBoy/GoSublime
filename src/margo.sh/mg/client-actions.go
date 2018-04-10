@@ -6,7 +6,7 @@ var (
 )
 
 type clientAction interface {
-	Type() clientActionType
+	clientAction() clientActionType
 }
 
 type clientActionType struct {
@@ -14,6 +14,6 @@ type clientActionType struct {
 	Data interface{}
 }
 
-func (t clientActionType) Type() clientActionType {
+func (t clientActionType) clientAction() clientActionType {
 	return t
 }

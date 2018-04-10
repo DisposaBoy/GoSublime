@@ -1,7 +1,6 @@
 package mg
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -79,9 +78,11 @@ func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
 
 	rs := agentRes{Cookie: rq.Cookie, State: sto.state}
 	for _, ra := range rq.Actions {
-		st, err := sto.syncRqAct(ag, rq.Props, ra.Name)
-		sto.state = st // normally sto.updateState would do this
-		rs.State = st
+		st, err := sto.syncRqAct(ag, rq.Props, ra)
+		if st != nil {
+			sto.state = st // normally sto.updateState would do this
+			rs.State = st
+		}
 		if err != nil {
 			rs.Error = err.Error()
 		}
@@ -90,13 +91,13 @@ func (sto *Store) syncRq(ag *Agent, rq *agentReq) {
 	ag.send(rs)
 }
 
-func (sto *Store) syncRqAct(ag *Agent, props clientProps, name string) (*State, error) {
-	mx, done := newCtx(sto.ag, sto.state, ag.createAction(name), sto)
-	defer close(done)
-
-	if mx.Action == nil {
-		return mx.State, fmt.Errorf("unknown client action: %s", name)
+func (sto *Store) syncRqAct(ag *Agent, props clientProps, ra agentReqAction) (*State, error) {
+	act, err := ag.createAction(ra, ag.handle)
+	if err != nil {
+		return nil, err
 	}
+	mx, done := newCtx(sto.ag, sto.state, act, sto)
+	defer close(done)
 
 	// TODO: add support for unpacking Action.Data
 
@@ -125,8 +126,7 @@ func (sto *Store) State() *State {
 }
 
 func (sto *Store) prepState(st *State) *State {
-	st = st.Copy()
-	st.EphemeralState = EphemeralState{}
+	st = st.new()
 	if sto.cfg != nil {
 		st.Config = sto.cfg
 	}
@@ -137,7 +137,7 @@ func newStore(ag *Agent, l Listener) *Store {
 	sto := &Store{
 		readyCh:  make(chan struct{}),
 		listener: l,
-		state:    NewState(),
+		state:    newState(),
 		ag:       ag,
 	}
 	sto.cache.m = map[interface{}]interface{}{}

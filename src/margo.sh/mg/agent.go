@@ -65,6 +65,7 @@ type AgentConfig struct {
 
 type agentReqAction struct {
 	Name string
+	Data codec.Raw
 }
 
 type agentReq struct {
@@ -88,31 +89,34 @@ type agentRes struct {
 }
 
 func (rs agentRes) finalize() interface{} {
-	v := struct {
+	out := struct {
 		agentRes
 		State struct {
 			State
 			Config        interface{}
-			ClientActions []clientAction
+			ClientActions []clientActionType
 		}
 	}{}
-	v.agentRes = rs
-	v.State.State = *rs.State
-	v.State.ClientActions = rs.State.clientActions
+	out.agentRes = rs
+	out.State.State = *rs.State
+	inSt := &out.State.State
+	outSt := &out.State
 
-	if v.Error == "" {
-		v.Error = strings.Join([]string(v.State.Errors), "\n")
+	outSt.ClientActions = inSt.clientActions
+
+	if out.Error == "" {
+		out.Error = strings.Join([]string(outSt.Errors), "\n")
 	}
 
-	if v.State.View.changed == 0 {
-		v.State.View = nil
+	if outSt.View.changed == 0 {
+		outSt.View = nil
 	}
 
-	if ec := rs.State.Config; ec != nil {
-		v.State.Config = ec.EditorConfig()
+	if ec := inSt.Config; ec != nil {
+		outSt.Config = ec.EditorConfig()
 	}
 
-	return v
+	return out
 }
 
 type Agent struct {
@@ -161,11 +165,11 @@ func (ag *Agent) communicate() error {
 	return nil
 }
 
-func (ag *Agent) createAction(name string) Action {
-	if f := actionCreators[name]; f != nil {
-		return f()
+func (ag *Agent) createAction(ra agentReqAction, h codec.Handle) (Action, error) {
+	if f := actionCreators[ra.Name]; f != nil {
+		return f(h, ra)
 	}
-	return nil
+	return nil, fmt.Errorf("Unknown action: %s", ra.Name)
 }
 
 func (ag *Agent) listener(st *State) {

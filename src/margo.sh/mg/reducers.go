@@ -13,9 +13,11 @@ var (
 	}{
 		before: []Reducer{
 			&restartSupport{},
+			Builtins,
 		},
 		after: []Reducer{
 			issueSupport{},
+			&cmdSupport{},
 		},
 	}
 )

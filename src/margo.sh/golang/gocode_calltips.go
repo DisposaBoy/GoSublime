@@ -50,7 +50,11 @@ func (gc *GocodeCalltips) process(mx *mg.Ctx, key interface{}, src []byte) {
 	tpos := cn.TokenFile.Pos(srcPos)
 	var call *ast.CallExpr
 	for i := len(cn.Nodes) - 1; i >= 0; i-- {
-		x, ok := cn.Nodes[i].(*ast.CallExpr)
+		nod := cn.Nodes[i]
+		if _, ok := nod.(*ast.BlockStmt); ok {
+			break
+		}
+		x, ok := nod.(*ast.CallExpr)
 		if !ok {
 			continue
 		}

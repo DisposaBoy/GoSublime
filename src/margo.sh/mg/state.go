@@ -197,28 +197,33 @@ type EditorConfig interface {
 	EnabledForLangs(langs ...string) EditorConfig
 }
 
-type EphemeralState struct {
-	Config      EditorConfig
-	Status      StrSet
-	Errors      StrSet
-	Completions []Completion
-	Tooltips    []Tooltip
-	Issues      IssueSet
-}
-
-type State struct {
-	EphemeralState
+type stickyState struct {
 	View   *View
 	Env    EnvMap
 	Editor EditorProps
-
-	clientActions []clientAction
 }
 
-func NewState() *State {
+type State struct {
+	stickyState
+	Config        EditorConfig
+	Status        StrSet
+	Errors        StrSet
+	Completions   []Completion
+	Tooltips      []Tooltip
+	Issues        IssueSet
+	clientActions []clientActionType
+	BuiltinCmds   BultinCmdList
+	UserCmds      []UserCmd
+}
+
+func newState() *State {
 	return &State{
-		View: newView(),
+		stickyState: stickyState{View: newView()},
 	}
+}
+
+func (st *State) new() *State {
+	return &State{stickyState: st.stickyState}
 }
 
 func (st *State) Copy(updaters ...func(*State)) *State {
@@ -292,10 +297,35 @@ func (st *State) AddIssues(l ...Issue) *State {
 	})
 }
 
-func (st *State) addClientActions(l ...clientAction) *State {
+func (st *State) AddBuiltinCmds(l ...BultinCmd) *State {
+	if len(l) == 0 {
+		return st
+	}
 	return st.Copy(func(st *State) {
-		el := st.clientActions
-		st.clientActions = append(el[:len(el):len(el)], l...)
+		st.BuiltinCmds = append(st.BuiltinCmds[:len(st.BuiltinCmds):len(st.BuiltinCmds)], l...)
+	})
+}
+
+func (st *State) AddUserCmds(l ...UserCmd) *State {
+	if len(l) == 0 {
+		return st
+	}
+	return st.Copy(func(st *State) {
+		st.UserCmds = append(st.UserCmds[:len(st.UserCmds):len(st.UserCmds)], l...)
+	})
+}
+
+func (st *State) addClientActions(l ...clientAction) *State {
+	if len(l) == 0 {
+		return st
+	}
+	return st.Copy(func(st *State) {
+		el := make([]clientActionType, 0, len(st.clientActions)+len(l))
+		el = append(el, st.clientActions...)
+		for _, ca := range l {
+			el = append(el, ca.clientAction())
+		}
+		st.clientActions = el
 	})
 }
 

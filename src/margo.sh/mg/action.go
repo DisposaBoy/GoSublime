@@ -1,32 +1,68 @@
 package mg
 
+import (
+	"github.com/ugorji/go/codec"
+)
+
 var (
 	actionCreators = map[string]actionCreator{
-		"QueryCompletions": func() Action { return QueryCompletions{} },
-		"QueryIssues":      func() Action { return QueryIssues{} },
-		"QueryTooltips":    func() Action { return QueryTooltips{} },
-		"Restart":          func() Action { return Restart{} },
-		"Shutdown":         func() Action { return Shutdown{} },
-		"ViewActivated":    func() Action { return ViewActivated{} },
-		"ViewFmt":          func() Action { return ViewFmt{} },
-		"ViewLoaded":       func() Action { return ViewLoaded{} },
-		"ViewModified":     func() Action { return ViewModified{} },
-		"ViewPosChanged":   func() Action { return ViewPosChanged{} },
-		"ViewPreSave":      func() Action { return ViewPreSave{} },
-		"ViewSaved":        func() Action { return ViewSaved{} },
+		"QueryCompletions": func(codec.Handle, agentReqAction) (Action, error) {
+			return QueryCompletions{}, nil
+		},
+		"QueryIssues": func(codec.Handle, agentReqAction) (Action, error) {
+			return QueryIssues{}, nil
+		},
+		"QueryTooltips": func(codec.Handle, agentReqAction) (Action, error) {
+			return QueryTooltips{}, nil
+		},
+		"Restart": func(codec.Handle, agentReqAction) (Action, error) {
+			return Restart{}, nil
+		},
+		"Shutdown": func(codec.Handle, agentReqAction) (Action, error) {
+			return Shutdown{}, nil
+		},
+		"ViewActivated": func(codec.Handle, agentReqAction) (Action, error) {
+			return ViewActivated{}, nil
+		},
+		"ViewFmt": func(codec.Handle, agentReqAction) (Action, error) {
+			return ViewFmt{}, nil
+		},
+		"ViewLoaded": func(codec.Handle, agentReqAction) (Action, error) {
+			return ViewLoaded{}, nil
+		},
+		"ViewModified": func(codec.Handle, agentReqAction) (Action, error) {
+			return ViewModified{}, nil
+		},
+		"ViewPosChanged": func(codec.Handle, agentReqAction) (Action, error) {
+			return ViewPosChanged{}, nil
+		},
+		"ViewPreSave": func(codec.Handle, agentReqAction) (Action, error) {
+			return ViewPreSave{}, nil
+		},
+		"ViewSaved": func(codec.Handle, agentReqAction) (Action, error) {
+			return ViewSaved{}, nil
+		},
+		"RunCmd": func(h codec.Handle, a agentReqAction) (Action, error) {
+			act := RunCmd{}
+			err := codec.NewDecoderBytes(a.Data, h).Decode(&act)
+			return act, err
+		},
+		"QueryUserCmds": func(h codec.Handle, a agentReqAction) (Action, error) {
+			return QueryUserCmds{}, nil
+		},
 	}
 )
 
-type actionCreator func() Action
+type actionCreator func(codec.Handle, agentReqAction) (Action, error)
 
 type ActionType struct{}
 
-func (act ActionType) Type() ActionType {
+func (act ActionType) Action() ActionType {
 	return act
 }
 
 type Action interface {
-	Type() ActionType
+	Action() ActionType
 }
 
 var Render Action = nil

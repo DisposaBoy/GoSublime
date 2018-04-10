@@ -2,9 +2,9 @@ package cmdrunner
 
 import (
 	"fmt"
+	"margo.sh/mgutil"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 )
 
@@ -42,23 +42,9 @@ func (c Cmd) Run() error {
 
 	a := append([]string{c.Name}, c.Args...)
 	for i, s := range a {
-		a[i] = quoteFlag(s)
+		a[i] = mgutil.QuoteCmdArg(s)
 	}
 	fmt.Fprintf(os.Stderr, "``` %s ```\n", strings.Join(a, " "))
 
 	return cmd.Run()
-}
-
-func quoteFlag(s string) string {
-	eqPos := strings.Index(s, "=")
-	switch {
-	case s == "":
-		return `""`
-	case !strings.Contains(s, " "):
-		return s
-	case strings.HasPrefix(s, "-") && eqPos > 0:
-		return s[:eqPos+1] + strconv.Quote(s[eqPos+1:])
-	default:
-		return strconv.Quote(s)
-	}
 }
