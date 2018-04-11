@@ -1,4 +1,4 @@
-// +build posix
+// +build !windows
 
 package mg
 

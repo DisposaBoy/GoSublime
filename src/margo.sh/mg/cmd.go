@@ -3,6 +3,8 @@ package mg
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"margo.sh/mgutil"
 	"os"
 	"os/exec"
 	"sync"
@@ -15,6 +17,8 @@ var (
 )
 
 type CmdOutputWriter struct {
+	io.Writer
+	io.Closer
 	Fd string
 
 	mu     sync.Mutex
@@ -30,7 +34,11 @@ func (w *CmdOutputWriter) Write(p []byte) (int, error) {
 		return 0, os.ErrClosed
 	}
 
-	return w.buf.Write(p)
+	n, err := w.buf.Write(p)
+	if w.Writer != nil {
+		return w.Writer.Write(p)
+	}
+	return n, err
 }
 
 func (w *CmdOutputWriter) Close() error {
@@ -40,7 +48,11 @@ func (w *CmdOutputWriter) Close() error {
 	if w.closed {
 		return os.ErrClosed
 	}
+
 	w.closed = true
+	if w.Closer != nil {
+		return w.Closer.Close()
+	}
 	return nil
 }
 
@@ -66,7 +78,7 @@ type cmdSupport struct{}
 func (cs *cmdSupport) Reduce(mx *Ctx) *State {
 	switch act := mx.Action.(type) {
 	case RunCmd:
-		return cs.runCmd(&BultinCmdCtx{Ctx: mx, RunCmd: act})
+		return cs.runCmd(NewBultinCmdCtx(mx, act))
 	case CmdOutput:
 		return cs.cmdOutput(mx, act)
 	}
@@ -96,45 +108,15 @@ type RunCmd struct {
 	Args  []string
 }
 
-type proc struct {
-	rc   RunCmd
-	out  *CmdOutputWriter
+type Proc struct {
+	bx   *BultinCmdCtx
 	mu   sync.RWMutex
 	done chan struct{}
-	mx   *Ctx
 	cmd  *exec.Cmd
 	task *TaskTicket
 }
 
-func starCmd(mx *Ctx, rc RunCmd) (*proc, error) {
-	cmd := exec.Command(rc.Name, rc.Args...)
-
-	if rc.Input {
-		r, err := mx.View.Open()
-		if err != nil {
-			return nil, err
-		}
-		cmd.Stdin = r
-	}
-
-	out := &CmdOutputWriter{Fd: rc.Fd}
-	cmd.Dir = mx.View.Dir()
-	cmd.Env = mx.Env.Environ()
-	cmd.Stdout = out
-	cmd.Stderr = out
-	cmd.SysProcAttr = defaultSysProcAttr
-
-	p := &proc{
-		rc:   rc,
-		done: make(chan struct{}),
-		mx:   mx,
-		cmd:  cmd,
-		out:  out,
-	}
-	return p, p.start()
-}
-
-func (p *proc) Cancel() {
+func (p *Proc) Cancel() {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -147,29 +129,29 @@ func (p *proc) Cancel() {
 	}
 }
 
-func (p *proc) start() error {
+func (p *Proc) start() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.task = p.mx.Begin(Task{
-		Title:  fmt.Sprintf("RunCmd{Name: %s, Args: %s}", p.rc.Name, p.rc.Args),
+	p.task = p.bx.Begin(Task{
+		Title:  fmt.Sprintf("RunCmd `%s`", mgutil.QuoteCmd(p.bx.Name, p.bx.Args...)),
 		Cancel: p.Cancel,
 	})
 	go p.dispatchOutputLoop()
 	return p.cmd.Start()
 }
 
-func (p *proc) dispatchOutput() {
+func (p *Proc) dispatchOutput() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	out := p.out.Output()
+	out := p.bx.Output.Output()
 	if len(out.Output) != 0 || out.Close {
-		p.mx.Store.Dispatch(out)
+		p.bx.Store.Dispatch(out)
 	}
 }
 
-func (p *proc) dispatchOutputLoop() {
+func (p *Proc) dispatchOutputLoop() {
 	for {
 		select {
 		case <-p.done:
@@ -180,14 +162,14 @@ func (p *proc) dispatchOutputLoop() {
 	}
 }
 
-func (p *proc) Wait() error {
+func (p *Proc) Wait() error {
 	defer p.dispatchOutput()
 	defer func() {
 		p.mu.Lock()
 		defer p.mu.Unlock()
 
 		close(p.done)
-		p.out.Close()
+		p.bx.Output.Close()
 		p.task.Done()
 	}()
 

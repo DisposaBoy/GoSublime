@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -113,9 +114,53 @@ func (is IssueSet) AllInView(v *View) IssueSet {
 	return issues
 }
 
-type issueSupport struct{}
+type StoreIssues struct {
+	ActionType
 
-func (_ issueSupport) Reduce(mx *Ctx) *State {
+	Key    IssueKey
+	Issues IssueSet
+}
+
+type IssueKey struct {
+	Key  interface{}
+	Name string
+	Path string
+	Dir  string
+}
+
+type issueKeySupport struct {
+	issues map[IssueKey]IssueSet
+}
+
+func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
+	switch act := mx.Action.(type) {
+	case Started:
+		iks.issues = map[IssueKey]IssueSet{}
+	case StoreIssues:
+		if len(act.Issues) == 0 {
+			delete(iks.issues, act.Key)
+		} else {
+			iks.issues[act.Key] = act.Issues
+		}
+	}
+
+	issues := IssueSet{}
+	clean := filepath.Clean
+	name := clean(mx.View.Name)
+	path := clean(mx.View.Path)
+	dir := clean(mx.View.Dir())
+	for k, v := range iks.issues {
+		if k.Name == name || clean(k.Path) == path || clean(k.Dir) == dir {
+			issues = issues.Add(v...)
+		}
+	}
+
+	return mx.State.AddIssues(issues...)
+}
+
+type issueStatusSupport struct{}
+
+func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 	if len(mx.Issues) == 0 {
 		return mx.State
 	}
@@ -141,7 +186,8 @@ func (_ issueSupport) Reduce(mx *Ctx) *State {
 }
 
 type IssueWriter struct {
-	Writer   io.Writer
+	io.Writer
+	io.Closer
 	Patterns []*regexp.Regexp
 	Base     Issue
 	Dir      string
@@ -151,11 +197,16 @@ type IssueWriter struct {
 	issues IssueSet
 	isu    *Issue
 	pfx    []byte
+	closed bool
 }
 
 func (w *IssueWriter) Write(p []byte) (n int, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
+	if w.closed {
+		return 0, os.ErrClosed
+	}
 
 	w.buf = append(w.buf, p...)
 	w.scan(false)
@@ -164,6 +215,23 @@ func (w *IssueWriter) Write(p []byte) (n int, err error) {
 		return w.Writer.Write(p)
 	}
 	return len(p), nil
+}
+
+func (w *IssueWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.closed {
+		return os.ErrClosed
+	}
+
+	w.closed = true
+	w.flush()
+
+	if w.Closer != nil {
+		return w.Closer.Close()
+	}
+	return nil
 }
 
 func (w *IssueWriter) Flush() error {
@@ -265,7 +333,10 @@ func (w *IssueWriter) matchOne(p *regexp.Regexp, s []byte) *Issue {
 		case "end":
 			isu.End = num(v)
 		case "label":
-			isu.Label = str(v)
+			lbl := str(v)
+			if lbl != "" {
+				isu.Label = lbl
+			}
 		case "error", "warning":
 			isu.Tag = IssueTag(k)
 			isu.Message = str(v)

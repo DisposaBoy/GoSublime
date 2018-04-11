@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// QuoteFlag uses strconv.Quote to quote the command arg s.
-// NOTE: It's intended for use in command display and should not be used for shell security.
+// QuoteCmdArg uses strconv.Quote to quote the command arg s.
+// NOTE: the result is for display only, and should not be used for shell security.
 // e.g.
 // `a b c` -> `"a b c"`
 // `abc` -> `abc`
@@ -25,4 +25,14 @@ func QuoteCmdArg(s string) string {
 	default:
 		return strconv.Quote(s)
 	}
+}
+
+// QuoteCmd joins `name [args]` with name and each arg quoted with QuoteCmdArg
+// NOTE: the result is for display only, and should not be used for shell security.
+func QuoteCmd(name string, args ...string) string {
+	a := append([]string{name}, args...)
+	for i, s := range a {
+		a[i] = QuoteCmdArg(s)
+	}
+	return strings.Join(a, " ")
 }

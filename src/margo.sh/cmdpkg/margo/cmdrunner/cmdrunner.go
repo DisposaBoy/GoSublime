@@ -40,11 +40,7 @@ func (c Cmd) Run() error {
 		}
 	}
 
-	a := append([]string{c.Name}, c.Args...)
-	for i, s := range a {
-		a[i] = mgutil.QuoteCmdArg(s)
-	}
-	fmt.Fprintf(os.Stderr, "``` %s ```\n", strings.Join(a, " "))
+	fmt.Fprintf(os.Stderr, "``` %s ```\n", mgutil.QuoteCmd(c.Name, c.Args...))
 
 	return cmd.Run()
 }

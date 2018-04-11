@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"margo.sh/mgutil"
 	"os"
+	"os/exec"
 	"sort"
-	"strings"
 )
 
 var (
@@ -35,27 +35,28 @@ func (bcl BultinCmdList) Lookup(name string) (cmd BultinCmd, found bool) {
 type BuiltinCmds struct{}
 
 func (bc BuiltinCmds) ExecCmd(bx *BultinCmdCtx) *State {
-	rc := bx.RunCmd
-	if rc.Name == ".exec" {
-		if len(rc.Args) == 0 {
-			return bx.Done(nil)
-		}
-		rc.Name = rc.Args[0]
-		rc.Args = rc.Args[1:]
-	}
-
-	p, err := starCmd(bx.Ctx, rc)
-	if err != nil {
-		a := append([]string{rc.Name}, rc.Args...)
-		for i, s := range a {
-			a[i] = mgutil.QuoteCmdArg(s)
-		}
-		return bx.Errorf("cannot exec `%s`: %s", strings.Join(a, " "), err)
-	}
-
-	go p.Wait()
-
+	go bc.execCmd(bx)
 	return bx.State
+}
+
+func (bc BuiltinCmds) execCmd(bx *BultinCmdCtx) {
+	defer bx.Close()
+
+	if bx.Name == ".exec" {
+		if len(bx.Args) == 0 {
+			return
+		}
+		bx = bx.Copy(func(bx *BultinCmdCtx) {
+			bx.Name = bx.Args[0]
+			bx.Args = bx.Args[1:]
+		})
+	}
+
+	err := bx.RunProc()
+	if err == nil {
+		return
+	}
+	fmt.Fprintf(bx.Output, "cannot exec `%s`: %s", mgutil.QuoteCmd(bx.Name, bx.Args...), err)
 }
 
 func (bc BuiltinCmds) TypeCmd(bx *BultinCmdCtx) *State {
@@ -74,7 +75,8 @@ func (bc BuiltinCmds) TypeCmd(bx *BultinCmdCtx) *State {
 		fmt.Fprintf(buf, "%s: builtin: %s, desc: %s\n", name, c.Name, c.Desc)
 	}
 
-	return bx.Done(buf.Bytes())
+	bx.Close(buf.Bytes())
+	return bx.State
 }
 
 func (bc BuiltinCmds) EnvCmd(bx *BultinCmdCtx) *State {
@@ -91,7 +93,8 @@ func (bc BuiltinCmds) EnvCmd(bx *BultinCmdCtx) *State {
 		v := bx.Env.Get(k, os.Getenv(k))
 		fmt.Fprintf(buf, "%s=%s\n", k, v)
 	}
-	return bx.Done(buf.Bytes())
+	bx.Close(buf.Bytes())
+	return bx.State
 }
 
 func (bc BuiltinCmds) Commands() BultinCmdList {
@@ -112,11 +115,68 @@ func (bc BuiltinCmds) Reduce(mx *Ctx) *State {
 type BultinCmdCtx struct {
 	*Ctx
 	RunCmd
+	Output *CmdOutputWriter
 }
 
-func (bx *BultinCmdCtx) Done(output []byte) *State {
-	bx.Store.Dispatch(CmdOutput{Fd: bx.Fd, Output: output, Close: true})
-	return bx.State
+func NewBultinCmdCtx(mx *Ctx, rc RunCmd) *BultinCmdCtx {
+	return &BultinCmdCtx{
+		Ctx:    mx,
+		RunCmd: rc,
+		Output: &CmdOutputWriter{Fd: rc.Fd},
+	}
+}
+
+func (bx *BultinCmdCtx) update(updaters ...func(*BultinCmdCtx)) *BultinCmdCtx {
+	for _, f := range updaters {
+		f(bx)
+	}
+	return bx
+}
+
+func (bx *BultinCmdCtx) Copy(updaters ...func(*BultinCmdCtx)) *BultinCmdCtx {
+	x := *bx
+	return x.update(updaters...)
+}
+
+func (bx *BultinCmdCtx) Close(output ...[]byte) {
+	for _, s := range output {
+		bx.Output.Write(s)
+	}
+	bx.Output.Close()
+	bx.Store.Dispatch(bx.Output.Output())
+}
+
+func (bx *BultinCmdCtx) RunProc() error {
+	p, err := bx.StartProc()
+	if err != nil {
+		return err
+	}
+	return p.Wait()
+}
+
+func (bx *BultinCmdCtx) StartProc() (*Proc, error) {
+	cmd := exec.Command(bx.Name, bx.Args...)
+
+	if bx.Input {
+		r, err := bx.View.Open()
+		if err != nil {
+			return nil, err
+		}
+		cmd.Stdin = r
+	}
+
+	cmd.Dir = bx.View.Dir()
+	cmd.Env = bx.Env.Environ()
+	cmd.Stdout = bx.Output
+	cmd.Stderr = bx.Output
+	cmd.SysProcAttr = defaultSysProcAttr
+
+	p := &Proc{
+		done: make(chan struct{}),
+		bx:   bx,
+		cmd:  cmd,
+	}
+	return p, p.start()
 }
 
 type BultinCmd struct {
