@@ -155,6 +155,10 @@ class MargoSingleton(object):
 		return self.agent.send(actions=actions, cb=cb, view=view)
 
 	def on_query_completions(self, view, prefix, locations):
+		_, lang = _view_scope_lang(view, 0)
+		if not lang:
+			return None
+
 		rs = self.send(view=view, actions=[actions.QueryCompletions]).wait(0.300)
 		if not rs:
 			self.out.println('aborting QueryCompletions. it did not respond in time')
