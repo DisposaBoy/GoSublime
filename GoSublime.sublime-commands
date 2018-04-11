@@ -27,6 +27,10 @@
 		"command": "margo_issues",
 	},
 	{
+		"caption": "GoSublime: User Commands",
+		"command": "margo_user_cmds",
+	},
+	{
 		"caption": "GoSublime: Go to last bookmark",
 		"command": "gs_palette",
 		"args": {"palette": "jump_back"}

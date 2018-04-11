@@ -9,6 +9,7 @@ actions = NS(**{k: {'Name': k} for k in (
 	'QueryCompletions',
 	'QueryTooltips',
 	'QueryIssues',
+	'QueryUserCmds',
 	'ViewActivated',
 	'ViewModified',
 	'ViewPosChanged',
@@ -16,6 +17,7 @@ actions = NS(**{k: {'Name': k} for k in (
 	'ViewPreSave',
 	'ViewSaved',
 	'ViewLoaded',
+	'RunCmd',
 )})
 
 class Config(object):
@@ -38,10 +40,17 @@ class State(object):
 		self.config = Config(v.get('Config') or {})
 		self.status = v.get('Status') or []
 		self.view = ResView(v=v.get('View') or {})
-		self.client_actions = [ClientAction(v=a) for a in (v.get('ClientActions') or [])]
 		self.completions = [Completion(c) for c in (v.get('Completions') or [])]
 		self.tooltips = [Tooltip(t) for t in (v.get('Tooltips') or [])]
 		self.issues = [Issue(l) for l in (v.get('Issues') or [])]
+		self.user_cmds = [UserCmd(c) for c in (v.get('UserCmds') or [])]
+
+		self.client_actions = []
+		for ca in (v.get('ClientActions') or []):
+			if ca.get('Name') == 'output':
+				self.client_actions.append(CmdOutput(v=ca))
+			else:
+				self.client_actions.append(ClientAction(v=ca))
 
 	def __repr__(self):
 		return repr(self.__dict__)
@@ -49,6 +58,21 @@ class State(object):
 class ClientAction(object):
 	def __init__(self, v={}):
 		self.name = v.get('Name') or ''
+		self.data = v.get('Data') or {}
+
+	def __repr__(self):
+		return repr(vars(self))
+
+class CmdOutput(ClientAction):
+	def __init__(self, v={}):
+		super().__init__(v=v)
+		self.fd = self.data.get('Fd') or ''
+		self.output = self.data.get('Output') or ''
+		self.close = self.data.get('Close') or False
+		self.fd = self.data.get('Fd') or ''
+
+	def __repr__(self):
+		return repr(vars(self))
 
 class Completion(object):
 	def __init__(self, v):
@@ -103,6 +127,13 @@ class ResView(object):
 		self.src = v.get('Src') or ''
 		if isinstance(self.src, bytes):
 			self.src = self.src.decode('utf-8')
+
+class UserCmd(object):
+	def __init__(self, v={}):
+		self.title = v.get('Title') or ''
+		self.desc = v.get('Desc') or ''
+		self.name = v.get('Name') or ''
+		self.args = v.get('Args') or []
 
 # in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
 # but keep this number low (realistic source files sizes) at least until we optimize things

@@ -15,10 +15,12 @@ class MargoSingleton(object):
 		self.package_dir = os.path.dirname(os.path.abspath(__file__))
 		self.out = OutputLogger('margo')
 		self.agent_tokens = TokenCounter('agent', format='{}#{:03d}', start=6)
+		self.run_tokens = TokenCounter('9o.run')
 		self.agent = None
 		self.enabled_for_langs = []
 		self.state = State()
 		self.status = []
+		self.output_handler = None
 
 	def render(self, rs=None):
 		if rs:
@@ -34,17 +36,29 @@ class MargoSingleton(object):
 
 		if rs:
 			if rs.agent is self.agent:
-				sublime.set_timeout_async(lambda: self._handle_client_actions(rs.state.client_actions), 0)
+				sublime.set_timeout_async(lambda: self._handle_client_actions(rs), 0)
 
 			if rs.agent and rs.agent is not self.agent:
 				rs.agent.stop()
 
-	def _handle_client_actions(self, client_actions):
-		for a in client_actions:
-			if a.name == 'restart':
-				self.restart()
-			elif a.name == 'shutdown':
-				self.stop()
+	def _handle_act_restart(self, rs, act):
+		self.restart()
+
+	def _handle_act_shutdown(self, rs, act):
+		self.stop()
+
+	def _handle_act_output(self, rs, act):
+		h = self.output_handler
+		if h:
+			h(rs, act)
+
+	def _handle_client_actions(self, rs):
+		for a in rs.state.client_actions:
+			try:
+				f = getattr(self, '_handle_act_' + a.name)
+				f(rs, a)
+			except AttributeError:
+				self.out.println('Unknown client-action: %s: %s' % (a.name, a))
 
 	def render_status(self, *a):
 		self.status = list(a)

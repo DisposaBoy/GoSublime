@@ -41,8 +41,11 @@
 	},
 	{
 		"keys": ["super+.", "super+e"],
-		"command": "gs_palette",
 		"command": "margo_issues",
+	},
+	{
+		"keys": ["super+.", "super+c"],
+		"command": "margo_user_cmds",
 	},
 	{
 		"keys": ["super+.", "super+["],

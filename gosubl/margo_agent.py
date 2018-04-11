@@ -14,12 +14,12 @@ if ipc_codec == 'msgpack':
 	from .vendor import umsgpack
 	ipc_dec = umsgpack.load
 	ipc_enc = umsgpack.dump
-	ipc_ignore_exceptions = (umsgpack.InsufficientDataException, BrokenPipeError)
+	ipc_ignore_exceptions = (umsgpack.InsufficientDataException, BrokenPipeError, ValueError)
 elif ipc_codec == 'cbor':
 	from .vendor.cbor_py import cbor
 	ipc_dec = cbor.load
 	ipc_enc = cbor.dump
-	ipc_ignore_exceptions = (BrokenPipeError)
+	ipc_ignore_exceptions = (BrokenPipeError, ValueError)
 else:
 	raise Exception('impossibru')
 

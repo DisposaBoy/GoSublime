@@ -33,6 +33,41 @@ class MargoRenderSrcCommand(sublime_plugin.TextCommand):
 	def run(self, edit, src):
 		render_src(self.view, edit, src)
 
+class MargoUserCmdsCommand(sublime_plugin.TextCommand):
+	def enabled(self):
+		return mg.enabled(self.view)
+
+	def run(self, edit):
+		mg.send(view=self.view, actions=[actions.QueryUserCmds], cb=self._cb)
+
+	def _cb(self, rs):
+		win = self.view.window() or sublime.active_window()
+		selected = 0
+		flags = sublime.MONOSPACE_FONT
+		items = []
+		cmds = rs.state.user_cmds
+
+		for c in cmds:
+			desc = c.desc or '`%s`' % ' '.join([c.name] + c.args)
+			items.append([c.title, desc])
+
+		def on_done(i):
+			if i < 0 or i >= len(cmds):
+				return
+
+			cmd = cmds[i]
+			win.run_command('gs9o_win_open', {
+				'run': [cmd.name] + cmd.args,
+				'save_hist': False,
+				'focus_view': False,
+				'show_view': True,
+			})
+
+		def on_highlight(i):
+			pass
+
+		win.show_quick_panel(items or ['No User Commands'], on_done, flags, selected, on_highlight)
+
 class MargoIssuesCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **action):
 		if mg.enabled(self.view):

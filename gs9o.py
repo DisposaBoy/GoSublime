@@ -4,6 +4,8 @@ from .gosubl import gsq
 from .gosubl import gsshell
 from .gosubl import mg9
 from .gosubl import sh
+from .gosubl.margo import mg
+from .gosubl.margo_state import actions
 import datetime
 import json
 import os
@@ -65,18 +67,31 @@ def active_wd(win=None):
 	_, v = gs.win_view(win=win)
 	return gs.basedir_or_cwd(v.file_name() if v else '')
 
+_9o_instance_default = '9o'
+
+def _9o_instance(wd):
+	name = gs.setting('9o_instance') or _9o_instance_default
+	if name == 'auto':
+		name = wd or name
+
+	return name.replace('#', '~')
+
+def _rkey(wd):
+	_, rkey = mg.run_tokens.next()
+	return rkey.replace('#', '~')
+
+def _rcmd_wdid_rkey(*, fd):
+	l = fd.split('#', 1)
+	return (l[0], l[1]) if len(l) == 2 else (_wdid(_9o_instance_default), l[0])
+
+def _rcmd_fd(*, wd, rkey):
+	return '%s#%s' % (_wdid(wd), rkey)
+
 def _hkey(wd):
-	name = gs.setting("9o_instance")
-	if name:
-		wd = name
-	return '9o.hist.%s' % wd
+	return '9o.hist.%s' % _9o_instance(wd)
 
 def _wdid(wd):
-	name = gs.setting("9o_instance")
-	if name:
-		return name
-	return '9o://%s' % wd
-
+	return '9o://%s' % _9o_instance(wd)
 
 class EV(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
@@ -232,45 +247,60 @@ class Gs9oInitCommand(sublime_plugin.TextCommand):
 		os.chdir(wd)
 
 class Gs9oOpenCommand(sublime_plugin.TextCommand):
-	def run(self, edit, wd=None, run=[], save_hist=False, focus_view=True):
-		self.view.window().run_command('gs9o_win_open', {
-			'wd': wd,
-			'run': run,
-			'save_hist': save_hist,
-			'focus_view': focus_view,
-		})
+	def run(self, edit, **kw):
+		win = self.view.window() or sublime.active_window()
+		win.run_command('gs9o_win_open', kw)
 
 class Gs9oWinOpenCommand(sublime_plugin.WindowCommand):
-	def run(self, wd=None, run=[], save_hist=False, focus_view=True):
+	def run(
+		self,
+		wd = None,
+		run = [],
+		save_hist = False,
+		focus_view = True,
+		show_view = True,
+		env = {},
+		push_output = [],
+		wdid = '',
+	):
 		win = self.window
 		wid = win.id()
 		if not wd:
 			wd = active_wd(win=win)
 
-		id = _wdid(wd)
+		id = wdid or _wdid(wd)
 		st = stash.setdefault(wid, {})
 		v = st.get(id)
 		if v is None:
 			v = win.get_output_panel(id)
 			st[id] = v
 
-		win.run_command("show_panel", {"panel": ("output.%s" % id)})
+		if show_view:
+			win.run_command("show_panel", {"panel": ("output.%s" % id)})
 
 		if focus_view:
 			win.focus_view(v)
 
-		v.run_command('gs9o_init', {'wd': wd})
+		if not push_output:
+			v.run_command('gs9o_init', {'wd': wd})
+
+		if push_output:
+			v.run_command('gs9o_push_output', push_output)
 
 		if run:
-			v.run_command('gs9o_paste_exec', {'cmd': ' '.join(run), 'save_hist': save_hist})
+			v.run_command('gs9o_paste_exec', {
+				'cmd': ' '.join(shlex.quote(s) for s in run),
+				'save_hist': save_hist,
+				'env': env,
+			})
 
 class Gs9oPasteExecCommand(sublime_plugin.TextCommand):
-	def run(self, edit, cmd, save_hist=False):
+	def run(self, edit, cmd, save_hist=False, env={}):
 		view = self.view
 		view.insert(edit, view.line(view.size()-1).end(), cmd)
 		view.sel().clear()
 		view.sel().add(view.line(view.size()-1).end())
-		view.run_command('gs9o_exec', {'save_hist': save_hist})
+		view.run_command('gs9o_exec', {'save_hist': save_hist, 'env': env})
 
 class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -309,7 +339,7 @@ def act_on_path(view, path):
 	row = 0
 	col = 0
 
-	m = gs.VFN_ID_PAT.match(path)
+	m = gs.VFN_ID_PAT.search(path)
 	if m:
 		path = 'gs.view://%s' % m.group(1)
 		m2 = gs.ROWCOL_PAT.match(m.group(2))
@@ -357,7 +387,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 		pos = gs.sel(self.view).begin()
 		return self.view.score_selector(pos, 'text.9o') > 0
 
-	def run(self, edit, save_hist=False):
+	def run(self, edit, save_hist=False, env={}):
 		view = self.view
 		pos = gs.sel(view).begin()
 		line = view.line(pos)
@@ -402,12 +432,14 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 				view.run_command('gs9o_init')
 				return
 
+			rkey = _rkey(wd)
+			# view.add_regions(rkey, [sublime.Region(line.begin(), view.size())], '')
+			view.add_regions(rkey, [line], '')
 			view.replace(edit, line, (u'[ `%s` %s ]' % (cmd, HOURGLASS)))
-			rkey = '9o.exec.%s' % uuid.uuid4()
-			view.add_regions(rkey, [sublime.Region(line.begin(), view.size())], '')
 			view.run_command('gs9o_init')
 
 			nv = sh.env()
+			nv.update(env)
 			anv = nv.copy()
 			seen = {}
 			am = aliases()
@@ -432,56 +464,65 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 				cmd = string.Template(alias).safe_substitute(anv)
 
 			if nm != 'sh':
+				args = []
+				if ag:
+					args = [_exparg(s, nv) for s in shlex.split(gs.astr(ag))]
+
 				f = builtins().get(nm)
 				if f:
-					args = []
-					if ag:
-						args = [_exparg(s, nv) for s in shlex.split(gs.astr(ag))]
-
 					f(view, edit, args, wd, rkey)
+					return
+				else:
+					_rcmd(view, edit, nm, args, wd, rkey)
 					return
 
 			if nm == 'sh':
 				args = sh.cmd(ag)
+				cmd_sh(view, edit, args, wd, rkey)
 			else:
 				args = sh.cmd(cmd)
-
-			cmd_sh(view, edit, args, wd, rkey)
 		else:
 			view.insert(edit, gs.sel(view).begin(), '\n')
 
 class Gs9oPushOutput(sublime_plugin.TextCommand):
-	def run(self, edit, rkey, output, hourglass_repl=''):
+	def run(self, edit, rkey, output, hourglass_repl='', done=True, append_only=False):
 		view = self.view
-		output = '\t%s' % gs.ustr(output).strip().replace('\r', '').replace('\n', '\n\t')
+		if not append_only:
+			output = '\t%s' % gs.ustr(output).strip().replace('\r', '').replace('\n', '\n\t')
+
 		regions = view.get_regions(rkey)
 		if regions:
-			line = view.line(regions[0].begin())
-			lsrc = view.substr(line).replace(HOURGLASS, (hourglass_repl or '| done'))
-			view.replace(edit, line, lsrc)
-			r = line
+			prompt = view.line(regions[0].begin())
+			if done:
+				lsrc = view.substr(prompt).replace(HOURGLASS, (hourglass_repl or '| done'))
+				view.replace(edit, prompt, lsrc)
+
+			regions = view.get_regions(rkey)
+			r = view.line(regions[-1].end())
 			if output.strip():
-				line = view.line(regions[0].begin())
-				view.insert(edit, line.end(), '\n%s' % output)
-				r = view.get_regions(rkey)[0]
+				n = view.insert(edit, r.end(), '\n%s' % output)
+				view.erase_regions(rkey)
+				view.add_regions(rkey, [sublime.Region(prompt.begin(), r.end() + n)])
 		else:
 			n = view.size()
 			view.insert(edit, n, '\n%s' % output)
 			r = sublime.Region(n, view.size())
 
-		if gs.setting('9o_show_end') is True:
-			view.show(r.end())
-		else:
-			view.show(r.begin())
+		if not append_only and done:
+			if gs.setting('9o_show_end') is True:
+				view.show(r.end())
+			else:
+				view.show(r.begin())
 
 class Gs9oRunManyCommand(sublime_plugin.TextCommand):
-	def run(self, edit, wd=None, commands=[], save_hist=False, focus_view=False):
+	def run(self, edit, wd=None, commands=[], save_hist=False, focus_view=False, show_view=True):
 		for run in commands:
 			self.view.run_command("gs9o_open", {
 				'run': run,
 				'wd': wd,
 				'save_hist': save_hist,
 				'focus_view': focus_view,
+				'show_view': show_view,
 			})
 
 def aliases():
@@ -499,15 +540,14 @@ def builtins():
 
 	return m
 
-def push_output(view, rkey, output, hourglass_repl=''):
-	def f():
-		view.run_command('gs9o_push_output', {
-			'rkey': rkey,
-			'output': output,
-			'hourglass_repl': hourglass_repl,
-		})
-
-	sublime.set_timeout(f, 0)
+def push_output(view, rkey, output, hourglass_repl='', done=True, append_only=False):
+	view.run_command('gs9o_push_output', {
+		'rkey': rkey,
+		'output': output,
+		'hourglass_repl': hourglass_repl,
+		'done': done,
+		'append_only': append_only,
+	})
 
 def _save_all(win, wd):
 	if gs.setting('autosave') is True and win is not None:
@@ -550,14 +590,36 @@ def _9_begin_call(name, view, edit, args, wd, rkey, cid):
 
 	return cid, cb
 
-def cmd_margo_reinstall(view, edit, args, wd, rkey):
-	def cb():
-		gs.del_attr(mg9._inst_name())
-		out = mg9.install('', True, True)
-		gs.notify(DOMAIN, 'MarGo re-installed done')
-		push_output(view, rkey, out)
+def _rcmd_output_handler(rs, act):
+	wdid, rkey = _rcmd_wdid_rkey(fd=act.fd)
+	sublime.active_window().run_command('gs9o_win_open', {
+		'wdid': wdid,
+		'focus_view': False,
+		'show_view': False,
+		'push_output': {
+			'rkey': rkey,
+			'output': act.output,
+			'done': act.close,
+			'append_only': False,
+		},
+	})
 
-	gsq.launch(DOMAIN, cb)
+mg.output_handler = _rcmd_output_handler
+
+def _rcmd(view, edit, nm, args, wd, rkey):
+	def cb(rs):
+		if rs.error:
+			push_output(view, rkey, rs.error)
+
+	act = actions.RunCmd.copy()
+	act['Data'] = {
+		'Fd':  _rcmd_fd(wd=wd, rkey=rkey),
+		'Name': nm,
+		'Args': args,
+	}
+	# `view` is the 9o view, but the command wants the `active/editor view`
+	run_view = None
+	mg.send(view=run_view, cb=cb, actions=[act])
 
 def cmd_echo(view, edit, args, wd, rkey):
 	push_output(view, rkey, ' '.join(args))
@@ -596,7 +658,9 @@ def cmd_cd(view, edit, args, wd, rkey):
 			wd = args[0]
 			wd = string.Template(wd).safe_substitute(sh.env())
 			wd = os.path.expanduser(wd)
+			print('>'+wd)
 			wd = os.path.abspath(wd)
+			print('<'+wd)
 		else:
 			fn = view.window().active_view().file_name()
 			if fn:
@@ -614,24 +678,15 @@ def cmd_reset(view, edit, args, wd, rkey):
 	push_output(view, rkey, '')
 	view.erase(edit, sublime.Region(0, view.size()))
 	view.run_command('gs9o_init')
+	if args:
+		view.run_command('gs9o_paste_exec', {'cmd': ' '.join(args), 'save_hist': False})
 
 def cmd_clear(view, edit, args, wd, rkey):
 	cmd_reset(view, edit, args, wd, rkey)
 
 def cmd_go(view, edit, args, wd, rkey):
 	_save_all(view.window(), wd)
-
-	cid, cb = _9_begin_call('go', view, edit, args, wd, rkey, '9go-%s' % wd)
-	a = {
-		'cid': cid,
-		'env': sh.env(),
-		'cwd': wd,
-		'cmd': {
-			'name': 'go',
-			'args': args,
-		}
-	}
-	sublime.set_timeout(lambda: mg9.acall('sh', a, cb), 0)
+	_rcmd(view, edit, 'go', args, wd, rkey)
 
 def cmd_cancel_replay(view, edit, args, wd, rkey):
 	cid = ''
@@ -682,7 +737,8 @@ def cmd_run(view, edit, args, wd, rkey):
 	cmd_9(view, edit, gs.lst('run', args), wd, rkey)
 
 def cmd_replay(view, edit, args, wd, rkey):
-	cmd_9(view, edit, gs.lst('replay', args), wd, rkey)
+	_save_all(view.window(), wd)
+	_rcmd(view, edit, 'replay', args, wd, rkey)
 
 def cmd_build(view, edit, args, wd, rkey):
 	cmd_9(view, edit, gs.lst('build', args), wd, rkey)

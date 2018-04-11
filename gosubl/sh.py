@@ -48,11 +48,6 @@ class _command(object):
 		else:
 			input = None
 
-		try:
-			setsid = os.setsid
-		except Exception:
-			setsid = None
-
 		out = ''
 		err = ''
 		exc = None
@@ -82,7 +77,7 @@ class _command(object):
 				shell=False,
 				env=nv,
 				cwd=wd,
-				preexec_fn=setsid,
+				start_new_session=True,
 				bufsize=0
 			)
 		except Exception as e:
@@ -321,6 +316,8 @@ def env(m={}):
 		m = m.copy()
 		del m['PATH']
 
+	add_path.append(gs.dist_path('bin'))
+	add_path.append(gs.user_path('bin'))
 	add_path.append(bin_dir())
 
 	e = st_environ.copy()

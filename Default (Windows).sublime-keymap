@@ -47,8 +47,11 @@
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+e"],
-		"command": "gs_palette",
 		"command": "margo_issues",
+	},
+	{
+		"keys": ["ctrl+.", "ctrl+c"],
+		"command": "margo_user_cmds",
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+["],

@@ -50,6 +50,10 @@
 		"command": "margo_issues",
 	},
 	{
+		"keys": ["ctrl+.", "ctrl+c"],
+		"command": "margo_user_cmds",
+	},
+	{
 		"keys": ["ctrl+.", "ctrl+["],
 		"command": "gs_palette",
 		"args": {"palette": "jump_back"},
