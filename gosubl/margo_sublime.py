@@ -118,8 +118,21 @@ def issues_to_items(view, issues):
 			title = '%s:%d' % (isu.relpath(dir) or isu.name, isu.row + 1)
 			selected.append((999999999, -1))
 
-		message = '  %s%s' % (isu.message, ' [' + isu.label + ']' if isu.label else '')
-		items.append([title, message])
+		rows = [title]
+		rows.extend(s.strip() for s in isu.message.split('\n'))
+		rows.append(' '.join(
+			'[%s]' % s for s in filter(bool, (isu.tag, isu.label))
+		))
+
+		# hack: ST sometimes decide to truncate the message because it's longer
+		# than the top row... and we don't want the message up there
+		rows[0] = rows[0].ljust(max(len(s) for s in rows))
+		items.append(rows)
+
+	# hack: if the items don't have the same length, ST throws an exception
+	n = max(len(l) for l in items)
+	for l in items:
+		l += [''] * (n - len(l))
 
 	return (items, index, min(selected)[1])
 
