@@ -20,8 +20,8 @@ import webbrowser
 DOMAIN = "9o"
 AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
 SPLIT_FN_POS_PAT = re.compile(r'(.+?)(?:[:](\d+))?(?:[:](\d+))?$')
-URL_SCHEME_PAT = re.compile(r'^[\w.+-]+://')
-URL_PATH_PAT = re.compile(r'^(?:[\w.+-]+://|(?:www|(?:\w+\.)*(?:golang|pkgdoc|gosublime)\.org))')
+URL_SCHEME_PAT = re.compile(r'[\w.+-]+://')
+URL_PATH_PAT = re.compile(r'(?:[\w.+-]+://|(?:www|(?:\w+\.)*(?:golang|pkgdoc|gosublime)\.org))')
 HIST_EXPAND_PAT = re.compile(r'^(\^+)\s*(\d+)$')
 
 HOURGLASS = u'\u231B'
@@ -60,8 +60,15 @@ DEFAULT_COMMANDS = [
 ]
 DEFAULT_CL = [(s, s+' ') for s in DEFAULT_COMMANDS]
 
-stash = {}
-tid_alias = {}
+try:
+	stash
+except NameError:
+	stash = {}
+
+try:
+	tid_alias
+except NameError:
+	tid_alias = {}
 
 def active_wd(win=None):
 	_, v = gs.win_view(win=win)
@@ -342,17 +349,17 @@ def act_on_path(view, path):
 	m = gs.VFN_ID_PAT.search(path)
 	if m:
 		path = 'gs.view://%s' % m.group(1)
-		m2 = gs.ROWCOL_PAT.match(m.group(2))
+		m2 = gs.ROWCOL_PAT.search(m.group(2))
 		if m2:
 			row = int(m2.group(1))-1 if m2.group(1) else 0
 			col = int(m2.group(2))-1 if m2.group(2) else 0
 	else:
-		if URL_PATH_PAT.match(path):
+		if URL_PATH_PAT.search(path):
 			if path.lower().startswith('gs.packages://'):
 				path = os.path.join(gs.packages_dir(), path[14:])
 			else:
 				try:
-					if not URL_SCHEME_PAT.match(path):
+					if not URL_SCHEME_PAT.search(path):
 						path = 'http://%s' % path
 					gs.notify(DOMAIN, 'open url: %s' % path)
 					webbrowser.open_new_tab(path)
@@ -485,11 +492,11 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			view.insert(edit, gs.sel(view).begin(), '\n')
 
 class Gs9oPushOutput(sublime_plugin.TextCommand):
-	def run(self, edit, rkey, output, hourglass_repl='', done=True, append_only=False):
+	def run(self, edit, rkey, output, hourglass_repl='', done=True):
 		view = self.view
-		if not append_only:
-			output = '\t%s' % gs.ustr(output).strip().replace('\r', '').replace('\n', '\n\t')
-
+		output = '\t%s' % gs.ustr(output).strip().replace('\r', '').replace('\n', '\n\t')
+		xpos, vpos = view.viewport_position()
+		ypos = view.layout_extent()[1] - vpos
 		regions = view.get_regions(rkey)
 		if regions:
 			prompt = view.line(regions[0].begin())
@@ -501,18 +508,22 @@ class Gs9oPushOutput(sublime_plugin.TextCommand):
 			r = view.line(regions[-1].end())
 			if output.strip():
 				n = view.insert(edit, r.end(), '\n%s' % output)
+				r = sublime.Region(prompt.begin(), r.end() + n)
 				view.erase_regions(rkey)
-				view.add_regions(rkey, [sublime.Region(prompt.begin(), r.end() + n)])
+				view.add_regions(rkey, [r])
 		else:
 			n = view.size()
 			view.insert(edit, n, '\n%s' % output)
 			r = sublime.Region(n, view.size())
 
-		if not append_only and done:
+		if done:
 			if gs.setting('9o_show_end') is True:
-				view.show(r.end())
+				view.show(r.end(), True)
 			else:
-				view.show(r.begin())
+				view.show(r.begin(), True)
+		elif gs.sel(view).begin() >= r.begin():
+			ypos = view.layout_extent()[1] - ypos
+			view.set_viewport_position((xpos, ypos), False)
 
 class Gs9oRunManyCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None, commands=[], save_hist=False, focus_view=False, show_view=True):
@@ -540,13 +551,12 @@ def builtins():
 
 	return m
 
-def push_output(view, rkey, output, hourglass_repl='', done=True, append_only=False):
+def push_output(view, rkey, output, hourglass_repl='', done=True):
 	view.run_command('gs9o_push_output', {
 		'rkey': rkey,
 		'output': output,
 		'hourglass_repl': hourglass_repl,
 		'done': done,
-		'append_only': append_only,
 	})
 
 def _save_all(win, wd):
@@ -600,7 +610,6 @@ def _rcmd_output_handler(rs, act):
 			'rkey': rkey,
 			'output': act.output,
 			'done': act.close,
-			'append_only': False,
 		},
 	})
 
@@ -738,7 +747,7 @@ def cmd_run(view, edit, args, wd, rkey):
 
 def cmd_replay(view, edit, args, wd, rkey):
 	_save_all(view.window(), wd)
-	_rcmd(view, edit, 'replay', args, wd, rkey)
+	_rcmd(view, edit, 'go.replay', args, wd, rkey)
 
 def cmd_build(view, edit, args, wd, rkey):
 	cmd_9(view, edit, gs.lst('build', args), wd, rkey)
