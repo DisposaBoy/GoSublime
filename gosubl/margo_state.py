@@ -98,10 +98,36 @@ class Tooltip(object):
 	def __repr__(self):
 		return repr(self.__dict__)
 
-class Issue(object):
+class PathName(object):
+	def __init__(self, *, path, name):
+		self.path = path or ''
+		self.name = name or ''
+
+	def match(self, p):
+		if self.path and self.path == p.path:
+			return True
+
+		if self.name and self.name == p.name:
+			return True
+
+		return False
+
+	def __repr__(self):
+		return repr(vars(self))
+
+class ViewPathName(PathName):
+	def __init__(self, view):
+		super().__init__(
+			path = view_path(view),
+			name = view_name(view),
+		)
+
+class Issue(PathName):
 	def __init__(self, v):
-		self.path = v.get('Path') or ''
-		self.name = v.get('Name') or ''
+		super().__init__(
+			path = v.get('Path') or '',
+			name = v.get('Name') or '',
+		)
 		self.hash = v.get('Hash') or ''
 		self.row = v.get('Row') or 0
 		self.col = v.get('Col') or 0
@@ -208,13 +234,12 @@ _sanitize_view_name_pat = re.compile(r'[^-~,.@\w]')
 
 def view_name(view, ext='', lang=''):
 	if view is None:
-		return ''
-
-	if not ext:
-		ext = _view_ext(view, lang=lang)
+		return '_._'
 
 	nm = basename(view.file_name() or view.name() or '_')
-	nm, _ = splitext(nm)
+	nm, nm_ext = splitext(nm)
+	if not ext:
+		ext = _view_ext(view, lang=lang) or nm_ext or '._'
 	nm = 'view@%s,%s%s' % (_view_id(view), nm, ext)
 	nm = _sanitize_view_name_pat.sub('', nm)
 	return nm

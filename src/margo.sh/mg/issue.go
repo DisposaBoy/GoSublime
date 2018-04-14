@@ -48,10 +48,13 @@ func (isu Issue) SameFile(p Issue) bool {
 }
 
 func (isu Issue) InView(v *View) bool {
-	if isu.Path != "" {
-		return v.Path == isu.Path
+	if isu.Path != "" && isu.Path == v.Path {
+		return true
 	}
-	return isu.Name == v.Name
+	if isu.Name != "" && isu.Name == v.Name {
+		return true
+	}
+	return false
 }
 
 func (isu Issue) Valid() bool {
@@ -145,13 +148,25 @@ func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
 	}
 
 	issues := IssueSet{}
-	clean := filepath.Clean
-	name := clean(mx.View.Name)
-	path := clean(mx.View.Path)
-	dir := clean(mx.View.Dir())
+	norm := filepath.Clean
+	name := norm(mx.View.Name)
+	path := norm(mx.View.Path)
+	dir := norm(mx.View.Dir())
+	match := func(k IssueKey) bool {
+		if path != "" && path == k.Path {
+			return true
+		}
+		if name != "" && name == k.Name {
+			return true
+		}
+		if dir != "" && dir == k.Dir {
+			return true
+		}
+		return false
+	}
 	for k, v := range iks.issues {
-		if k.Name == name || clean(k.Path) == path || clean(k.Dir) == dir {
-			issues = issues.Add(v...)
+		if match(k) {
+			issues = append(issues, v...)
 		}
 	}
 

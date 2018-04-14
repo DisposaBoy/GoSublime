@@ -2,7 +2,7 @@ from . import _dbg
 from . import gs
 from .margo import mg
 from .margo_render import render_src
-from .margo_state import actions, view_path, view_name
+from .margo_state import actions, ViewPathName
 import os
 import sublime
 import sublime_plugin
@@ -84,13 +84,9 @@ class MargoIssuesCommand(sublime_plugin.TextCommand):
 		show_issues(self.view, rs.state.issues)
 
 def issues_to_items(view, issues):
-	path = view_path(view)
-	dir = os.path.dirname(path)
-	name = view_name(view)
+	vp = ViewPathName(view)
+	dir = os.path.dirname(vp.path)
 	index = []
-
-	def in_view(isu):
-		return isu.path == path or isu.name == name or (not isu.path and not isu.name)
 
 	for isu in issues:
 		if isu.message:
@@ -100,7 +96,7 @@ def issues_to_items(view, issues):
 		return ([], [], -1)
 
 	def sort_key(isu):
-		if in_view(isu):
+		if vp.match(isu):
 			return (-1, '', isu.row)
 
 		return (1, isu.relpath(dir), isu.row)
@@ -111,7 +107,7 @@ def issues_to_items(view, issues):
 	items = []
 	selected = []
 	for idx, isu in enumerate(index):
-		if in_view(isu):
+		if vp.match(isu):
 			title = 'Line %d' % (isu.row + 1)
 			selected.append((abs(isu.row - row), idx))
 		else:
@@ -142,8 +138,12 @@ def show_issues(view, issues):
 	items, index, selected = issues_to_items(view, issues)
 
 	def on_done(i):
-		if i < 0 or i >= len(items):
-			fn = view_path(view) or view_name(view)
+		if not index or i >= len(index):
+			return
+
+		if i < 0:
+			vp = ViewPathName(view)
+			fn = vp.path or vp.name
 			gs.focus(fn, row=orig_row, col=orig_col, win=view.window())
 			return
 
