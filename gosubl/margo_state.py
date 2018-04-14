@@ -1,6 +1,7 @@
 from . import _dbg
 from . import gs, sh
 from .margo_common import NS
+from os.path import basename, splitext
 import os
 import re
 import sublime
@@ -203,6 +204,8 @@ def _view_props(view):
 
 	return props
 
+_sanitize_view_name_pat = re.compile(r'[^-~,.@\w]')
+
 def view_name(view, ext='', lang=''):
 	if view is None:
 		return ''
@@ -210,7 +213,11 @@ def view_name(view, ext='', lang=''):
 	if not ext:
 		ext = _view_ext(view, lang=lang)
 
-	return 'view#' + _view_id(view) + ext
+	nm = basename(view.file_name() or view.name() or '_')
+	nm, _ = splitext(nm)
+	nm = 'view@%s,%s%s' % (_view_id(view), nm, ext)
+	nm = _sanitize_view_name_pat.sub('', nm)
+	return nm
 
 def view_path(view):
 	if view is None:

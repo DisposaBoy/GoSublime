@@ -154,8 +154,8 @@ IGNORED_SCOPES = frozenset([
 	'constant.other.rune.go',
 ])
 
-VFN_ID_PAT = re.compile(r'^(?:gs\.)?view(?:#|://)(\d+)(.*?)$', re.IGNORECASE)
-ROWCOL_PAT = re.compile(r'^[:]*(\d+)(?:[:](\d+))?[:]*$')
+VFN_ID_PAT = re.compile(r'(?:gs\.)?view(?:#|@|://)(\d+)(.*?)$', re.IGNORECASE)
+ROWCOL_PAT = re.compile(r'[:]+(\d+)(?:[:](\d+))?[:]*$')
 
 USER_DIR = os.path.expanduser('~')
 USER_DIR_PAT = re.compile(r'^%s/' % (re.escape(USER_DIR.replace('\\', '/').rstrip('/'))))
@@ -504,11 +504,12 @@ def active_view(win=None, view=None):
 	return win.active_view()
 
 def win_view(vfn=None, win=None):
-	if not win:
-		win = sublime.active_window()
+	wins = [win]
+	if win is None:
+		wins = sublime.windows()
 
 	view = None
-	if win:
+	for win in wins:
 		m = VFN_ID_PAT.match(vfn or '')
 		if m:
 			try:
@@ -519,10 +520,13 @@ def win_view(vfn=None, win=None):
 						break
 			except Exception:
 				gs.error_traceback(NAME)
-		elif not vfn or vfn == "<stdin>":
+
+	if view is None:
+		if not vfn or vfn == "<stdin>":
 			view = win.active_view()
 		else:
 			view = win.open_file(vfn)
+
 	return (win, view)
 
 def do_focus(fn, row, col, win, focus_pat, cb):
