@@ -2,7 +2,11 @@ package golang
 
 import (
 	"fmt"
+	"go/build"
+	"io/ioutil"
 	"margo.sh/mg"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -10,68 +14,213 @@ type GoCmd struct{}
 
 func (gc *GoCmd) Reduce(mx *mg.Ctx) *mg.State {
 	switch act := mx.Action.(type) {
+	case mg.QueryUserCmds:
+		return gc.userCmds(mx)
 	case mg.RunCmd:
 		return gc.runCmd(mx, act)
 	}
 	return mx.State
 }
 
-func (gc *GoCmd) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
-	return mx.State.AddBuiltinCmds(
-		mg.BultinCmd{Run: gc.gotoolCmd, Name: "go", Desc: "" +
-			"Wrapper around the go command." +
-			" It adds `go .play` and `go .replay` as well as add linter support." +
-			"",
+func (gc *GoCmd) userCmds(mx *mg.Ctx) *mg.State {
+	return mx.AddUserCmds(
+		mg.UserCmd{
+			Name:  "go.play",
+			Title: "Go Play",
+		},
+		mg.UserCmd{
+			Name:  "go.replay",
+			Title: "Go RePlay (single instance)",
 		},
 	)
 }
 
-func (gc *GoCmd) subCmd(args []string) string {
-	for _, s := range args {
-		if s != "" && !strings.HasPrefix(s, "-") {
-			return s
-		}
-	}
-	return ""
+func (gc *GoCmd) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
+	return mx.State.AddBuiltinCmds(
+		mg.BultinCmd{
+			Run:  gc.goBuiltin,
+			Name: "go",
+			Desc: "Wrapper around the go command, adding linter support",
+		},
+		mg.BultinCmd{
+			Run:  gc.playBuiltin,
+			Name: "go.play",
+			Desc: "Automatically build and run go commands or run go test",
+		},
+		mg.BultinCmd{
+			Run:  gc.replayBuiltin,
+			Name: "go.replay",
+			Desc: "Wrapper around .play limited to a single instance",
+		},
+	)
 }
 
-func (gc *GoCmd) gotoolCmd(bx *mg.BultinCmdCtx) *mg.State {
-	go gc.gotool(bx)
+func (gc *GoCmd) goBuiltin(bx *mg.BultinCmdCtx) *mg.State {
+	go gc.goTool(bx)
 	return bx.State
 }
 
-func (gc *GoCmd) gotool(bx *mg.BultinCmdCtx) {
-	defer bx.Close()
+func (gc *GoCmd) playBuiltin(bx *mg.BultinCmdCtx) *mg.State {
+	go gc.playTool(bx, "")
+	return bx.State
+}
 
-	subCmd := gc.subCmd(bx.Args)
-	dir := bx.View.Dir()
-	// TODO: detect pkgDir passed os args
-	pkgDir := dir
-	type Key struct{ subCmd, pkgDir string }
-	key := Key{subCmd, pkgDir}
+func (gc *GoCmd) replayBuiltin(bx *mg.BultinCmdCtx) *mg.State {
+	go gc.playTool(bx, "go.replay")
+	return bx.State
+}
 
-	iw := &mg.IssueWriter{
-		Patterns: CommonPatterns,
-		Base:     mg.Issue{Label: strings.TrimSpace("go " + subCmd)},
-		Dir:      dir,
+func (gc *GoCmd) goTool(bx *mg.BultinCmdCtx) {
+	gx := newGoCmdCtx(bx, "go.builtin", "", "", "")
+	defer gx.Output.Close()
+	gx.run(gx.View)
+}
+
+func (gc *GoCmd) playTool(bx *mg.BultinCmdCtx, cancelID string) {
+	origView := bx.View
+	bx, tDir, tFn, err := gc.playTempDir(bx)
+	gx := newGoCmdCtx(bx, "go.play", cancelID, tDir, tFn)
+	defer gx.Output.Close()
+
+	if err != nil {
+		fmt.Fprintf(gx.Output, "Error: %s\n", err)
+	}
+	if tDir == "" {
+		return
+	}
+	defer os.RemoveAll(tDir)
+
+	bld := BuildContext(gx.Ctx)
+	pkg, err := bld.ImportDir(gx.pkgDir, 0)
+	switch {
+	case err != nil:
+		fmt.Fprintln(gx.Output, "Error: cannot import package:", err)
+	case !pkg.IsCommand() || strings.HasSuffix(bx.View.Filename(), "_test.go"):
+		gc.playToolTest(gx, bld, origView)
+	default:
+		gc.playToolRun(gx, bld, origView)
+	}
+}
+
+func (gc *GoCmd) playTempDir(bx *mg.BultinCmdCtx) (newBx *mg.BultinCmdCtx, tDir string, tFn string, err error) {
+	tDir, err = mg.MkTempDir("go.play")
+	if err != nil {
+		return bx, "", "", fmt.Errorf("cannot MkTempDir: %s", err)
+	}
+
+	if !bx.LangIs("go") {
+		return bx, tDir, "", nil
+	}
+
+	v := bx.View
+	if v.Path != "" {
+		return bx, tDir, tFn, nil
+	}
+
+	tFn = filepath.Join(tDir, v.Name)
+	src, err := v.ReadAll()
+	if err == nil {
+		err = ioutil.WriteFile(tFn, src, 0600)
+	}
+	if err != nil {
+		return bx, tDir, "", fmt.Errorf("cannot create temp file: %s", err)
 	}
 
 	bx = bx.Copy(func(bx *mg.BultinCmdCtx) {
-		bx.Output = &mg.CmdOutputWriter{
-			Fd:     bx.Output.Fd,
-			Writer: iw,
-		}
+		bx.Ctx = bx.Ctx.Copy(func(mx *mg.Ctx) {
+			mx.State = mx.State.Copy(func(st *mg.State) {
+				st.View = st.View.Copy(func(v *mg.View) {
+					v.Path = tFn
+				})
+			})
+		})
 	})
 
-	err := bx.RunProc()
-	if err != nil {
-		fmt.Fprintln(bx.Output, err)
+	return bx, tDir, tFn, nil
+}
+
+func (gc *GoCmd) playToolTest(gx *goCmdCtx, bld *build.Context, origView *mg.View) {
+	gx.Args = append([]string{"test"}, gx.Args...)
+	gx.run(origView)
+}
+
+func (gc *GoCmd) playToolRun(gx *goCmdCtx, bld *build.Context, origView *mg.View) {
+	args := gx.Args
+	exe := filepath.Join(gx.tDir, "margo.play~~"+filepath.Base(gx.tFn)+".exe")
+	gx.Name = "go"
+	gx.Args = []string{"build", "-o", exe}
+	gx.View = gx.View.Copy()
+	gx.View.Wd = gx.View.Dir()
+	if err := gx.run(origView); err != nil {
 		return
 	}
-	iw.Flush()
 
-	bx.Store.Dispatch(mg.StoreIssues{
-		Key:    mg.IssueKey{Key: key, Dir: pkgDir},
-		Issues: iw.Issues(),
-	})
+	gx.View = origView
+	gx.Name = exe
+	gx.Args = args
+	gx.RunProc()
+}
+
+type goCmdCtx struct {
+	*mg.BultinCmdCtx
+	pkgDir string
+	key    interface{}
+	iw     *mg.IssueWriter
+	tDir   string
+	tFn    string
+}
+
+func newGoCmdCtx(bx *mg.BultinCmdCtx, label, cancelID string, tDir, tFn string) *goCmdCtx {
+	gx := &goCmdCtx{
+		BultinCmdCtx: bx.Copy(),
+		pkgDir:       bx.View.Dir(),
+		tDir:         tDir,
+		tFn:          tFn,
+	}
+
+	type Key struct{ label string }
+	gx.key = Key{label}
+
+	gx.iw = &mg.IssueWriter{
+		Base:     mg.Issue{Label: label},
+		Patterns: CommonPatterns,
+		Dir:      gx.View.Wd,
+	}
+	if tDir != "" {
+		gx.iw.Dir = tDir
+	}
+
+	gx.Name = "go"
+	gx.CancelID = cancelID
+	gx.Output = gx.Output.Copy()
+	gx.Output.Writer = gx.iw
+
+	return gx
+}
+
+func (gx *goCmdCtx) run(origView *mg.View) error {
+	p, err := gx.StartProc()
+	if err == nil {
+		err = p.Wait()
+	}
+	gx.iw.Flush()
+
+	issues := gx.iw.Issues()
+	for i, isu := range issues {
+		if isu.Path == gx.tFn {
+			isu.Name = origView.Name
+			isu.Path = origView.Path
+		}
+		issues[i] = isu
+	}
+
+	ik := mg.IssueKey{Key: gx.key}
+	if origView.Path == "" {
+		ik.Name = origView.Name
+	} else {
+		ik.Dir = origView.Dir()
+	}
+
+	gx.Store.Dispatch(mg.StoreIssues{Key: ik, Issues: issues})
+	return err
 }

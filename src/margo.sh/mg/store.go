@@ -1,6 +1,9 @@
 package mg
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -31,6 +34,8 @@ func (sr storeReducers) Copy(updaters ...func(*storeReducers)) storeReducers {
 }
 
 type Store struct {
+	KVMap
+
 	mu        sync.Mutex
 	readyCh   chan struct{}
 	state     *State
@@ -47,7 +52,6 @@ type Store struct {
 		sync.RWMutex
 		vName string
 		vHash string
-		m     map[interface{}]interface{}
 	}
 }
 
@@ -99,12 +103,42 @@ func (sto *Store) syncRqAct(ag *Agent, props clientProps, ra agentReqAction) (*S
 	mx, done := newCtx(sto.ag, sto.state, act, sto)
 	defer close(done)
 
-	// TODO: add support for unpacking Action.Data
+	mx = mx.Copy(func(mx *Ctx) {
+		st := sto.prepState(mx.State)
 
-	mx = props.updateCtx(mx)
-	sto.initCache(mx.View)
-	mx.State = sto.prepState(mx.State)
+		if ep := props.Editor.EditorProps; ep.Name != "" {
+			st.Editor = ep
+		}
+
+		if len(props.Env) != 0 {
+			st.Env = props.Env
+		}
+		st.Env = sto.autoSwitchInternalGOPATH(st.View, st.Env)
+
+		if props.View != nil && props.View.Name != "" {
+			st.View = props.View.Copy(func(v *View) {
+				sto.initCache(v)
+				v.initSrcPos()
+			})
+		}
+
+		mx.State = st
+	})
+
 	return sto.reducers.Reduce(mx), nil
+}
+
+// autoSwitchInternalGOPATH automatically changes env[GOPATH] to the internal GOPATH
+// if view.Filename is a child of one of the internal GOPATH directories
+func (sto *Store) autoSwitchInternalGOPATH(v *View, env EnvMap) EnvMap {
+	osGopath := os.Getenv("GOPATH")
+	fn := v.Filename()
+	for _, dir := range strings.Split(osGopath, string(filepath.ListSeparator)) {
+		if IsParentDir(dir, fn) {
+			return env.Add("GOPATH", osGopath)
+		}
+	}
+	return env
 }
 
 func (sto *Store) updateState(st *State, callListener bool) *State {
@@ -137,10 +171,9 @@ func newStore(ag *Agent, l Listener) *Store {
 	sto := &Store{
 		readyCh:  make(chan struct{}),
 		listener: l,
-		state:    newState(),
+		state:    newState(ag.Store),
 		ag:       ag,
 	}
-	sto.cache.m = map[interface{}]interface{}{}
 	sto.tasks = newTaskTracker(sto.Dispatch)
 	sto.After(sto.tasks)
 	return sto
@@ -214,28 +247,7 @@ func (sto *Store) initCache(v *View) {
 		return
 	}
 
-	cc.m = map[interface{}]interface{}{}
+	sto.KVMap.Clear()
 	cc.vHash = v.Hash
 	cc.vName = v.Name
-}
-
-func (sto *Store) Put(k interface{}, v interface{}) {
-	sto.cache.Lock()
-	defer sto.cache.Unlock()
-
-	sto.cache.m[k] = v
-}
-
-func (sto *Store) Get(k interface{}) interface{} {
-	sto.cache.RLock()
-	defer sto.cache.RUnlock()
-
-	return sto.cache.m[k]
-}
-
-func (sto *Store) Del(k interface{}) {
-	sto.cache.Lock()
-	defer sto.cache.Unlock()
-
-	delete(sto.cache.m, k)
 }

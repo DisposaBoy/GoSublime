@@ -74,8 +74,8 @@ type agentReq struct {
 	Props   clientProps
 }
 
-func newAgentReq() *agentReq {
-	return &agentReq{Props: makeClientProps()}
+func newAgentReq(kvs KVStore) *agentReq {
+	return &agentReq{Props: makeClientProps(kvs)}
 }
 
 func (rq *agentReq) finalize(ag *Agent) {
@@ -120,8 +120,8 @@ func (rs agentRes) finalize() interface{} {
 }
 
 type Agent struct {
-	Name string
-
+	Name  string
+	Done  <-chan struct{}
 	Log   *Logger
 	Store *Store
 
@@ -135,10 +135,18 @@ type Agent struct {
 	enc    *codec.Encoder
 	encWr  *bufio.Writer
 	dec    *codec.Decoder
+	wg     sync.WaitGroup
+
+	sd struct {
+		mu     sync.Mutex
+		done   chan<- struct{}
+		closed bool
+	}
+	closed bool
 }
 
 func (ag *Agent) Run() error {
-	defer ag.shutdownIPC()
+	defer ag.shutdown()
 	return ag.communicate()
 }
 
@@ -148,7 +156,7 @@ func (ag *Agent) communicate() error {
 	ag.Store.ready()
 
 	for {
-		rq := newAgentReq()
+		rq := newAgentReq(ag.Store)
 		if err := ag.dec.Decode(rq); err != nil {
 			if err == io.EOF {
 				return nil
@@ -156,13 +164,21 @@ func (ag *Agent) communicate() error {
 			return fmt.Errorf("ipc.decode: %s", err)
 		}
 		rq.finalize(ag)
-		// TODO: put this on a channel in the future.
-		// at the moment we lock the store and block new requests to maintain request/response order
-		// but decoding time could become a problem if we start sending large requests from the client
-		// we currently only have 1 client (GoSublime) that we also control so it's ok for now...
-		ag.Store.syncRq(ag, rq)
+		ag.handleReq(rq)
 	}
 	return nil
+}
+
+func (ag *Agent) handleReq(rq *agentReq) {
+	ag.wg.Add(1)
+	defer ag.wg.Done()
+
+	// TODO: put this on a channel in the future.
+	// at the moment we lock the store and block new requests to maintain request/response order
+	// but decoding time could become a problem if we start sending large requests from the client
+	// we currently only have 1 client (GoSublime) that we also control so it's ok for now...
+
+	ag.Store.syncRq(ag, rq)
 }
 
 func (ag *Agent) createAction(ra agentReqAction, h codec.Handle) (Action, error) {
@@ -176,7 +192,7 @@ func (ag *Agent) listener(st *State) {
 	err := ag.send(agentRes{State: st})
 	if err != nil {
 		ag.Log.Println("agent.send failed. shutting down ipc:", err)
-		go ag.shutdownIPC()
+		go ag.shutdown()
 	}
 }
 
@@ -188,19 +204,42 @@ func (ag *Agent) send(res agentRes) error {
 	return ag.enc.Encode(res.finalize())
 }
 
-func (ag *Agent) shutdownIPC() {
-	defer ag.stdin.Close()
+func (ag *Agent) shutdown() {
+	sd := &ag.sd
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+
+	if sd.closed {
+		return
+	}
+	sd.closed = true
+
+	// shutdown sequence:
+	// * stop incoming requests
+	// * wait for all reqs to complete
+	// * tell reducers we're shutting down
+	// * stop outgoing responses
+	// * tell the world we're done
+
+	// defers because we want *some* guarantee that all these steps will be taken
+	defer close(sd.done)
 	defer ag.stdout.Close()
+	defer ag.Store.dispatch(Shutdown{})
+	defer ag.wg.Wait()
+	defer ag.stdin.Close()
 }
 
 func NewAgent(cfg AgentConfig) (*Agent, error) {
+	done := make(chan struct{})
 	ag := &Agent{
 		Name:   cfg.AgentName,
+		Done:   done,
 		stdin:  cfg.Stdin,
 		stdout: cfg.Stdout,
 		stderr: cfg.Stderr,
 		handle: codecHandles[cfg.Codec],
 	}
+	ag.sd.done = done
 	if ag.stdin == nil {
 		ag.stdin = os.Stdin
 	}

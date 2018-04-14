@@ -8,40 +8,62 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"syscall"
 	"time"
-)
-
-var (
-	defaultSysProcAttr *syscall.SysProcAttr
 )
 
 type CmdOutputWriter struct {
 	io.Writer
 	io.Closer
-	Fd string
+	Fd       string
+	Dispatch Dispatcher
 
 	mu     sync.Mutex
-	buf    bytes.Buffer
+	buf    []byte
 	closed bool
 }
 
+func (w *CmdOutputWriter) Copy(updaters ...func(*CmdOutputWriter)) *CmdOutputWriter {
+	p := *w
+	p.buf = append([]byte{}, w.buf...)
+	p.Writer = nil
+	p.Closer = nil
+	w = &p
+	for _, f := range updaters {
+		f(w)
+	}
+	return w
+}
+
 func (w *CmdOutputWriter) Write(p []byte) (int, error) {
+	return w.write(false, p)
+}
+
+func (w *CmdOutputWriter) write(writeIfClosed bool, p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.closed {
+	if w.closed && !writeIfClosed {
 		return 0, os.ErrClosed
 	}
 
-	n, err := w.buf.Write(p)
-	if w.Writer != nil {
-		return w.Writer.Write(p)
+	w.buf = append(w.buf, p...)
+
+	if !w.closed {
+		if w.Writer != nil {
+			return w.Writer.Write(p)
+		}
 	}
-	return n, err
+
+	return len(p), nil
 }
 
-func (w *CmdOutputWriter) Close() error {
+func (w *CmdOutputWriter) Close(output ...[]byte) error {
+	defer w.dispatch()
+
+	for _, s := range output {
+		w.write(true, s)
+	}
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -56,13 +78,24 @@ func (w *CmdOutputWriter) Close() error {
 	return nil
 }
 
+func (w *CmdOutputWriter) dispatch() {
+	if w.Dispatch == nil {
+		return
+	}
+
+	out := w.Output()
+	if len(out.Output) != 0 || out.Close {
+		w.Dispatch(out)
+	}
+}
+
 func (w *CmdOutputWriter) Output() CmdOutput {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	s := w.buf.Bytes()
-	w.buf.Reset()
-	return CmdOutput{Fd: w.Fd, Output: s, Close: w.closed}
+	out := CmdOutput{Fd: w.Fd, Output: w.buf, Close: w.closed}
+	w.buf = nil
+	return out
 }
 
 type CmdOutput struct {
@@ -102,18 +135,40 @@ func (cs *cmdSupport) cmdOutput(mx *Ctx, out CmdOutput) *State {
 type RunCmd struct {
 	ActionType
 
-	Fd    string
-	Input bool
-	Name  string
-	Args  []string
+	Fd       string
+	Input    bool
+	Name     string
+	Args     []string
+	CancelID string
 }
 
 type Proc struct {
-	bx   *BultinCmdCtx
-	mu   sync.RWMutex
-	done chan struct{}
-	cmd  *exec.Cmd
-	task *TaskTicket
+	bx     *BultinCmdCtx
+	mu     sync.RWMutex
+	done   chan struct{}
+	closed bool
+	cmd    *exec.Cmd
+	task   *TaskTicket
+	cid    string
+}
+
+func newProc(bx *BultinCmdCtx) *Proc {
+	cmd := exec.Command(bx.Name, bx.Args...)
+	if bx.Input {
+		s, _ := bx.View.ReadAll()
+		cmd.Stdin = bytes.NewReader(s)
+	}
+	cmd.Dir = bx.View.Wd
+	cmd.Env = bx.Env.Environ()
+	cmd.Stdout = bx.Output
+	cmd.Stderr = bx.Output
+	cmd.SysProcAttr = pgSysProcAttr
+	return &Proc{
+		done: make(chan struct{}),
+		bx:   bx,
+		cmd:  cmd,
+		cid:  bx.CancelID,
+	}
 }
 
 func (p *Proc) Cancel() {
@@ -123,9 +178,7 @@ func (p *Proc) Cancel() {
 	select {
 	case <-p.done:
 	default:
-		if p := p.cmd.Process; p != nil {
-			p.Signal(os.Interrupt)
-		}
+		pgKill(p.cmd.Process)
 	}
 }
 
@@ -134,43 +187,46 @@ func (p *Proc) start() error {
 	defer p.mu.Unlock()
 
 	p.task = p.bx.Begin(Task{
-		Title:  fmt.Sprintf("RunCmd `%s`", mgutil.QuoteCmd(p.bx.Name, p.bx.Args...)),
-		Cancel: p.Cancel,
+		CancelID: p.cid,
+		Title:    fmt.Sprintf("Proc`%s`", mgutil.QuoteCmd(p.bx.Name, p.bx.Args...)),
+		Cancel:   p.Cancel,
 	})
-	go p.dispatchOutputLoop()
-	return p.cmd.Start()
-}
+	go p.dispatcher()
 
-func (p *Proc) dispatchOutput() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	out := p.bx.Output.Output()
-	if len(out.Output) != 0 || out.Close {
-		p.bx.Store.Dispatch(out)
+	if err := p.cmd.Start(); err != nil {
+		p.close()
+		return err
 	}
+	return nil
 }
 
-func (p *Proc) dispatchOutputLoop() {
+func (p *Proc) dispatcher() {
+	defer p.task.Done()
+
 	for {
 		select {
 		case <-p.done:
 			return
 		case <-time.After(1 * time.Second):
-			p.dispatchOutput()
+			p.bx.Output.dispatch()
 		}
 	}
 }
 
+func (p *Proc) close() {
+	if p.closed {
+		return
+	}
+	p.closed = true
+	close(p.done)
+}
+
 func (p *Proc) Wait() error {
-	defer p.dispatchOutput()
 	defer func() {
 		p.mu.Lock()
 		defer p.mu.Unlock()
 
-		close(p.done)
-		p.bx.Output.Close()
-		p.task.Done()
+		p.close()
 	}()
 
 	return p.cmd.Wait()

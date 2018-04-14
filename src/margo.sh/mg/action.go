@@ -80,6 +80,12 @@ type QueryTooltips struct{ ActionType }
 
 type Restart struct{ ActionType }
 
+// Shutdown is the action dispatched when margo is shutting down.
+// Reducers may use it as a signal to do any cleanups with the following caveats:
+// * it  might not be dispatched at all
+// * it might be dispatched multiple times
+// * IPC might not be available so state changes might have no effect
+// * logging should, but might not, be available
 type Shutdown struct{ ActionType }
 
 type ViewActivated struct{ ActionType }

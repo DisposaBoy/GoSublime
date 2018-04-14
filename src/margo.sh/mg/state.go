@@ -6,7 +6,6 @@ import (
 	"github.com/ugorji/go/codec"
 	"go/build"
 	"margo.sh/misc/pprof/pprofdo"
-	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -216,9 +215,9 @@ type State struct {
 	UserCmds      []UserCmd
 }
 
-func newState() *State {
+func newState(sto *Store) *State {
 	return &State{
-		stickyState: stickyState{View: newView()},
+		stickyState: stickyState{View: newView(sto)},
 	}
 }
 
@@ -345,37 +344,9 @@ func (cp *clientProps) finalize(ag *Agent) {
 	ep.settings = ce.Settings
 }
 
-func makeClientProps() clientProps {
+func makeClientProps(kvs KVStore) clientProps {
 	return clientProps{
 		Env:  EnvMap{},
-		View: &View{},
+		View: newView(kvs),
 	}
-}
-
-func (c *clientProps) updateCtx(mx *Ctx) *Ctx {
-	return mx.Copy(func(mx *Ctx) {
-		mx.State = mx.State.Copy(func(st *State) {
-			st.Editor = c.Editor.EditorProps
-			if c.Env != nil {
-				st.Env = c.Env
-			}
-			if c.View != nil {
-				st.View = c.View
-				// TODO: convert View.Pos to bytes
-				// at moment gocode is most affected,
-				// but to fix it here means we have to read the file off-disk
-				// so I'd rather not do that until we have some caching in place
-			}
-			if st.View != nil {
-				osGopath := os.Getenv("GOPATH")
-				fn := st.View.Filename()
-				for _, dir := range strings.Split(osGopath, string(filepath.ListSeparator)) {
-					if IsParentDir(dir, fn) {
-						st.Env = st.Env.Add("GOPATH", osGopath)
-						break
-					}
-				}
-			}
-		})
-	})
 }

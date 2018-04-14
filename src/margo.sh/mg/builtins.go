@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"margo.sh/mgutil"
 	"os"
-	"os/exec"
 	"sort"
 )
 
@@ -40,7 +39,7 @@ func (bc BuiltinCmds) ExecCmd(bx *BultinCmdCtx) *State {
 }
 
 func (bc BuiltinCmds) execCmd(bx *BultinCmdCtx) {
-	defer bx.Close()
+	defer bx.Output.Close()
 
 	if bx.Name == ".exec" {
 		if len(bx.Args) == 0 {
@@ -52,11 +51,7 @@ func (bc BuiltinCmds) execCmd(bx *BultinCmdCtx) {
 		})
 	}
 
-	err := bx.RunProc()
-	if err == nil {
-		return
-	}
-	fmt.Fprintf(bx.Output, "cannot exec `%s`: %s", mgutil.QuoteCmd(bx.Name, bx.Args...), err)
+	bx.RunProc()
 }
 
 func (bc BuiltinCmds) TypeCmd(bx *BultinCmdCtx) *State {
@@ -75,7 +70,7 @@ func (bc BuiltinCmds) TypeCmd(bx *BultinCmdCtx) *State {
 		fmt.Fprintf(buf, "%s: builtin: %s, desc: %s\n", name, c.Name, c.Desc)
 	}
 
-	bx.Close(buf.Bytes())
+	bx.Output.Close(buf.Bytes())
 	return bx.State
 }
 
@@ -93,7 +88,7 @@ func (bc BuiltinCmds) EnvCmd(bx *BultinCmdCtx) *State {
 		v := bx.Env.Get(k, os.Getenv(k))
 		fmt.Fprintf(buf, "%s=%s\n", k, v)
 	}
-	bx.Close(buf.Bytes())
+	bx.Output.Close(buf.Bytes())
 	return bx.State
 }
 
@@ -122,7 +117,7 @@ func NewBultinCmdCtx(mx *Ctx, rc RunCmd) *BultinCmdCtx {
 	return &BultinCmdCtx{
 		Ctx:    mx,
 		RunCmd: rc,
-		Output: &CmdOutputWriter{Fd: rc.Fd},
+		Output: &CmdOutputWriter{Fd: rc.Fd, Dispatch: mx.Store.Dispatch},
 	}
 }
 
@@ -138,44 +133,18 @@ func (bx *BultinCmdCtx) Copy(updaters ...func(*BultinCmdCtx)) *BultinCmdCtx {
 	return x.update(updaters...)
 }
 
-func (bx *BultinCmdCtx) Close(output ...[]byte) {
-	for _, s := range output {
-		bx.Output.Write(s)
-	}
-	bx.Output.Close()
-	bx.Store.Dispatch(bx.Output.Output())
-}
-
-func (bx *BultinCmdCtx) RunProc() error {
+func (bx *BultinCmdCtx) RunProc() {
 	p, err := bx.StartProc()
-	if err != nil {
-		return err
+	if err == nil {
+		err = p.Wait()
 	}
-	return p.Wait()
+	if err != nil {
+		fmt.Fprintf(bx.Output, "cannot run `%s`: %s\n", mgutil.QuoteCmd(bx.Name, bx.Args...), err)
+	}
 }
 
 func (bx *BultinCmdCtx) StartProc() (*Proc, error) {
-	cmd := exec.Command(bx.Name, bx.Args...)
-
-	if bx.Input {
-		r, err := bx.View.Open()
-		if err != nil {
-			return nil, err
-		}
-		cmd.Stdin = r
-	}
-
-	cmd.Dir = bx.View.Dir()
-	cmd.Env = bx.Env.Environ()
-	cmd.Stdout = bx.Output
-	cmd.Stderr = bx.Output
-	cmd.SysProcAttr = defaultSysProcAttr
-
-	p := &Proc{
-		done: make(chan struct{}),
-		bx:   bx,
-		cmd:  cmd,
-	}
+	p := newProc(bx)
 	return p, p.start()
 }
 

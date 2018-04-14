@@ -25,10 +25,11 @@ type View struct {
 	Lang  string
 
 	changed int
+	kvs     KVStore
 }
 
-func newView() *View {
-	return &View{}
+func newView(kvs KVStore) *View {
+	return &View{kvs: kvs}
 }
 
 func (v *View) Copy(updaters ...func(*View)) *View {
@@ -65,9 +66,31 @@ func (v *View) Filename() string {
 	return filepath.Join(v.Wd, v.Name)
 }
 
+func (v *View) key() interface{} {
+	type Key struct{ Hash string }
+	return Key{v.Hash}
+}
+
+func (v *View) src() (src []byte, ok bool) {
+	src = v.Src
+	if len(src) != 0 {
+		return src, true
+	}
+
+	if v.kvs != nil {
+		src, _ = v.kvs.Get(v.key()).([]byte)
+	}
+
+	if v.Path == "" || v.Dirty || len(src) != 0 {
+		return src, true
+	}
+
+	return nil, false
+}
+
 func (v *View) ReadAll() ([]byte, error) {
-	if v.Dirty || len(v.Src) != 0 {
-		return v.Src, nil
+	if src, ok := v.src(); ok {
+		return src, nil
 	}
 
 	r, err := v.Open()
@@ -76,16 +99,21 @@ func (v *View) ReadAll() ([]byte, error) {
 	}
 	defer r.Close()
 
-	return ioutil.ReadAll(r)
+	src, err := ioutil.ReadAll(r)
+	if err == nil && v.kvs != nil {
+		v.kvs.Put(v.key(), src)
+	}
+
+	return src, err
 }
 
 func (v *View) Valid() bool {
 	return v.Name != ""
 }
 
-func (v *View) Open() (io.ReadCloser, error) {
-	if v.Dirty || len(v.Src) != 0 {
-		return ioutil.NopCloser(bytes.NewReader(v.Src)), nil
+func (v *View) Open() (r io.ReadCloser, err error) {
+	if src, ok := v.src(); ok {
+		return ioutil.NopCloser(bytes.NewReader(src)), nil
 	}
 
 	if v.Path == "" {
@@ -93,6 +121,18 @@ func (v *View) Open() (io.ReadCloser, error) {
 	}
 
 	return os.Open(v.Path)
+}
+
+func (v *View) initSrcPos() {
+	src, err := v.ReadAll()
+	if err != nil {
+		return
+	}
+
+	v.Src = src
+	v.Pos = BytePos(src, v.Pos)
+	v.Hash = SrcHash(src)
+	v.kvs.Put(v.key(), src)
 }
 
 func (v *View) SetSrc(s []byte) *View {
