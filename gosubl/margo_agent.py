@@ -117,6 +117,7 @@ class MargoAgent(threading.Thread):
 			self.out.println('Cannot start margo: %s' % pr.exc)
 			return
 
+		stderr = pr.p.stderr
 		self.proc = pr.p
 		gsq.launch(self.domain, self._handle_send)
 		gsq.launch(self.domain, self._handle_acts)
@@ -125,6 +126,7 @@ class MargoAgent(threading.Thread):
 		self.started.set()
 		self.starting.clear()
 		self.proc.wait()
+		self._close_file(stderr)
 
 	def _stop_proc(self):
 		self.out.println('stopping')
@@ -132,12 +134,19 @@ class MargoAgent(threading.Thread):
 		if not p:
 			return
 
-		for f in (p.stdin, p.stdout, p.stderr):
-			try:
-				f.close()
-			except Exception as exc:
-				self.out.println(exc)
-				gs.error_traceback(self.domain)
+		# stderr is closed after .wait() returns
+		for f in (p.stdin, p.stdout):
+			self._close_file(f)
+
+	def _close_file(self, f):
+		if f is None:
+			return
+
+		try:
+			f.close()
+		except Exception as exc:
+			self.out.println(exc)
+			gs.error_traceback(self.domain)
 
 	def _handle_send_ipc(self, rq):
 		with self.lock:
