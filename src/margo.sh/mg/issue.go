@@ -159,7 +159,8 @@ func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
 		if name != "" && name == k.Name {
 			return true
 		}
-		if dir != "" && dir == k.Dir {
+		// if the view doesn't exist on disk, the dir is unreliable
+		if path != "" && dir != "" && dir == k.Dir {
 			return true
 		}
 		return false

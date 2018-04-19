@@ -146,18 +146,31 @@ func (gc *GoCmd) playToolTest(gx *goCmdCtx, bld *build.Context, origView *mg.Vie
 
 func (gc *GoCmd) playToolRun(gx *goCmdCtx, bld *build.Context, origView *mg.View) {
 	args := gx.Args
-	exe := filepath.Join(gx.tDir, "margo.play~~"+filepath.Base(gx.tFn)+".exe")
-	gx.Name = "go"
-	gx.Args = []string{"build", "-o", exe}
-	gx.View = gx.View.Copy()
-	gx.View.Wd = gx.View.Dir()
+	exe := filepath.Join(gx.tDir, "margo.play~~"+filepath.Base(origView.Name)+".exe")
+	gx.BultinCmdCtx = gx.BultinCmdCtx.Copy(func(bx *mg.BultinCmdCtx) {
+		bx.Name = "go"
+		bx.Args = []string{"build", "-o", exe}
+		bx.Ctx = bx.Ctx.Copy(func(mx *mg.Ctx) {
+			mx.State = mx.State.Copy(func(st *mg.State) {
+				st.View = st.View.Copy(func(v *mg.View) {
+					v.Wd = v.Dir()
+				})
+			})
+		})
+	})
 	if err := gx.run(origView); err != nil {
 		return
 	}
 
-	gx.View = origView
-	gx.Name = exe
-	gx.Args = args
+	gx.BultinCmdCtx = gx.BultinCmdCtx.Copy(func(bx *mg.BultinCmdCtx) {
+		bx.Name = exe
+		bx.Args = args
+		bx.Ctx = bx.Ctx.Copy(func(mx *mg.Ctx) {
+			mx.State = mx.State.Copy(func(st *mg.State) {
+				st.View = origView
+			})
+		})
+	})
 	gx.RunProc()
 }
 
@@ -172,10 +185,9 @@ type goCmdCtx struct {
 
 func newGoCmdCtx(bx *mg.BultinCmdCtx, label, cancelID string, tDir, tFn string) *goCmdCtx {
 	gx := &goCmdCtx{
-		BultinCmdCtx: bx.Copy(),
-		pkgDir:       bx.View.Dir(),
-		tDir:         tDir,
-		tFn:          tFn,
+		pkgDir: bx.View.Dir(),
+		tDir:   tDir,
+		tFn:    tFn,
 	}
 
 	type Key struct{ label string }
@@ -184,16 +196,16 @@ func newGoCmdCtx(bx *mg.BultinCmdCtx, label, cancelID string, tDir, tFn string) 
 	gx.iw = &mg.IssueWriter{
 		Base:     mg.Issue{Label: label},
 		Patterns: CommonPatterns,
-		Dir:      gx.View.Wd,
-	}
-	if tDir != "" {
-		gx.iw.Dir = tDir
+		Dir:      gx.pkgDir,
 	}
 
-	gx.Name = "go"
-	gx.CancelID = cancelID
-	gx.Output = gx.Output.Copy()
-	gx.Output.Writer = gx.iw
+	gx.BultinCmdCtx = bx.Copy(func(bx *mg.BultinCmdCtx) {
+		bx.Name = "go"
+		bx.CancelID = cancelID
+		bx.Output = bx.Output.Copy(func(w *mg.CmdOutputWriter) {
+			w.Writer = gx.iw
+		})
+	})
 
 	return gx
 }

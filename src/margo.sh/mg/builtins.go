@@ -139,7 +139,7 @@ func (bx *BultinCmdCtx) RunProc() {
 		err = p.Wait()
 	}
 	if err != nil {
-		fmt.Fprintf(bx.Output, "cannot run `%s`: %s\n", mgutil.QuoteCmd(bx.Name, bx.Args...), err)
+		fmt.Fprintf(bx.Output, "`%s` exited: %s\n", mgutil.QuoteCmd(bx.Name, bx.Args...), err)
 	}
 }
 
