@@ -21,10 +21,11 @@ class FileRef(object):
 		self.reports = {}
 
 class Report(object):
-	def __init__(self, row, col, msg):
+	def __init__(self, row, col, msg, tye):
 		self.row = row
 		self.col = col
 		self.msg = msg
+		self.type = tye
 
 class GsLintThread(threading.Thread):
 	def __init__(self):
@@ -231,19 +232,27 @@ def do_comp_lint(dirname, fn):
 				gs.notice(DOMAIN, err)
 
 			out = out.replace('\r', '').replace('\n ', '\\n ').replace('\n\t', '\\n\t')
+			index = -1
 			for m in pat.findall(out):
+				index += 1
 				try:
 					row, col, msg = m
 					row = int(row)-1
 					col = int(col)-1 if col else 0
 					msg = msg.replace('\\n', '\n').strip()
+
+					msgArr = msg.split(":")
+					typ = msgArr[0]
+					msg = ':'.join(msgArr[1:])
+
 					if row >= 0 and msg:
-						msg = '%s: %s' % (cmd_domain, msg)
+						# hide cmd
+						# msg = '%s: %s' % (cmd_domain, msg)
 						if reports.get(row):
 							reports[row].msg = '%s\n%s' % (reports[row].msg, msg)
 							reports[row].col = max(reports[row].col, col)
 						else:
-							reports[row] = Report(row, col, msg)
+							reports[index] = Report(row, col, msg, typ)
 				except:
 					pass
 		except:

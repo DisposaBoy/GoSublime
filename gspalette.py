@@ -160,16 +160,7 @@ class GsPaletteCommand(sublime_plugin.WindowCommand):
 				r = reps[k]
 				loc = Loc(view.file_name(), r.row, r.col)
 				m = []
-				m.append("%sline %d:" % (indent, r.row+1))
-				lc = 0
-				for ln in r.msg.split('\n'):
-					if ln:
-						lc += 1
-						if len(ln) > 50:
-							m.append('\t%d: %s -' % (lc, ln[:50]))
-							m.append('\t  %s' % ln[50:])
-						else:
-							m.append('\t%d: %s' % (lc, ln))
+				m.append("%s#%d %s %s" % (indent, r.row+1, r.type.upper(), r.msg))
 
 				self.add_item(m, self.jump_to, (view, loc))
 		else:
