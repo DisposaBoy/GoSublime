@@ -342,7 +342,7 @@ def env(m={}):
 	e.update(uenv)
 	e.update(m)
 
-	if e['GS_GOPATH'] and gs.setting('use_gs_gopath') is True:
+	if e['GS_GOPATH'] and gs.setting('use_gs_gopath') is True and not m.get('GOPATH'):
 		e['GOPATH'] = e['GS_GOPATH']
 
 	# For custom values of GOPATH, installed binaries via go install
