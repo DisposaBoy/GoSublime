@@ -134,7 +134,7 @@ them by pressing `ctrl+dot`,`ctrl+e`. Errors for the current line are shown in t
 Fmt
 ---
 
-By default `ctrl+s` and `ctrl+shift+s` are overridden to fmt the the file before saving it. You may also
+By default `ctrl+s` and `ctrl+shift+s` are overridden to fmt the file before saving it. You may also
 fmt a file without saving it by pressing `ctrl+dot`,`ctrl+f`
 
 Godoc/Goto Definition
