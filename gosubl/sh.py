@@ -211,15 +211,13 @@ def gs_init(_={}):
 		cmd.wd = root_dir
 		return cmd.run()
 
+	cr = run('go build -o %s %s' % (bs_exe, bs_fn))
+	if cr.exc or cr.err:
+		_print('error building %s: %s' % (bs_fn, cr.exc or cr.err))
+
 	cr = run(bs_exe)
 	if cr.exc or cr.err:
-		cr = run('go build -o %s %s' % (bs_exe, bs_fn))
-		if cr.exc or cr.err:
-			_print('error building %s: %s' % (bs_fn, cr.exc or cr.err))
-
-		cr = run(bs_exe)
-		if cr.exc or cr.err:
-			_print('error running %s: %s' % (bs_exe, cr.exc or cr.err))
+		_print('error running %s: %s' % (bs_exe, cr.exc or cr.err))
 
 	raw_ver = ''
 	ver = ''

@@ -35,7 +35,8 @@ def loadable_mods():
 	]
 
 def plugin_loaded():
-	sublime.set_timeout_async(_plugin_loaded_async, 0)
+	from threading import Thread
+	Thread(target=_plugin_loaded_async).start()
 
 def _plugin_loaded_async():
 	from .gosubl import about
