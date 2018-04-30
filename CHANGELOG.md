@@ -14,6 +14,9 @@ Please make sure to read all the comments, as enabling it will affect GoSublime 
 
 **Changes:**
 
+## 18.04.30-1
+	* fix margo build failure in some cases when the go compiler is up/down-graded
+
 ## 18.04.19-1
 	* fix margo build failure when `use_gs_gopath` is enabled
 
