@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	GoFmt     mg.Reducer = mg.Reduce(goFmt)
-	GoImports mg.Reducer = mg.Reduce(goImports)
+	GoFmt     mg.Reducer = mg.NewReducer(goFmt)
+	GoImports mg.Reducer = mg.NewReducer(goImports)
 )
 
 func disableGsFmt(st *mg.State) *mg.State {

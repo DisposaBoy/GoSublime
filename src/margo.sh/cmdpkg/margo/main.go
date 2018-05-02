@@ -59,7 +59,12 @@ func init() {
 
 func Main() {
 	app := mgcli.NewApp()
-	app.Commands = []cli.Command{buildCmd, runCmd, startCmd}
+	app.Commands = []cli.Command{
+		buildCmd,
+		runCmd,
+		startCmd,
+		devCmd,
+	}
 	app.RunAndExitOnError()
 }
 

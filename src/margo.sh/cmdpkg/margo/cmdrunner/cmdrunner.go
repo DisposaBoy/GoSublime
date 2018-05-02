@@ -12,6 +12,7 @@ type Cmd struct {
 	Name     string
 	Args     []string
 	Env      map[string]string
+	Dir      string
 	OutToErr bool
 }
 
@@ -24,6 +25,7 @@ func (c Cmd) Run() error {
 	} else {
 		cmd.Stdout = os.Stdout
 	}
+	cmd.Dir = c.Dir
 
 	if len(c.Env) != 0 {
 		environ := os.Environ()

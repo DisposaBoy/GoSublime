@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	_ KVStore = (*KVStores)(nil)
+	_ KVStore = (KVStores)(nil)
 	_ KVStore = (*Store)(nil)
 	_ KVStore = (*KVMap)(nil)
 )

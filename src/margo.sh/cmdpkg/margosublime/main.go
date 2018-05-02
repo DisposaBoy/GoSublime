@@ -9,8 +9,7 @@ import (
 )
 
 var (
-	margoExt mg.MargoFunc    = sublime.Margo
-	sublCfg  mg.EditorConfig = sublime.DefaultConfig
+	margoExt mg.MargoFunc = sublime.Margo
 )
 
 func Main() {
@@ -34,7 +33,7 @@ func Main() {
 			return mgcli.Error("agent creation failed:", err)
 		}
 
-		ag.Store.EditorConfig(sublCfg)
+		ag.Store.EditorConfig(sublime.DefaultConfig)
 		if margoExt != nil {
 			margoExt(ag.Args())
 		}

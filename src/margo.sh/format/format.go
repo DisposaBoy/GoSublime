@@ -38,7 +38,7 @@ func (ff FmtFunc) Reduce(mx *mg.Ctx) *mg.State {
 	fn := mx.View.Filename()
 	src, err := mx.View.ReadAll()
 	if err != nil {
-		return mx.Errorf("failed to read %s: %s\n", fn, err)
+		return mx.AddErrorf("failed to read %s: %s\n", fn, err)
 	}
 	if len(src) == 0 {
 		return mx.State
@@ -46,7 +46,7 @@ func (ff FmtFunc) Reduce(mx *mg.Ctx) *mg.State {
 
 	src, err = ff.Fmt(mx, src)
 	if err != nil {
-		return mx.Errorf("failed to fmt %s: %s\n", fn, err)
+		return mx.AddErrorf("failed to fmt %s: %s\n", fn, err)
 	}
 	return mx.SetSrc(src)
 }

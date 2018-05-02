@@ -1,10 +1,8 @@
 package mg
 
 import (
-	"io"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 type StrSet []string
@@ -73,71 +71,6 @@ func (e EnvMap) Get(k, def string) string {
 
 func (e EnvMap) List(k string) []string {
 	return strings.Split(e[k], string(filepath.ListSeparator))
-}
-
-type LockedWriteCloser struct {
-	io.WriteCloser
-	mu sync.Mutex
-}
-
-func (w *LockedWriteCloser) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	return w.WriteCloser.Write(p)
-}
-
-func (w *LockedWriteCloser) Close() error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	return w.WriteCloser.Close()
-}
-
-type LockedReadCloser struct {
-	io.ReadCloser
-	mu sync.Mutex
-}
-
-func (r *LockedReadCloser) Read(p []byte) (int, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	return r.ReadCloser.Read(p)
-}
-
-func (r *LockedReadCloser) Close() error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	return r.ReadCloser.Close()
-}
-
-type NopReadWriteCloser struct {
-	io.Reader
-	io.Writer
-	io.Closer
-}
-
-func (n NopReadWriteCloser) Read(p []byte) (int, error) {
-	if n.Reader != nil {
-		return n.Reader.Read(p)
-	}
-	return 0, io.EOF
-}
-
-func (n NopReadWriteCloser) Write(p []byte) (int, error) {
-	if n.Writer != nil {
-		return n.Writer.Write(p)
-	}
-	return len(p), nil
-}
-
-func (n NopReadWriteCloser) Close() error {
-	if n.Closer != nil {
-		return n.Closer.Close()
-	}
-	return nil
 }
 
 func IsParentDir(parentDir, childPath string) bool {

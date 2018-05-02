@@ -25,6 +25,7 @@ type MargoConfig struct {
 	GOPATHS            []string
 	Autobuild          bool
 	UnimportedPackages bool
+	Debug              bool
 }
 
 type margoEnv struct {
@@ -51,6 +52,7 @@ func (m *margoEnv) assignConfig(gc *config, p *package_lookup_context, mc MargoC
 	p.GOROOT = m.GOROOT
 	p.GOPATH = m.GOPATH
 	p.InstallSuffix = m.InstallSuffix
+	*g_debug = mc.Debug
 }
 
 type margoState struct {

@@ -42,18 +42,27 @@ func (ti *TaskTicket) Cancellable() bool {
 }
 
 type taskTracker struct {
-	mu       sync.Mutex
-	id       uint64
-	tickets  []*TaskTicket
-	timer    *time.Timer
-	dispatch Dispatcher
-	buf      bytes.Buffer
+	ReducerType
+	mu      sync.Mutex
+	id      uint64
+	tickets []*TaskTicket
+	timer   *time.Timer
+	buf     bytes.Buffer
 }
 
-func newTaskTracker(dispatch Dispatcher) *taskTracker {
-	return &taskTracker{
-		timer:    time.NewTimer(1 * time.Second),
-		dispatch: dispatch,
+func (tr *taskTracker) ReducerMount(mx *Ctx) {
+	tr.timer = time.NewTimer(1 * time.Second)
+	dispatch := mx.Store.Dispatch
+	go func() {
+		for range tr.timer.C {
+			dispatch(taskTick{})
+		}
+	}()
+}
+
+func (tr *taskTracker) ReducerUnmount(*Ctx) {
+	for _, t := range tr.tickets {
+		t.Cancel()
 	}
 }
 
@@ -63,27 +72,56 @@ func (tr *taskTracker) Reduce(mx *Ctx) *State {
 
 	st := mx.State
 	switch mx.Action.(type) {
-	case Started:
-		tr.start()
-	case Shutdown:
-		for _, t := range tr.tickets {
-			t.Cancel()
-		}
 	case RunCmd:
-		st = st.AddBuiltinCmds(BultinCmd{
-			Name: ".kill",
-			Desc: "List and cancel active tasks",
-			Run:  tr.killBuiltin,
-		})
+		st = tr.runCmd(st)
+	case QueryUserCmds:
+		st = tr.userCmds(st)
 	case taskTick:
-		if len(tr.tickets) != 0 {
-			tr.resetTimer()
-		}
+		tr.tick()
 	}
 	if s := tr.status(); s != "" {
 		st = st.AddStatus(s)
 	}
 	return st
+}
+
+func (tr *taskTracker) tick() {
+	if len(tr.tickets) != 0 {
+		tr.resetTimer()
+	}
+}
+
+func (tr *taskTracker) userCmds(st *State) *State {
+	cl := make([]UserCmd, len(tr.tickets))
+	for i, t := range tr.tickets {
+		c := UserCmd{
+			Title: "Cancel " + t.Title,
+			Name:  ".kill",
+		}
+		for _, s := range []string{t.CancelID, t.ID} {
+			if s != "" {
+				c.Args = append(c.Args, s)
+			}
+		}
+		cl[i] = c
+	}
+	return st.AddUserCmds(cl...)
+}
+
+func (tr *taskTracker) runCmd(st *State) *State {
+	return st.AddBuiltinCmds(
+		BultinCmd{
+			Name: ".kill",
+			Desc: "List and cancel active tasks",
+			Run:  tr.killBuiltin,
+		},
+	)
+}
+
+func (tr *taskTracker) shutdown(mx *Ctx) {
+	for _, t := range tr.tickets {
+		t.Cancel()
+	}
 }
 
 // Cancel cancels the task tid.
@@ -201,14 +239,6 @@ func (tr *taskTracker) titles() (stale []string, fresh []string) {
 		}
 	}
 	return stale, fresh
-}
-
-func (tr *taskTracker) start() {
-	go func() {
-		for range tr.timer.C {
-			tr.dispatch(taskTick{})
-		}
-	}()
 }
 
 func (tr *taskTracker) resetTimer() {

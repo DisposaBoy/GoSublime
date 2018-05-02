@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Snippets = SnippetFuncs{
+	Snippets = SnippetFuncs(
 		PackageNameSnippet,
 		MainFuncSnippet,
 		InitFuncSnippet,
@@ -18,20 +18,33 @@ var (
 		GenDeclSnippet,
 		MapSnippet,
 		TypeSnippet,
-	}
+	)
 
 	pkgDirNamePat = regexp.MustCompile(`(\w+)\W*$`)
 )
 
-type SnippetFuncs []func(*CompletionCtx) []mg.Completion
+type SnippetFunc func(*CompletionCtx) []mg.Completion
 
-func (sf SnippetFuncs) Reduce(mx *mg.Ctx) *mg.State {
+type SnippetFuncsList struct {
+	mg.ReducerType
+	Funcs []SnippetFunc
+}
+
+func SnippetFuncs(l ...SnippetFunc) *SnippetFuncsList {
+	return &SnippetFuncsList{Funcs: l}
+}
+
+func (sf *SnippetFuncsList) Reduce(mx *mg.Ctx) *mg.State {
 	if !mx.LangIs("go") || !mx.ActionIs(mg.QueryCompletions{}) {
 		return mx.State
 	}
 
 	src, _ := mx.View.ReadAll()
 	pos := mx.View.Pos
+	if pos < 0 || pos > len(src) {
+		return mx.State
+	}
+
 	for {
 		r, n := utf8.DecodeLastRune(src[:pos])
 		if !IsLetter(r) {
@@ -45,7 +58,7 @@ func (sf SnippetFuncs) Reduce(mx *mg.Ctx) *mg.State {
 	}
 
 	var cl []mg.Completion
-	for _, f := range sf {
+	for _, f := range sf.Funcs {
 		cl = append(cl, f(cx)...)
 	}
 	for i, _ := range cl {
@@ -54,7 +67,7 @@ func (sf SnippetFuncs) Reduce(mx *mg.Ctx) *mg.State {
 	return mx.State.AddCompletions(cl...)
 }
 
-func (sf SnippetFuncs) fixCompletion(c *mg.Completion) {
+func (sf *SnippetFuncsList) fixCompletion(c *mg.Completion) {
 	c.Src = DedentCompletion(c.Src)
 	if c.Tag == "" {
 		c.Tag = mg.SnippetTag
@@ -289,9 +302,6 @@ func MethodSnippet(cx *CompletionCtx) []mg.Completion {
 	}
 
 	return cl
-}
-func (sf SnippetFuncs) name() {
-
 }
 
 func GenDeclSnippet(cx *CompletionCtx) []mg.Completion {

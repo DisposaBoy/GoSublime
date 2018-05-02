@@ -8,44 +8,79 @@ import (
 	"go/token"
 	"margo.sh/golang/internal/gocode"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"margo.sh/sublime"
 	"strings"
 )
 
-type GocodeCalltips struct{}
+type gocodeCtAct struct {
+	mg.ActionType
+	mx     *mg.Ctx
+	status string
+}
+
+type GocodeCalltips struct {
+	mg.ReducerType
+
+	q      *mgutil.ChanQ
+	status string
+}
+
+func (gc *GocodeCalltips) ReducerCond(mx *mg.Ctx) bool {
+	return mx.LangIs("go")
+}
+
+func (gc *GocodeCalltips) ReducerMount(mx *mg.Ctx) {
+	gc.q = mgutil.NewChanQ(1)
+	go gc.processer()
+}
+
+func (gc *GocodeCalltips) ReducerUnmount(mx *mg.Ctx) {
+	gc.q.Close()
+}
 
 func (gc *GocodeCalltips) Reduce(mx *mg.Ctx) *mg.State {
 	st := mx.State
-	if !mx.LangIs("go") {
-		return st
-	}
 	if cfg, ok := st.Config.(sublime.Config); ok {
 		st = st.SetConfig(cfg.DisableCalltips())
 	}
 
-	src, _ := mx.View.ReadAll()
-	if len(src) == 0 {
-		return st
+	switch act := mx.Action.(type) {
+	case mg.ViewPosChanged, mg.ViewActivated:
+		gc.q.Put(gocodeCtAct{mx: mx, status: gc.status})
+	case gocodeCtAct:
+		gc.status = act.status
 	}
 
-	type key struct{ hash string }
-	k := key{mg.SrcHash(src)}
-
-	if mx.ActionIs(mg.ViewPosChanged{}, mg.ViewActivated{}) {
-		gc.process(mx, k, src)
-	}
-
-	if s, _ := mx.Store.Get(k).(string); s != "" {
-		return st.AddStatus(s)
+	if gc.status != "" {
+		return st.AddStatus(gc.status)
 	}
 	return st
 }
 
-func (gc *GocodeCalltips) process(mx *mg.Ctx, key interface{}, src []byte) {
-	mx.Store.Del(key)
+func (gc *GocodeCalltips) processer() {
+	for a := range gc.q.C() {
+		gc.process(a.(gocodeCtAct))
+	}
+}
+
+func (gc *GocodeCalltips) process(act gocodeCtAct) {
+	defer func() { recover() }()
+
+	mx := act.mx
+	status := ""
+	defer func() {
+		if status != act.status {
+			mx.Store.Dispatch(gocodeCtAct{status: status})
+		}
+	}()
+
+	src, _ := mx.View.ReadAll()
+	if len(src) == 0 {
+		return
+	}
 
 	srcPos := clampSrcPos(src, mx.View.Pos)
-	srcPos = mg.BytePos(src, srcPos)
 	cn := ParseCursorNode(nil, src, srcPos)
 	tpos := cn.TokenFile.Pos(srcPos)
 	var call *ast.CallExpr
@@ -93,7 +128,7 @@ func (gc *GocodeCalltips) process(mx *mg.Ctx, key interface{}, src []byte) {
 		return
 	}
 
-	mx.Store.Put(key, gc.funcSrc(fx, gc.argPos(call, tpos), funcName))
+	status = gc.funcSrc(fx, gc.argPos(call, tpos), funcName)
 }
 
 func (gc *GocodeCalltips) funcSrc(fx *ast.FuncType, argPos int, funcName string) string {

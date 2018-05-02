@@ -4,84 +4,117 @@ import (
 	"context"
 	"fmt"
 	"github.com/ugorji/go/codec"
-	"go/build"
-	"margo.sh/misc/pprof/pprofdo"
-	"path/filepath"
+	"margo.sh/misc/pf"
 	"reflect"
-	"runtime"
-	"strings"
+	"sync"
 	"time"
 )
 
 var (
+	// ErrNoSettings is the error returned from EditorProps.Settings()
+	// when there was no settings sent from the editor
 	ErrNoSettings = fmt.Errorf("no editor settings")
 
 	_ context.Context = (*Ctx)(nil)
 )
 
+// Ctx holds data about the current request/reduction.
+//
+// To create a new instance, use Store.NewCtx()
+//
+// NOTE: Ctx should be treated as readonly and users should not assign to any
+// of its fields or the fields of any of its members.
+// If a field must be updated, you should use one of the methods like Copy
+//
+// Unless a field is tagged with `mg.Nillable:"true"`, it will never be nil
+// and if updated, no field should be set to nil
 type Ctx struct {
+	// State is the current state of the world
 	*State
-	Action Action
 
+	// Action is the action that was dispatched.
+	// It's a hint telling reducers about some action that happened,
+	// e.g. that the view is about to be saved or that it was changed.
+	Action Action `mg.Nillable:"true"`
+
+	// Store is the global store
 	Store *Store
 
+	// Log is the global logger
 	Log *Logger
 
-	Parent *Ctx
-	Values map[interface{}]interface{}
-	DoneC  <-chan struct{}
+	Cookie string
 
-	handle codec.Handle
+	Profile *pf.Profile
+
+	doneC      chan struct{}
+	cancelOnce *sync.Once
+	handle     codec.Handle
 }
 
-func (_ *Ctx) Deadline() (time.Time, bool) {
+// newCtx creates a new Ctx
+// if st is nil, the state will be set to the equivalent of Store.state.new()
+// if p is nil a new Profile will be created with cookie as its name
+func newCtx(sto *Store, st *State, act Action, cookie string, p *pf.Profile) *Ctx {
+	if st == nil {
+		st = sto.state.new()
+	}
+	if p == nil {
+		p = pf.NewProfile(cookie)
+	}
+	return &Ctx{
+		State:      st,
+		Action:     act,
+		Store:      sto,
+		Log:        sto.ag.Log,
+		Cookie:     cookie,
+		Profile:    p,
+		doneC:      make(chan struct{}),
+		cancelOnce: &sync.Once{},
+		handle:     sto.ag.handle,
+	}
+}
+
+// Deadline implements context.Context.Deadline
+func (*Ctx) Deadline() (time.Time, bool) {
 	return time.Time{}, false
 }
 
+// Cancel cancels the ctx by arranging for the Ctx.Done() channel to be closed.
+// Canceling this Ctx cancels all other Ctxs Copy()ed from it.
+func (mx *Ctx) Cancel() {
+	mx.cancelOnce.Do(func() {
+		close(mx.doneC)
+	})
+}
+
+// Done implements context.Context.Done()
 func (mx *Ctx) Done() <-chan struct{} {
-	return mx.DoneC
+	return mx.doneC
 }
 
-func (_ *Ctx) Err() error {
-	return nil
+// Err implements context.Context.Err()
+func (mx *Ctx) Err() error {
+	select {
+	case <-mx.Done():
+		return context.Canceled
+	default:
+		return nil
+	}
 }
 
+// Value implements context.Context.Value() but always returns nil
 func (mx *Ctx) Value(k interface{}) interface{} {
-	if v, ok := mx.Values[k]; ok {
-		return v
-	}
-	if mx.Parent != nil {
-		return mx.Parent.Value(k)
-	}
 	return nil
 }
 
+// AgentName returns the name of the agent if set
+// if set, it's usually the agent name as used in the command `margo.sh [run...] $agent`
 func (mx *Ctx) AgentName() string {
 	return mx.Store.ag.Name
 }
 
-func newCtx(ag *Agent, st *State, act Action, sto *Store) (mx *Ctx, done chan struct{}) {
-	if st == nil {
-		panic("newCtx: state must not be nil")
-	}
-	if st == nil {
-		panic("newCtx: store must not be nil")
-	}
-	done = make(chan struct{})
-	return &Ctx{
-		State:  st,
-		Action: act,
-
-		Store: sto,
-
-		Log: ag.Log,
-
-		DoneC: done,
-
-		handle: ag.handle,
-	}, done
-}
-
+// ActionIs returns true if the type Ctx.Action is the same type as any of those in actions
 func (mx *Ctx) ActionIs(actions ...Action) bool {
 	typ := reflect.TypeOf(mx.Action)
 	for _, act := range actions {
@@ -92,98 +125,55 @@ func (mx *Ctx) ActionIs(actions ...Action) bool {
 	return false
 }
 
+// LangIs is a wrapper around Ctx.View.Lang()
 func (mx *Ctx) LangIs(names ...string) bool {
 	return mx.View.LangIs(names...)
 }
 
+// Copy create a shallow copy of the Ctx.
+//
+// It applies the functions in updaters to the new object.
+// Updating the new Ctx via these functions is preferred to assigning to the new object
 func (mx *Ctx) Copy(updaters ...func(*Ctx)) *Ctx {
 	x := *mx
-	x.Parent = mx
-	if len(mx.Values) != 0 {
-		x.Values = make(map[interface{}]interface{}, len(mx.Values))
-		for k, v := range mx.Values {
-			x.Values[k] = v
-		}
-	}
+	mx = &x
+
 	for _, f := range updaters {
-		f(&x)
-	}
-	return &x
-}
-
-func (mx *Ctx) Begin(t Task) *TaskTicket {
-	return mx.Store.Begin(t)
-}
-
-type Reducer interface {
-	Reduce(*Ctx) *State
-}
-
-type ReducerList []Reducer
-
-func (rl ReducerList) ReduceCtx(mx *Ctx) *Ctx {
-	for _, r := range rl {
-		var st *State
-		pprofdo.Do(mx, rl.labels(r), func(_ context.Context) {
-			st = r.Reduce(mx)
-		})
-		mx = mx.Copy(func(mx *Ctx) {
-			mx.State = st
-		})
+		f(mx)
 	}
 	return mx
 }
 
-func (rl ReducerList) labels(r Reducer) []string {
-	lbl := ""
-	if rf, ok := r.(ReduceFunc); ok {
-		lbl = rf.Label
-	} else {
-		lbl = reflect.TypeOf(r).String()
-	}
-	return []string{"margo.reduce", lbl}
+func (mx *Ctx) SetState(st *State) *Ctx {
+	mx = mx.Copy()
+	mx.State = st
+	return mx
 }
 
-func (rl ReducerList) Reduce(mx *Ctx) *State {
-	return rl.ReduceCtx(mx).State
+func (mx *Ctx) SetView(v *View) *Ctx {
+	return mx.SetState(mx.State.SetView(v))
 }
 
-func (rl ReducerList) Add(reducers ...Reducer) ReducerList {
-	return append(rl[:len(rl):len(rl)], reducers...)
+// Begin stars a new task and returns its ticket
+func (mx *Ctx) Begin(t Task) *TaskTicket {
+	return mx.Store.Begin(t)
 }
 
-type ReduceFunc struct {
-	Func  func(*Ctx) *State
-	Label string
-}
-
-func (rf ReduceFunc) Reduce(mx *Ctx) *State {
-	return rf.Func(mx)
-}
-
-func Reduce(f func(*Ctx) *State) ReduceFunc {
-	_, fn, line, _ := runtime.Caller(1)
-	for _, gp := range strings.Split(build.Default.GOPATH, string(filepath.ListSeparator)) {
-		s := strings.TrimPrefix(fn, filepath.Clean(gp)+string(filepath.Separator))
-		if s != fn {
-			fn = filepath.ToSlash(s)
-			break
-		}
-	}
-	return ReduceFunc{
-		Func:  f,
-		Label: fmt.Sprintf("%s:%d", fn, line),
-	}
-}
-
+// EditorProps holds data about the text editor
 type EditorProps struct {
-	Name    string
+	// Name is the name of the editor
+	Name string
+
+	// Version is the editor's version
 	Version string
 
-	handle   codec.Handle
+	handle   codec.Handle `mg.Nillable:"true"`
 	settings codec.Raw
 }
 
+// Settings unmarshals the internal settings sent from the editor into v.
+// If no settings were sent, it returns ErrNoSettings,
+// otherwise it returns any error from unmarshalling.
 func (ep *EditorProps) Settings(v interface{}) error {
 	if ep.handle == nil || len(ep.settings) == 0 {
 		return ErrNoSettings
@@ -191,52 +181,133 @@ func (ep *EditorProps) Settings(v interface{}) error {
 	return codec.NewDecoderBytes(ep.settings, ep.handle).Decode(v)
 }
 
+// EditorConfig is the common interface between internally supported editors.
+//
+// The main implementation is `sublime.Config`
 type EditorConfig interface {
+	// EditorConfig returns data to be sent to the editor.
 	EditorConfig() interface{}
+
+	// EnabledForLangs is a hint to the editor listing the languages
+	// for which actions should be dispatched.
+	//
+	// To request actions for all languages, use `"*"` (the default)
 	EnabledForLangs(langs ...string) EditorConfig
 }
 
-type stickyState struct {
-	View   *View
-	Env    EnvMap
+// StickyState is state that's persisted from one reduction to the next.
+// It holds the current state of the editor.
+//
+// All fields are readonly and should only be assigned to during a call to State.Copy().
+// Child fields esp. View should not be assigned to.
+type StickyState struct {
+	// View describes the current state of the view.
+	// When constructed correctly (through Store.NewCtx()), View is never nil.
+	View *View
+
+	// Env holds environment variables sent from the editor.
+	// For "go" views in the "margo.sh" tree and "margo" package,
+	// "GOPATH" is set to the GOPATH that was used to build the agent.
+	Env EnvMap
+
+	// Editor holds data about the editor
 	Editor EditorProps
+
+	// Config holds config data for the editor to use
+	Config EditorConfig `mg.Nillable:"true"`
 }
 
+// State holds data about the state of the editor, and transformations made by reducers
+//
+// All fields are readonly and should only be assigned to during a call to State.Copy()
+// Methods on this object that return *State, return a new object.
+// As an optimization/implementation details, the methods may choose to return
+// the input state object if no updates are done.
+//
+// New instances can be obtained through Store.NewCtx()
+//
+// Except StickyState, all fields are cleared at the start of a new dispatch.
+// Fields that to be present for some time, e.g. Status and Issues,
+// Should be populated at each call to the reducer
+// even if the action is not its primary action.
+// e.g. for linters, they should kill off a goroutine to do a compilation
+// after the file has been saved (ViewSaved) but always return its cached issues.
+//
+// If a reducer fails to return their state unless their primary action is dispatched
+// it could result in flickering in the editor for visible elements like the status
 type State struct {
-	stickyState
-	Config        EditorConfig
-	Status        StrSet
-	Errors        StrSet
-	Completions   []Completion
-	Tooltips      []Tooltip
-	Issues        IssueSet
+	// StickyState holds the current state of the editor
+	StickyState
+
+	// Status holds the list of status messages to show in the view
+	Status StrSet
+
+	// Errors hold the list of error to display to the user
+	Errors StrSet
+
+	// Completions holds the list of completions to show to the user
+	Completions []Completion
+
+	// Issues holds the list of issues to present to the user
+	Issues IssueSet
+
+	// BuiltinCmds holds the list of builtin commands.
+	// It's usually populated during the RunCmd action.
+	BuiltinCmds BultinCmdList
+
+	// UserCmds holds the list of user commands.
+	// It's usually populated during the QueryUserCmds action.
+	UserCmds []UserCmd
+
+	// clientActions is a list of client actions to dispatch in the editor
 	clientActions []clientActionType
-	BuiltinCmds   BultinCmdList
-	UserCmds      []UserCmd
 }
 
+// ActionLabel returns a label for the actions act.
+// It takes into account mg.Render being an alias for nil.
+func ActionLabel(act Action) string {
+	t := reflect.TypeOf(act)
+	if t != nil {
+		if s := act.ActionLabel(); s != "" {
+			return s
+		}
+		return t.String()
+	}
+	return "mg.Render"
+}
+
+// newState create a new State object ensuring View is initialized correctly.
 func newState(sto *Store) *State {
 	return &State{
-		stickyState: stickyState{View: newView(sto)},
+		StickyState: StickyState{View: newView(sto)},
 	}
 }
 
+// new creates a new State sharing State.StickyState
 func (st *State) new() *State {
-	return &State{stickyState: st.stickyState}
+	return &State{StickyState: st.StickyState}
 }
 
+// Copy create a shallow copy of the State.
+//
+// It applies the functions in updaters to the new object.
+// Updating the new State via these functions is preferred to assigning to the new object
 func (st *State) Copy(updaters ...func(*State)) *State {
 	x := *st
+	st = &x
+
 	for _, f := range updaters {
-		f(&x)
+		f(st)
 	}
-	return &x
+	return st
 }
 
+// AddStatusf is equivalent to State.AddStatus(fmt.Sprintf())
 func (st *State) AddStatusf(format string, a ...interface{}) *State {
 	return st.AddStatus(fmt.Sprintf(format, a...))
 }
 
+// AddStatus adds the list of messages in l to State.Status.
 func (st *State) AddStatus(l ...string) *State {
 	if len(l) == 0 {
 		return st
@@ -246,10 +317,12 @@ func (st *State) AddStatus(l ...string) *State {
 	})
 }
 
-func (st *State) Errorf(format string, a ...interface{}) *State {
+// AddErrorf is equivalent to State.AddError(fmt.Sprintf())
+func (st *State) AddErrorf(format string, a ...interface{}) *State {
 	return st.AddError(fmt.Errorf(format, a...))
 }
 
+// AddError adds the non-nil errors in l to State.Errors.
 func (st *State) AddError(l ...error) *State {
 	if len(l) == 0 {
 		return st
@@ -263,30 +336,44 @@ func (st *State) AddError(l ...error) *State {
 	})
 }
 
+// SetConfig updates the State.Config.
 func (st *State) SetConfig(c EditorConfig) *State {
 	return st.Copy(func(st *State) {
 		st.Config = c
 	})
 }
 
+// SetSrc is a wrapper around View.SetSrc().
+// If `len(src) == 0` it does nothing because this is almost always a bug.
 func (st *State) SetSrc(src []byte) *State {
+	if len(src) == 0 {
+		return st
+	}
 	return st.Copy(func(st *State) {
 		st.View = st.View.SetSrc(src)
 	})
 }
 
+func (st *State) SetView(v *View) *State {
+	if st.View == v {
+		return st
+	}
+	st = st.Copy()
+	st.View = v
+	return st
+}
+
+// AddCompletions adds the completions in l to State.Completions
 func (st *State) AddCompletions(l ...Completion) *State {
+	if len(l) == 0 {
+		return st
+	}
 	return st.Copy(func(st *State) {
 		st.Completions = append(st.Completions[:len(st.Completions):len(st.Completions)], l...)
 	})
 }
 
-func (st *State) AddTooltips(l ...Tooltip) *State {
-	return st.Copy(func(st *State) {
-		st.Tooltips = append(st.Tooltips[:len(st.Tooltips):len(st.Tooltips)], l...)
-	})
-}
-
+// AddIssues adds the list of issues in l to State.Issues
 func (st *State) AddIssues(l ...Issue) *State {
 	if len(l) == 0 {
 		return st
@@ -296,6 +383,7 @@ func (st *State) AddIssues(l ...Issue) *State {
 	})
 }
 
+// AddBuiltinCmds adds the list of builtin commands in l to State.BuiltinCmds
 func (st *State) AddBuiltinCmds(l ...BultinCmd) *State {
 	if len(l) == 0 {
 		return st
@@ -305,6 +393,7 @@ func (st *State) AddBuiltinCmds(l ...BultinCmd) *State {
 	})
 }
 
+// AddUserCmds adds the list of user commands in l to State.userCmds
 func (st *State) AddUserCmds(l ...UserCmd) *State {
 	if len(l) == 0 {
 		return st
@@ -314,6 +403,7 @@ func (st *State) AddUserCmds(l ...UserCmd) *State {
 	})
 }
 
+// addClientActions adds the list of client actions in l to State.clientActions
 func (st *State) addClientActions(l ...clientAction) *State {
 	if len(l) == 0 {
 		return st

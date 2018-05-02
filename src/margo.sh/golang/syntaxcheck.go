@@ -1,42 +1,33 @@
 package golang
 
 import (
-	"margo.sh/mg"
 	"go/scanner"
+	"margo.sh/mg"
 )
 
-type SyntaxCheck struct{}
+type SyntaxCheck struct{ mg.ReducerType }
 
 func (sc *SyntaxCheck) Reduce(mx *mg.Ctx) *mg.State {
-	st := mx.State
-	if !st.View.LangIs("go") {
-		return st
+	if mx.LangIs("go") && mx.ActionIs(mg.ViewActivated{}, mg.ViewModified{}, mg.ViewSaved{}) {
+		go sc.check(mx)
 	}
-
-	v := st.View
-	src, err := v.ReadAll()
-	if err != nil {
-		return st.Errorf("cannot read: %s: %s", v.Filename(), err)
-	}
-
-	type key struct{ hash string }
-	k := key{mg.SrcHash(src)}
-	if issues, ok := mx.Store.Get(k).(mg.IssueSet); ok {
-		return st.AddIssues(issues...)
-	}
-
-	if !mx.ActionIs(mg.ViewActivated{}, mg.ViewModified{}, mg.ViewSaved{}, mg.QueryIssues{}) {
-		return st
-	}
-
-	pf := ParseFile(mx.Store, v.Filename(), src)
-	issues := sc.errsToIssues(v, pf.ErrorList)
-	mx.Store.Put(k, issues)
-
-	return st.AddIssues(issues...)
+	return mx.State
 }
 
-func (_ *SyntaxCheck) errsToIssues(v *mg.View, el scanner.ErrorList) mg.IssueSet {
+func (sc *SyntaxCheck) check(mx *mg.Ctx) {
+	src, _ := mx.View.ReadAll()
+	pf := ParseFile(mx.Store, mx.View.Filename(), src)
+	type Key struct{}
+	mx.Store.Dispatch(mg.StoreIssues{
+		Key: mg.IssueKey{
+			Key:  Key{},
+			Name: mx.View.Name,
+		},
+		Issues: sc.errsToIssues(mx.View, pf.ErrorList),
+	})
+}
+
+func (sc *SyntaxCheck) errsToIssues(v *mg.View, el scanner.ErrorList) mg.IssueSet {
 	issues := make(mg.IssueSet, len(el))
 	for i, e := range el {
 		issues[i] = mg.Issue{

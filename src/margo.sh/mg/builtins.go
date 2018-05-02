@@ -3,13 +3,12 @@ package mg
 import (
 	"bytes"
 	"fmt"
-	"margo.sh/mgutil"
 	"os"
 	"sort"
 )
 
 var (
-	Builtins = BuiltinCmds{}
+	Builtins = builtins{}
 )
 
 type BultinCmdList []BultinCmd
@@ -31,14 +30,16 @@ func (bcl BultinCmdList) Lookup(name string) (cmd BultinCmd, found bool) {
 	panic("internal error: the `.exec` BuiltinCmd is not defined")
 }
 
-type BuiltinCmds struct{}
+// BuiltinCmds implements various builtin commands.
+type builtins struct{ ReducerType }
 
-func (bc BuiltinCmds) ExecCmd(bx *BultinCmdCtx) *State {
-	go bc.execCmd(bx)
+// ExecCmd implements the `.exec` builtin.
+func (b builtins) ExecCmd(bx *BultinCmdCtx) *State {
+	go b.execCmd(bx)
 	return bx.State
 }
 
-func (bc BuiltinCmds) execCmd(bx *BultinCmdCtx) {
+func (b builtins) execCmd(bx *BultinCmdCtx) {
 	defer bx.Output.Close()
 
 	if bx.Name == ".exec" {
@@ -54,7 +55,10 @@ func (bc BuiltinCmds) execCmd(bx *BultinCmdCtx) {
 	bx.RunProc()
 }
 
-func (bc BuiltinCmds) TypeCmd(bx *BultinCmdCtx) *State {
+// TypeCmd tries to find the bx.Args in commands, and writes the description of
+// the commands into provided buffer. If the Args is empty, it uses all
+// available commands.
+func (b builtins) TypeCmd(bx *BultinCmdCtx) *State {
 	cmds := bx.BuiltinCmds
 	names := bx.Args
 	if len(names) == 0 {
@@ -74,7 +78,9 @@ func (bc BuiltinCmds) TypeCmd(bx *BultinCmdCtx) *State {
 	return bx.State
 }
 
-func (bc BuiltinCmds) EnvCmd(bx *BultinCmdCtx) *State {
+// EnvCmd finds all environment variables corresponding to bx.Args into the
+// bx.Output buffer.
+func (b builtins) EnvCmd(bx *BultinCmdCtx) *State {
 	buf := &bytes.Buffer{}
 	names := bx.Args
 	if len(names) == 0 {
@@ -92,15 +98,17 @@ func (bc BuiltinCmds) EnvCmd(bx *BultinCmdCtx) *State {
 	return bx.State
 }
 
-func (bc BuiltinCmds) Commands() BultinCmdList {
+// Commands returns a list of predefined commands.
+func (b builtins) Commands() BultinCmdList {
 	return []BultinCmd{
-		BultinCmd{Name: ".env", Desc: "List env vars", Run: bc.EnvCmd},
-		BultinCmd{Name: ".exec", Desc: "Run a command through os/exec", Run: bc.ExecCmd},
-		BultinCmd{Name: ".type", Desc: "Lists all builtins or which builtin handles a command", Run: bc.TypeCmd},
+		BultinCmd{Name: ".env", Desc: "List env vars", Run: b.EnvCmd},
+		BultinCmd{Name: ".exec", Desc: "Run a command through os/exec", Run: b.ExecCmd},
+		BultinCmd{Name: ".type", Desc: "Lists all builtins or which builtin handles a command", Run: b.TypeCmd},
 	}
 }
 
-func (bc BuiltinCmds) Reduce(mx *Ctx) *State {
+// Reduce adds the list of predefined builtins for the RunCmd.
+func (bc builtins) Reduce(mx *Ctx) *State {
 	if _, ok := mx.Action.(RunCmd); ok {
 		return mx.State.AddBuiltinCmds(bc.Commands()...)
 	}
@@ -139,10 +147,12 @@ func (bx *BultinCmdCtx) RunProc() {
 		err = p.Wait()
 	}
 	if err != nil {
-		fmt.Fprintf(bx.Output, "`%s` exited: %s\n", mgutil.QuoteCmd(bx.Name, bx.Args...), err)
+		fmt.Fprintf(bx.Output, "`%s` exited: %s\n", p.Title, err)
 	}
 }
 
+// StartProc creates a new Proc and starts the underlying process.
+// It always returns an initialised Proc.
 func (bx *BultinCmdCtx) StartProc() (*Proc, error) {
 	p := newProc(bx)
 	return p, p.start()

@@ -132,13 +132,16 @@ type IssueKey struct {
 }
 
 type issueKeySupport struct {
+	ReducerType
 	issues map[IssueKey]IssueSet
+}
+
+func (iks *issueKeySupport) ReducerMount(mx *Ctx) {
+	iks.issues = map[IssueKey]IssueSet{}
 }
 
 func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
 	switch act := mx.Action.(type) {
-	case Started:
-		iks.issues = map[IssueKey]IssueSet{}
 	case StoreIssues:
 		if len(act.Issues) == 0 {
 			delete(iks.issues, act.Key)
@@ -174,7 +177,7 @@ func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
 	return mx.State.AddIssues(issues...)
 }
 
-type issueStatusSupport struct{}
+type issueStatusSupport struct{ ReducerType }
 
 func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 	if len(mx.Issues) == 0 {

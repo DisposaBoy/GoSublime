@@ -86,18 +86,22 @@ func Margo(ma mg.Args) {
 }
 
 // DayTimeStatus adds the current day and time to the status bar
-var DayTimeStatus = mg.Reduce(func(mx *mg.Ctx) *mg.State {
-	if _, ok := mx.Action.(mg.Started); ok {
-		dispatch := mx.Store.Dispatch
-		// kick off the ticker when we start
-		go func() {
-			ticker := time.NewTicker(1 * time.Second)
-			for range ticker.C {
-				dispatch(mg.Render)
-			}
-		}()
-	}
+type DayTimeStatus struct {
+	mg.ReducerType
+}
 
+func (dts DayTimeStatus) ReducerMount(mx *mg.Ctx) {
+	// kick off the ticker when we start
+	dispatch := mx.Store.Dispatch
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		for range ticker.C {
+			dispatch(mg.Render)
+		}
+	}()
+}
+
+func (dts DayTimeStatus) Reduce(mx *mg.Ctx) *mg.State {
 	// we always want to render the time
 	// otherwise it will sometimes disappear from the status bar
 	now := time.Now()
@@ -106,10 +110,10 @@ var DayTimeStatus = mg.Reduce(func(mx *mg.Ctx) *mg.State {
 		format = "Mon, 15 04"
 	}
 	return mx.AddStatus(now.Format(format))
-})
+}
 
 // MySnippets is a slice of functions returning our own snippets
-var MySnippets = golang.SnippetFuncs{
+var MySnippets = golang.SnippetFuncs(
 	func(cx *golang.CompletionCtx) []mg.Completion {
 		// if we're not in a block (i.e. function), do nothing
 		if !cx.Scope.Is(golang.BlockScope) {
@@ -124,4 +128,4 @@ var MySnippets = golang.SnippetFuncs{
 			},
 		}
 	},
-}
+)

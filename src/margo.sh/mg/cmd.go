@@ -2,15 +2,16 @@ package mg
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"margo.sh/mgutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 )
 
+// CmdOutputWriter writes a command output to the writer.
 type CmdOutputWriter struct {
 	io.Writer
 	io.Closer
@@ -22,16 +23,20 @@ type CmdOutputWriter struct {
 	closed bool
 }
 
+// Copy applies updaters to a new copy of the writer.
 func (w *CmdOutputWriter) Copy(updaters ...func(*CmdOutputWriter)) *CmdOutputWriter {
-	p := *w
-	p.buf = append([]byte{}, w.buf...)
-	p.Writer = nil
-	p.Closer = nil
-	w = &p
-	for _, f := range updaters {
-		f(w)
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	p := &CmdOutputWriter{
+		Fd:       w.Fd,
+		Dispatch: w.Dispatch,
 	}
-	return w
+	p.buf = append(p.buf, w.buf...)
+	for _, f := range updaters {
+		f(p)
+	}
+	return p
 }
 
 func (w *CmdOutputWriter) Write(p []byte) (int, error) {
@@ -57,6 +62,9 @@ func (w *CmdOutputWriter) write(writeIfClosed bool, p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Close writes provided output(s) and closes the writer. It returns
+// os.ErrClosed if Close has already been called. If the Closer is not nil
+// w.Closer.Close() method will be called.
 func (w *CmdOutputWriter) Close(output ...[]byte) error {
 	defer w.dispatch()
 
@@ -89,6 +97,8 @@ func (w *CmdOutputWriter) dispatch() {
 	}
 }
 
+// Output returns the data buffered from previous calls to w.Write() and clears
+// the buffer.
 func (w *CmdOutputWriter) Output() CmdOutput {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -106,7 +116,7 @@ type CmdOutput struct {
 	Close  bool
 }
 
-type cmdSupport struct{}
+type cmdSupport struct{ ReducerType }
 
 func (cs *cmdSupport) Reduce(mx *Ctx) *State {
 	switch act := mx.Action.(type) {
@@ -143,6 +153,8 @@ type RunCmd struct {
 }
 
 type Proc struct {
+	Title string
+
 	bx     *BultinCmdCtx
 	mu     sync.RWMutex
 	done   chan struct{}
@@ -163,11 +175,22 @@ func newProc(bx *BultinCmdCtx) *Proc {
 	cmd.Stdout = bx.Output
 	cmd.Stderr = bx.Output
 	cmd.SysProcAttr = pgSysProcAttr
+
+	name := filepath.Base(bx.Name)
+	args := make([]string, len(bx.Args))
+	for i, s := range bx.Args {
+		if filepath.IsAbs(s) {
+			s = filepath.Base(s)
+		}
+		args[i] = s
+	}
+
 	return &Proc{
-		done: make(chan struct{}),
-		bx:   bx,
-		cmd:  cmd,
-		cid:  bx.CancelID,
+		Title: "`" + mgutil.QuoteCmd(name, args...) + "`",
+		done:  make(chan struct{}),
+		bx:    bx,
+		cmd:   cmd,
+		cid:   bx.CancelID,
 	}
 }
 
@@ -188,7 +211,7 @@ func (p *Proc) start() error {
 
 	p.task = p.bx.Begin(Task{
 		CancelID: p.cid,
-		Title:    fmt.Sprintf("Proc`%s`", mgutil.QuoteCmd(p.bx.Name, p.bx.Args...)),
+		Title:    p.Title,
 		Cancel:   p.Cancel,
 	})
 	go p.dispatcher()

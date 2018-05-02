@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	DefaultConfig = Config{}
+	DefaultConfig = Config{}.EnabledForLangs("*")
 
 	_ mg.EditorConfig = DefaultConfig
 )

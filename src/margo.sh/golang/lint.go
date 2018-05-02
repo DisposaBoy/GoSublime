@@ -113,6 +113,7 @@ func (ls *linterSupport) lint(lo LinterOpts, dispatch mg.Dispatcher, st *mg.Stat
 }
 
 type Linter struct {
+	mg.ReducerType
 	linterSupport
 
 	Name    string

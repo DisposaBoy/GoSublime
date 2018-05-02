@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"github.com/ugorji/go/codec"
 	"io"
+	"margo.sh/mgutil"
+	"margo.sh/misc/pf"
 	"os"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
@@ -58,9 +61,18 @@ type AgentConfig struct {
 	// Default: json
 	Codec string
 
-	Stdin  io.ReadCloser
+	// Stdin is the stream through which the client sends encoded request data
+	// It's closed when Agent.Run() returns
+	Stdin io.ReadCloser
+
+	// Stdout is the stream through which the server (the Agent type) sends encoded responses
+	// It's closed when Agent.Run() returns
 	Stdout io.WriteCloser
-	Stderr io.WriteCloser
+
+	// Stderr is used for logging
+	// Clients are encouraged to leave it open until the process exits
+	// to allow for logging to keep working during process shutdown
+	Stderr io.Writer
 }
 
 type agentReqAction struct {
@@ -72,13 +84,23 @@ type agentReq struct {
 	Cookie  string
 	Actions []agentReqAction
 	Props   clientProps
+	Sent    string
+	Profile *pf.Profile
 }
 
 func newAgentReq(kvs KVStore) *agentReq {
-	return &agentReq{Props: makeClientProps(kvs)}
+	return &agentReq{
+		Props:   makeClientProps(kvs),
+		Profile: pf.NewProfile(""),
+	}
 }
 
 func (rq *agentReq) finalize(ag *Agent) {
+	rq.Profile.SetName(rq.Cookie)
+	const layout = "2006-01-02T15:04:05.000000"
+	if t, err := time.ParseInLocation(layout, rq.Sent, time.UTC); err == nil {
+		rq.Profile.Sample("ipc|transport", time.Since(t))
+	}
 	rq.Props.finalize(ag)
 }
 
@@ -90,14 +112,26 @@ type agentRes struct {
 
 func (rs agentRes) finalize() interface{} {
 	out := struct {
+		_struct struct{} `codec:",omitempty"`
+
 		agentRes
 		State struct {
+			_struct struct{} `codec:",omitempty"`
+			Profile,
+			Editor,
+			Env struct{}
+
 			State
 			Config        interface{}
 			ClientActions []clientActionType
 		}
 	}{}
+
 	out.agentRes = rs
+	if rs.State == nil {
+		return out
+	}
+
 	out.State.State = *rs.State
 	inSt := &out.State.State
 	outSt := &out.State
@@ -129,7 +163,7 @@ type Agent struct {
 
 	stdin  io.ReadCloser
 	stdout io.WriteCloser
-	stderr io.WriteCloser
+	stderr io.Writer
 
 	handle codec.Handle
 	enc    *codec.Encoder
@@ -145,40 +179,42 @@ type Agent struct {
 	closed bool
 }
 
+// Run starts the Agent's event loop. It returns immediately on the first error.
 func (ag *Agent) Run() error {
 	defer ag.shutdown()
 	return ag.communicate()
 }
 
 func (ag *Agent) communicate() error {
-	ag.Log.Println("started")
-	ag.Store.dispatch(Started{})
-	ag.Store.ready()
+	sto := ag.Store
+	unsub := sto.Subscribe(ag.sub)
+	defer unsub()
+
+	sto.mount()
 
 	for {
-		rq := newAgentReq(ag.Store)
+		rq := newAgentReq(sto)
 		if err := ag.dec.Decode(rq); err != nil {
 			if err == io.EOF {
 				return nil
 			}
 			return fmt.Errorf("ipc.decode: %s", err)
 		}
+
 		rq.finalize(ag)
 		ag.handleReq(rq)
 	}
-	return nil
 }
 
 func (ag *Agent) handleReq(rq *agentReq) {
+	rq.Profile.Push("queue.wait")
 	ag.wg.Add(1)
-	defer ag.wg.Done()
+	ag.Store.dsp.hi <- func() {
+		defer ag.wg.Done()
+		rq.Profile.Pop()
 
-	// TODO: put this on a channel in the future.
-	// at the moment we lock the store and block new requests to maintain request/response order
-	// but decoding time could become a problem if we start sending large requests from the client
-	// we currently only have 1 client (GoSublime) that we also control so it's ok for now...
-
-	ag.Store.syncRq(ag, rq)
+		ag.Store.handleReq(rq)
+	}
 }
 
 func (ag *Agent) createAction(ra agentReqAction, h codec.Handle) (Action, error) {
@@ -188,8 +224,11 @@ func (ag *Agent) createAction(ra agentReqAction, h codec.Handle) (Action, error)
 	return nil, fmt.Errorf("Unknown action: %s", ra.Name)
 }
 
-func (ag *Agent) listener(st *State) {
-	err := ag.send(agentRes{State: st})
+func (ag *Agent) sub(mx *Ctx) {
+	err := ag.send(agentRes{
+		State:  mx.State,
+		Cookie: mx.Cookie,
+	})
 	if err != nil {
 		ag.Log.Println("agent.send failed. shutting down ipc:", err)
 		go ag.shutdown()
@@ -204,6 +243,12 @@ func (ag *Agent) send(res agentRes) error {
 	return ag.enc.Encode(res.finalize())
 }
 
+// shutdown sequence:
+// * stop incoming requests
+// * wait for all reqs to complete
+// * tell reducers to unmount
+// * stop outgoing responses
+// * tell the world we're done
 func (ag *Agent) shutdown() {
 	sd := &ag.sd
 	sd.mu.Lock()
@@ -214,22 +259,23 @@ func (ag *Agent) shutdown() {
 	}
 	sd.closed = true
 
-	// shutdown sequence:
-	// * stop incoming requests
-	// * wait for all reqs to complete
-	// * tell reducers we're shutting down
-	// * stop outgoing responses
-	// * tell the world we're done
-
 	// defers because we want *some* guarantee that all these steps will be taken
 	defer close(sd.done)
 	defer ag.stdout.Close()
-	defer ag.Store.dispatch(Shutdown{})
+	defer ag.Store.unmount()
 	defer ag.wg.Wait()
 	defer ag.stdin.Close()
 }
 
+// NewAgent returns a new Agent, initialised using the settings in cfg.
+// If cfg.Codec is invalid (see CodecNames), `DefaultCodec` will be used as the
+// codec and an error returned.
+// An initialised, usable agent object is always returned.
+//
+// For tests, NewTestingAgent(), NewTestingStore() and NewTestingCtx()
+// are preferred to creating a new agent directly
 func NewAgent(cfg AgentConfig) (*Agent, error) {
+	var err error
 	done := make(chan struct{})
 	ag := &Agent{
 		Name:   cfg.AgentName,
@@ -249,31 +295,44 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 	if ag.stderr == nil {
 		ag.stderr = os.Stderr
 	}
-	ag.stdin = &LockedReadCloser{ReadCloser: ag.stdin}
-	ag.stdout = &LockedWriteCloser{WriteCloser: ag.stdout}
-	ag.stderr = &LockedWriteCloser{WriteCloser: ag.stderr}
+	ag.stdin = &mgutil.IOWrapper{
+		Locker: &sync.Mutex{},
+		Reader: ag.stdin,
+		Closer: ag.stdin,
+	}
+	ag.stdout = &mgutil.IOWrapper{
+		Locker: &sync.Mutex{},
+		Writer: ag.stdout,
+		Closer: ag.stdout,
+	}
+	ag.stderr = &mgutil.IOWrapper{
+		Locker: &sync.Mutex{},
+		Writer: ag.stderr,
+	}
 	ag.Log = NewLogger(ag.stderr)
-	ag.Store = newStore(ag, ag.listener).
+	ag.Store = newStore(ag, ag.sub).
 		Before(defaultReducers.before...).
 		Use(defaultReducers.use...).
 		After(defaultReducers.after...)
 
 	if e := os.Getenv("MARGO_BUILD_ERROR"); e != "" {
-		ag.Store.Use(Reduce(func(mx *Ctx) *State {
+		ag.Store.Use(NewReducer(func(mx *Ctx) *State {
 			return mx.AddStatus(e)
 		}))
 	}
 
 	if ag.handle == nil {
-		return ag, fmt.Errorf("Invalid codec '%s'. Expected %s", cfg.Codec, CodecNamesStr)
+		err = fmt.Errorf("Invalid codec '%s'. Expected %s", cfg.Codec, CodecNamesStr)
+		ag.handle = codecHandles[DefaultCodec]
 	}
 	ag.encWr = bufio.NewWriter(ag.stdout)
 	ag.enc = codec.NewEncoder(ag.encWr, ag.handle)
 	ag.dec = codec.NewDecoder(bufio.NewReader(ag.stdin), ag.handle)
 
-	return ag, nil
+	return ag, err
 }
 
+// Args returns a new copy of agent's Args.
 func (ag *Agent) Args() Args {
 	return Args{
 		Store: ag.Store,
