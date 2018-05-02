@@ -2,6 +2,7 @@ from . import _dbg
 from . import sh, gs, gsq
 from .margo_common import TokenCounter, OutputLogger, Chan
 from .margo_state import State, make_props, actions
+from datetime import datetime
 import os
 import sublime
 import subprocess
@@ -9,17 +10,24 @@ import threading
 import time
 
 ipc_codec = 'msgpack'
-
+ipc_silent_exceptions = (
+	EOFError,
+	BrokenPipeError,
+	ValueError,
+)
 if ipc_codec == 'msgpack':
 	from .vendor import umsgpack
+	ipc_loads = umsgpack.loads
 	ipc_dec = umsgpack.load
 	ipc_enc = umsgpack.dump
-	ipc_ignore_exceptions = (umsgpack.InsufficientDataException, BrokenPipeError, ValueError)
+	ipc_silent_exceptions += (
+		umsgpack.InsufficientDataException,
+	)
 elif ipc_codec == 'cbor':
 	from .vendor.cbor_py import cbor
+	ipc_loads = cbor.loads
 	ipc_dec = cbor.load
 	ipc_enc = cbor.dump
-	ipc_ignore_exceptions = (BrokenPipeError, ValueError)
 else:
 	raise Exception('impossibru')
 
@@ -155,7 +163,7 @@ class MargoAgent(threading.Thread):
 		try:
 			ipc_enc(rq.data(), self.proc.stdin)
 			exc = None
-		except ipc_ignore_exceptions as e:
+		except ipc_silent_exceptions as e:
 			exc = e
 		except Exception as e:
 			exc = e
@@ -195,10 +203,9 @@ class MargoAgent(threading.Thread):
 
 	def send(self, *, actions=[], cb=None, view=None):
 		view = gs.active_view(view=view)
-		acts = self._queued_acts(view)
 		if not isinstance(actions, list):
-			raise Exception('actions is %s' % type(actions))
-		acts.extend(actions)
+			raise Exception('actions must be a list, not %s' % type(actions))
+		acts = self._queued_acts(view) + actions
 		rq = AgentReq(self, acts, cb=cb, view=view)
 		timeout = 0.200
 		if not self.started.wait(timeout):
@@ -267,7 +274,7 @@ class MargoAgent(threading.Thread):
 				v = ipc_dec(self.proc.stdout) or {}
 				if v:
 					self._handle_recv_ipc(v)
-		except ipc_ignore_exceptions:
+		except ipc_silent_exceptions:
 			pass
 		except Exception as e:
 			self.out.println('ipc: recv: %s: %s' % (e, v))
@@ -352,6 +359,7 @@ class AgentReq(object):
 			'Cookie': self.cookie,
 			'Props': self.props,
 			'Actions': self.actions,
+			'Sent': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f'),
 		}
 
 DEFAULT_RESPONSE = AgentRes(error='default agent response')

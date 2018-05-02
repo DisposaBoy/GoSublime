@@ -483,6 +483,7 @@ def share(src, f):
 		f({}, 'Share cancelled')
 
 def acall(method, arg, cb):
+	print('acall', method)
 	gs.mg9_send_q.put((method, arg, cb))
 
 def bcall(method, arg, err_title=''):

@@ -565,7 +565,7 @@ def _save_all(win, wd):
 			try:
 				fn = v.file_name()
 				if fn and v.is_dirty() and fn.endswith('.go') and os.path.dirname(fn) == wd:
-					v.run_command('gs_fmt_save')
+					v.run_command('save')
 			except Exception:
 				gs.error_traceback(DOMAIN)
 
@@ -695,7 +695,7 @@ def cmd_clear(view, edit, args, wd, rkey):
 
 def cmd_go(view, edit, args, wd, rkey):
 	_save_all(view.window(), wd)
-	_rcmd(view, edit, 'go', args, wd, rkey)
+	sublime.set_timeout_async(lambda: _rcmd(view, edit, 'go', args, wd, rkey))
 
 def cmd_cancel_replay(view, edit, args, wd, rkey):
 	cid = ''

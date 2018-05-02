@@ -108,7 +108,7 @@ def issues_to_items(view, issues):
 	selected = []
 	for idx, isu in enumerate(index):
 		if vp.match(isu):
-			title = 'Line %d' % (isu.row + 1)
+			title = '%s:%d' % (isu.basename(), isu.row + 1)
 			selected.append((abs(isu.row - row), idx))
 		else:
 			title = '%s:%d' % (isu.relpath(dir) or isu.name, isu.row + 1)
@@ -170,5 +170,5 @@ class MargoOpenExtensionCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		fn = mg.extension_file(True)
 		if fn:
-			gs.focus(fn, focus_pat='func Margo')
+			gs.focus(fn, row=-1, focus_pat='')
 

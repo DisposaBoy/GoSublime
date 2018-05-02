@@ -543,7 +543,12 @@ def do_focus(fn, row, col, win, focus_pat, cb):
 			r = view.find(focus_pat, 0)
 			if r:
 				row, col = view.rowcol(r.begin())
+
+		if row < 0:
+			row, col = rowcol(view)
+
 		view.run_command("gs_goto_row_col", { "row": row, "col": col })
+
 		if cb:
 			cb(True)
 

@@ -148,6 +148,12 @@ class Issue(PathName):
 
 		return os.path.relpath(self.path, dir)
 
+	def basename(self):
+		if not self.path:
+			return self.name
+
+		return os.path.basename(self.path)
+
 class ResView(object):
 	def __init__(self, v={}):
 		self.name = v.get('Name') or ''

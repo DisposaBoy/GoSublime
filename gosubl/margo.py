@@ -17,12 +17,15 @@ class MargoSingleton(object):
 		self.agent_tokens = TokenCounter('agent', format='{}#{:03d}', start=6)
 		self.run_tokens = TokenCounter('9o.run')
 		self.agent = None
-		self.enabled_for_langs = []
+		self.enabled_for_langs = ['*']
 		self.state = State()
 		self.status = []
 		self.output_handler = None
 
 	def render(self, rs=None):
+		# ST has some locking issues due to its "thread-safe" API
+		# don't access things like sublime.active_view() directly
+
 		if rs:
 			self.state = rs.state
 			cfg = rs.state.config
@@ -32,14 +35,17 @@ class MargoSingleton(object):
 			if cfg.override_settings:
 				gs._mg_override_settings = cfg.override_settings
 
-		render(view=gs.active_view(), state=self.state, status=self.status)
+		def _render():
+			render(view=gs.active_view(), state=self.state, status=self.status)
 
-		if rs:
-			if rs.agent is self.agent:
-				sublime.set_timeout_async(lambda: self._handle_client_actions(rs), 0)
+			if rs:
+				self._handle_client_actions(rs)
 
-			if rs.agent and rs.agent is not self.agent:
-				rs.agent.stop()
+				if rs.agent and rs.agent is not self.agent:
+					rs.agent.stop()
+
+		sublime.set_timeout(_render)
+
 
 	def _handle_act_restart(self, rs, act):
 		self.restart()
@@ -159,7 +165,7 @@ class MargoSingleton(object):
 		if not lang:
 			return None
 
-		rs = self.send(view=view, actions=[actions.QueryCompletions]).wait(0.300)
+		rs = self.send(view=view, actions=[actions.QueryCompletions]).wait(0.500)
 		if not rs:
 			self.out.println('aborting QueryCompletions. it did not respond in time')
 			return None

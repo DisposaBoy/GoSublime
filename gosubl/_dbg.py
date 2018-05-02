@@ -2,7 +2,7 @@ import sys
 import time
 
 class pf(object):
-	def __init__(self, print='{name}: {dur}', name='', dot='', gt=0.020):
+	def __init__(self, *, print='{name}: {dur}', name='', dot='', gt=0.020):
 		self.start = time.time()
 		self.end = 0
 		self.duration = 0

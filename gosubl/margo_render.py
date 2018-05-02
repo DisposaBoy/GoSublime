@@ -5,14 +5,11 @@ from .margo_state import ViewPathName
 import sublime
 
 STATUS_KEY = '#mg.Status'
-STATUS_PFX = '• '
-STATUS_SFX = ' •'
-STATUS_SEP = ' •• '
+STATUS_PFX = '  '
+STATUS_SFX = '  '
+STATUS_SEP = '    '
 
 def render(view, state, status=[]):
-	sublime.set_timeout_async(lambda: _render(view, state, status), 0)
-
-def _render(view, state, status):
 	_render_status(view, status + state.status)
 	_render_issues(view, state.issues)
 
