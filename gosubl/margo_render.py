@@ -43,13 +43,19 @@ can_use_colorish = int(sublime.version()) > 3143
 issue_key_pfx = '#mg.Issue.'
 issue_cfg_error = IssueCfg(
 	key = issue_key_pfx + 'error',
-	scope = 'keyword sublimelinter.mark.error region.redish',
+	scope = 'region.redish',
 	icon = 'Packages/GoSublime/images/issue.png',
 	flags = sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL,
 )
 issue_cfg_warning = IssueCfg(
 	key = issue_key_pfx + 'warning',
-	scope = 'entity sublimelinter.mark.warning region.orangish',
+	scope = 'region.orangish',
+	icon = issue_cfg_error.icon,
+	flags = issue_cfg_error.flags,
+)
+issue_cfg_notice = IssueCfg(
+	key = issue_key_pfx + 'notice',
+	scope = 'region.greenish',
 	icon = issue_cfg_error.icon,
 	flags = issue_cfg_error.flags,
 )
@@ -57,6 +63,7 @@ issue_cfg_default = issue_cfg_error
 issue_cfgs = {
 	'error': issue_cfg_error,
 	'warning': issue_cfg_warning,
+	'notice': issue_cfg_notice,
 }
 
 def _render_issues(view, issues):

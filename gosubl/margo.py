@@ -3,7 +3,7 @@ from . import gs, gsq, sh
 from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter
 from .margo_render import render, render_src
-from .margo_state import State, actions, Config, _view_scope_lang
+from .margo_state import State, actions, client_actions, Config, _view_scope_lang, view_is_9o
 from collections import namedtuple
 import glob
 import os
@@ -12,6 +12,7 @@ import time
 
 class MargoSingleton(object):
 	def __init__(self):
+		self._ready = False
 		self.package_dir = os.path.dirname(os.path.abspath(__file__))
 		self.out = OutputLogger('margo')
 		self.agent_tokens = TokenCounter('agent', format='{}#{:03d}', start=6)
@@ -21,6 +22,12 @@ class MargoSingleton(object):
 		self.state = State()
 		self.status = []
 		self.output_handler = None
+		self._client_actions_handlers = {
+			client_actions.Activate: self._handle_act_activate,
+			client_actions.Restart: self._handle_act_restart,
+			client_actions.Shutdown: self._handle_act_shutdown,
+			client_actions.CmdOutput: self._handle_act_output,
+		}
 
 	def render(self, rs=None):
 		# ST has some locking issues due to its "thread-safe" API
@@ -47,6 +54,9 @@ class MargoSingleton(object):
 		sublime.set_timeout(_render)
 
 
+	def _handle_act_activate(self, rs, act):
+		gs.focus(act.name or act.path, row=act.row, col=act.col, focus_pat='')
+
 	def _handle_act_restart(self, rs, act):
 		self.restart()
 
@@ -59,12 +69,12 @@ class MargoSingleton(object):
 			h(rs, act)
 
 	def _handle_client_actions(self, rs):
-		for a in rs.state.client_actions:
-			try:
-				f = getattr(self, '_handle_act_' + a.name)
-				f(rs, a)
-			except AttributeError:
-				self.out.println('Unknown client-action: %s: %s' % (a.name, a))
+		for act in rs.state.client_actions:
+			f = self._client_actions_handlers.get(act.action_name)
+			if f:
+				f(rs, act)
+			else:
+				self.out.println('Unknown client-action: %s: %s' % (act.action_name, act))
 
 	def render_status(self, *a):
 		self.status = list(a)
@@ -90,6 +100,9 @@ class MargoSingleton(object):
 			a.stop()
 
 	def enabled(self, view):
+		if not self._ready:
+			return False
+
 		if '*' in self.enabled_for_langs:
 			return True
 
@@ -107,7 +120,7 @@ class MargoSingleton(object):
 			return False
 
 		vs = view.settings()
-		if allow_9o and vs.get('9o'):
+		if allow_9o and view_is_9o(view):
 			return True
 
 		if vs.get('is_widget'):
@@ -117,7 +130,6 @@ class MargoSingleton(object):
 
 	def event(self, name, view, handler, args):
 		allow_9o = name in (
-			'query_completions',
 		)
 		if not self.can_trigger_event(view, allow_9o=allow_9o):
 			return None
@@ -256,6 +268,7 @@ class MargoSingleton(object):
 mg = MargoSingleton()
 
 def gs_init(_):
+	mg._ready = True
 	mg.start()
 
 def gs_fini(_):

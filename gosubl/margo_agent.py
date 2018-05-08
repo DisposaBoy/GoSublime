@@ -163,8 +163,6 @@ class MargoAgent(threading.Thread):
 		try:
 			ipc_enc(rq.data(), self.proc.stdin)
 			exc = None
-		except ipc_silent_exceptions as e:
-			exc = e
 		except Exception as e:
 			exc = e
 			if not self.stopped.is_set():

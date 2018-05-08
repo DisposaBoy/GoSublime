@@ -82,7 +82,9 @@ class GsGotoRowColCommand(sublime_plugin.TextCommand):
 		r = sublime.Region(pt, pt)
 		self.view.sel().clear()
 		self.view.sel().add(r)
-		self.view.show(pt)
+		self.view.show(pt, True)
+		xpos, ypos = self.view.viewport_position()
+		self.view.set_viewport_position((0, ypos), False)
 		dmn = 'gs.focus.%s:%s:%s' % (gs.view_fn(self.view), row, col)
 		flags = sublime.DRAW_EMPTY_AS_OVERWRITE
 		show = lambda: self.view.add_regions(dmn, [r], 'comment', 'bookmark', flags)

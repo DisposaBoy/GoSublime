@@ -63,7 +63,11 @@ class GsOnLeftClick(sublime_plugin.TextCommand):
 		view = self.view
 		if gs.is_go_source_view(view):
 			if not gstest.handle_action(view, 'left-click'):
-				view.run_command('gs_doc', {"mode": "goto"})
+				view.run_command('gs9o_open', {
+					"run": ["goto.definition"],
+					"focus_view": False,
+					"show_view": False,
+				})
 		elif view.score_selector(gs.sel(view).begin(), "text.9o") > 0:
 			view.window().run_command("gs9o_open_selection")
 

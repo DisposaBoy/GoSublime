@@ -21,6 +21,13 @@ actions = NS(**{k: {'Name': k} for k in (
 	'RunCmd',
 )})
 
+client_actions = NS(**{k: k for k in (
+	'Activate',
+	'Restart',
+	'Shutdown',
+	'CmdOutput',
+)})
+
 class Config(object):
 	def __init__(self, m):
 		self.override_settings = m.get('OverrideSettings') or {}
@@ -48,32 +55,50 @@ class State(object):
 
 		self.client_actions = []
 		for ca in (v.get('ClientActions') or []):
-			if ca.get('Name') == 'output':
-				self.client_actions.append(CmdOutput(v=ca))
-			else:
-				self.client_actions.append(ClientAction(v=ca))
+			CA = client_action_creators.get(ca.get('Name') or '') or ClientAction
+			self.client_actions.append(CA(v=ca))
 
 	def __repr__(self):
 		return repr(self.__dict__)
 
 class ClientAction(object):
 	def __init__(self, v={}):
-		self.name = v.get('Name') or ''
-		self.data = v.get('Data') or {}
+		self.action_name = v.get('Name') or ''
+		self.action_data = v.get('Data') or {}
 
 	def __repr__(self):
 		return repr(vars(self))
 
-class CmdOutput(ClientAction):
-	def __init__(self, v={}):
+class ClientAction_Output(ClientAction):
+	def __init__(self, v):
 		super().__init__(v=v)
-		self.fd = self.data.get('Fd') or ''
-		self.output = self.data.get('Output') or ''
-		self.close = self.data.get('Close') or False
-		self.fd = self.data.get('Fd') or ''
+		ad = self.action_data
+
+		self.fd = ad.get('Fd') or ''
+		self.output = ad.get('Output') or ''
+		self.close = ad.get('Close') or False
+		self.fd = ad.get('Fd') or ''
 
 	def __repr__(self):
 		return repr(vars(self))
+
+class ClientAction_Activate(ClientAction):
+	def __init__(self, v):
+		super().__init__(v=v)
+		ad = self.action_data
+
+		self.path = ad.get('Path') or ''
+		self.name = ad.get('Name') or ''
+		self.row = ad.get('Row') or 0
+		self.col = ad.get('Col') or 0
+
+	def __repr__(self):
+		return repr(vars(self))
+
+client_action_creators = {
+	client_actions.CmdOutput: ClientAction_Output,
+	client_actions.Activate: ClientAction_Activate,
+}
 
 class Completion(object):
 	def __init__(self, v):
@@ -198,38 +223,27 @@ def _editor_props(view):
 		'Settings': sett,
 	}
 
+def view_is_9o(view):
+	return view is not None and view.settings().get('9o')
+
 def _view_props(view):
-	view = gs.active_view(view=view)
+	was_9o = view_is_9o(view)
+	if was_9o:
+		view = gs.active_view()
+	else:
+		view = gs.active_view(view=view)
+
 	if view is None:
 		return {}
 
 	pos = gs.sel(view).begin()
-	row, col = view.rowcol(pos)
 	scope, lang, fn, props = _view_header(view, pos)
-	wd = gs.basedir_or_cwd(fn)
-
-	if lang == '9o':
-		if 'prompt.9o' in scope:
-			r = view.extract_scope(pos)
-			pos -= r.begin()
-			s = view.substr(r)
-			src = s.lstrip().lstrip('#').lstrip()
-			pos -= len(s) - len(src)
-			src = src.rstrip()
-		else:
-			pos = 0
-			src = ''
-
-		wd = view.settings().get('9o.wd') or wd
-		props['Path'] = '_.9o'
-	else:
-		src = _view_src(view, lang)
+	wd = gs.getwd() or gs.basedir_or_cwd(fn)
+	src = _view_src(view, lang)
 
 	props.update({
 		'Wd': wd,
 		'Pos': pos,
-		'Row': row,
-		'Col': col,
 		'Dirty': view.is_dirty(),
 		'Src': src,
 	})
@@ -272,7 +286,6 @@ def _view_header(view, pos):
 	return scope, lang, path, {
 		'Path': path,
 		'Name': view_name(view, ext=ext, lang=lang),
-		'Ext': ext,
 		'Hash': _view_hash(view),
 		'Lang': lang,
 		'Scope': scope,
@@ -296,6 +309,9 @@ def _view_scope_lang(view, pos):
 		return ('', '')
 
 	scope = view.scope_name(pos).strip().lower()
+	if view_is_9o(view):
+		return (scope, 'cmd-promp')
+
 	l = _scope_lang_pat.findall(scope)
 	lang = l[-1] if l else ''
 	return (scope, lang)
