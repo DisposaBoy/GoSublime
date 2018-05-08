@@ -10,6 +10,12 @@ import (
 var (
 	GoFmt     mg.Reducer = mg.NewReducer(goFmt)
 	GoImports mg.Reducer = mg.NewReducer(goImports)
+
+	commonFmtLangs   = []mg.Lang{mg.Go}
+	commonFmtActions = []mg.Action{
+		mg.ViewFmt{},
+		mg.ViewPreSave{},
+	}
 )
 
 func disableGsFmt(st *mg.State) *mg.State {
@@ -24,8 +30,8 @@ type FmtFunc func(mx *mg.Ctx, src []byte) ([]byte, error)
 func (ff FmtFunc) Reduce(mx *mg.Ctx) *mg.State {
 	return disableGsFmt(mgformat.FmtFunc{
 		Fmt:     ff,
-		Langs:   []string{"go"},
-		Actions: []mg.Action{mg.ViewPreSave{}},
+		Langs:   commonFmtLangs,
+		Actions: commonFmtActions,
 	}.Reduce(mx))
 }
 
@@ -39,7 +45,7 @@ func goImports(mx *mg.Ctx) *mg.State {
 	return disableGsFmt(mgformat.FmtCmd{
 		Name:    "goimports",
 		Args:    []string{"-srcdir", mx.View.Filename()},
-		Langs:   []string{"go"},
-		Actions: []mg.Action{mg.ViewPreSave{}},
+		Langs:   commonFmtLangs,
+		Actions: commonFmtActions,
 	}.Reduce(mx))
 }

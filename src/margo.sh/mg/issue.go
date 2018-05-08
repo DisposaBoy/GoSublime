@@ -12,17 +12,53 @@ import (
 )
 
 var (
-	CommonPatterns = []*regexp.Regexp{
-		regexp.MustCompile(`^\s*(?P<path>.+?\.\w+):(?P<line>\d+:)(?P<column>\d+:?)?(?P<message>.+)$`),
-		regexp.MustCompile(`^\s*(?P<path>.+?\.\w+)\((?P<line>\d+)(?:,(?P<column>\d+))?\):(?P<message>.+)$`),
+	commonPatterns = struct {
+		sync.RWMutex
+		m map[Lang][]*regexp.Regexp
+	}{
+		m: map[Lang][]*regexp.Regexp{
+			"": {
+				regexp.MustCompile(`^\s*(?P<path>.+?\.\w+):(?P<line>\d+:)(?P<column>\d+:?)?(?P<message>.+)$`),
+				regexp.MustCompile(`^\s*(?P<path>.+?\.\w+)\((?P<line>\d+)(?:,(?P<column>\d+))?\):(?P<message>.+)$`),
+			},
+		},
 	}
 )
+
+type commonPattern struct {
+	Lang     Lang
+	Patterns []*regexp.Regexp
+}
+
+func AddCommonPatterns(lang Lang, l ...*regexp.Regexp) {
+	p := &commonPatterns
+	p.Lock()
+	defer p.Unlock()
+
+	for _, k := range []Lang{"", lang} {
+		p.m[k] = append(p.m[k], l...)
+	}
+}
+
+func CommonPatterns(langs ...Lang) []*regexp.Regexp {
+	p := &commonPatterns
+	p.RLock()
+	defer p.RUnlock()
+
+	l := p.m[""]
+	l = l[:len(l):len(l)]
+	for _, lang := range langs {
+		l = append(l, p.m[lang]...)
+	}
+	return l
+}
 
 type IssueTag string
 
 const (
-	IssueError   = IssueTag("error")
-	IssueWarning = IssueTag("warning")
+	Error   = IssueTag("error")
+	Warning = IssueTag("warning")
+	Notice  = IssueTag("notice")
 )
 
 type Issue struct {
@@ -34,6 +70,13 @@ type Issue struct {
 	Tag     IssueTag
 	Label   string
 	Message string
+}
+
+func (isu Issue) finalize() Issue {
+	if isu.Tag == "" {
+		isu.Tag = Error
+	}
+	return isu
 }
 
 func (isu Issue) Equal(p Issue) bool {
@@ -79,6 +122,7 @@ func (s IssueSet) Add(l ...Issue) IssueSet {
 	res := make(IssueSet, 0, len(s)+len(l))
 	for _, lst := range []IssueSet{s, IssueSet(l)} {
 		for _, p := range lst {
+			p = p.finalize()
 			if !res.Has(p) {
 				res = append(res, p)
 			}
@@ -120,7 +164,7 @@ func (is IssueSet) AllInView(v *View) IssueSet {
 type StoreIssues struct {
 	ActionType
 
-	Key    IssueKey
+	IssueKey
 	Issues IssueSet
 }
 
@@ -144,9 +188,9 @@ func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
 	switch act := mx.Action.(type) {
 	case StoreIssues:
 		if len(act.Issues) == 0 {
-			delete(iks.issues, act.Key)
+			delete(iks.issues, act.IssueKey)
 		} else {
-			iks.issues[act.Key] = act.Issues
+			iks.issues[act.IssueKey] = act.Issues
 		}
 	}
 
@@ -156,6 +200,12 @@ func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
 	path := norm(mx.View.Path)
 	dir := norm(mx.View.Dir())
 	match := func(k IssueKey) bool {
+		// no restrictions were set
+		k.Key = nil
+		if k == (IssueKey{}) {
+			return true
+		}
+
 		if path != "" && path == k.Path {
 			return true
 		}
@@ -184,23 +234,51 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 		return mx.State
 	}
 
-	status := make([]string, 0, 3)
-	status = append(status, "placeholder")
-	inview := 0
+	type Cfg struct {
+		title  string
+		inView int
+		total  int
+	}
+	cfgs := map[IssueTag]*Cfg{
+		Error:   {title: "Errors"},
+		Warning: {title: "Warning"},
+		Notice:  {title: "Notices"},
+	}
+
+	msg := ""
 	for _, isu := range mx.Issues {
+		cfg, ok := cfgs[isu.Tag]
+		if !ok {
+			continue
+		}
+
+		cfg.total++
 		if !isu.InView(mx.View) {
 			continue
 		}
-		inview++
-		if len(status) > 1 || isu.Message == "" || isu.Row != mx.View.Row {
+		cfg.inView++
+
+		if len(msg) > 1 || isu.Message == "" || isu.Row != mx.View.Row {
 			continue
 		}
-		if isu.Label != "" {
-			status = append(status, isu.Label)
+		if isu.Label == "" {
+			msg = isu.Message
+		} else {
+			msg = isu.Label + ": " + isu.Message
 		}
-		status = append(status, isu.Message)
 	}
-	status[0] = fmt.Sprintf("Issues (%d/%d)", inview, len(mx.Issues))
+
+	status := make([]string, 0, len(cfgs)+1)
+	for _, k := range []IssueTag{Error, Warning, Notice} {
+		cfg := cfgs[k]
+		if cfg.total == 0 {
+			continue
+		}
+		status = append(status, fmt.Sprintf("%d/%d %s", cfg.inView, cfg.total, cfg.title))
+	}
+	if msg != "" {
+		status = append(status, msg)
+	}
 	return mx.AddStatus(status...)
 }
 
@@ -356,14 +434,14 @@ func (w *IssueWriter) matchOne(p *regexp.Regexp, s []byte) *Issue {
 			if lbl != "" {
 				isu.Label = lbl
 			}
-		case "error", "warning":
+		case "error", "warning", "notice":
 			isu.Tag = IssueTag(k)
 			isu.Message = str(v)
 		case "message":
 			isu.Message = str(v)
 		case "tag":
 			tag := IssueTag(str(v))
-			if tag == IssueWarning || tag == IssueError {
+			if tag == Warning || tag == Error || tag == Notice {
 				isu.Tag = tag
 			}
 		}

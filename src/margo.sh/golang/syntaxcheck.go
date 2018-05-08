@@ -3,27 +3,49 @@ package golang
 import (
 	"go/scanner"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 )
 
-type SyntaxCheck struct{ mg.ReducerType }
+type SyntaxCheck struct {
+	mg.ReducerType
+
+	q *mgutil.ChanQ
+}
+
+func (sc *SyntaxCheck) ReducerCond(mx *mg.Ctx) bool {
+	return mx.LangIs(mg.Go)
+}
+
+func (sc *SyntaxCheck) ReducerMount(mx *mg.Ctx) {
+	sc.q = mgutil.NewChanQ(1)
+	go sc.checker()
+}
+
+func (sc *SyntaxCheck) ReducerUnmount(mx *mg.Ctx) {
+	sc.q.Close()
+}
 
 func (sc *SyntaxCheck) Reduce(mx *mg.Ctx) *mg.State {
-	if mx.LangIs("go") && mx.ActionIs(mg.ViewActivated{}, mg.ViewModified{}, mg.ViewSaved{}) {
-		go sc.check(mx)
+	switch mx.Action.(type) {
+	case mg.ViewActivated, mg.ViewModified, mg.ViewSaved:
+		sc.q.Put(mx)
 	}
 	return mx.State
+}
+
+func (sc *SyntaxCheck) checker() {
+	for v := range sc.q.C() {
+		sc.check(v.(*mg.Ctx))
+	}
 }
 
 func (sc *SyntaxCheck) check(mx *mg.Ctx) {
 	src, _ := mx.View.ReadAll()
 	pf := ParseFile(mx.Store, mx.View.Filename(), src)
-	type Key struct{}
+	type iKey struct{}
 	mx.Store.Dispatch(mg.StoreIssues{
-		Key: mg.IssueKey{
-			Key:  Key{},
-			Name: mx.View.Name,
-		},
-		Issues: sc.errsToIssues(mx.View, pf.ErrorList),
+		IssueKey: mg.IssueKey{Key: iKey{}},
+		Issues:   sc.errsToIssues(mx.View, pf.ErrorList),
 	})
 }
 
@@ -36,7 +58,7 @@ func (sc *SyntaxCheck) errsToIssues(v *mg.View, el scanner.ErrorList) mg.IssueSe
 			Row:     e.Pos.Line - 1,
 			Col:     e.Pos.Column - 1,
 			Message: e.Msg,
-			Tag:     mg.IssueError,
+			Tag:     mg.Error,
 			Label:   "Go/SyntaxCheck",
 		}
 	}

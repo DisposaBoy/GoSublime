@@ -1,10 +1,10 @@
 package golang
 
 import (
-	"margo.sh/mg"
 	"go/ast"
 	"go/build"
 	"go/token"
+	"margo.sh/mg"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,12 +14,12 @@ import (
 	"unicode/utf8"
 )
 
-var (
-	CommonPatterns = append([]*regexp.Regexp{
+func init() {
+	mg.AddCommonPatterns(mg.Go,
 		regexp.MustCompile(`^\s*(?P<path>.+?\.\w+):(?P<line>\d+:)(?P<column>\d+:?)?(?:(?P<tag>warning|error)[:])?(?P<message>.+?)(?: [(](?P<label>[-\w]+)[)])?$`),
 		regexp.MustCompile(`(?P<message>can't load package: package .+: found packages .+ \((?P<path>.+?\.go)\).+)`),
-	}, mg.CommonPatterns...)
-)
+	)
+}
 
 func BuildContext(mx *mg.Ctx) *build.Context {
 	c := build.Default

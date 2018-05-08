@@ -12,7 +12,7 @@ var (
 
 type Config struct {
 	Values struct {
-		EnabledForLangs            []string
+		EnabledForLangs            []mg.Lang
 		InhibitExplicitCompletions bool
 		InhibitWordCompletions     bool
 		OverrideSettings           map[string]interface{}
@@ -27,7 +27,7 @@ func (c Config) Config() mg.EditorConfig {
 	return c
 }
 
-func (c Config) EnabledForLangs(langs ...string) mg.EditorConfig {
+func (c Config) EnabledForLangs(langs ...mg.Lang) mg.EditorConfig {
 	c.Values.EnabledForLangs = langs
 	return c
 }

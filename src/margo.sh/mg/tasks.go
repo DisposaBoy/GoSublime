@@ -13,6 +13,7 @@ type Task struct {
 	Title    string
 	Cancel   func()
 	CancelID string
+	ShowNow  bool
 }
 
 type TaskTicket struct {
@@ -22,6 +23,7 @@ type TaskTicket struct {
 	CancelID string
 
 	tracker *taskTracker
+	showNow bool
 	cancel  func()
 }
 
@@ -51,6 +53,9 @@ type taskTracker struct {
 }
 
 func (tr *taskTracker) ReducerMount(mx *Ctx) {
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
+
 	tr.timer = time.NewTimer(1 * time.Second)
 	dispatch := mx.Store.Dispatch
 	go func() {
@@ -61,6 +66,9 @@ func (tr *taskTracker) ReducerMount(mx *Ctx) {
 }
 
 func (tr *taskTracker) ReducerUnmount(*Ctx) {
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
+
 	for _, t := range tr.tickets {
 		t.Cancel()
 	}
@@ -116,12 +124,6 @@ func (tr *taskTracker) runCmd(st *State) *State {
 			Run:  tr.killBuiltin,
 		},
 	)
-}
-
-func (tr *taskTracker) shutdown(mx *Ctx) {
-	for _, t := range tr.tickets {
-		t.Cancel()
-	}
 }
 
 // Cancel cancels the task tid.
@@ -204,11 +206,11 @@ func (tr *taskTracker) status() string {
 		default:
 			tr.buf.WriteString(" ●")
 		}
-		if title == "" && t.Title != "" && age >= 1 && age <= 3 {
+		if title == "" && t.Title != "" && (age >= 1 || t.showNow) && age <= 3 {
 			title = t.Title
 		}
 	}
-	if tr.buf.Len() == initLen {
+	if tr.buf.Len() == initLen && title == "" {
 		return ""
 	}
 	if title != "" {
@@ -280,6 +282,7 @@ func (tr *taskTracker) Begin(o Task) *TaskTicket {
 		Start:    time.Now(),
 		cancel:   o.Cancel,
 		tracker:  tr,
+		showNow:  o.ShowNow,
 	}
 	tr.tickets = append(tr.tickets, t)
 	return t

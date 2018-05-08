@@ -1,151 +1,44 @@
 package golang
 
 import (
-	"bytes"
 	"margo.sh/mg"
-	"os"
-	"os/exec"
-	"regexp"
-	"sync"
 )
 
-type LintArgs struct {
-	Writer *mg.IssueWriter
-	Env    mg.EnvMap
-	Dir    string
-}
-
-type LintFunc func(LintArgs) error
-
-type LinterOpts struct {
-	Log      *mg.Logger
-	Actions  []mg.Action
-	Patterns []*regexp.Regexp
-	Lint     LintFunc
-	Label    string
-}
-
-type linterSupport struct {
-	nCh    chan struct{}
-	mu     sync.RWMutex
-	dir    string
-	issues mg.IssueSet
-}
-
-func (ls *linterSupport) Reduce(lo LinterOpts, mx *mg.Ctx) *mg.State {
-	ls.mu.RLock()
-	defer ls.mu.RUnlock()
-
-	if mx.ActionIs(mg.Started{}) {
-		ls.start(lo, mx.Store)
-	}
-	dir := mx.View.Dir()
-	if mx.ActionIs(lo.Actions...) && IsPkgDir(dir) {
-		ls.notify()
-	}
-
-	if ls.dir == dir {
-		return mx.State.AddIssues(ls.issues...)
-	}
-	return mx.State
-}
-
-func (ls *linterSupport) Command(la LintArgs, name string, args ...string) *exec.Cmd {
-	cmd := exec.Command(name, args...)
-	cmd.Env = la.Env.Environ()
-	cmd.Stdout = la.Writer
-	cmd.Stderr = la.Writer
-	cmd.Dir = la.Dir
-	return cmd
-}
-
-func (ls *linterSupport) notify() {
-	select {
-	case ls.nCh <- struct{}{}:
-	default:
-	}
-}
-
-func (ls *linterSupport) start(lo LinterOpts, sto *mg.Store) {
-	ls.nCh = make(chan struct{}, 1)
-	go ls.loop(lo, sto)
-}
-
-func (ls *linterSupport) loop(lo LinterOpts, sto *mg.Store) {
-	for range ls.nCh {
-		st := sto.State()
-		dir := st.View.Dir()
-		if IsPkgDir(dir) {
-			ls.lint(lo, sto.Dispatch, st, dir)
-		}
-	}
-}
-
-func (ls *linterSupport) lint(lo LinterOpts, dispatch mg.Dispatcher, st *mg.State, dir string) {
-	defer dispatch(mg.Render)
-
-	buf := bytes.NewBuffer(nil)
-	w := &mg.IssueWriter{
-		Writer:   buf,
-		Patterns: lo.Patterns,
-		Base:     mg.Issue{Tag: mg.IssueError, Label: lo.Label},
-		Dir:      dir,
-	}
-	if len(w.Patterns) == 0 {
-		w.Patterns = CommonPatterns
-	}
-	err := lo.Lint(LintArgs{
-		Writer: w,
-		Env:    st.Env,
-		Dir:    dir,
-	})
-	w.Flush()
-	issues := w.Issues()
-	if len(issues) == 0 && err != nil {
-		out := bytes.TrimSpace(buf.Bytes())
-		lo.Log.Printf("golang.linterSupport: '%s' in '%s' failed: %s\n%s\n", lo.Label, dir, err, out)
-	}
-
-	ls.mu.Lock()
-	ls.dir = dir
-	ls.issues = issues
-	ls.mu.Unlock()
-}
-
+// Linter wraps mg.Linter to restrict its Langs to Go
+//
+// all top-level fields are passed along to the underlying Linter
 type Linter struct {
-	mg.ReducerType
-	linterSupport
+	mg.Linter
 
-	Name    string
-	Args    []string
+	Actions []mg.Action
+
+	Name string
+	Args []string
+
+	Tag     mg.IssueTag
 	Label   string
 	TempDir []string
 }
 
-func (lt *Linter) Reduce(mx *mg.Ctx) *mg.State {
-	return lt.linterSupport.Reduce(LinterOpts{
-		Log:      mx.Log,
-		Actions:  []mg.Action{mg.ViewSaved{}},
-		Patterns: CommonPatterns,
-		Lint:     lt.lint,
-		Label:    lt.Label,
-	}, mx)
+// ReducerInit syncs top-level fields with the underlying Linter
+func (lt *Linter) ReducerInit(mx *mg.Ctx) {
+	l := &lt.Linter
+	l.Actions = lt.Actions
+	l.Name = lt.Name
+	l.Args = lt.Args
+	l.Tag = lt.Tag
+	l.Label = lt.Label
+	l.TempDir = lt.TempDir
+
+	lt.Linter.ReducerInit(mx)
 }
 
-func (lt *Linter) lint(la LintArgs) error {
-	if len(lt.TempDir) != 0 {
-		tmpDir, err := mg.MkTempDir(lt.Label)
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(tmpDir)
-		for _, k := range lt.TempDir {
-			la.Env = la.Env.Add(k, tmpDir)
-		}
-	}
-	return lt.Command(la, lt.Name, lt.Args...).Run()
+// ReducerCond restricts reduction to Go
+func (lt *Linter) ReducerCond(mx *mg.Ctx) bool {
+	return mx.LangIs(mg.Go) && lt.Linter.ReducerCond(mx)
 }
 
+// GoInstall returns a Linter that runs `go install args...`
 func GoInstall(args ...string) *Linter {
 	return &Linter{
 		Name:  "go",
@@ -154,12 +47,19 @@ func GoInstall(args ...string) *Linter {
 	}
 }
 
+// GoInstallDiscardBinaries returns a Linter that runs `go install args...`
+// it's like GoInstall, but additionally sets GOBIN to a temp directory
+// resulting in all binaries being discarded
 func GoInstallDiscardBinaries(args ...string) *Linter {
-	lt := GoInstall(args...)
-	lt.TempDir = append(lt.TempDir, "GOBIN")
-	return lt
+	return &Linter{
+		Name:    "go",
+		Args:    append([]string{"install"}, args...),
+		Label:   "Go/Install",
+		TempDir: []string{"GOBIN"},
+	}
 }
 
+// GoVet returns a Linter that runs `go vet args...`
 func GoVet(args ...string) *Linter {
 	return &Linter{
 		Name:  "go",
@@ -168,6 +68,7 @@ func GoVet(args ...string) *Linter {
 	}
 }
 
+// GoTest returns a Linter that runs `go test args...`
 func GoTest(args ...string) *Linter {
 	return &Linter{
 		Name:  "go",

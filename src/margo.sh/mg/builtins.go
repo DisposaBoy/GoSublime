@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	Builtins = builtins{}
+	Builtins = &builtins{}
 )
 
 type BultinCmdList []BultinCmd

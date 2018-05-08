@@ -48,7 +48,7 @@ func TestCmdSupport_Reduce_withRunCmd(t *testing.T) {
 func TestCmdSupport_Reduce_withCmdOutput(t *testing.T) {
 	var called bool
 	fd := "CIlZ7zBWHIAL"
-	cs := &cmdSupport{}
+	cs := &clientActionSupport{}
 	ctx := NewTestingCtx(nil)
 	defer ctx.Cancel()
 

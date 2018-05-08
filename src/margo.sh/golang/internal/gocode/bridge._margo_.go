@@ -3,9 +3,7 @@
 package gocode
 
 import (
-	"fmt"
 	"go/build"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -132,11 +130,9 @@ func (m *margoState) updateConfig(c MargoConfig, filename string) {
 	}
 	if m.prevPkg != m.env.CurrentPackagePath {
 		m.prevPkg = m.env.CurrentPackagePath
-		fmt.Fprintf(os.Stderr, "Gocode pkg: %#v\n", m.env.CurrentPackagePath)
 	}
 	if m.prevEnv != nv {
 		m.prevEnv = nv
-		fmt.Fprintf(os.Stderr, "Gocode env: %#v\n", nv)
 	}
 
 	g_daemon.autocomplete = m.ctx

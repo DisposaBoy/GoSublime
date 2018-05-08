@@ -1,7 +1,7 @@
 package mg
 
 import (
-	"margo.sh/misc/pf"
+	"margo.sh/mgpf"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,8 +10,10 @@ import (
 
 var _ Dispatcher = (&Store{}).Dispatch
 
+// Dispatcher is the signature of the Store.Dispatch method
 type Dispatcher func(Action)
 
+// Subscriber is the signature of the function accepted by Store.Subscribe
 type Subscriber func(*Ctx)
 
 type dispatchHandler func()
@@ -42,7 +44,10 @@ func (sr storeReducers) Copy(updaters ...func(*storeReducers)) storeReducers {
 	return sr
 }
 
+// Store holds global, shared state
 type Store struct {
+	// KVMap is an in-memory cache of data with automatic eviction
+	// eviction might happen if the active view changes
 	KVMap
 
 	mu       sync.Mutex
@@ -69,7 +74,7 @@ type Store struct {
 		unmounted bool
 	}
 
-	mounted map[Reducer]bool
+	mounted map[*ReducerType]bool
 }
 
 func (sto *Store) mount() {
@@ -94,8 +99,18 @@ func (sto *Store) unmount() {
 	<-done
 }
 
+// Dispatch schedules a new reduction with Action act
+//
+// * actions coming from the editor has a higher priority
+// * as a result, if Shutdown is dispatched, the action might be dropped
 func (sto *Store) Dispatch(act Action) {
-	sto.dsp.lo <- func() { sto.handleAct(act, nil) }
+	c := sto.dsp.lo
+	f := func() { sto.handleAct(act, nil) }
+	select {
+	case c <- f:
+	default:
+		go func() { c <- f }()
+	}
 }
 
 func (sto *Store) nextDispatcher() dispatchHandler {
@@ -119,8 +134,8 @@ func (sto *Store) nextDispatcher() dispatchHandler {
 }
 
 func (sto *Store) dispatcher() {
-	sto.handleAct(Started{}, nil)
 	sto.ag.Log.Println("started")
+	sto.handleAct(initAction{}, nil)
 
 	for {
 		if f := sto.nextDispatcher(); f != nil {
@@ -137,7 +152,7 @@ func (sto *Store) handleReduce(mx *Ctx) *Ctx {
 	return sto.reducers.Reduce(mx)
 }
 
-func (sto *Store) handle(h func() *Ctx, p *pf.Profile) {
+func (sto *Store) handle(h func() *Ctx, p *mgpf.Profile) {
 	p.Push("handleRequest")
 	sto.mu.Lock()
 
@@ -153,9 +168,9 @@ func (sto *Store) handle(h func() *Ctx, p *pf.Profile) {
 	}
 }
 
-func (sto *Store) handleAct(act Action, p *pf.Profile) {
+func (sto *Store) handleAct(act Action, p *mgpf.Profile) {
 	if p == nil {
-		p = pf.NewProfile("")
+		p = mgpf.NewProfile("")
 	}
 	sto.handle(func() *Ctx {
 		mx := newCtx(sto, nil, act, "", p)
@@ -202,7 +217,7 @@ func (sto *Store) handleReqInit(rq *agentReq, mx *Ctx) (*Ctx, []Action) {
 	if v := props.View; v != nil && v.Name != "" {
 		mx.View = v
 		sto.initCache(v)
-		v.initSrcPos()
+		v.finalize()
 	}
 	if len(props.Env) != 0 {
 		mx.Env = props.Env
@@ -253,11 +268,13 @@ func newStore(ag *Agent, sub Subscriber) *Store {
 	sto.dsp.lo = make(chan dispatchHandler, 640)
 	sto.dsp.hi = make(chan dispatchHandler, 640)
 
-	sto.mounted = map[Reducer]bool{}
+	sto.mounted = map[*ReducerType]bool{}
 
 	return sto
 }
 
+// Subscribe arranges for sub to be called after each reduction takes place
+// the function returned can be used to unsubscribe from further notifications
 func (sto *Store) Subscribe(sub Subscriber) (unsubscribe func()) {
 	sto.mu.Lock()
 	defer sto.mu.Unlock()
@@ -287,25 +304,36 @@ func (sto *Store) updateReducers(updaters ...func(*storeReducers)) *Store {
 	return sto
 }
 
+// Before adds reducers to the list of reducers
+// they're are called before normal (Store.Use) reducers
 func (sto *Store) Before(reducers ...Reducer) *Store {
 	return sto.updateReducers(func(sr *storeReducers) {
 		sr.before = sr.before.Add(reducers...)
 	})
 }
 
+// Use adds reducers to the list of reducers
+// they're called after reducers added with Store.Before
+// and before reducers added with Store.After
 func (sto *Store) Use(reducers ...Reducer) *Store {
 	return sto.updateReducers(func(sr *storeReducers) {
 		sr.use = sr.use.Add(reducers...)
 	})
 }
 
+// After adds reducers to the list of reducers
+// they're are called after normal (Store.Use) reducers
 func (sto *Store) After(reducers ...Reducer) *Store {
 	return sto.updateReducers(func(sr *storeReducers) {
 		sr.after = sr.after.Add(reducers...)
 	})
 }
 
-func (sto *Store) EditorConfig(cfg EditorConfig) *Store {
+// SetBaseConfig sets the EditorConfig on which State.Config is based
+//
+// this method is made available for use by editor/client integration
+// normal users should use State.SetConfig instead
+func (sto *Store) SetBaseConfig(cfg EditorConfig) *Store {
 	sto.mu.Lock()
 	defer sto.mu.Unlock()
 
@@ -313,6 +341,7 @@ func (sto *Store) EditorConfig(cfg EditorConfig) *Store {
 	return sto
 }
 
+// Begin starts a new task and returns its ticket
 func (sto *Store) Begin(t Task) *TaskTicket {
 	return sto.tasks.Begin(t)
 }

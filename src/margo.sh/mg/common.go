@@ -1,6 +1,7 @@
 package mg
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -55,7 +56,14 @@ func (e EnvMap) Merge(p map[string]string) EnvMap {
 }
 
 func (e EnvMap) Environ() []string {
-	l := make([]string, 0, len(e))
+	el := os.Environ()
+	l := make([]string, 0, len(e)+len(el))
+	for _, s := range el {
+		k := strings.SplitN(s, "=", 2)[0]
+		if _, exists := e[k]; !exists {
+			l = append(l, s)
+		}
+	}
 	for k, v := range e {
 		l = append(l, k+"="+v)
 	}

@@ -1,16 +1,12 @@
 package mg
 
 import (
-	"go/build"
-	"os/exec"
-	"path/filepath"
 	"reflect"
 	"runtime"
-	"strings"
 )
 
 var (
-	_ Reducer = reducerType{}
+	_ Reducer = &reducerType{}
 
 	defaultReducers = struct {
 		before, use, after []Reducer
@@ -20,17 +16,46 @@ var (
 			Builtins,
 		},
 		after: []Reducer{
-			issueStatusSupport{},
+			&issueStatusSupport{},
 			&cmdSupport{},
 			&restartSupport{},
+			&clientActionSupport{},
 		},
 	}
 )
 
 // A Reducer is the main method of state transitions in margo.
 //
-// ReducerType can be embedded into struct types to implement all optional methods,
-// i.e. the only required method is Reduce()
+// The methods are called in the order listed below:
+//
+// * ReducerInit
+//   this is called during the first action (initAction{} FKA Started{})
+//
+// * ReducerConfig
+//   this is called on each reduction
+//
+// * ReducerCond
+//   this is called on each reduction
+//   if it returns false, no other method is called
+//
+// * ReducerMount
+//   this is called once, after the first time ReducerCond returns true
+//
+// * Reduce
+//   this is called on each reduction until the agent begins shutting down
+//
+// * ReducerUnmount
+//   this is called once when the agent is shutting down,
+//   iif ReducerMount was called
+//
+// For simplicity and the ability to extend the interface in the future,
+// users should embed `ReducerType` in their types to complete the interface.
+//
+// For convenience, it also implements all optional (non-Reduce()) methods.
+//
+// The prefixes `Reduce` and `Reducer` are reserved, and should not be used.
+// To work-around a frequent typo, the `ReducerXXX` methods will have an alias
+// `ReduceXXX` designed to fail the build if the name is used.
 //
 // NewReducer() can be used to convert a function to a reducer.
 //
@@ -64,16 +89,22 @@ type Reducer interface {
 	// in pf.Profile and other display scenarios
 	ReducerLabel() string
 
+	// ReducerInit is called for the first reduction
+	// * it's only called once and can be used to initialise reducer state
+	//   e.g. for initialising an embedded type
+	// * it's called before ReducerConfig()
+	ReducerInit(*Ctx)
+
 	// ReducerConfig is called on each reduction, before ReducerCond
 	// if it returns a new EditorConfig, it's equivalent to State.SetConfig()
 	// but is always run before ReducerCond() so is usefull for making sure
 	// configuration changes are always applied, even if Reduce() isn't called
 	ReducerConfig(*Ctx) EditorConfig
 
-	// ReducerCond is called before Reduce is called
-	// if it returns false, Reduce is not called
+	// ReducerCond is called before Reduce and ReducerMount is called
+	// if it returns false, no other methods are called
 	//
-	// It can be used a pre-condition in combination with Reducer(Un)Mount
+	// It can be used as a pre-condition in combination with Reducer(Un)Mount
 	ReducerCond(*Ctx) bool
 
 	// ReducerMount is called once, after the first time that ReducerCond returns true
@@ -87,37 +118,57 @@ type Reducer interface {
 	// After this method is called, Reduce will never be called again
 	ReducerUnmount(*Ctx)
 
-	reducerType() reducerType
+	reducerType() *ReducerType
+
+	reducerPrefixTypo
 }
+
+// reducerPrefixTypo aims to fail the build when you define a method like
+// ReduceCond()... which is a typo about 100% of the time.
+// it should be kept in sync with Reducer
+type reducerPrefixTypo interface {
+	ReduceLabel(useReducerForThePrefixNotReduce)
+	ReduceInit(useReducerForThePrefixNotReduce)
+	ReduceConfig(useReducerForThePrefixNotReduce)
+	ReduceCond(useReducerForThePrefixNotReduce)
+	ReduceMount(useReducerForThePrefixNotReduce)
+	ReduceUnmount(useReducerForThePrefixNotReduce)
+}
+
+type useReducerForThePrefixNotReduce struct{}
 
 type reducerType struct{ ReducerType }
 
-func (rt reducerType) Reduce(mx *Ctx) *State { return mx.State }
+func (rt *reducerType) Reduce(mx *Ctx) *State { return mx.State }
 
 // ReducerType implements all optional methods of a reducer
-type ReducerType struct{}
+type ReducerType struct {
+	reducerPrefixTypo
+}
 
-func (rt ReducerType) reducerType() reducerType { return reducerType{} }
+func (rt *ReducerType) reducerType() *ReducerType { return rt }
 
 // ReducerLabel implements Reducer.ReducerLabel
-func (rt ReducerType) ReducerLabel() string { return "" }
+func (rt *ReducerType) ReducerLabel() string { return "" }
+
+// ReducerInit implements Reducer.ReducerInit
+func (rt *ReducerType) ReducerInit(*Ctx) {}
 
 // ReducerCond implements Reducer.ReducerCond
-func (rt ReducerType) ReducerCond(*Ctx) bool { return true }
+func (rt *ReducerType) ReducerCond(*Ctx) bool { return true }
 
 // ReducerConfig implements Reducer.ReducerConfig
-func (rt ReducerType) ReducerConfig(*Ctx) EditorConfig { return nil }
+func (rt *ReducerType) ReducerConfig(*Ctx) EditorConfig { return nil }
 
 // ReducerMount implements Reducer.ReducerMount
-func (rt ReducerType) ReducerMount(*Ctx) {}
+func (rt *ReducerType) ReducerMount(*Ctx) {}
 
 // ReducerUnmount implements Reducer.ReducerUnmount
-func (rt ReducerType) ReducerUnmount(*Ctx) {}
+func (rt *ReducerType) ReducerUnmount(*Ctx) {}
 
 // reducerList is a slice of reducers
 type reducerList []Reducer
 
-// callReducers calls the reducers in the slice in order.
 func (rl reducerList) callReducers(mx *Ctx) *Ctx {
 	for _, r := range rl {
 		mx = rl.callReducer(mx, r)
@@ -127,17 +178,33 @@ func (rl reducerList) callReducers(mx *Ctx) *Ctx {
 
 func (rl reducerList) callReducer(mx *Ctx, r Reducer) *Ctx {
 	defer mx.Profile.Push(ReducerLabel(r)).Pop()
+
+	rl.crInit(mx, r)
+
 	if c := rl.crConfig(mx, r); c != nil {
 		mx = mx.SetState(mx.State.SetConfig(c))
 	}
+
 	if !rl.crCond(mx, r) {
 		return mx
 	}
+
 	rl.crMount(mx, r)
+
 	if rl.crUnmount(mx, r) {
 		return mx
 	}
+
 	return rl.crReduce(mx, r)
+}
+
+func (rl reducerList) crInit(mx *Ctx, r Reducer) {
+	if _, ok := mx.Action.(initAction); !ok {
+		return
+	}
+
+	defer mx.Profile.Push("ReducerInit").Pop()
+	r.ReducerInit(mx)
 }
 
 func (rl reducerList) crConfig(mx *Ctx, r Reducer) EditorConfig {
@@ -151,21 +218,23 @@ func (rl reducerList) crCond(mx *Ctx, r Reducer) bool {
 }
 
 func (rl reducerList) crMount(mx *Ctx, r Reducer) {
-	if mx.Store.mounted[r] {
+	k := r.reducerType()
+	if mx.Store.mounted[k] {
 		return
 	}
 
 	defer mx.Profile.Push("Mount").Pop()
-	mx.Store.mounted[r] = true
+	mx.Store.mounted[k] = true
 	r.ReducerMount(mx)
 }
 
 func (rl reducerList) crUnmount(mx *Ctx, r Reducer) bool {
-	if !mx.ActionIs(unmount{}) || !mx.Store.mounted[r] {
+	k := r.reducerType()
+	if !mx.ActionIs(unmount{}) || !mx.Store.mounted[k] {
 		return false
 	}
 	defer mx.Profile.Push("Unmount").Pop()
-	delete(mx.Store.mounted, r)
+	delete(mx.Store.mounted, k)
 	r.ReducerUnmount(mx)
 	return true
 }
@@ -225,88 +294,4 @@ func ReducerLabel(r Reducer) string {
 		return t.String()
 	}
 	return "mg.Reducer"
-}
-
-type rsBuildRes struct {
-	ActionType
-	issues IssueSet
-}
-
-type restartSupport struct {
-	ReducerType
-	issues IssueSet
-}
-
-func (r *restartSupport) Reduce(mx *Ctx) *State {
-	st := mx.State
-	switch act := mx.Action.(type) {
-	case ViewSaved:
-		r.tryPrepRestart(mx)
-	case Restart:
-		mx.Log.Printf("%T action dispatched\n", mx.Action)
-		st = mx.addClientActions(clientRestart)
-	case Shutdown:
-		mx.Log.Printf("%T action dispatched\n", mx.Action)
-		st = mx.addClientActions(clientShutdown)
-	case rsBuildRes:
-		r.issues = act.issues
-	}
-	return st.AddIssues(r.issues...)
-}
-
-func (r *restartSupport) tryPrepRestart(mx *Ctx) {
-	v := mx.View
-	hasSfx := strings.HasSuffix
-	if !hasSfx(v.Path, ".go") || hasSfx(v.Path, "_test.go") {
-		return
-	}
-
-	dir := filepath.ToSlash(mx.View.Dir())
-	if !filepath.IsAbs(dir) {
-		return
-	}
-
-	// if we use build..ImportPath, it will be wrong if we work on the code outside the GS GOPATH
-	imp := ""
-	if i := strings.LastIndex(dir, "/src/"); i >= 0 {
-		imp = dir[i+5:]
-	}
-	if imp != "margo" && !strings.HasPrefix(imp+"/", "margo.sh/") {
-		return
-	}
-
-	go r.prepRestart(mx, dir)
-}
-
-func (r *restartSupport) prepRestart(mx *Ctx, dir string) {
-
-	pkg, _ := build.Default.ImportDir(dir, 0)
-	if pkg == nil || pkg.Name == "" {
-		return
-	}
-
-	defer mx.Begin(Task{Title: "prepping margo restart"}).Done()
-
-	cmd := exec.Command("margo.sh", "build", mx.AgentName())
-	cmd.Dir = mx.View.Dir()
-	cmd.Env = mx.Env.Environ()
-	out, err := cmd.CombinedOutput()
-
-	iw := &IssueWriter{
-		Dir:      mx.View.Dir(),
-		Patterns: CommonPatterns,
-		Base:     Issue{Label: "Mg/RestartSupport"},
-	}
-	iw.Write(out)
-	iw.Flush()
-	res := rsBuildRes{issues: iw.Issues()}
-
-	msg := "telling margo to restart after " + mx.View.Filename() + " was saved"
-	if err == nil && len(res.issues) == 0 {
-		mx.Log.Println(msg)
-		mx.Store.Dispatch(Restart{})
-	} else {
-		mx.Log.Printf("not %s: `margo.sh build %s` failed: error: %v\n%s\n", msg, mx.AgentName(), err, out)
-		mx.Store.Dispatch(res)
-	}
 }

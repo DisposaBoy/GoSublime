@@ -6,11 +6,11 @@ import (
 )
 
 func TestIssueWriter(t *testing.T) {
-	base := Issue{Label: "lbl", Tag: IssueWarning}
+	base := Issue{Label: "lbl", Tag: Warning}
 	w := &IssueWriter{
 		Dir:      "/abc",
 		Base:     base,
-		Patterns: CommonPatterns,
+		Patterns: CommonPatterns(),
 	}
 	fmt.Fprintln(w, "abc.go:555:666: hello world")
 	fmt.Fprintln(w, "no match")

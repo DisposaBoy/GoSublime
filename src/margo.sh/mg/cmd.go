@@ -87,7 +87,7 @@ func (w *CmdOutputWriter) Close(output ...[]byte) error {
 }
 
 func (w *CmdOutputWriter) dispatch() {
-	if w.Dispatch == nil {
+	if w.Dispatch == nil || w.Fd == "" {
 		return
 	}
 
@@ -116,14 +116,16 @@ type CmdOutput struct {
 	Close  bool
 }
 
+func (out CmdOutput) clientAction() clientActionType {
+	return clientActionType{Name: "CmdOutput", Data: out}
+}
+
 type cmdSupport struct{ ReducerType }
 
 func (cs *cmdSupport) Reduce(mx *Ctx) *State {
 	switch act := mx.Action.(type) {
 	case RunCmd:
 		return cs.runCmd(NewBultinCmdCtx(mx, act))
-	case CmdOutput:
-		return cs.cmdOutput(mx, act)
 	}
 	return mx.State
 }
@@ -133,13 +135,6 @@ func (cs *cmdSupport) runCmd(bx *BultinCmdCtx) *State {
 		return cmd.Run(bx)
 	}
 	return Builtins.ExecCmd(bx)
-}
-
-func (cs *cmdSupport) cmdOutput(mx *Ctx, out CmdOutput) *State {
-	return mx.State.addClientActions(clientActionType{
-		Name: "output",
-		Data: out,
-	})
 }
 
 type RunCmd struct {

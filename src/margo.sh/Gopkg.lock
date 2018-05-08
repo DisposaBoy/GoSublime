@@ -17,17 +17,39 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
-  revision = "2c241ca3045ddc354463c376a9515d9f1f1390a4"
+  revision = "4ec37c66abab2c7e02ae775328b2ff001c3f025a"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["cpu"]
-  revision = "78d5f264b493f125018180c204871ecf58a2dce1"
+  revision = "7db1c3b1a98089d0071c84f646ff5c96aad43682"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/tools"
+  packages = [
+    "cmd/guru",
+    "cmd/guru/serial",
+    "container/intsets",
+    "go/ast/astutil",
+    "go/buildutil",
+    "go/callgraph",
+    "go/callgraph/static",
+    "go/loader",
+    "go/pointer",
+    "go/ssa",
+    "go/ssa/ssautil",
+    "go/types/typeutil",
+    "imports",
+    "internal/fastwalk",
+    "refactor/importgraph"
+  ]
+  revision = "87723262609ca8fd55d449c027454c29cadefd68"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a7d8a00d2d704fb62eed79ee67536c295268edae7c67b316af3af70397acad95"
+  inputs-digest = "d929fab6918d1833fd0bf96d285bc438bfa936590205bbba2e182511b2bf6ac5"
   solver-name = "gps-cdcl"
   solver-version = 1

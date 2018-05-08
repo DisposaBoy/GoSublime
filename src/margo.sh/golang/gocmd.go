@@ -115,7 +115,7 @@ func (gc *GoCmd) playTempDir(bx *mg.BultinCmdCtx) (newBx *mg.BultinCmdCtx, tDir 
 		return bx, "", "", fmt.Errorf("cannot MkTempDir: %s", err)
 	}
 
-	if !bx.LangIs("go") {
+	if !bx.LangIs(mg.Go) {
 		return bx, tDir, "", nil
 	}
 
@@ -202,7 +202,7 @@ func newGoCmdCtx(bx *mg.BultinCmdCtx, label, cancelID string, tDir, tFn string) 
 
 	gx.iw = &mg.IssueWriter{
 		Base:     mg.Issue{Label: label},
-		Patterns: CommonPatterns,
+		Patterns: bx.CommonPatterns(),
 		Dir:      gx.pkgDir,
 	}
 
@@ -240,6 +240,6 @@ func (gx *goCmdCtx) run(origView *mg.View) error {
 		ik.Dir = origView.Dir()
 	}
 
-	gx.Store.Dispatch(mg.StoreIssues{Key: ik, Issues: issues})
+	gx.Store.Dispatch(mg.StoreIssues{IssueKey: ik, Issues: issues})
 	return err
 }

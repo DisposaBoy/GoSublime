@@ -52,9 +52,9 @@ var (
 	}
 )
 
-// Started is dispatched to indicate the start of IPC communication.
+// initAction is dispatched to indicate the start of IPC communication.
 // It's the first action that is dispatched.
-type Started struct{ ActionType }
+type initAction struct{ ActionType }
 
 type actionCreator func(codec.Handle, agentReqAction) (Action, error)
 
@@ -62,14 +62,27 @@ type actionType struct{ ActionType }
 
 type ActionType struct{}
 
-func (act ActionType) actionType() actionType { return actionType{} }
+func (ActionType) actionType() actionType { return actionType{} }
 
-func (act ActionType) ActionLabel() string { return "" }
+func (ActionType) ActionLabel() string { return "" }
 
 type Action interface {
 	actionType() actionType
 
 	ActionLabel() string
+}
+
+type Activate struct {
+	ActionType
+
+	Path string
+	Name string
+	Row  int
+	Col  int
+}
+
+func (a Activate) clientAction() clientActionType {
+	return clientActionType{Name: "Activate", Data: a}
 }
 
 var Render Action = nil
@@ -81,8 +94,16 @@ type QueryIssues struct{ ActionType }
 // Restart is the action dispatched to initiate a graceful restart of the agent
 type Restart struct{ ActionType }
 
+func (r Restart) clientAction() clientActionType {
+	return clientActionType{Name: "Restart"}
+}
+
 // Shutdown is the action dispatched to initiate a graceful shutdown of the agent
 type Shutdown struct{ ActionType }
+
+func (s Shutdown) clientAction() clientActionType {
+	return clientActionType{Name: "Shutdown"}
+}
 
 type ViewActivated struct{ ActionType }
 

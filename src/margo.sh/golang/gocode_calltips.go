@@ -27,7 +27,7 @@ type GocodeCalltips struct {
 }
 
 func (gc *GocodeCalltips) ReducerCond(mx *mg.Ctx) bool {
-	return mx.LangIs("go")
+	return mx.LangIs(mg.Go)
 }
 
 func (gc *GocodeCalltips) ReducerMount(mx *mg.Ctx) {

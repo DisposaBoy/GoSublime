@@ -33,7 +33,7 @@ func Main() {
 			return mgcli.Error("agent creation failed:", err)
 		}
 
-		ag.Store.EditorConfig(sublime.DefaultConfig)
+		ag.Store.SetBaseConfig(sublime.DefaultConfig)
 		if margoExt != nil {
 			margoExt(ag.Args())
 		}

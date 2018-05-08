@@ -12,14 +12,11 @@ type JsonFmt struct {
 	Indent string
 }
 
-func (j JsonFmt) Reduce(mx *mg.Ctx) *mg.State {
-	if !mx.View.LangIs("json") {
-		return mx.State
-	}
-	if _, ok := mx.Action.(mg.ViewFmt); !ok {
-		return mx.State
-	}
+func (j JsonFmt) ReducerCond(mx *mg.Ctx) bool {
+	return mx.ActionIs(mg.ViewFmt{}) && mx.LangIs(mg.JSON)
+}
 
+func (j JsonFmt) Reduce(mx *mg.Ctx) *mg.State {
 	fn := mx.View.Filename()
 	r, err := mx.View.Open()
 	if err != nil {
@@ -36,5 +33,5 @@ func (j JsonFmt) Reduce(mx *mg.Ctx) *mg.State {
 	if err != nil {
 		return mx.AddErrorf("failed to marshal json %s: %s\n", fn, err)
 	}
-	return mx.SetSrc(src)
+	return mx.SetViewSrc(src)
 }

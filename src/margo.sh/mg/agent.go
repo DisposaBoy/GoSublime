@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/ugorji/go/codec"
 	"io"
+	"margo.sh/mgpf"
 	"margo.sh/mgutil"
-	"margo.sh/misc/pf"
 	"os"
 	"sort"
 	"strings"
@@ -85,13 +85,13 @@ type agentReq struct {
 	Actions []agentReqAction
 	Props   clientProps
 	Sent    string
-	Profile *pf.Profile
+	Profile *mgpf.Profile
 }
 
 func newAgentReq(kvs KVStore) *agentReq {
 	return &agentReq{
 		Props:   makeClientProps(kvs),
-		Profile: pf.NewProfile(""),
+		Profile: mgpf.NewProfile(""),
 	}
 }
 

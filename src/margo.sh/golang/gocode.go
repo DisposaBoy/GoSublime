@@ -11,7 +11,7 @@ import (
 	"io"
 	"margo.sh/golang/internal/gocode"
 	"margo.sh/mg"
-	"margo.sh/misc/pf"
+	"margo.sh/mgpf"
 	"margo.sh/sublime"
 	"strings"
 	"time"
@@ -71,7 +71,13 @@ func (g *Gocode) ReducerConfig(mx *mg.Ctx) mg.EditorConfig {
 		return nil
 	}
 
+	// ST might query the GoSublime plugin first, so we must always disable it
 	cfg = cfg.DisableGsComplete()
+	// but we don't want to affect editor completions in non-go files
+	if !g.ReducerCond(mx) {
+		return cfg
+	}
+
 	if !g.AllowExplicitCompletions {
 		cfg = cfg.InhibitExplicitCompletions()
 	}
@@ -82,7 +88,7 @@ func (g *Gocode) ReducerConfig(mx *mg.Ctx) mg.EditorConfig {
 }
 
 func (g *Gocode) ReducerCond(mx *mg.Ctx) bool {
-	return mx.LangIs("go") && mx.ActionIs(mg.QueryCompletions{})
+	return mx.ActionIs(mg.QueryCompletions{}) && mx.LangIs(mg.Go)
 }
 
 func (g *Gocode) ReducerMount(mx *mg.Ctx) {
@@ -116,7 +122,7 @@ func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	select {
 	case g.reqs <- gr:
 	case <-time.After(qTimeout):
-		mx.Log.Println("gocode didn't accept the request after", pf.D(time.Since(start)))
+		mx.Log.Println("gocode didn't accept the request after", mgpf.D(time.Since(start)))
 		return st
 	}
 
@@ -131,10 +137,10 @@ func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	case <-time.After(pTimeout):
 		go func() {
 			<-gr.res
-			mx.Log.Println("gocode eventually responded after", pf.Since(start))
+			mx.Log.Println("gocode eventually responded after", mgpf.Since(start))
 		}()
 
-		mx.Log.Println("gocode didn't respond after", pf.D(pTimeout), "taking", pf.Since(start))
+		mx.Log.Println("gocode didn't respond after", mgpf.D(pTimeout), "taking", mgpf.Since(start))
 		return st
 	}
 }

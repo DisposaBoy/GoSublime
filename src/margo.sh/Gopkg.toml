@@ -1,3 +1,11 @@
+required = [
+	"golang.org/x/tools/cmd/guru"
+]
+
+[prune]
+  go-tests = true
+  unused-packages = true
+
 [[constraint]]
   name = "github.com/ugorji/go"
   branch = "master"
@@ -10,6 +18,6 @@
   branch = "master"
   name = "golang.org/x/crypto"
 
-[prune]
-  go-tests = true
-  unused-packages = true
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/tools"

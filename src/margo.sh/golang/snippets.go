@@ -34,11 +34,11 @@ func SnippetFuncs(l ...SnippetFunc) *SnippetFuncsList {
 	return &SnippetFuncsList{Funcs: l}
 }
 
-func (sf *SnippetFuncsList) Reduce(mx *mg.Ctx) *mg.State {
-	if !mx.LangIs("go") || !mx.ActionIs(mg.QueryCompletions{}) {
-		return mx.State
-	}
+func (sf *SnippetFuncsList) ReducerCond(mx *mg.Ctx) bool {
+	return mx.ActionIs(mg.QueryCompletions{}) && mx.LangIs(mg.Go)
+}
 
+func (sf *SnippetFuncsList) Reduce(mx *mg.Ctx) *mg.State {
 	src, _ := mx.View.ReadAll()
 	pos := mx.View.Pos
 	if pos < 0 || pos > len(src) {

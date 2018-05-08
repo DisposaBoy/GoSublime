@@ -19,22 +19,20 @@ type FmtFunc struct {
 	Fmt func(mx *mg.Ctx, src []byte) ([]byte, error)
 
 	// Langs is the list of languages in which the reducer should run
-	Langs []string
+	Langs []mg.Lang
 
-	// Actions is a list of additional actions on which the reducer is allowed to run.
+	// Actions is a list of actions on which the reducer is allowed to run.
 	// The reducer always runs on the ViewFmt action, even if this list is empty.
 	Actions []mg.Action
 }
 
+// ReducerCond returns true if Langs and Actions matches the Ctx
+func (ff FmtFunc) ReducerCond(mx *mg.Ctx) bool {
+	return mx.ActionIs(ff.Actions...) && mx.LangIs(ff.Langs...)
+}
+
 // Reduce implements the FmtFunc reducer.
 func (ff FmtFunc) Reduce(mx *mg.Ctx) *mg.State {
-	if !mx.LangIs(ff.Langs...) {
-		return mx.State
-	}
-	if !mx.ActionIs(mg.ViewFmt{}) && !mx.ActionIs(ff.Actions...) {
-		return mx.State
-	}
-
 	fn := mx.View.Filename()
 	src, err := mx.View.ReadAll()
 	if err != nil {
@@ -48,7 +46,7 @@ func (ff FmtFunc) Reduce(mx *mg.Ctx) *mg.State {
 	if err != nil {
 		return mx.AddErrorf("failed to fmt %s: %s\n", fn, err)
 	}
-	return mx.SetSrc(src)
+	return mx.SetViewSrc(src)
 }
 
 // FmtCmd is wrapper around FmtFunc for generic fmt commands.
@@ -66,9 +64,9 @@ type FmtCmd struct {
 	Env mg.EnvMap
 
 	// Langs is the list of languages in which the reducer should run
-	Langs []string
+	Langs []mg.Lang
 
-	// Actions is a list of additional actions on which the reducer is allowed to run.
+	// Actions is a list of actions on which the reducer is allowed to run.
 	// The reducer always runs on the ViewFmt action, even if this list is empty.
 	Actions []mg.Action
 }

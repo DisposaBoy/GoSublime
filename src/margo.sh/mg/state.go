@@ -1,163 +1,16 @@
 package mg
 
 import (
-	"context"
 	"fmt"
 	"github.com/ugorji/go/codec"
-	"margo.sh/misc/pf"
 	"reflect"
-	"sync"
-	"time"
 )
 
 var (
 	// ErrNoSettings is the error returned from EditorProps.Settings()
 	// when there was no settings sent from the editor
 	ErrNoSettings = fmt.Errorf("no editor settings")
-
-	_ context.Context = (*Ctx)(nil)
 )
-
-// Ctx holds data about the current request/reduction.
-//
-// To create a new instance, use Store.NewCtx()
-//
-// NOTE: Ctx should be treated as readonly and users should not assign to any
-// of its fields or the fields of any of its members.
-// If a field must be updated, you should use one of the methods like Copy
-//
-// Unless a field is tagged with `mg.Nillable:"true"`, it will never be nil
-// and if updated, no field should be set to nil
-type Ctx struct {
-	// State is the current state of the world
-	*State
-
-	// Action is the action that was dispatched.
-	// It's a hint telling reducers about some action that happened,
-	// e.g. that the view is about to be saved or that it was changed.
-	Action Action `mg.Nillable:"true"`
-
-	// Store is the global store
-	Store *Store
-
-	// Log is the global logger
-	Log *Logger
-
-	Cookie string
-
-	Profile *pf.Profile
-
-	doneC      chan struct{}
-	cancelOnce *sync.Once
-	handle     codec.Handle
-}
-
-// newCtx creates a new Ctx
-// if st is nil, the state will be set to the equivalent of Store.state.new()
-// if p is nil a new Profile will be created with cookie as its name
-func newCtx(sto *Store, st *State, act Action, cookie string, p *pf.Profile) *Ctx {
-	if st == nil {
-		st = sto.state.new()
-	}
-	if p == nil {
-		p = pf.NewProfile(cookie)
-	}
-	return &Ctx{
-		State:      st,
-		Action:     act,
-		Store:      sto,
-		Log:        sto.ag.Log,
-		Cookie:     cookie,
-		Profile:    p,
-		doneC:      make(chan struct{}),
-		cancelOnce: &sync.Once{},
-		handle:     sto.ag.handle,
-	}
-}
-
-// Deadline implements context.Context.Deadline
-func (*Ctx) Deadline() (time.Time, bool) {
-	return time.Time{}, false
-}
-
-// Cancel cancels the ctx by arranging for the Ctx.Done() channel to be closed.
-// Canceling this Ctx cancels all other Ctxs Copy()ed from it.
-func (mx *Ctx) Cancel() {
-	mx.cancelOnce.Do(func() {
-		close(mx.doneC)
-	})
-}
-
-// Done implements context.Context.Done()
-func (mx *Ctx) Done() <-chan struct{} {
-	return mx.doneC
-}
-
-// Err implements context.Context.Err()
-func (mx *Ctx) Err() error {
-	select {
-	case <-mx.Done():
-		return context.Canceled
-	default:
-		return nil
-	}
-}
-
-// Value implements context.Context.Value() but always returns nil
-func (mx *Ctx) Value(k interface{}) interface{} {
-	return nil
-}
-
-// AgentName returns the name of the agent if set
-// if set, it's usually the agent name as used in the command `margo.sh [run...] $agent`
-func (mx *Ctx) AgentName() string {
-	return mx.Store.ag.Name
-}
-
-// ActionIs returns true if the type Ctx.Action is the same type as any of those in actions
-func (mx *Ctx) ActionIs(actions ...Action) bool {
-	typ := reflect.TypeOf(mx.Action)
-	for _, act := range actions {
-		if reflect.TypeOf(act) == typ {
-			return true
-		}
-	}
-	return false
-}
-
-// LangIs is a wrapper around Ctx.View.Lang()
-func (mx *Ctx) LangIs(names ...string) bool {
-	return mx.View.LangIs(names...)
-}
-
-// Copy create a shallow copy of the Ctx.
-//
-// It applies the functions in updaters to the new object.
-// Updating the new Ctx via these functions is preferred to assigning to the new object
-func (mx *Ctx) Copy(updaters ...func(*Ctx)) *Ctx {
-	x := *mx
-	mx = &x
-
-	for _, f := range updaters {
-		f(mx)
-	}
-	return mx
-}
-
-func (mx *Ctx) SetState(st *State) *Ctx {
-	mx = mx.Copy()
-	mx.State = st
-	return mx
-}
-
-func (mx *Ctx) SetView(v *View) *Ctx {
-	return mx.SetState(mx.State.SetView(v))
-}
-
-// Begin stars a new task and returns its ticket
-func (mx *Ctx) Begin(t Task) *TaskTicket {
-	return mx.Store.Begin(t)
-}
 
 // EditorProps holds data about the text editor
 type EditorProps struct {
@@ -192,7 +45,7 @@ type EditorConfig interface {
 	// for which actions should be dispatched.
 	//
 	// To request actions for all languages, use `"*"` (the default)
-	EnabledForLangs(langs ...string) EditorConfig
+	EnabledForLangs(langs ...Lang) EditorConfig
 }
 
 // StickyState is state that's persisted from one reduction to the next.
@@ -343,15 +196,20 @@ func (st *State) SetConfig(c EditorConfig) *State {
 	})
 }
 
+// SetEnv updates State.Env.
+func (st *State) SetEnv(m EnvMap) *State {
+	return st.Copy(func(st *State) {
+		st.Env = m
+	})
+}
+
 // SetSrc is a wrapper around View.SetSrc().
 // If `len(src) == 0` it does nothing because this is almost always a bug.
-func (st *State) SetSrc(src []byte) *State {
+func (st *State) SetViewSrc(src []byte) *State {
 	if len(src) == 0 {
 		return st
 	}
-	return st.Copy(func(st *State) {
-		st.View = st.View.SetSrc(src)
-	})
+	return st.SetView(st.View.SetSrc(src))
 }
 
 func (st *State) SetView(v *View) *State {
