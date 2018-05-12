@@ -630,9 +630,6 @@ def _rcmd(view, edit, nm, args, wd, rkey):
 	run_view = None
 	mg.send(view=run_view, cb=cb, actions=[act])
 
-def cmd_echo(view, edit, args, wd, rkey):
-	push_output(view, rkey, ' '.join(args))
-
 def cmd_which(view, edit, args, wd, rkey):
 	l = []
 	am = aliases()
