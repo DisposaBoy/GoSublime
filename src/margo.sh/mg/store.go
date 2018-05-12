@@ -239,13 +239,6 @@ func (sto *Store) autoSwitchInternalGOPATH(v *View, env EnvMap) EnvMap {
 	return env
 }
 
-func (sto *Store) State() *State {
-	sto.mu.Lock()
-	defer sto.mu.Unlock()
-
-	return sto.state
-}
-
 // NewCtx returns a new Ctx initialized using the internal StickyState.
 // The caller is responsible for calling Ctx.Cancel() when done with the Ctx
 func (sto *Store) NewCtx(act Action) *Ctx {

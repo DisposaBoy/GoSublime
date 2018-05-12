@@ -7,7 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
+	"text/template"
 	"time"
 )
 
@@ -125,12 +127,15 @@ type cmdSupport struct{ ReducerType }
 func (cs *cmdSupport) Reduce(mx *Ctx) *State {
 	switch act := mx.Action.(type) {
 	case RunCmd:
-		return cs.runCmd(NewBultinCmdCtx(mx, act))
+		return cs.runCmd(mx, act)
 	}
 	return mx.State
 }
 
-func (cs *cmdSupport) runCmd(bx *BultinCmdCtx) *State {
+func (cs *cmdSupport) runCmd(mx *Ctx, rc RunCmd) *State {
+	rc = rc.Interpolate(mx)
+	bx := NewBultinCmdCtx(mx, rc)
+
 	if cmd, ok := bx.BuiltinCmds.Lookup(bx.Name); ok {
 		return cmd.Run(bx)
 	}
@@ -145,6 +150,33 @@ type RunCmd struct {
 	Name     string
 	Args     []string
 	CancelID string
+}
+
+func (rc RunCmd) Interpolate(mx *Ctx) RunCmd {
+	tpl := template.New("")
+	buf := &bytes.Buffer{}
+	rc.Name = rc.interp(mx, tpl, buf, rc.Name)
+	for i, s := range rc.Args {
+		rc.Args[i] = rc.interp(mx, tpl, buf, s)
+	}
+	return rc
+}
+
+func (rc RunCmd) interp(mx *Ctx, tpl *template.Template, buf *bytes.Buffer, s string) string {
+	if strings.Contains(s, "{{") && strings.Contains(s, "}}") {
+		if tpl, err := tpl.Parse(s); err == nil {
+			buf.Reset()
+			if err := tpl.Execute(buf, mx); err == nil {
+				s = buf.String()
+			}
+		}
+	}
+	return os.Expand(s, func(k string) string {
+		if v, ok := mx.Env[k]; ok {
+			return v
+		}
+		return "${" + k + "}"
+	})
 }
 
 type Proc struct {

@@ -88,6 +88,7 @@ func (g *Guru) definition(bx *mg.BultinCmdCtx) {
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf
 	cmd.Stderr = bx.Output
+	cmd.Env = bx.Env.Environ()
 	if v.Dirty {
 		src, _ := v.ReadAll()
 		hdr := &bytes.Buffer{}

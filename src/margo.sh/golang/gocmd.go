@@ -152,8 +152,13 @@ func (gc *GoCmd) playToolTest(gx *goCmdCtx, bld *build.Context, origView *mg.Vie
 }
 
 func (gc *GoCmd) playToolRun(gx *goCmdCtx, bld *build.Context, origView *mg.View) {
+	nm := filepath.Base(origView.Name)
+	if origView.Path != "" {
+		nm = filepath.Base(origView.Dir())
+	}
+
 	args := gx.Args
-	exe := filepath.Join(gx.tDir, "margo.play~~"+filepath.Base(origView.Name)+".exe")
+	exe := filepath.Join(gx.tDir, "margo.play~~"+nm+".exe")
 	gx.BultinCmdCtx = gx.BultinCmdCtx.Copy(func(bx *mg.BultinCmdCtx) {
 		bx.Name = "go"
 		bx.Args = []string{"build", "-o", exe}
