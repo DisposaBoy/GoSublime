@@ -82,25 +82,31 @@ contexts:
       scope: support.function.builtin.go
     - match: \b(\w+)\b(?=\()
       scope: support.function.go
-    - match: (<-)
-      scope: keyword.operator.channel.go
-    - match: (==|!=|<|<=|>|>=)
-      scope: keyword.operator.comparison.go
-    - match: "(&&|[|]{2}|!)"
-      scope: keyword.operator.logical.go
-    - match: "([+]{2})"
+    - match: '--'
+      scope: keyword.operator.decrement.go
+    - match: '[+]{2}'
       scope: keyword.operator.increment.go
-    - match: (--)
-      scope: keyword.decrement.go
-    - match: "(=|(?:[+]|-|[|]|^|[*]|/|%|<<|>>|&|&^)=)"
+    - match: '[.]{3}'
+      scope: keyword.operator.go
+    - match: '<-'
+      scope: keyword.operator.channel.go
+    - match: '[+-|^*/%&]=|<<=|>>=|&^='
       scope: keyword.operator.assignment.go
-    - match: "([+]|-|[*]|/|%|&|[|]|^|&^|<<|>>)"
+    - match: '&^|<<|>>'
       scope: keyword.operator.arithmetic.go
+    - match: '[=!<>]=|[<>]'
+      scope: keyword.operator.comparison.go
+    - match: "[|&]{2}|!"
+      scope: keyword.operator.logical.go
+    - match: '[-+*/%^&|]'
+      scope: keyword.operator.arithmetic.go
+    - match: '='
+      scope: keyword.operator.assignment.go
     - match: (;)
       scope: keyword.operator.semi-colon.go
     - match: (,)
       scope: punctuation.definition.comma.go
-    - match: "([.])"
+    - match: '[.]'
       scope: punctuation.definition.dot.go
     - match: (:)
       scope: punctuation.definition.colon.go
