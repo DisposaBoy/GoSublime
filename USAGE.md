@@ -120,6 +120,23 @@ This automatically changes `GOPATH` to the value of `$GS_GOPATH` if `$GS_GOPATH`
 This allows you to e.g. automatically adapt `GOPATH` to your current project rather than
 reverting to your normal `GOPATH`.
 
+Another way is to use relative path:
+
+`my-project.sublime-project`
+
+	{
+	    "settings": {
+	        "GoSublime": {
+	            "env": {
+	            	"GOPATH": "${project_folder}/.vendor"
+	            }
+	        }
+	    },
+	    "folders": []
+	}
+
+`${project_folder}` will expand to the path containing your '.sublime-project' file.
+
 Lint/Syntax Check
 -----------------
 

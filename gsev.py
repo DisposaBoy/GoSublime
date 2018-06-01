@@ -2,6 +2,8 @@ from .gosubl import gs
 from . import gstest
 import sublime
 import sublime_plugin
+import os
+import string
 
 DOMAIN = 'GsEV'
 
@@ -57,6 +59,20 @@ def do_post_save(view):
 		finally:
 			gs.end(tid)
 
+def get_project_folder():
+    proj_file = sublime.active_window().project_file_name()
+    if proj_file:
+        return os.path.dirname(proj_file)
+    # Use current file's folder when no project file is opened.
+    return os.path.dirname( sublime.active_window().active_view().file_name() )
+
+def expand_template(s):
+    mapping = {
+        "project_folder": get_project_folder()
+    }
+    templ = string.Template(s)
+    return templ.safe_substitute(mapping)
+
 def do_sync_active_view(view):
 	fn = view.file_name() or ''
 	gs.set_attr('active_fn', fn)
@@ -71,6 +87,7 @@ def do_sync_active_view(view):
 		m = {}
 		psettings = view.settings().get('GoSublime')
 		if psettings and gs.is_a(psettings, {}):
+			psettings['env']['GOPATH'] = expand_template(psettings['env']['GOPATH'])
 			m = gs.mirror_settings(psettings)
 		gs.set_attr('last_active_project_settings', gs.dval(m, {}))
 
