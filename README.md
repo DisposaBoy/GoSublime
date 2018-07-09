@@ -121,3 +121,6 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 <a href="https://opencollective.com/gosublime/sponsor/9/website" target="_blank"><img src="https://opencollective.com/gosublime/sponsor/9/avatar.svg"></a>
 
 
+<br>
+<a href="https://margo.sh/sponsors/0" target="_blank"><img src="https://margo.sh/sponsors/0.svg"></a>
+
