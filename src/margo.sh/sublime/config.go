@@ -5,18 +5,20 @@ import (
 )
 
 var (
-	DefaultConfig = Config{}.EnabledForLangs("*")
+	DefaultConfig Config = Config{}.EnabledForLangs("*").(Config)
 
 	_ mg.EditorConfig = DefaultConfig
 )
 
+type ConfigValues struct {
+	EnabledForLangs            []mg.Lang
+	InhibitExplicitCompletions bool
+	InhibitWordCompletions     bool
+	OverrideSettings           map[string]interface{}
+}
+
 type Config struct {
-	Values struct {
-		EnabledForLangs            []mg.Lang
-		InhibitExplicitCompletions bool
-		InhibitWordCompletions     bool
-		OverrideSettings           map[string]interface{}
-	}
+	Values ConfigValues
 }
 
 func (c Config) EditorConfig() interface{} {

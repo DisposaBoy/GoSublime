@@ -9,17 +9,17 @@ import (
 )
 
 var (
-	margoExt mg.MargoFunc = sublime.Margo
+	margoExt    mg.MargoFunc = sublime.Margo
+	agentConfig              = mg.AgentConfig{AgentName: sublime.AgentName}
 )
 
 func Main() {
-	cfg := mg.AgentConfig{AgentName: sublime.AgentName}
 	app := mgcli.NewApp()
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "codec",
-			Value:       cfg.Codec,
-			Destination: &cfg.Codec,
+			Value:       agentConfig.Codec,
+			Destination: &agentConfig.Codec,
 			Usage:       fmt.Sprintf("The IPC codec: %s (default %s)", mg.CodecNamesStr, mg.DefaultCodec),
 		},
 	}
@@ -28,7 +28,7 @@ func Main() {
 			return cli.ShowAppHelp(ctx)
 		}
 
-		ag, err := mg.NewAgent(cfg)
+		ag, err := mg.NewAgent(agentConfig)
 		if err != nil {
 			return mgcli.Error("agent creation failed:", err)
 		}

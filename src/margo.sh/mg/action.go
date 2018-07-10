@@ -11,6 +11,9 @@ var (
 		"QueryCompletions": func(codec.Handle, agentReqAction) (Action, error) {
 			return QueryCompletions{}, nil
 		},
+		"QueryCmdCompletions": func(codec.Handle, agentReqAction) (Action, error) {
+			return QueryCmdCompletions{}, nil
+		},
 		"QueryIssues": func(codec.Handle, agentReqAction) (Action, error) {
 			return QueryIssues{}, nil
 		},
@@ -88,6 +91,15 @@ func (a Activate) clientAction() clientActionType {
 var Render Action = nil
 
 type QueryCompletions struct{ ActionType }
+
+type QueryCmdCompletions struct {
+	ActionType
+
+	Pos  int
+	Src  string
+	Name string
+	Args []string
+}
 
 type QueryIssues struct{ ActionType }
 

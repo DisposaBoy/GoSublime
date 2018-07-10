@@ -55,17 +55,17 @@ func (gc *GoCmd) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
 	)
 }
 
-func (gc *GoCmd) goBuiltin(bx *mg.BultinCmdCtx) *mg.State {
+func (gc *GoCmd) goBuiltin(bx *mg.CmdCtx) *mg.State {
 	go gc.goTool(bx)
 	return bx.State
 }
 
-func (gc *GoCmd) playBuiltin(bx *mg.BultinCmdCtx) *mg.State {
+func (gc *GoCmd) playBuiltin(bx *mg.CmdCtx) *mg.State {
 	go gc.playTool(bx, "")
 	return bx.State
 }
 
-func (gc *GoCmd) replayBuiltin(bx *mg.BultinCmdCtx) *mg.State {
+func (gc *GoCmd) replayBuiltin(bx *mg.CmdCtx) *mg.State {
 	v := bx.View
 	cid := ""
 	if v.Path == "" {
@@ -77,13 +77,13 @@ func (gc *GoCmd) replayBuiltin(bx *mg.BultinCmdCtx) *mg.State {
 	return bx.State
 }
 
-func (gc *GoCmd) goTool(bx *mg.BultinCmdCtx) {
+func (gc *GoCmd) goTool(bx *mg.CmdCtx) {
 	gx := newGoCmdCtx(bx, "go.builtin", "", "", "")
 	defer gx.Output.Close()
 	gx.run(gx.View)
 }
 
-func (gc *GoCmd) playTool(bx *mg.BultinCmdCtx, cancelID string) {
+func (gc *GoCmd) playTool(bx *mg.CmdCtx, cancelID string) {
 	origView := bx.View
 	bx, tDir, tFn, err := gc.playTempDir(bx)
 	gx := newGoCmdCtx(bx, "go.play", cancelID, tDir, tFn)
@@ -109,7 +109,7 @@ func (gc *GoCmd) playTool(bx *mg.BultinCmdCtx, cancelID string) {
 	}
 }
 
-func (gc *GoCmd) playTempDir(bx *mg.BultinCmdCtx) (newBx *mg.BultinCmdCtx, tDir string, tFn string, err error) {
+func (gc *GoCmd) playTempDir(bx *mg.CmdCtx) (newBx *mg.CmdCtx, tDir string, tFn string, err error) {
 	tDir, err = mg.MkTempDir("go.play")
 	if err != nil {
 		return bx, "", "", fmt.Errorf("cannot MkTempDir: %s", err)
@@ -133,7 +133,7 @@ func (gc *GoCmd) playTempDir(bx *mg.BultinCmdCtx) (newBx *mg.BultinCmdCtx, tDir 
 		return bx, tDir, "", fmt.Errorf("cannot create temp file: %s", err)
 	}
 
-	bx = bx.Copy(func(bx *mg.BultinCmdCtx) {
+	bx = bx.Copy(func(bx *mg.CmdCtx) {
 		bx.Ctx = bx.Ctx.Copy(func(mx *mg.Ctx) {
 			mx.State = mx.State.Copy(func(st *mg.State) {
 				st.View = st.View.Copy(func(v *mg.View) {
@@ -159,7 +159,7 @@ func (gc *GoCmd) playToolRun(gx *goCmdCtx, bld *build.Context, origView *mg.View
 
 	args := gx.Args
 	exe := filepath.Join(gx.tDir, "margo.play~~"+nm+".exe")
-	gx.BultinCmdCtx = gx.BultinCmdCtx.Copy(func(bx *mg.BultinCmdCtx) {
+	gx.CmdCtx = gx.CmdCtx.Copy(func(bx *mg.CmdCtx) {
 		bx.Name = "go"
 		bx.Args = []string{"build", "-o", exe}
 		bx.Ctx = bx.Ctx.Copy(func(mx *mg.Ctx) {
@@ -174,7 +174,7 @@ func (gc *GoCmd) playToolRun(gx *goCmdCtx, bld *build.Context, origView *mg.View
 		return
 	}
 
-	gx.BultinCmdCtx = gx.BultinCmdCtx.Copy(func(bx *mg.BultinCmdCtx) {
+	gx.CmdCtx = gx.CmdCtx.Copy(func(bx *mg.CmdCtx) {
 		bx.Name = exe
 		bx.Args = args
 		bx.Ctx = bx.Ctx.Copy(func(mx *mg.Ctx) {
@@ -187,15 +187,15 @@ func (gc *GoCmd) playToolRun(gx *goCmdCtx, bld *build.Context, origView *mg.View
 }
 
 type goCmdCtx struct {
-	*mg.BultinCmdCtx
+	*mg.CmdCtx
 	pkgDir string
 	key    interface{}
-	iw     *mg.IssueWriter
+	iw     *mg.IssueOut
 	tDir   string
 	tFn    string
 }
 
-func newGoCmdCtx(bx *mg.BultinCmdCtx, label, cancelID string, tDir, tFn string) *goCmdCtx {
+func newGoCmdCtx(bx *mg.CmdCtx, label, cancelID string, tDir, tFn string) *goCmdCtx {
 	gx := &goCmdCtx{
 		pkgDir: bx.View.Dir(),
 		tDir:   tDir,
@@ -205,18 +205,19 @@ func newGoCmdCtx(bx *mg.BultinCmdCtx, label, cancelID string, tDir, tFn string) 
 	type Key struct{ label string }
 	gx.key = Key{label}
 
-	gx.iw = &mg.IssueWriter{
+	gx.iw = &mg.IssueOut{
 		Base:     mg.Issue{Label: label},
 		Patterns: bx.CommonPatterns(),
 		Dir:      gx.pkgDir,
 	}
 
-	gx.BultinCmdCtx = bx.Copy(func(bx *mg.BultinCmdCtx) {
+	gx.CmdCtx = bx.Copy(func(bx *mg.CmdCtx) {
 		bx.Name = "go"
 		bx.CancelID = cancelID
-		bx.Output = bx.Output.Copy(func(w *mg.CmdOutputWriter) {
-			w.Writer = gx.iw
-		})
+		bx.Output = mg.OutputStreams{
+			bx.Output,
+			gx.iw,
+		}
 	})
 
 	return gx

@@ -31,9 +31,9 @@ func TestCmdSupport_Reduce_withRunCmd(t *testing.T) {
 
 	ctx.State = ctx.AddBuiltinCmds(BultinCmd{
 		Name: ".mytest",
-		Run: func(bx *BultinCmdCtx) *State {
+		Run: func(cx *CmdCtx) *State {
 			called = true
-			return bx.State
+			return cx.State
 		},
 	})
 

@@ -55,6 +55,9 @@ func newCtx(sto *Store, st *State, act Action, cookie string, p *mgpf.Profile) *
 	if st == nil {
 		st = sto.state.new()
 	}
+	if st.Config == nil {
+		st = st.SetConfig(sto.cfg)
+	}
 	if p == nil {
 		p = mgpf.NewProfile(cookie)
 	}

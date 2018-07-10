@@ -229,8 +229,11 @@ func (sto *Store) handleReqInit(rq *agentReq, mx *Ctx) (*Ctx, []Action) {
 // autoSwitchInternalGOPATH automatically changes env[GOPATH] to the internal GOPATH
 // if v.Filename is a child of one of the internal GOPATH directories
 func (sto *Store) autoSwitchInternalGOPATH(v *View, env EnvMap) EnvMap {
+	fn := v.Path
+	if fn == "" {
+		return env
+	}
 	osGopath := os.Getenv("GOPATH")
-	fn := v.Filename()
 	for _, dir := range strings.Split(osGopath, string(filepath.ListSeparator)) {
 		if IsParentDir(dir, fn) {
 			return env.Add("GOPATH", osGopath)
@@ -253,7 +256,9 @@ func newStore(ag *Agent, sub Subscriber) *Store {
 		sub: sub,
 		ag:  ag,
 	}
-	sto.state = newState(sto)
+	sto.state = &State{
+		StickyState: StickyState{View: newView(sto)},
+	}
 	sto.tasks = &taskTracker{}
 	sto.After(sto.tasks)
 

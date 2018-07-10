@@ -19,6 +19,9 @@ type IOWrapper struct {
 
 	// If Closer is not nil, it will be called to handle closes
 	Closer io.Closer
+
+	// If Flusher is not nil, it will be called to handle flushes
+	Flusher interface{ Flush() error }
 }
 
 // lockUnlock locks Locker if it's not nil and returns Locker.Unlock
@@ -53,13 +56,24 @@ func (iow *IOWrapper) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// Write calls Closer.Close() if Closer is not nil
+// Close calls Closer.Close() if Closer is not nil
 // otherwise it returns `nil`
 func (iow *IOWrapper) Close() error {
 	defer iow.lockUnlock()()
 
 	if c := iow.Closer; c != nil {
 		return c.Close()
+	}
+	return nil
+}
+
+// Flush calls Flushr.Flush() if Flusher is not nil
+// otherwise it returns `nil`
+func (iow *IOWrapper) Flush() error {
+	defer iow.lockUnlock()()
+
+	if f := iow.Flusher; f != nil {
+		return f.Flush()
 	}
 	return nil
 }

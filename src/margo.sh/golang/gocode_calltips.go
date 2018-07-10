@@ -2,11 +2,11 @@ package golang
 
 import (
 	"bytes"
+	"github.com/mdempsky/gocode/suggest"
 	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"margo.sh/golang/internal/gocode"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
 	"margo.sh/sublime"
@@ -23,6 +23,7 @@ type GocodeCalltips struct {
 	mg.ReducerType
 
 	q      *mgutil.ChanQ
+	gsu    *gcSuggest
 	status string
 }
 
@@ -31,6 +32,7 @@ func (gc *GocodeCalltips) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (gc *GocodeCalltips) ReducerMount(mx *mg.Ctx) {
+	gc.gsu = newGcSuggest(gsuOpts{})
 	gc.q = mgutil.NewChanQ(1)
 	go gc.processer()
 }
@@ -189,18 +191,15 @@ func (gc *GocodeCalltips) argPos(call *ast.CallExpr, tpos token.Pos) int {
 	return -1
 }
 
-func (gc *GocodeCalltips) candidate(mx *mg.Ctx, src []byte, pos int, funcName string) (candidate gocode.MargoCandidate, ok bool) {
+func (gc *GocodeCalltips) candidate(mx *mg.Ctx, src []byte, pos int, funcName string) (candidate suggest.Candidate, ok bool) {
 	if pos < 0 || pos >= len(src) {
 		return candidate, false
 	}
 
-	bctx := BuildContext(mx)
-	candidates := gocode.Margo.Complete(gocode.MargoConfig{
-		GOROOT:             bctx.GOROOT,
-		GOPATHS:            PathList(bctx.GOPATH),
-		UnimportedPackages: true,
-	}, src, mx.View.Filename(), pos)
-
+	mx = mx.SetView(mx.View.Copy(func(v *mg.View) {
+		v.Pos = pos
+	}))
+	candidates := gc.gsu.candidates(mx)
 	for _, c := range candidates {
 		if strings.HasPrefix(c.Type, "func(") && strings.EqualFold(funcName, c.Name) {
 			return c, true

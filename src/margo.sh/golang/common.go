@@ -5,6 +5,7 @@ import (
 	"go/build"
 	"go/token"
 	"margo.sh/mg"
+	"margo.sh/why_would_you_make_yotsuba_cry"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -51,11 +52,7 @@ func PathList(p string) []string {
 }
 
 func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
-	if node == nil {
-		return false
-	}
-	// apparently node can be (*T)(nil)
-	if reflect.ValueOf(node).IsNil() {
+	if why_would_you_make_yotsuba_cry.IsNil(node) {
 		return false
 	}
 	if np := node.Pos(); !np.IsValid() || pos <= np {

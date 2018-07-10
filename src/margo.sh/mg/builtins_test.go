@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"os"
 	"strings"
 	"testing"
@@ -18,7 +19,7 @@ func TestBultinCmdList_Lookup(t *testing.T) {
 	item := mg.BultinCmd{
 		Name: "this name",
 		Desc: "description",
-		Run:  func(*mg.BultinCmdCtx) *mg.State { return nil },
+		Run:  func(*mg.CmdCtx) *mg.State { return nil },
 	}
 	tcs := []struct {
 		name      string
@@ -51,15 +52,14 @@ func TestTypeCmdEmptyArgs(t *testing.T) {
 	item1 := mg.BultinCmd{Name: "this name", Desc: "this description"}
 	item2 := mg.BultinCmd{Name: "another one", Desc: "should appear too"}
 	buf := new(bytes.Buffer)
-	input := &mg.BultinCmdCtx{
+	input := &mg.CmdCtx{
 		Ctx: &mg.Ctx{
 			State: &mg.State{
 				BuiltinCmds: mg.BultinCmdList{item1, item2},
 			},
 		},
-		Output: &mg.CmdOutputWriter{
-			Writer:   buf,
-			Dispatch: nil,
+		Output: &mgutil.IOWrapper{
+			Writer: buf,
 		},
 	}
 
@@ -77,16 +77,18 @@ func TestTypeCmdEmptyArgs(t *testing.T) {
 	}
 }
 
-func setupBultinCmdCtx(cmds mg.BultinCmdList, args []string, envMap mg.EnvMap, buf io.Writer) (*mg.BultinCmdCtx, func()) {
+func setupBultinCmdCtx(cmds mg.BultinCmdList, args []string, envMap mg.EnvMap, buf io.Writer) (*mg.CmdCtx, func()) {
 	ctx := mg.NewTestingCtx(nil)
 	ctx.State = ctx.AddBuiltinCmds(cmds...)
 	ctx.Env = envMap
 	rc := mg.RunCmd{Args: args}
 
-	cmd := mg.NewBultinCmdCtx(ctx, rc)
-	cmd.Output = &mg.CmdOutputWriter{
-		Writer:   buf,
-		Dispatch: nil,
+	cmd := &mg.CmdCtx{
+		Ctx:    ctx,
+		RunCmd: rc,
+		Output: &mgutil.IOWrapper{
+			Writer: buf,
+		},
 	}
 	return cmd, ctx.Cancel
 }

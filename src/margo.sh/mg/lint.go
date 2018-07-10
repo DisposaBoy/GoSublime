@@ -107,7 +107,7 @@ func (lt *Linter) lint(mx *Ctx) {
 	}
 
 	dir := mx.View.Dir()
-	iw := &IssueWriter{
+	iw := &IssueOut{
 		Dir:      dir,
 		Patterns: mx.CommonPatterns(),
 		Base:     Issue{Label: lt.Label, Tag: lt.Tag},

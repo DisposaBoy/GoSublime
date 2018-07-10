@@ -46,7 +46,7 @@ func (g *Guru) Reduce(mx *mg.Ctx) *mg.State {
 			},
 		)
 	case mg.RunCmd:
-		runDef := func(bx *mg.BultinCmdCtx) *mg.State {
+		runDef := func(bx *mg.CmdCtx) *mg.State {
 			go g.definition(bx)
 			return bx.State
 		}
@@ -59,7 +59,7 @@ func (g *Guru) Reduce(mx *mg.Ctx) *mg.State {
 	}
 }
 
-func (g *Guru) definition(bx *mg.BultinCmdCtx) {
+func (g *Guru) definition(bx *mg.CmdCtx) {
 	defer bx.Output.Close()
 	defer bx.Begin(mg.Task{Title: "guru definition", ShowNow: true}).Done()
 

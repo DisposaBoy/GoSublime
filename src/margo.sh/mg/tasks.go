@@ -145,29 +145,29 @@ func (tr *taskTracker) cancel(tid string) bool {
 	return false
 }
 
-func (tr *taskTracker) killBuiltin(bx *BultinCmdCtx) *State {
+func (tr *taskTracker) killBuiltin(cx *CmdCtx) *State {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
-	defer bx.Output.Close()
-	if len(bx.Args) == 0 {
-		tr.listAll(bx)
+	defer cx.Output.Close()
+	if len(cx.Args) == 0 {
+		tr.listAll(cx)
 	} else {
-		tr.killAll(bx)
+		tr.killAll(cx)
 	}
 
-	return bx.State
+	return cx.State
 }
 
-func (tr *taskTracker) killAll(bx *BultinCmdCtx) {
+func (tr *taskTracker) killAll(cx *CmdCtx) {
 	buf := &bytes.Buffer{}
-	for _, tid := range bx.Args {
+	for _, tid := range cx.Args {
 		fmt.Fprintf(buf, "%s: %v\n", tid, tr.cancel(tid))
 	}
-	bx.Output.Write(buf.Bytes())
+	cx.Output.Write(buf.Bytes())
 }
 
-func (tr *taskTracker) listAll(bx *BultinCmdCtx) {
+func (tr *taskTracker) listAll(cx *CmdCtx) {
 	buf := &bytes.Buffer{}
 	for _, t := range tr.tickets {
 		id := t.ID
@@ -184,7 +184,7 @@ func (tr *taskTracker) listAll(bx *BultinCmdCtx) {
 
 		fmt.Fprintf(buf, "ID: %s, Dur: %s, Title: %s\n", id, dur, t.Title)
 	}
-	bx.Output.Write(buf.Bytes())
+	cx.Output.Write(buf.Bytes())
 }
 
 func (tr *taskTracker) status() string {

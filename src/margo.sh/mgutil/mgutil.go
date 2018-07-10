@@ -1,4 +1,4 @@
-// mgutil is a collections of utility types and functions with no dependency on margo.sh/mg
+// Package mgutil is a collections of utility types and functions with no dependency on margo.sh/mg
 package mgutil
 
 import (

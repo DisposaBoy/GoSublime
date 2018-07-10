@@ -129,13 +129,6 @@ func ActionLabel(act Action) string {
 	return "mg.Render"
 }
 
-// newState create a new State object ensuring View is initialized correctly.
-func newState(sto *Store) *State {
-	return &State{
-		StickyState: StickyState{View: newView(sto)},
-	}
-}
-
 // new creates a new State sharing State.StickyState
 func (st *State) new() *State {
 	return &State{StickyState: st.StickyState}

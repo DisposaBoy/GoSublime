@@ -7,7 +7,7 @@ import (
 
 func TestIssueWriter(t *testing.T) {
 	base := Issue{Label: "lbl", Tag: Warning}
-	w := &IssueWriter{
+	w := &IssueOut{
 		Dir:      "/abc",
 		Base:     base,
 		Patterns: CommonPatterns(),

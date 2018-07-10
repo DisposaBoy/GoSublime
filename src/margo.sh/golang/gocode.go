@@ -3,6 +3,7 @@ package golang
 import (
 	"bytes"
 	"fmt"
+	"github.com/mdempsky/gocode/suggest"
 	"go/ast"
 	"go/build"
 	"go/parser"
@@ -45,6 +46,7 @@ func (gr *gocodeReq) reduce() *mg.State {
 			completions = append(completions, c)
 		}
 	}
+
 	return gr.st.AddCompletions(completions...)
 }
 
@@ -63,6 +65,7 @@ type Gocode struct {
 	Debug                    bool
 
 	reqs chan gocodeReq
+	gsu  *gcSuggest
 }
 
 func (g *Gocode) ReducerConfig(mx *mg.Ctx) mg.EditorConfig {
@@ -92,6 +95,8 @@ func (g *Gocode) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (g *Gocode) ReducerMount(mx *mg.Ctx) {
+	g.gsu = newGcSuggest(gsuOpts{})
+
 	g.reqs = make(chan gocodeReq)
 	go func() {
 		for gr := range g.reqs {
@@ -177,7 +182,7 @@ func (g Gocode) funcTitle(fx *ast.FuncType, buf *bytes.Buffer, decl string) stri
 	return buf.String()
 }
 
-func (g Gocode) funcSrc(fx *ast.FuncType, buf *bytes.Buffer, v gocode.MargoCandidate, gx *gocodeCtx) string {
+func (g Gocode) funcSrc(fx *ast.FuncType, buf *bytes.Buffer, v suggest.Candidate, gx *gocodeCtx) string {
 	// TODO: caching
 	// TODO: only output the name, if we're in a call, assignment, etc. that takes a func
 
@@ -233,9 +238,9 @@ func printFields(w io.Writer, fset *token.FileSet, list []*ast.Field, printNames
 	}
 }
 
-func (g Gocode) completion(mx *mg.Ctx, gx *gocodeCtx, v gocode.MargoCandidate) (c mg.Completion, ok bool) {
+func (g Gocode) completion(mx *mg.Ctx, gx *gocodeCtx, v suggest.Candidate) (c mg.Completion, ok bool) {
 	buf := bytes.NewBuffer(nil)
-	if v.Class.String() == "PANIC" {
+	if v.Class == "PANIC" {
 		mx.Log.Printf("gocode panicked in '%s' at pos '%d'\n", gx.fn, gx.pos)
 		return c, false
 	}
@@ -258,35 +263,35 @@ func (g Gocode) completion(mx *mg.Ctx, gx *gocodeCtx, v gocode.MargoCandidate) (
 	return c, true
 }
 
-func (g Gocode) compQuery(v gocode.MargoCandidate) string {
+func (g Gocode) compQuery(v suggest.Candidate) string {
 	return v.Name
 }
 
-func (g Gocode) compSrc(fx *ast.FuncType, buf *bytes.Buffer, v gocode.MargoCandidate, gx *gocodeCtx) string {
+func (g Gocode) compSrc(fx *ast.FuncType, buf *bytes.Buffer, v suggest.Candidate, gx *gocodeCtx) string {
 	if fx == nil {
 		return v.Name
 	}
 	return g.funcSrc(fx, buf, v, gx)
 }
 
-func (g Gocode) compTag(v gocode.MargoCandidate) mg.CompletionTag {
-	if tag, ok := gocodeClassTags[v.Class.String()]; ok {
+func (g Gocode) compTag(v suggest.Candidate) mg.CompletionTag {
+	if tag, ok := gocodeClassTags[v.Class]; ok {
 		return tag
 	}
 	return mg.UnknownTag
 }
 
-func (g Gocode) compTitle(fx *ast.FuncType, buf *bytes.Buffer, v gocode.MargoCandidate) string {
+func (g Gocode) compTitle(fx *ast.FuncType, buf *bytes.Buffer, v suggest.Candidate) string {
 	if fx != nil {
 		return g.funcTitle(fx, buf, v.Type)
 	}
 	if v.Type == "" {
-		return v.Class.String()
+		return v.Class
 	}
 	return v.Type
 }
 
-func (g Gocode) matchTests(c gocode.MargoCandidate) bool {
+func (g Gocode) matchTests(c suggest.Candidate) bool {
 	return strings.HasPrefix(c.Name, "Test") ||
 		strings.HasPrefix(c.Name, "Benchmark") ||
 		strings.HasPrefix(c.Name, "Example")
@@ -294,6 +299,8 @@ func (g Gocode) matchTests(c gocode.MargoCandidate) bool {
 
 type gocodeCtx struct {
 	Gocode
+	gsu  *gcSuggest
+	mx   *mg.Ctx
 	cn   *CursorNode
 	fn   string
 	src  []byte
@@ -326,6 +333,8 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.State, *gocodeCtx) {
 	}
 
 	gx := &gocodeCtx{
+		mx:   mx,
+		gsu:  g.gsu,
 		cn:   cn,
 		fn:   st.View.Filename(),
 		pos:  pos,
@@ -344,11 +353,11 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.State, *gocodeCtx) {
 	return st, gx
 }
 
-func (gx *gocodeCtx) candidates() []gocode.MargoCandidate {
+func (gx *gocodeCtx) candidates() []suggest.Candidate {
 	if len(gx.src) == 0 {
 		return nil
 	}
-	return gocode.Margo.Complete(gx.cfg, gx.src, gx.fn, gx.pos)
+	return gx.gsu.candidates(gx.mx)
 }
 
 func clampSrcPos(src []byte, pos int) int {

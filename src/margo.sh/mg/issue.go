@@ -3,7 +3,6 @@ package mg
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -282,12 +281,11 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 	return mx.AddStatus(status...)
 }
 
-type IssueWriter struct {
-	io.Writer
-	io.Closer
+type IssueOut struct {
 	Patterns []*regexp.Regexp
 	Base     Issue
 	Dir      string
+	Done     chan<- struct{}
 
 	buf    []byte
 	mu     sync.Mutex
@@ -297,7 +295,7 @@ type IssueWriter struct {
 	closed bool
 }
 
-func (w *IssueWriter) Write(p []byte) (n int, err error) {
+func (w *IssueOut) Write(p []byte) (n int, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -307,14 +305,12 @@ func (w *IssueWriter) Write(p []byte) (n int, err error) {
 
 	w.buf = append(w.buf, p...)
 	w.scan(false)
-
-	if w.Writer != nil {
-		return w.Writer.Write(p)
-	}
 	return len(p), nil
 }
 
-func (w *IssueWriter) Close() error {
+func (w *IssueOut) Close() error {
+	defer w.Flush()
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -323,15 +319,14 @@ func (w *IssueWriter) Close() error {
 	}
 
 	w.closed = true
-	w.flush()
-
-	if w.Closer != nil {
-		return w.Closer.Close()
+	if w.Done != nil {
+		close(w.Done)
 	}
+
 	return nil
 }
 
-func (w *IssueWriter) Flush() error {
+func (w *IssueOut) Flush() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -339,7 +334,7 @@ func (w *IssueWriter) Flush() error {
 	return nil
 }
 
-func (w *IssueWriter) Issues() IssueSet {
+func (w *IssueOut) Issues() IssueSet {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -349,7 +344,7 @@ func (w *IssueWriter) Issues() IssueSet {
 	return issues
 }
 
-func (w *IssueWriter) scan(scanTail bool) {
+func (w *IssueOut) scan(scanTail bool) {
 	lines := bytes.Split(w.buf, []byte{'\n'})
 	var tail []byte
 	if !scanTail {
@@ -364,7 +359,7 @@ func (w *IssueWriter) scan(scanTail bool) {
 	w.buf = append(w.buf[:0], tail...)
 }
 
-func (w *IssueWriter) scanLine(ln []byte) {
+func (w *IssueOut) scanLine(ln []byte) {
 	pfx := ln[:len(ln)-len(bytes.TrimLeft(ln, " \t"))]
 	ind := bytes.TrimPrefix(pfx, w.pfx)
 	if n := len(ind); n > 0 && w.isu != nil {
@@ -378,7 +373,7 @@ func (w *IssueWriter) scanLine(ln []byte) {
 	w.isu = w.match(ln)
 }
 
-func (w *IssueWriter) flush() {
+func (w *IssueOut) flush() {
 	if w.isu == nil {
 		return
 	}
@@ -389,7 +384,7 @@ func (w *IssueWriter) flush() {
 	}
 }
 
-func (w *IssueWriter) match(s []byte) *Issue {
+func (w *IssueOut) match(s []byte) *Issue {
 	for _, p := range w.Patterns {
 		if isu := w.matchOne(p, s); isu != nil {
 			return isu
@@ -398,7 +393,7 @@ func (w *IssueWriter) match(s []byte) *Issue {
 	return nil
 }
 
-func (w *IssueWriter) matchOne(p *regexp.Regexp, s []byte) *Issue {
+func (w *IssueOut) matchOne(p *regexp.Regexp, s []byte) *Issue {
 	submatch := p.FindSubmatch(s)
 	if submatch == nil {
 		return nil

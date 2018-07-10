@@ -34,33 +34,35 @@ func (bcl BultinCmdList) Lookup(name string) (cmd BultinCmd, found bool) {
 type builtins struct{ ReducerType }
 
 // ExecCmd implements the `.exec` builtin.
-func (b builtins) ExecCmd(bx *BultinCmdCtx) *State {
-	go b.execCmd(bx)
-	return bx.State
+func (b builtins) ExecCmd(cx *CmdCtx) *State {
+	go b.execCmd(cx)
+	return cx.State
 }
 
-func (b builtins) execCmd(bx *BultinCmdCtx) {
-	defer bx.Output.Close()
+func (b builtins) execCmd(cx *CmdCtx) {
+	defer cx.Output.Close()
 
-	if bx.Name == ".exec" {
-		if len(bx.Args) == 0 {
+	if cx.Name == ".exec" {
+		if len(cx.Args) == 0 {
 			return
 		}
-		bx = bx.Copy(func(bx *BultinCmdCtx) {
-			bx.Name = bx.Args[0]
-			bx.Args = bx.Args[1:]
+		cx = cx.Copy(func(cx *CmdCtx) {
+			cx.Name = cx.Args[0]
+			cx.Args = cx.Args[1:]
 		})
 	}
 
-	bx.RunProc()
+	cx.RunProc()
 }
 
-// TypeCmd tries to find the bx.Args in commands, and writes the description of
+// TypeCmd tries to find the cx.Args in commands, and writes the description of
 // the commands into provided buffer. If the Args is empty, it uses all
 // available commands.
-func (b builtins) TypeCmd(bx *BultinCmdCtx) *State {
-	cmds := bx.BuiltinCmds
-	names := bx.Args
+func (b builtins) TypeCmd(cx *CmdCtx) *State {
+	defer cx.Output.Close()
+
+	cmds := cx.BuiltinCmds
+	names := cx.Args
 	if len(names) == 0 {
 		names = make([]string, len(cmds))
 		for i, c := range cmds {
@@ -74,28 +76,30 @@ func (b builtins) TypeCmd(bx *BultinCmdCtx) *State {
 		fmt.Fprintf(buf, "%s: builtin: %s, desc: %s\n", name, c.Name, c.Desc)
 	}
 
-	bx.Output.Close(buf.Bytes())
-	return bx.State
+	cx.Output.Write(buf.Bytes())
+	return cx.State
 }
 
-// EnvCmd finds all environment variables corresponding to bx.Args into the
-// bx.Output buffer.
-func (b builtins) EnvCmd(bx *BultinCmdCtx) *State {
+// EnvCmd finds all environment variables corresponding to cx.Args into the
+// cx.Output buffer.
+func (b builtins) EnvCmd(cx *CmdCtx) *State {
+	defer cx.Output.Close()
+
 	buf := &bytes.Buffer{}
-	names := bx.Args
+	names := cx.Args
 	if len(names) == 0 {
-		names = make([]string, 0, len(bx.Env))
-		for k, _ := range bx.Env {
+		names = make([]string, 0, len(cx.Env))
+		for k, _ := range cx.Env {
 			names = append(names, k)
 		}
 		sort.Strings(names)
 	}
 	for _, k := range names {
-		v := bx.Env.Get(k, os.Getenv(k))
+		v := cx.Env.Get(k, os.Getenv(k))
 		fmt.Fprintf(buf, "%s=%s\n", k, v)
 	}
-	bx.Output.Close(buf.Bytes())
-	return bx.State
+	cx.Output.Write(buf.Bytes())
+	return cx.State
 }
 
 // Commands returns a list of predefined commands.
@@ -115,51 +119,43 @@ func (bc builtins) Reduce(mx *Ctx) *State {
 	return mx.State
 }
 
-type BultinCmdCtx struct {
+type CmdCtx struct {
 	*Ctx
 	RunCmd
-	Output *CmdOutputWriter
+	Output OutputStream
 }
 
-func NewBultinCmdCtx(mx *Ctx, rc RunCmd) *BultinCmdCtx {
-	return &BultinCmdCtx{
-		Ctx:    mx,
-		RunCmd: rc,
-		Output: &CmdOutputWriter{Fd: rc.Fd, Dispatch: mx.Store.Dispatch},
-	}
-}
-
-func (bx *BultinCmdCtx) update(updaters ...func(*BultinCmdCtx)) *BultinCmdCtx {
+func (cx *CmdCtx) update(updaters ...func(*CmdCtx)) *CmdCtx {
 	for _, f := range updaters {
-		f(bx)
+		f(cx)
 	}
-	return bx
+	return cx
 }
 
-func (bx *BultinCmdCtx) Copy(updaters ...func(*BultinCmdCtx)) *BultinCmdCtx {
-	x := *bx
+func (cx *CmdCtx) Copy(updaters ...func(*CmdCtx)) *CmdCtx {
+	x := *cx
 	return x.update(updaters...)
 }
 
-func (bx *BultinCmdCtx) RunProc() {
-	p, err := bx.StartProc()
+func (cx *CmdCtx) RunProc() {
+	p, err := cx.StartProc()
 	if err == nil {
 		err = p.Wait()
 	}
 	if err != nil {
-		fmt.Fprintf(bx.Output, "`%s` exited: %s\n", p.Title, err)
+		fmt.Fprintf(cx.Output, "`%s` exited: %s\n", p.Title, err)
 	}
 }
 
 // StartProc creates a new Proc and starts the underlying process.
 // It always returns an initialised Proc.
-func (bx *BultinCmdCtx) StartProc() (*Proc, error) {
-	p := newProc(bx)
+func (cx *CmdCtx) StartProc() (*Proc, error) {
+	p := newProc(cx)
 	return p, p.start()
 }
 
 type BultinCmd struct {
 	Name string
 	Desc string
-	Run  func(*BultinCmdCtx) *State
+	Run  func(*CmdCtx) *State
 }

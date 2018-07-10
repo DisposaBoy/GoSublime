@@ -3,9 +3,18 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mdempsky/gocode"
+  packages = [
+    "lookdot",
+    "suggest"
+  ]
+  revision = "466551c8e799882836d81a98792e5887540b7822"
+
+[[projects]]
+  branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "f3cacc17c85ecb7f1b6a9e373ee85d1480919868"
+  revision = "7d51bbe6161dcb8f32a1252c27668ce36e3ef16b"
 
 [[projects]]
   branch = "master"
@@ -17,13 +26,13 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
-  revision = "4ec37c66abab2c7e02ae775328b2ff001c3f025a"
+  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["cpu"]
-  revision = "7db1c3b1a98089d0071c84f646ff5c96aad43682"
+  revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
 
 [[projects]]
   branch = "master"
@@ -36,6 +45,8 @@
     "go/buildutil",
     "go/callgraph",
     "go/callgraph/static",
+    "go/gcexportdata",
+    "go/internal/gcimporter",
     "go/loader",
     "go/pointer",
     "go/ssa",
@@ -45,11 +56,11 @@
     "internal/fastwalk",
     "refactor/importgraph"
   ]
-  revision = "87723262609ca8fd55d449c027454c29cadefd68"
+  revision = "18f0b668f1069d7f55ac25b6f2670e30cd6499c0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d929fab6918d1833fd0bf96d285bc438bfa936590205bbba2e182511b2bf6ac5"
+  inputs-digest = "a44f4b1d6cf03e855a59a35b36366ac4f5b968ecb649658356c0585c482573fa"
   solver-name = "gps-cdcl"
   solver-version = 1

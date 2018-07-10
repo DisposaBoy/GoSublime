@@ -1,6 +1,7 @@
 package mg
 
 import (
+	"bytes"
 	"go/build"
 	"margo.sh/mgutil"
 	"os"
@@ -89,7 +90,7 @@ func (rs *restartSupport) onInit(mx *Ctx) {
 		return
 	}
 
-	res := rsIssues{issues: rs.slowLint(mx)}
+	res := rsIssues{issues: rs.slowLint(mx, nil)}
 	if len(res.issues) != 0 {
 		mx.Store.Dispatch(res)
 	}
@@ -101,7 +102,7 @@ func (rs *restartSupport) onSave(mx *Ctx) {
 		return
 	}
 
-	res := rsIssues{issues: rs.slowLint(mx)}
+	res := rsIssues{issues: rs.slowLint(mx, pkg)}
 	mx.Store.Dispatch(res)
 	if len(res.issues) == 0 {
 		mx.Log.Println(pkg.ImportPath, "saved with no issues, restarting")
@@ -109,25 +110,44 @@ func (rs *restartSupport) onSave(mx *Ctx) {
 	}
 }
 
-func (rs *restartSupport) slowLint(mx *Ctx) IssueSet {
+func (rs *restartSupport) slowLint(mx *Ctx, pkg *build.Package) IssueSet {
 	defer mx.Begin(Task{Title: "prepping margo restart"}).Done()
 
-	cmd := exec.Command("margo.sh", "build", mx.AgentName())
-	cmd.Dir = mx.View.Dir()
-	cmd.Env = mx.Env.Environ()
-	out, err := cmd.CombinedOutput()
+	cmds := []*exec.Cmd{
+		exec.Command("margo.sh", "build", mx.AgentName()),
+	}
+	if pkg != nil && pkg.ImportPath != "margo" {
+		cmds = append([]*exec.Cmd{
+			exec.Command("go", "vet", "margo.sh/..."),
+			exec.Command("go", "test", "-race", "margo.sh/..."),
+		}, cmds...)
+	}
 
-	iw := &IssueWriter{
+	buf := &bytes.Buffer{}
+	var err error
+	for _, cmd := range cmds {
+		cmd.Dir = mx.View.Dir()
+		cmd.Env = mx.Env.Environ()
+		cmd.Stdout = buf
+		cmd.Stderr = buf
+		err = cmd.Run()
+		if err != nil {
+			break
+		}
+	}
+
+	output := buf.Bytes()
+	isuOut := &IssueOut{
 		Dir:      mx.View.Dir(),
 		Patterns: mx.CommonPatterns(),
 		Base:     Issue{Label: rs.ReducerLabel()},
 	}
-	iw.Write(out)
-	iw.Close()
-	issues := iw.Issues()
+	isuOut.Write(output)
+	isuOut.Close()
+	issues := isuOut.Issues()
 
 	if err != nil {
-		mx.Log.Printf(rs.ReducerLabel()+": %s\n%s\n", err, out)
+		mx.Log.Printf(rs.ReducerLabel()+": %s\n%s\n", err, output)
 	}
 	return issues
 }

@@ -13,10 +13,125 @@ import (
 	"time"
 )
 
-// CmdOutputWriter writes a command output to the writer.
-type CmdOutputWriter struct {
+var (
+	_ OutputStream = (*CmdOut)(nil)
+	_ OutputStream = (*IssueOut)(nil)
+	_ OutputStream = (OutputStreams)(nil)
+	_ OutputStream = (*mgutil.IOWrapper)(nil)
+)
+
+type ErrorList []error
+
+func (el ErrorList) First() error {
+	for _, e := range el {
+		if e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
+func (el ErrorList) Filter() ErrorList {
+	if len(el) == 0 {
+		return nil
+	}
+	res := make(ErrorList, 0, len(el))
+	for _, e := range el {
+		if e != nil {
+			res = append(res, e)
+		}
+	}
+	return res
+}
+
+func (el ErrorList) Error() string {
+	buf := &bytes.Buffer{}
+	for _, e := range el {
+		if e == nil {
+			continue
+		}
+		if buf.Len() != 0 {
+			buf.WriteByte('\n')
+		}
+		buf.WriteString(e.Error())
+	}
+	return buf.String()
+}
+
+// OutputStream describes an object that's capable of dispatching command output
+// its main implementation is CmdOutputWriter
+type OutputStream interface {
 	io.Writer
 	io.Closer
+	Flush() error
+}
+
+type OutputStreams []OutputStream
+
+func (sl OutputStreams) Write(p []byte) (int, error) {
+	var el ErrorList
+
+	for i, s := range sl {
+		n, err := s.Write(p)
+		if err == nil && n != len(p) {
+			err = io.ErrShortWrite
+		}
+		if err == nil {
+			continue
+		}
+		if len(el) == 0 {
+			el = make(ErrorList, len(sl))
+		}
+		el[i] = err
+	}
+
+	if len(el) == 0 {
+		return len(p), nil
+	}
+	return len(p), el
+}
+
+func (sl OutputStreams) Close() error {
+	var el ErrorList
+
+	for i, s := range sl {
+		err := s.Close()
+		if err == nil {
+			continue
+		}
+		if len(el) == 0 {
+			el = make(ErrorList, len(sl))
+		}
+		el[i] = err
+	}
+
+	if len(el) == 0 {
+		return nil
+	}
+	return el
+}
+
+func (sl OutputStreams) Flush() error {
+	var el ErrorList
+
+	for i, s := range sl {
+		err := s.Flush()
+		if err == nil {
+			continue
+		}
+		if len(el) == 0 {
+			el = make(ErrorList, len(sl))
+		}
+		el[i] = err
+	}
+
+	if len(el) == 0 {
+		return nil
+	}
+	return el
+}
+
+type CmdOut struct {
 	Fd       string
 	Dispatch Dispatcher
 
@@ -25,27 +140,11 @@ type CmdOutputWriter struct {
 	closed bool
 }
 
-// Copy applies updaters to a new copy of the writer.
-func (w *CmdOutputWriter) Copy(updaters ...func(*CmdOutputWriter)) *CmdOutputWriter {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	p := &CmdOutputWriter{
-		Fd:       w.Fd,
-		Dispatch: w.Dispatch,
-	}
-	p.buf = append(p.buf, w.buf...)
-	for _, f := range updaters {
-		f(p)
-	}
-	return p
-}
-
-func (w *CmdOutputWriter) Write(p []byte) (int, error) {
+func (w *CmdOut) Write(p []byte) (int, error) {
 	return w.write(false, p)
 }
 
-func (w *CmdOutputWriter) write(writeIfClosed bool, p []byte) (int, error) {
+func (w *CmdOut) write(writeIfClosed bool, p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -54,25 +153,13 @@ func (w *CmdOutputWriter) write(writeIfClosed bool, p []byte) (int, error) {
 	}
 
 	w.buf = append(w.buf, p...)
-
-	if !w.closed {
-		if w.Writer != nil {
-			return w.Writer.Write(p)
-		}
-	}
-
 	return len(p), nil
 }
 
-// Close writes provided output(s) and closes the writer. It returns
-// os.ErrClosed if Close has already been called. If the Closer is not nil
-// w.Closer.Close() method will be called.
-func (w *CmdOutputWriter) Close(output ...[]byte) error {
-	defer w.dispatch()
-
-	for _, s := range output {
-		w.write(true, s)
-	}
+// Close closes the writer.
+// It returns os.ErrClosed if Close has already been called.
+func (w *CmdOut) Close() error {
+	defer w.Flush()
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -82,26 +169,29 @@ func (w *CmdOutputWriter) Close(output ...[]byte) error {
 	}
 
 	w.closed = true
-	if w.Closer != nil {
-		return w.Closer.Close()
-	}
 	return nil
 }
 
-func (w *CmdOutputWriter) dispatch() {
+// Flush implements OutputStream.Flush
+//
+// If w.Dispatch is set, it's used to dispatch Output{} actions.
+// It never returns an error.
+func (w *CmdOut) Flush() error {
 	if w.Dispatch == nil || w.Fd == "" {
-		return
+		return nil
 	}
 
 	out := w.Output()
 	if len(out.Output) != 0 || out.Close {
 		w.Dispatch(out)
 	}
+
+	return nil
 }
 
 // Output returns the data buffered from previous calls to w.Write() and clears
 // the buffer.
-func (w *CmdOutputWriter) Output() CmdOutput {
+func (w *CmdOut) Output() CmdOutput {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -127,19 +217,23 @@ type cmdSupport struct{ ReducerType }
 func (cs *cmdSupport) Reduce(mx *Ctx) *State {
 	switch act := mx.Action.(type) {
 	case RunCmd:
-		return cs.runCmd(mx, act)
+		return runCmd(mx, act)
 	}
 	return mx.State
 }
 
-func (cs *cmdSupport) runCmd(mx *Ctx, rc RunCmd) *State {
+func runCmd(mx *Ctx, rc RunCmd) *State {
 	rc = rc.Interpolate(mx)
-	bx := NewBultinCmdCtx(mx, rc)
-
-	if cmd, ok := bx.BuiltinCmds.Lookup(bx.Name); ok {
-		return cmd.Run(bx)
+	cx := &CmdCtx{
+		Ctx:    mx,
+		RunCmd: rc,
+		Output: &CmdOut{Fd: rc.Fd, Dispatch: mx.Store.Dispatch},
 	}
-	return Builtins.ExecCmd(bx)
+
+	if cmd, ok := cx.BuiltinCmds.Lookup(cx.Name); ok {
+		return cmd.Run(cx)
+	}
+	return Builtins.ExecCmd(cx)
 }
 
 type RunCmd struct {
@@ -182,7 +276,7 @@ func (rc RunCmd) interp(mx *Ctx, tpl *template.Template, buf *bytes.Buffer, s st
 type Proc struct {
 	Title string
 
-	bx     *BultinCmdCtx
+	cx     *CmdCtx
 	mu     sync.RWMutex
 	done   chan struct{}
 	closed bool
@@ -191,21 +285,21 @@ type Proc struct {
 	cid    string
 }
 
-func newProc(bx *BultinCmdCtx) *Proc {
-	cmd := exec.Command(bx.Name, bx.Args...)
-	if bx.Input {
-		s, _ := bx.View.ReadAll()
+func newProc(cx *CmdCtx) *Proc {
+	cmd := exec.Command(cx.Name, cx.Args...)
+	if cx.Input {
+		s, _ := cx.View.ReadAll()
 		cmd.Stdin = bytes.NewReader(s)
 	}
-	cmd.Dir = bx.View.Wd
-	cmd.Env = bx.Env.Environ()
-	cmd.Stdout = bx.Output
-	cmd.Stderr = bx.Output
+	cmd.Dir = cx.View.Wd
+	cmd.Env = cx.Env.Environ()
+	cmd.Stdout = cx.Output
+	cmd.Stderr = cx.Output
 	cmd.SysProcAttr = pgSysProcAttr
 
-	name := filepath.Base(bx.Name)
-	args := make([]string, len(bx.Args))
-	for i, s := range bx.Args {
+	name := filepath.Base(cx.Name)
+	args := make([]string, len(cx.Args))
+	for i, s := range cx.Args {
 		if filepath.IsAbs(s) {
 			s = filepath.Base(s)
 		}
@@ -215,9 +309,9 @@ func newProc(bx *BultinCmdCtx) *Proc {
 	return &Proc{
 		Title: "`" + mgutil.QuoteCmd(name, args...) + "`",
 		done:  make(chan struct{}),
-		bx:    bx,
+		cx:    cx,
 		cmd:   cmd,
-		cid:   bx.CancelID,
+		cid:   cx.CancelID,
 	}
 }
 
@@ -236,7 +330,7 @@ func (p *Proc) start() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.task = p.bx.Begin(Task{
+	p.task = p.cx.Begin(Task{
 		CancelID: p.cid,
 		Title:    p.Title,
 		Cancel:   p.Cancel,
@@ -258,7 +352,7 @@ func (p *Proc) dispatcher() {
 		case <-p.done:
 			return
 		case <-time.After(1 * time.Second):
-			p.bx.Output.dispatch()
+			p.cx.Output.Flush()
 		}
 	}
 }

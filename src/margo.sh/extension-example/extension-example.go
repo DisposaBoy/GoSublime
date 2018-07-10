@@ -18,11 +18,11 @@ func Margo(ma mg.Args) {
 		// and saving a non-go file will not trigger linters, etc. for that go pkg
 		//
 		// mg.NewReducer(func(mx *mg.Ctx) *mg.State {
-		// 	return mx.SetConfig(mx.Config.EnabledForLangs("go"))
+		// 	return mx.SetConfig(mx.Config.EnabledForLangs(mg.Go))
 		// }),
 
 		// add the day and time to the status bar
-		// DayTimeStatus,
+		&DayTimeStatus{},
 
 		// both GoFmt and GoImports will automatically disable the GoSublime version
 		// you will need to install the `goimports` tool manually
@@ -51,8 +51,6 @@ func Margo(ma mg.Args) {
 		// add some default context aware-ish snippets
 		golang.Snippets,
 
-		// add our own snippets
-
 		// check the file for syntax errors
 		&golang.SyntaxCheck{},
 
@@ -71,8 +69,7 @@ func Margo(ma mg.Args) {
 		// golang.GoVet(),
 
 		// run `go test -race` on save
-		// in go1.10, go vet is ran automatically
-		golang.GoTest("-race"),
+		// golang.GoTest("-race"),
 
 		// run `golint` on save
 		// &golang.Linter{Name: "golint", Label: "Go/Lint"},
