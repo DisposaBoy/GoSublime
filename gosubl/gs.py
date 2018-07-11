@@ -535,22 +535,31 @@ def do_focus(fn, row, col, win, focus_pat, cb):
 		notify(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
 		if cb:
 			cb(False)
-	elif view.is_loading():
-		focus(fn, row=row, col=col, win=win, focus_pat=focus_pat, cb=cb)
-	else:
-		win.focus_view(view)
-		if row <= 0 and col <= 0 and focus_pat:
+
+		return
+
+	def run():
+		r, c = row, col
+
+		if r <= 0 and c <= 0 and focus_pat:
 			r = view.find(focus_pat, 0)
 			if r:
-				row, col = view.rowcol(r.begin())
+				r, c = view.rowcol(r.begin())
 
-		if row < 0:
-			row, col = rowcol(view)
+		if r < 0:
+			r, c = rowcol(view)
 
-		view.run_command("gs_goto_row_col", { "row": row, "col": col })
+		view.run_command("gs_goto_row_col", { "row": r, "col": c })
 
 		if cb:
 			cb(True)
+
+	win.focus_view(view)
+	if view.is_loading():
+		sublime.set_timeout(run, 500)
+	else:
+		run()
+
 
 def focus(fn, row=0, col=0, win=None, timeout=100, focus_pat='^package ', cb=None):
 	sublime.set_timeout(lambda: do_focus(fn, row, col, win, focus_pat, cb), timeout)
