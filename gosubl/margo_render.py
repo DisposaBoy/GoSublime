@@ -10,8 +10,11 @@ STATUS_SFX = '  '
 STATUS_SEP = '    '
 
 def render(view, state, status=[]):
-	_render_status(view, status + state.status)
-	_render_issues(view, state.issues)
+	def cb():
+		_render_status(view, status + state.status)
+		_render_issues(view, state.issues)
+
+	sublime.set_timeout(cb)
 
 def _render_status(view, status):
 	if status:
