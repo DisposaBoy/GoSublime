@@ -22,16 +22,20 @@ except Exception:
 	print("GoSublime: %s" % execErr)
 
 def loadable_mods():
+	from . import _before
+	from . import _after
 	from .gosubl import gs
 	from .gosubl import sh
 	from .gosubl import margo
 	from .gosubl import mg9
 
 	return [
+		('_before', _before),
 		('gs', gs),
 		('sh', sh),
 		('margo', margo),
 		('mg9', mg9),
+		('_after', _after),
 	]
 
 def plugin_loaded():
