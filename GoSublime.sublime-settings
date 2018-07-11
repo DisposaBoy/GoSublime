@@ -30,10 +30,10 @@
 	"autosave": true,
 
 	// Whether or not gscomplete(gocode) is enabled
-	"gscomplete_enabled": true,
+	"gscomplete_enabled": false,
 
 	// Whether or not gsfmt is enabled
-	"fmt_enabled": true,
+	"fmt_enabled": false,
 
 	// whether or not to indent with tabs (alignment is always done using spaces)
 	"fmt_tab_indent": true,
@@ -57,7 +57,7 @@
 	"ipc_timeout": 1,
 
 	// Whether or not gslint is enabled
-	"gslint_enabled": true,
+	"gslint_enabled": false,
 
 	// filter the kinds of lint checks that are done. supported kinds:
 	//
@@ -94,7 +94,7 @@
 
 	// Not Implemented
 	// Whether or not gslint is enabled
-	"lint_enabled": true,
+	"lint_enabled": false,
 
 	// Not Implemented
 	// list of linters to run
@@ -181,7 +181,7 @@
 
 	// whether or not to show function call tip in the status bar
 	// the same can be achieved ctrl+dot,ctrl+space using an output panel
-	"calltips": true,
+	"calltips": false,
 
 	// whether or not to use named imports when the basename of the import path doesn't match the pkg name
 	// e.g. gosubli.me/go-foo would be imported as:
@@ -312,7 +312,7 @@
 	//
 	"9o_aliases": {},
 
-	// what 9o command to run when (super or )ctrl+dot,ctrl+b us pressed
+	// what 9o command to run when (super or )ctrl+dot,ctrl+b is pressed
 	// e.g. ["go", "build"]
 	// the 9o command ^1 recalls the last command you ran manually
 	// see 9o help(ctrl+9 "help") for more details about what commands are supported
