@@ -90,7 +90,7 @@ contexts:
       scope: keyword.operator.go
     - match: '<-'
       scope: keyword.operator.channel.go
-    - match: '[+-|^*/%&]=|<<=|>>=|&^='
+    - match: '[-+|^*/%&]=|<<=|>>=|&^='
       scope: keyword.operator.assignment.go
     - match: '&^|<<|>>'
       scope: keyword.operator.arithmetic.go
