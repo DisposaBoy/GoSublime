@@ -22,7 +22,7 @@ AC_OPTS = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETION
 SPLIT_FN_POS_PAT = re.compile(r'(.+?)(?:[:](\d+))?(?:[:](\d+))?$')
 URL_SCHEME_PAT = re.compile(r'[\w.+-]+://')
 URL_PATH_PAT = re.compile(r'(?:[\w.+-]+://|(?:www|(?:\w+\.)*(?:golang|pkgdoc|gosublime)\.org))')
-HIST_EXPAND_PAT = re.compile(r'^(\^+)\s*(\d+)$')
+HIST_EXPAND_PAT = re.compile(r'^[\'"\s]*(\^+)\s*(\d+)[\'"\s]*$')
 
 HOURGLASS = u'\u231B'
 
@@ -32,9 +32,6 @@ DEFAULT_COMMANDS = [
 	'build',
 	'replay',
 	'clear',
-	'tskill',
-	'tskill replay',
-	'tskill go',
 	'go',
 	'go build',
 	'go clean',
@@ -186,6 +183,7 @@ class Gs9oMoveHist(sublime_plugin.TextCommand):
 class Gs9oInitCommand(sublime_plugin.TextCommand):
 	def run(self, edit, wd=None):
 		v = self.view
+		mg.view(v.id(), view=v).is_9o = True
 		vs = v.settings()
 
 		if not wd:
@@ -383,12 +381,6 @@ def act_on_path(view, path):
 
 	return False
 
-
-def _exparg(s, m):
-	s = string.Template(s).safe_substitute(m)
-	s = os.path.expanduser(s)
-	return s
-
 class Gs9oExecCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		pos = gs.sel(self.view).begin()
@@ -473,7 +465,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 			if nm != 'sh':
 				args = []
 				if ag:
-					args = [_exparg(s, nv) for s in shlex.split(gs.astr(ag))]
+					args = shlex.split(gs.astr(ag))
 
 				f = builtins().get(nm)
 				if f:
@@ -739,62 +731,9 @@ def cmd_help(view, edit, args, wd, rkey):
 	gs.focus(gs.dist_path('9o.md'))
 	push_output(view, rkey, '')
 
-def cmd_run(view, edit, args, wd, rkey):
-	cmd_9(view, edit, gs.lst('run', args), wd, rkey)
-
 def cmd_replay(view, edit, args, wd, rkey):
 	_save_all(view.window(), wd)
 	_rcmd(view, edit, 'go.replay', args, wd, rkey)
-
-def cmd_build(view, edit, args, wd, rkey):
-	cmd_9(view, edit, gs.lst('build', args), wd, rkey)
-
-def cmd_9(view, edit, args, wd, rkey):
-	if len(args) == 0 or args[0] not in ('run', 'replay', 'build'):
-		push_output(view, rkey, ('9: invalid args %s' % args))
-		return
-
-	subcmd = args[0]
-	cid = ''
-	if subcmd == 'replay':
-		cid = '9replay-%s' % wd
-	cid, cb = _9_begin_call(subcmd, view, edit, args, wd, rkey, cid)
-
-	a = {
-		'cid': cid,
-		'env': sh.env(),
-		'dir': wd,
-		'args': args[1:],
-		'build_only': (subcmd == 'build'),
-	}
-
-	win = view.window()
-	if win is not None:
-		av = win.active_view()
-		if av is not None:
-			fn = av.file_name()
-			if fn:
-				_save_all(win, wd)
-			else:
-				if gs.is_go_source_view(av, False):
-					a['fn'] = gs.view_fn(av)
-					a['src'] = av.substr(sublime.Region(0, av.size()))
-
-	sublime.set_timeout(lambda: mg9.acall('play', a, cb), 0)
-
-def cmd_tskill(view, edit, args, wd, rkey):
-	if len(args) == 0:
-		sublime.set_timeout(lambda: sublime.active_window().run_command("gs_show_tasks"), 0)
-		push_output(view, rkey, '')
-		return
-
-	l = []
-	for tid in args:
-		tid = tid.lstrip('#')
-		tid = tid_alias.get('%s-%s' % (tid, wd), tid)
-		l.append('kill %s: %s' % (tid, ('yes' if gs.cancel_task(tid) else 'no')))
-
-	push_output(view, rkey, '\n'.join(l))
 
 def _env_settings(d, view, edit, args, wd, rkey):
 	if len(args) > 0:

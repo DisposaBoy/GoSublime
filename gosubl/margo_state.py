@@ -8,6 +8,7 @@ import sublime
 
 actions = NS(**{k: {'Name': k} for k in (
 	'QueryCompletions',
+	'QueryCmdCompletions',
 	'QueryTooltips',
 	'QueryIssues',
 	'QueryUserCmds',
@@ -28,10 +29,45 @@ client_actions = NS(**{k: k for k in (
 	'CmdOutput',
 )})
 
+class MgView(sublime.View):
+	def __init__(self, *, mg, view):
+		self.mg = mg
+		self.is_9o = False
+		self.is_file = False
+		self.is_widget = False
+		self.sync(view=view)
+
+	def sync(self, *, view):
+		if view is None:
+			return
+
+		_pf=_dbg.pf(dot=self.id)
+		self.id = view.id()
+		self.view = view
+		self.name = view_name(view)
+		self.is_file = self.id in self.mg.file_ids
+		self.is_widget = not self.is_file
+
+	def __eq__(self, v):
+		return self.view == v
+
+	def __hash__(self):
+		return self.id
+
+	def __repr__(self):
+		return repr(vars(self))
+
+	def name(self):
+		return view_name(self.view)
+
 class Config(object):
 	def __init__(self, m):
+		efl = m.get('EnabledForLangs')
+		if not isinstance(efl, list) or len(efl) == 0:
+			print('MARGO BUG: EnabledForLangs is invalid. It must be a non-empty list, not `%s: %s`' % (type(efl), efl))
+
 		self.override_settings = m.get('OverrideSettings') or {}
-		self.enabled_for_langs = m.get('EnabledForLangs') or []
+		self.enabled_for_langs = efl or ['*']
 		self.inhibit_explicit_completions = m.get('InhibitExplicitCompletions') is True
 		self.inhibit_word_completions = m.get('InhibitWordCompletions') is True
 		self.auto_complete_opts = 0
@@ -303,17 +339,29 @@ def _view_hash(view):
 
 	return 'id=%s,change=%d' % (_view_id(view), view.change_count())
 
-_scope_lang_pat = re.compile(r'source[.]([^\s.]+)')
+_scope_lang_pat = re.compile(r'(?:source|text)[.]([^\s.]+)')
 def _view_scope_lang(view, pos):
 	if view is None:
 		return ('', '')
 
+	_pf=_dbg.pf()
 	scope = view.scope_name(pos).strip().lower()
+
 	if view_is_9o(view):
-		return (scope, 'cmd-promp')
+		return (scope, 'cmd-prompt')
 
 	l = _scope_lang_pat.findall(scope)
-	lang = l[-1] if l else ''
+	if not l:
+		return (scope, '')
+
+	blacklist = (
+		'plain',
+		'find-in-files',
+	)
+	lang = l[-1]
+	if lang in blacklist:
+		return (scope, '')
+
 	return (scope, lang)
 
 def _view_src(view, lang):
@@ -324,6 +372,9 @@ def _view_src(view, lang):
 		return ''
 
 	if not view.is_dirty():
+		return ''
+
+	if view.is_loading():
 		return ''
 
 	if view.size() > MAX_VIEW_SIZE:

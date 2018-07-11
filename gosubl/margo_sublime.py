@@ -11,23 +11,29 @@ class MargoEvents(sublime_plugin.EventListener):
 	def on_query_completions(self, view, prefix, locations):
 		return mg.event('query_completions', view, mg.on_query_completions, [view, prefix, locations])
 
-	def on_activated_async(self, view):
+	def on_activated(self, view):
 		return mg.event('activated', view, mg.on_activated, [view])
 
-	def on_modified_async(self, view):
+	def on_modified(self, view):
 		return mg.event('modified', view, mg.on_modified, [view])
 
-	def on_selection_modified_async(self, view):
+	def on_selection_modified(self, view):
 		return mg.event('selection_modified', view, mg.on_selection_modified, [view])
 
 	def on_pre_save(self, view):
 		return mg.event('pre_save', view, mg.on_pre_save, [view])
 
-	def on_post_save_async(self, view):
+	def on_post_save(self, view):
 		return mg.event('post_save', view, mg.on_post_save, [view])
 
-	def on_load_async(self, view):
+	def on_load(self, view):
 		return mg.event('load', view, mg.on_load, [view])
+
+	def on_new(self, view):
+		return mg.event('new', view, mg.on_new, [view])
+
+	def on_pre_close(self, view):
+		return mg.event('pre_close', view, mg.on_pre_close, [view])
 
 class MargoRenderSrcCommand(sublime_plugin.TextCommand):
 	def run(self, edit, src):
