@@ -92,6 +92,8 @@ class MargoAgent(threading.Thread):
 		self._start_proc()
 
 	def _start_proc(self):
+		_dbg.pf(dot=self.domain)
+
 		self.mg.agent_starting(self)
 		self.out.println('starting')
 
