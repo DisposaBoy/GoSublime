@@ -1,3 +1,11 @@
+
+
+Help shape the future of margo and GoSublime.
+See https://margo.sh/gosublime-future for more details.
+
+
+
+
 **Donate:**
 
 If you find GoSublime useful and would like to support me and future development of GoSublime,
