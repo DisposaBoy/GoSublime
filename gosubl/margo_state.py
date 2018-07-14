@@ -63,8 +63,8 @@ class MgView(sublime.View):
 class Config(object):
 	def __init__(self, m):
 		efl = m.get('EnabledForLangs')
-		if not isinstance(efl, list) or len(efl) == 0:
-			print('MARGO BUG: EnabledForLangs is invalid. It must be a non-empty list, not `%s: %s`' % (type(efl), efl))
+		if m and (not isinstance(efl, list) or len(efl) == 0):
+			print('MARGO BUG: EnabledForLangs is invalid.\nIt must be a non-empty list, not `%s: %s`\nconfig data: %s' % (type(efl), efl, m))
 
 		self.override_settings = m.get('OverrideSettings') or {}
 		self.enabled_for_langs = efl or ['*']

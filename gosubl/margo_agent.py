@@ -50,13 +50,11 @@ class MargoAgent(threading.Thread):
 		self.started = threading.Event()
 		self.stopped = threading.Event()
 		self.ready = threading.Event()
-		gopaths = [
-			os.path.join(sublime.packages_path(), 'User', 'margo'),
-			mg.package_dir,
-		]
-		psep = os.pathsep
-		self._env = {
-			'GOPATH': psep.join(gopaths),
+		gopaths = (gs.user_path(), gs.dist_path())
+		psep = sh.psep
+		self.gopath = psep.join(gopaths)
+		self._default_env = {
+			'MARGO_AGENT_GOPATH': self.gopath,
 			'PATH': psep.join([os.path.join(p, 'bin') for p in gopaths]) + psep + os.environ.get('PATH'),
 		}
 
@@ -65,6 +63,11 @@ class MargoAgent(threading.Thread):
 
 	def __del__(self):
 		self.stop()
+
+	def _env(self, m):
+		e = self._default_env.copy()
+		e.update(m)
+		return e
 
 	def stop(self):
 		if self.stopped.is_set():
@@ -97,15 +100,13 @@ class MargoAgent(threading.Thread):
 		self.mg.agent_starting(self)
 		self.out.println('starting')
 
-		gs_gopath = sh.psep.join((gs.user_path(), gs.dist_path()))
 		gs_gobin = gs.dist_path('bin')
 		mg_exe = 'margo.sh'
 		install_cmd = ['go', 'install', '-v', mg_exe]
 		cmd = sh.Command(install_cmd)
-		cmd.env = {
-			'GOPATH': gs_gopath,
+		cmd.env = self._env({
 			'GOBIN': gs_gobin,
-		}
+		})
 		cr = cmd.run()
 		for v in (cr.out, cr.err, cr.exc):
 			if v:
@@ -117,10 +118,9 @@ class MargoAgent(threading.Thread):
 		]
 		self.out.println(mg_cmd)
 		cmd = sh.Command(mg_cmd)
-		cmd.env = {
-			'GOPATH': gs_gopath,
+		cmd.env = self._env({
 			'PATH': gs_gobin,
-		}
+		})
 		pr = cmd.proc()
 		if not pr.ok:
 			self.stop()

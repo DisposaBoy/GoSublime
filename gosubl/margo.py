@@ -15,7 +15,6 @@ import time
 class MargoSingleton(object):
 	def __init__(self):
 		self._ready = False
-		self.package_dir = os.path.dirname(os.path.abspath(__file__))
 		self.out = OutputLogger('margo')
 		self.agent_tokens = TokenCounter('agent', format='{}#{:03d}', start=6)
 		self.run_tokens = TokenCounter('9o.run')
@@ -33,6 +32,22 @@ class MargoSingleton(object):
 
 		self._views = {}
 		self._view_lock = threading.Lock()
+		self._gopath = ''
+
+	def _sync_settings(self):
+		old, new = self._gopath, sh.getenv('GOPATH')
+		ag = self.agent
+
+		if not new or new == old or not ag:
+			return
+
+		self._gopath = new
+
+		if new == ag.gopath:
+			return
+
+		self.out.println('Stopping agent. GOPATH changed: `%s` -> `%s`' % (old, new))
+		self.stop(ag=ag)
 
 	def render(self, rs=None):
 		# ST has some locking issues due to its "thread-safe" API
@@ -99,10 +114,12 @@ class MargoSingleton(object):
 		self.agent = MargoAgent(self)
 		self.agent.start()
 
-	def stop(self):
-		a, self.agent = self.agent, None
-		if a:
-			a.stop()
+	def stop(self, ag=None):
+		if not ag or ag is self.agent:
+			ag, self.agent = self.agent, None
+
+		if ag:
+			ag.stop()
 
 	def enabled(self, view):
 		if not self._ready:
@@ -132,7 +149,10 @@ class MargoSingleton(object):
 
 		return True
 
-	def _preload_views(self):
+	def _gs_init(self):
+		self._sync_settings()
+		gs.sync_settings_callbacks.append(self._sync_settings)
+
 		for w in sublime.windows():
 			for v in w.views():
 				if v is not None:
@@ -378,7 +398,7 @@ mg = MargoSingleton()
 
 def gs_init(_):
 	mg._ready = True
-	sublime.set_timeout(mg._preload_views)
+	sublime.set_timeout(mg._gs_init)
 	mg.start()
 
 def gs_fini(_):
