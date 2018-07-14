@@ -11,7 +11,6 @@ class UncleSam(object):
 		self.phantoms = None
 
 	def on_load(self, view):
-		print('load', view.file_name())
 		if view.file_name() != gs.dist_path('CHANGELOG.md'):
 			return
 
