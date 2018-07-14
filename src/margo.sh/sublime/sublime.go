@@ -41,7 +41,7 @@ func buildAction(c *cli.Context) error {
 		fixExtPkg(pkg)
 		tags = "margo margo_extension"
 	}
-	err := goInstallAgent(os.Getenv("MARGO_SUBLIME_GOPATH"), tags)
+	err := goInstallAgent(os.Getenv("MARGO_AGENT_GOPATH"), tags)
 	if err != nil {
 		return fmt.Errorf("check console for errors: %s", err)
 	}

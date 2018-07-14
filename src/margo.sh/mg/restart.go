@@ -10,8 +10,14 @@ import (
 )
 
 var (
-	// we need to use the env that we started with, not the user's env
-	buildCtx = build.Default
+	// we need to use the env that was used to build the agent, not the user's env
+	agentBuildCtx = func() build.Context {
+		c := build.Default
+		if s := os.Getenv("MARGO_AGENT_GOPATH"); s != "" {
+			c.GOPATH = s
+		}
+		return c
+	}()
 )
 
 type rsIssues struct {
@@ -74,7 +80,7 @@ func (rs *restartSupport) mgPkg(mx *Ctx) *build.Package {
 		return nil
 	}
 
-	pkg, _ := buildCtx.ImportDir(mx.View.Dir(), 0)
+	pkg, _ := agentBuildCtx.ImportDir(mx.View.Dir(), 0)
 	if pkg == nil || pkg.ImportPath == "" {
 		return nil
 	}

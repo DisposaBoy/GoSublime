@@ -95,7 +95,10 @@ func (g *Gocode) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (g *Gocode) ReducerMount(mx *mg.Ctx) {
-	g.gsu = newGcSuggest(gsuOpts{})
+	g.gsu = newGcSuggest(gsuOpts{
+		Debug:           g.Debug,
+		ProposeBuiltins: g.ProposeBuiltins,
+	})
 
 	g.reqs = make(chan gocodeReq)
 	go func() {

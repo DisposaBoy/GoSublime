@@ -18,6 +18,8 @@ type gsImpKey struct {
 }
 
 type gsuOpts struct {
+	ProposeBuiltins bool
+	Debug           bool
 }
 
 type gcSuggest struct {
@@ -64,7 +66,14 @@ func (gsu *gcSuggest) candidates(mx *mg.Ctx) []suggest.Candidate {
 
 	cfg := suggest.Config{
 		Importer: gsu.importer(mx),
+		Builtin:  gsu.ProposeBuiltins,
 	}
+	if gsu.Debug {
+		cfg.Logf = func(f string, a ...interface{}) {
+			gsu.dbgf(mx, f, a...)
+		}
+	}
+
 	v := mx.View
 	src, _ := v.ReadAll()
 	if len(src) == 0 {
@@ -73,6 +82,14 @@ func (gsu *gcSuggest) candidates(mx *mg.Ctx) []suggest.Candidate {
 
 	l, _ := cfg.Suggest(v.Filename(), src, v.Pos)
 	return l
+}
+
+func (gsu *gcSuggest) dbgf(mx *mg.Ctx, f string, a ...interface{}) {
+	if !gsu.Debug {
+		return
+	}
+
+	mx.Log.Dbg.Printf("Gocode: "+f, a...)
 }
 
 type gsuImporter struct {
@@ -98,6 +115,7 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 
 	bpkg, err := gi.bld.Import(impPath, srcDir, 0)
 	if err != nil {
+		gi.gsu.dbgf(gi.mx, "build.Import(%q, %q): %s\n", impPath, srcDir, err)
 		return nil, err
 	}
 
@@ -112,6 +130,9 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 	p, err := imp.ImportFrom(impPath, srcDir, mode)
 	if err == nil && p.Complete() {
 		cache[impKey] = p
+	}
+	if err != nil {
+		gi.gsu.dbgf(gi.mx, "%T.ImportFrom(%q, %q): %s\n", imp, impPath, srcDir, err)
 	}
 
 	return p, err
