@@ -3,7 +3,9 @@
 Help shape the future of margo and GoSublime.
 See https://margo.sh/gosublime-future for more details.
 
-
+Thank you all for the great feedback so far!!! :D
+Base on your feedback, we've decided to join https://margo.sh/s/patreon/ and https://margo.sh/s/twitter/.
+We plan to explore more direct funding through Stripe soon. More updates will be posted to Twitter.
 
 
 **Donate:**
