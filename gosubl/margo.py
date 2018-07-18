@@ -36,14 +36,14 @@ class MargoSingleton(object):
 
 	def _sync_settings(self):
 		old, new = self._gopath, sh.getenv('GOPATH')
-		ag = self.agent
 
-		if not new or new == old or not ag:
+		if not new or new == old:
 			return
 
 		self._gopath = new
 
-		if new == ag.gopath:
+		ag = self.agent
+		if ag and new == ag.gopath:
 			return
 
 		self.out.println('Stopping agent. GOPATH changed: `%s` -> `%s`' % (old, new))
@@ -157,6 +157,9 @@ class MargoSingleton(object):
 			for v in w.views():
 				if v is not None:
 					self.view(v.id(), view=v)
+
+		mg._ready = True
+		mg.start()
 
 	def view(self, id, view=None):
 		with self._view_lock:
@@ -397,9 +400,7 @@ class MargoSingleton(object):
 mg = MargoSingleton()
 
 def gs_init(_):
-	mg._ready = True
 	sublime.set_timeout(mg._gs_init)
-	mg.start()
 
 def gs_fini(_):
 	mg.stop()
