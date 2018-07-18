@@ -7,11 +7,11 @@ import (
 )
 
 // Margo is the entry-point to margo
-func Margo(ma mg.Args) {
+func Margo(m mg.Args) {
 	// add our reducers (margo plugins) to the store
 	// they are run in the specified order
 	// and should ideally not block for more than a couple milliseconds
-	ma.Store.Use(
+	m.Use(
 		// By default, events (e.g. ViewSaved) are triggered in all files.
 		// Uncomment the reducer below to restict events to Go(-lang) files.
 		// Please note, however, that this mode is not tested
