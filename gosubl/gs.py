@@ -542,9 +542,9 @@ def do_focus(fn, row, col, win, focus_pat, cb):
 		r, c = row, col
 
 		if r <= 0 and c <= 0 and focus_pat:
-			r = view.find(focus_pat, 0)
-			if r:
-				r, c = view.rowcol(r.begin())
+			reg = view.find(focus_pat, 0)
+			if reg:
+				r, c = view.rowcol(reg.begin())
 
 		if r < 0:
 			r, c = rowcol(view)
