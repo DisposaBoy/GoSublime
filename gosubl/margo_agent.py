@@ -52,9 +52,10 @@ class MargoAgent(threading.Thread):
 		self.ready = threading.Event()
 		gopaths = (gs.user_path(), gs.dist_path())
 		psep = sh.psep
-		self.gopath = psep.join(gopaths)
+		self.gopath = sh.getenv('GOPATH')
 		self._default_env = {
-			'MARGO_AGENT_GOPATH': self.gopath,
+			'GOPATH': self.gopath,
+			'MARGO_AGENT_GOPATH': psep.join(gopaths),
 			'PATH': psep.join([os.path.join(p, 'bin') for p in gopaths]) + psep + os.environ.get('PATH'),
 		}
 
