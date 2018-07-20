@@ -1,6 +1,7 @@
 package mg
 
 var (
+	AllLangs     Lang = "*"
 	ActionScript Lang = "actionscript"
 	AppleScript  Lang = "applescript"
 	ASP          Lang = "asp"

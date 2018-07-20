@@ -2,13 +2,14 @@
 
 
 [[projects]]
-  branch = "master"
+  branch = "dont-suggest-builtins-in-selectors"
   name = "github.com/mdempsky/gocode"
   packages = [
     "lookdot",
     "suggest"
   ]
-  revision = "466551c8e799882836d81a98792e5887540b7822"
+  revision = "5917a2de100275f43410c77e53403632a6b89b11"
+  source = "github.com/KurokuLabs/gocode"
 
 [[projects]]
   branch = "master"
@@ -61,6 +62,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a44f4b1d6cf03e855a59a35b36366ac4f5b968ecb649658356c0585c482573fa"
+  inputs-digest = "4f610f01605fd82eca8f3ae8c0e501c78bbee4fe23c63f14ef1ccdaff2fda8ba"
   solver-name = "gps-cdcl"
   solver-version = 1

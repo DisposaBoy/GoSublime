@@ -12,14 +12,15 @@ func Margo(m mg.Args) {
 	// they are run in the specified order
 	// and should ideally not block for more than a couple milliseconds
 	m.Use(
-		// By default, events (e.g. ViewSaved) are triggered in all files.
-		// Uncomment the reducer below to restict events to Go(-lang) files.
-		// Please note, however, that this mode is not tested
-		// and saving a non-go file will not trigger linters, etc. for that go pkg
-		//
-		// mg.NewReducer(func(mx *mg.Ctx) *mg.State {
-		// 	return mx.SetConfig(mx.Config.EnabledForLangs(mg.Go))
-		// }),
+		mg.NewReducer(func(mx *mg.Ctx) *mg.State {
+			// By default, events (e.g. ViewSaved) are triggered in all files.
+			// Replace `mg.AllLangs` with `mg.Go` to restict events to Go(-lang) files.
+			// Please note, however, that this mode is not tested
+			// and saving a non-go file will not trigger linters, etc. for that go pkg
+			return mx.SetConfig(mx.Config.EnabledForLangs(
+				mg.AllLangs,
+			))
+		}),
 
 		// add the day and time to the status bar
 		&DayTimeStatus{},
@@ -34,19 +35,15 @@ func Margo(m mg.Args) {
 
 		// use gocode for autocompletion
 		&golang.Gocode{
-			// automatically install missing packages
-			// Autobuild: true,
-
-			// autocompete packages that are not yet imported
-			// this goes well with GoImports
-			UnimportedPackages: true,
-
 			// show the function parameters. this can take up a lot of space
 			ShowFuncParams: true,
 		},
 
 		// show func arguments/calltips in the status bar
 		&golang.GocodeCalltips{},
+
+		// use guru for gotodefinition
+		&golang.Guru{},
 
 		// add some default context aware-ish snippets
 		golang.Snippets,

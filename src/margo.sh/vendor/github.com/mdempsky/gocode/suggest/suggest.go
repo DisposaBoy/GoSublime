@@ -15,9 +15,10 @@ import (
 )
 
 type Config struct {
-	Importer types.Importer
-	Logf     func(fmt string, args ...interface{})
-	Builtin  bool
+	Importer   types.Importer
+	Logf       func(fmt string, args ...interface{})
+	Builtin    bool
+	IgnoreCase bool
 }
 
 // Suggest returns a list of suggestion candidates and the length of
@@ -35,10 +36,11 @@ func (c *Config) Suggest(filename string, data []byte, cursor int) ([]Candidate,
 
 	ctx, expr, partial := deduceCursorContext(data, cursor)
 	b := candidateCollector{
-		localpkg: pkg,
-		partial:  partial,
-		filter:   objectFilters[partial],
-		builtin:  c.Builtin,
+		localpkg:   pkg,
+		partial:    partial,
+		filter:     objectFilters[partial],
+		builtin:    ctx != selectContext && c.Builtin,
+		ignoreCase: c.IgnoreCase,
 	}
 
 	switch ctx {

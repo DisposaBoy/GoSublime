@@ -10,7 +10,6 @@ import (
 	"go/printer"
 	"go/token"
 	"io"
-	"margo.sh/golang/internal/gocode"
 	"margo.sh/mg"
 	"margo.sh/mgpf"
 	"margo.sh/sublime"
@@ -53,7 +52,6 @@ func (gr *gocodeReq) reduce() *mg.State {
 type Gocode struct {
 	mg.ReducerType
 
-	InstallSuffix            string
 	ProposeBuiltins          bool
 	ProposeTests             bool
 	Autobuild                bool
@@ -309,7 +307,6 @@ type gocodeCtx struct {
 	src  []byte
 	pos  int
 	bctx *build.Context
-	cfg  gocode.MargoConfig
 }
 
 func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.State, *gocodeCtx) {
@@ -343,15 +340,6 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.State, *gocodeCtx) {
 		pos:  pos,
 		src:  src,
 		bctx: bctx,
-		cfg: gocode.MargoConfig{
-			GOROOT:             bctx.GOROOT,
-			GOPATHS:            PathList(bctx.GOPATH),
-			InstallSuffix:      g.InstallSuffix,
-			ProposeBuiltins:    g.ProposeBuiltins,
-			Autobuild:          g.Autobuild,
-			UnimportedPackages: g.UnimportedPackages,
-			Debug:              g.Debug,
-		},
 	}
 	return st, gx
 }

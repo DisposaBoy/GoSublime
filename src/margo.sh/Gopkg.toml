@@ -23,5 +23,6 @@ required = [
   name = "golang.org/x/tools"
 
 [[constraint]]
-  branch = "master"
+  source = "github.com/KurokuLabs/gocode"
+  branch = "master-tmp"
   name = "github.com/mdempsky/gocode"
