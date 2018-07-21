@@ -1,20 +1,20 @@
 from . import _dbg
 from . import gs
 from . import gspatch
-from .margo_state import view_name, view_path
+from .margo_state import ViewPathName
 import sublime
 
 STATUS_KEY = '#mg.Status'
-STATUS_PFX = '• '
-STATUS_SFX = ' •'
-STATUS_SEP = ' •• '
+STATUS_PFX = '  '
+STATUS_SFX = '  '
+STATUS_SEP = '    '
 
 def render(view, state, status=[]):
-	sublime.set_timeout_async(lambda: _render(view, state, status), 0)
+	def cb():
+		_render_status(view, status + state.status)
+		_render_issues(view, state.issues)
 
-def _render(view, state, status):
-	_render_status(view, status + state.status)
-	_render_issues(view, state.issues)
+	sublime.set_timeout(cb)
 
 def _render_status(view, status):
 	if status:
@@ -46,28 +46,34 @@ can_use_colorish = int(sublime.version()) > 3143
 issue_key_pfx = '#mg.Issue.'
 issue_cfg_error = IssueCfg(
 	key = issue_key_pfx + 'error',
-	scope = 'keyword sublimelinter.mark.error region.redish',
+	scope = 'region.redish',
 	icon = 'Packages/GoSublime/images/issue.png',
 	flags = sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL,
 )
 issue_cfg_warning = IssueCfg(
 	key = issue_key_pfx + 'warning',
-	scope = 'entity sublimelinter.mark.warning region.orangish',
+	scope = 'region.orangish',
 	icon = issue_cfg_error.icon,
 	flags = issue_cfg_error.flags,
 )
-issue_cfg_default = issue_cfg_warning
+issue_cfg_notice = IssueCfg(
+	key = issue_key_pfx + 'notice',
+	scope = 'region.greenish',
+	icon = issue_cfg_error.icon,
+	flags = issue_cfg_error.flags,
+)
+issue_cfg_default = issue_cfg_error
 issue_cfgs = {
 	'error': issue_cfg_error,
 	'warning': issue_cfg_warning,
+	'notice': issue_cfg_notice,
 }
 
 def _render_issues(view, issues):
 	regions = {cfg.key: (cfg, []) for cfg in issue_cfgs.values()}
-	path = view_path(view)
-	name = view_name(view)
+	vp = ViewPathName(view)
 	for isu in issues:
-		if path == isu.path or name == isu.name:
+		if isu.match(vp):
 			cfg = issue_cfgs.get(isu.tag) or issue_cfg_default
 			regions[cfg.key][1].append(_render_issue(view, isu))
 

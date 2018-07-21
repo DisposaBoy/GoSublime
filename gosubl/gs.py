@@ -70,7 +70,7 @@ _default_settings = {
 	"comp_lint_enabled": False,
 	"comp_lint_commands": [],
 	"gslint_timeout": 0,
-	"calltips": True,
+	"calltips": False,
 	"autocomplete_snippets": False,
 	"autocomplete_tests": False,
 	"autocomplete_closures": False,
@@ -84,7 +84,7 @@ _default_settings = {
 	"autosave": True,
 	"build_command": [],
 	"lint_filter": [],
-	"lint_enbled": True,
+	"lint_enbled": False,
 	"linters": [],
 	"9o_instance": "",
 	"9o_color_scheme": "",
@@ -154,8 +154,8 @@ IGNORED_SCOPES = frozenset([
 	'constant.other.rune.go',
 ])
 
-VFN_ID_PAT = re.compile(r'^(?:gs\.)?view(?:#|://)(\d+)(.*?)$', re.IGNORECASE)
-ROWCOL_PAT = re.compile(r'^[:]*(\d+)(?:[:](\d+))?[:]*$')
+VFN_ID_PAT = re.compile(r'(?:gs\.)?view(?:#|@|://)(\d+)(.*?)$', re.IGNORECASE)
+ROWCOL_PAT = re.compile(r'[:]+(\d+)(?:[:](\d+))?[:]*$')
 
 USER_DIR = os.path.expanduser('~')
 USER_DIR_PAT = re.compile(r'^%s/' % (re.escape(USER_DIR.replace('\\', '/').rstrip('/'))))
@@ -504,11 +504,12 @@ def active_view(win=None, view=None):
 	return win.active_view()
 
 def win_view(vfn=None, win=None):
-	if not win:
-		win = sublime.active_window()
+	wins = [win]
+	if win is None:
+		wins = sublime.windows()
 
 	view = None
-	if win:
+	for win in wins:
 		m = VFN_ID_PAT.match(vfn or '')
 		if m:
 			try:
@@ -519,10 +520,13 @@ def win_view(vfn=None, win=None):
 						break
 			except Exception:
 				gs.error_traceback(NAME)
-		elif not vfn or vfn == "<stdin>":
+
+	if view is None:
+		if not vfn or vfn == "<stdin>":
 			view = win.active_view()
 		else:
 			view = win.open_file(vfn)
+
 	return (win, view)
 
 def do_focus(fn, row, col, win, focus_pat, cb):
@@ -531,17 +535,31 @@ def do_focus(fn, row, col, win, focus_pat, cb):
 		notify(NAME, 'Cannot find file position %s:%s:%s' % (fn, row, col))
 		if cb:
 			cb(False)
-	elif view.is_loading():
-		focus(fn, row=row, col=col, win=win, focus_pat=focus_pat, cb=cb)
-	else:
-		win.focus_view(view)
-		if row <= 0 and col <= 0 and focus_pat:
-			r = view.find(focus_pat, 0)
-			if r:
-				row, col = view.rowcol(r.begin())
-		view.run_command("gs_goto_row_col", { "row": row, "col": col })
+
+		return
+
+	def run():
+		r, c = row, col
+
+		if r <= 0 and c <= 0 and focus_pat:
+			reg = view.find(focus_pat, 0)
+			if reg:
+				r, c = view.rowcol(reg.begin())
+
+		if r < 0:
+			r, c = rowcol(view)
+
+		view.run_command("gs_goto_row_col", { "row": r, "col": c })
+
 		if cb:
 			cb(True)
+
+	win.focus_view(view)
+	if view.is_loading():
+		sublime.set_timeout(run, 500)
+	else:
+		run()
+
 
 def focus(fn, row=0, col=0, win=None, timeout=100, focus_pat='^package ', cb=None):
 	sublime.set_timeout(lambda: do_focus(fn, row, col, win, focus_pat, cb), timeout)

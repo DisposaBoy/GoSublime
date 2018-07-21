@@ -3,24 +3,56 @@ from . import gs, gsq, sh
 from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter
 from .margo_render import render, render_src
-from .margo_state import State, actions, Config, _view_scope_lang
+from .margo_state import State, actions, client_actions, Config, _view_scope_lang, view_is_9o, MgView
 from collections import namedtuple
 import glob
 import os
+import shlex
 import sublime
+import threading
 import time
 
 class MargoSingleton(object):
 	def __init__(self):
-		self.package_dir = os.path.dirname(os.path.abspath(__file__))
+		self._ready = False
 		self.out = OutputLogger('margo')
 		self.agent_tokens = TokenCounter('agent', format='{}#{:03d}', start=6)
+		self.run_tokens = TokenCounter('9o.run')
 		self.agent = None
-		self.enabled_for_langs = []
+		self.enabled_for_langs = ['*']
 		self.state = State()
 		self.status = []
+		self.output_handler = None
+		self._client_actions_handlers = {
+			client_actions.Activate: self._handle_act_activate,
+			client_actions.Restart: self._handle_act_restart,
+			client_actions.Shutdown: self._handle_act_shutdown,
+			client_actions.CmdOutput: self._handle_act_output,
+		}
+
+		self._views = {}
+		self._view_lock = threading.Lock()
+		self._gopath = ''
+
+	def _sync_settings(self):
+		old, new = self._gopath, sh.getenv('GOPATH')
+
+		if not new or new == old:
+			return
+
+		self._gopath = new
+
+		ag = self.agent
+		if ag and new == ag.gopath:
+			return
+
+		self.out.println('Stopping agent. GOPATH changed: `%s` -> `%s`' % (old, new))
+		self.stop(ag=ag)
 
 	def render(self, rs=None):
+		# ST has some locking issues due to its "thread-safe" API
+		# don't access things like sublime.active_view() directly
+
 		if rs:
 			self.state = rs.state
 			cfg = rs.state.config
@@ -30,21 +62,39 @@ class MargoSingleton(object):
 			if cfg.override_settings:
 				gs._mg_override_settings = cfg.override_settings
 
-		render(view=gs.active_view(), state=self.state, status=self.status)
+		def _render():
+			render(view=gs.active_view(), state=self.state, status=self.status)
 
-		if rs:
-			if rs.agent is self.agent:
-				sublime.set_timeout_async(lambda: self._handle_client_actions(rs.state.client_actions), 0)
+			if rs:
+				self._handle_client_actions(rs)
 
-			if rs.agent and rs.agent is not self.agent:
-				rs.agent.stop()
+				if rs.agent and rs.agent is not self.agent:
+					rs.agent.stop()
 
-	def _handle_client_actions(self, client_actions):
-		for a in client_actions:
-			if a.name == 'restart':
-				self.restart()
-			elif a.name == 'shutdown':
-				self.stop()
+		sublime.set_timeout(_render)
+
+
+	def _handle_act_activate(self, rs, act):
+		gs.focus(act.name or act.path, row=act.row, col=act.col, focus_pat='')
+
+	def _handle_act_restart(self, rs, act):
+		self.restart()
+
+	def _handle_act_shutdown(self, rs, act):
+		self.stop()
+
+	def _handle_act_output(self, rs, act):
+		h = self.output_handler
+		if h:
+			h(rs, act)
+
+	def _handle_client_actions(self, rs):
+		for act in rs.state.client_actions:
+			f = self._client_actions_handlers.get(act.action_name)
+			if f:
+				f(rs, act)
+			else:
+				self.out.println('Unknown client-action: %s: %s' % (act.action_name, act))
 
 	def render_status(self, *a):
 		self.status = list(a)
@@ -64,12 +114,17 @@ class MargoSingleton(object):
 		self.agent = MargoAgent(self)
 		self.agent.start()
 
-	def stop(self):
-		a, self.agent = self.agent, None
-		if a:
-			a.stop()
+	def stop(self, ag=None):
+		if not ag or ag is self.agent:
+			ag, self.agent = self.agent, None
+
+		if ag:
+			ag.stop()
 
 	def enabled(self, view):
+		if not self._ready:
+			return False
+
 		if '*' in self.enabled_for_langs:
 			return True
 
@@ -77,36 +132,96 @@ class MargoSingleton(object):
 		return lang in self.enabled_for_langs
 
 	def can_trigger_event(self, view, allow_9o=False):
-		if not self.enabled(view):
-			return False
+		_pf=_dbg.pf()
 
 		if view is None:
 			return False
 
-		if view.is_loading():
+		if not self.enabled(view):
 			return False
 
-		vs = view.settings()
-		if allow_9o and vs.get('9o'):
+		mgv = self.view(view.id(), view=view)
+		if allow_9o and mgv.is_9o:
 			return True
 
-		if vs.get('is_widget'):
+		if not mgv.is_file:
 			return False
 
 		return True
 
+	def _gs_init(self):
+		self._sync_settings()
+		gs.sync_settings_callbacks.append(self._sync_settings)
+
+		for w in sublime.windows():
+			for v in w.views():
+				if v is not None:
+					self.view(v.id(), view=v)
+
+		mg._ready = True
+		mg.start()
+
+	def view(self, id, view=None):
+		with self._view_lock:
+			mgv = self._views.get(id)
+
+			if view is not None:
+				if mgv is None:
+					mgv = MgView(mg=self, view=view)
+					self._views[mgv.id] = mgv
+				else:
+					mgv.sync(view=view)
+
+			return mgv
+
+	def _sync_view(self, event, view):
+		if event in ('pre_close', 'close'):
+			with self._view_lock:
+				self._views.pop(view.id(), None)
+
+			return
+
+		_pf=_dbg.pf(dot=event)
+
+		file_ids = []
+		for w in sublime.windows():
+			for v in w.views():
+				file_ids.append(v.id())
+
+		self.file_ids = file_ids
+
+		self.view(view.id(), view=view)
+
 	def event(self, name, view, handler, args):
-		allow_9o = name in (
-			'query_completions',
-		)
-		if not self.can_trigger_event(view, allow_9o=allow_9o):
+		if view is None:
 			return None
 
-		try:
-			return handler(*args)
-		except Exception:
-			gs.error_traceback('mg.event:%s' % handler)
-			return None
+		_pf=_dbg.pf(dot=name)
+
+		def handle_event(gt=0):
+			if gt > 0:
+				_pf.gt=gt
+
+			self._sync_view(name, view)
+
+			if not self.can_trigger_event(view):
+				return None
+
+			try:
+				return handler(*args)
+			except Exception:
+				gs.error_traceback('mg.event:%s' % handler)
+				return None
+
+		blocking = (
+			'pre_save',
+			'query_completions',
+		)
+
+		if name in blocking:
+			return handle_event(gt=0.100)
+
+		sublime.set_timeout(handle_event)
 
 	def agent_starting(self, ag):
 		if ag is not self.agent:
@@ -132,45 +247,95 @@ class MargoSingleton(object):
 		if not self.agent:
 			self.start()
 
-	def send(self, action={}, cb=None, view=None):
+	def queue(self, *, actions=[], view=None):
 		self._send_start()
-		return self.agent.send(action=action, cb=cb, view=view)
+		self.agent.queue(actions=actions, view=view)
+
+	def send(self, *, actions=[], cb=None, view=None):
+		self._send_start()
+		return self.agent.send(actions=actions, cb=cb, view=view)
+
+	def on_new(self, view):
+		pass
+
+	def on_pre_close(self, view):
+		pass
 
 	def on_query_completions(self, view, prefix, locations):
-		action = actions.QueryCompletions.copy()
-		rs = self.send(view=view, action=action).wait(0.300)
+		_, lang = _view_scope_lang(view, 0)
+		if not lang:
+			return None
+
+		act = actions.QueryCompletions
+		if lang == 'cmd-prompt':
+			act = self._cmd_completions_act(view, prefix, locations)
+			if not act:
+				return None
+
+			view = gs.active_view(win=view.window())
+			if view is None:
+				return None
+
+		rs = self.send(view=view, actions=[act]).wait(0.500)
 		if not rs:
 			self.out.println('aborting QueryCompletions. it did not respond in time')
 			return None
+
+		if rs.error:
+			self.out.println('completion error: %s: %s' % (act, rs.error))
+			return
 
 		cl = [c.entry() for c in rs.state.completions]
 		opts = rs.state.config.auto_complete_opts
 		return (cl, opts) if opts != 0 else cl
 
-	def on_hover(self, view, point, hover_zone):
-		if hover_zone != sublime.HOVER_TEXT:
-			return
+	def _cmd_completions_act(self, view, prefix, locations):
+		pos = locations[0]
+		line = view.line(pos)
+		src = view.substr(line)
+		if '#' not in src:
+			return None
+
+		i = src.index('#')
+		while src[i] == ' ' or src[i] == '#':
+			i += 1
+
+		src = src[i:]
+		pos = pos - line.begin() - i
+		name = ''
+		args = shlex.split(src)
+		if args:
+			name = args[0]
+			args = args[1:]
+
+		act = actions.QueryCmdCompletions.copy()
+		act['Data'] = {
+			'Pos': pos,
+			'Src': src,
+			'Name': name,
+			'Args': args,
+		}
+
+		return act
 
 	def on_activated(self, view):
-		self.send(view=view, action=actions.ViewActivated)
+		self.queue(view=view, actions=[actions.ViewActivated])
 
 	def on_modified(self, view):
-		self._send_start()
-		self.agent.view_modified(view)
+		self.queue(view=view, actions=[actions.ViewModified])
 
 	def on_selection_modified(self, view):
-		self._send_start()
-		self.agent.view_pos_changed(view)
+		self.queue(view=view, actions=[actions.ViewPosChanged])
 
 	def fmt(self, view):
-		return self._fmt_save(view=view, action=actions.ViewFmt, name='fmt', timeout=5.000)
+		return self._fmt_save(view=view, actions=[actions.ViewFmt], name='fmt', timeout=5.000)
 
 	def on_pre_save(self, view):
-		return self._fmt_save(view=view, action=actions.ViewPreSave, name='pre-save', timeout=2.000)
+		return self._fmt_save(view=view, actions=[actions.ViewPreSave], name='pre-save', timeout=2.000)
 
-	def _fmt_save(self, *, view, action, name, timeout):
+	def _fmt_save(self, *, view, actions, name, timeout):
 		id_nm = '%d: %s' % (view.id(), view.file_name() or view.name())
-		rq = self.send(view=view, action=action)
+		rq = self.send(view=view, actions=actions)
 		rs = rq.wait(timeout)
 		if not rs:
 			self.out.println('%s timedout on view %s' % (name, id_nm))
@@ -200,16 +365,13 @@ class MargoSingleton(object):
 		view.run_command('margo_render_src', {'src': res_src})
 
 	def on_post_save(self, view):
-		self.send(view=view, action=actions.ViewSaved)
+		self.queue(view=view, actions=[actions.ViewSaved])
 
 	def on_load(self, view):
-		self.send(view=view, action=actions.ViewLoaded)
-
-	def on_close(self, view):
-		self.send(view=view, action=actions.ViewClosed)
+		self.queue(view=view, actions=[actions.ViewLoaded])
 
 	def example_extension_file(self):
-		return gs.dist_path('src/disposa.blue/margo/extension-example/extension-example.go')
+		return gs.dist_path('src/margo.sh/extension-example/extension-example.go')
 
 	def extension_file(self, install=False):
 		src_dir = gs.user_path('src', 'margo')
@@ -238,7 +400,7 @@ class MargoSingleton(object):
 mg = MargoSingleton()
 
 def gs_init(_):
-	mg.start()
+	sublime.set_timeout(mg._gs_init)
 
 def gs_fini(_):
 	mg.stop()

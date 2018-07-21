@@ -41,8 +41,11 @@
 	},
 	{
 		"keys": ["super+.", "super+e"],
-		"command": "gs_palette",
 		"command": "margo_issues",
+	},
+	{
+		"keys": ["super+.", "super+c"],
+		"command": "margo_user_cmds",
 	},
 	{
 		"keys": ["super+.", "super+["],
@@ -65,12 +68,11 @@
 		"keys": ["super+.", "super+r"],
 		"command": "gs9o_open",
 		"args": {"run": ["replay"], "focus_view": false},
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
 		"keys": ["super+.", "super+g"],
-		"command": "gs_doc",
-		"args": {"mode": "goto"},
+		"command": "gs9o_open",
+		"args": {"run": ["goto.definition"], "focus_view": false, "show_view": false},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{
