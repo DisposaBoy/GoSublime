@@ -8,13 +8,16 @@ import (
 
 // Margo is the entry-point to margo
 func Margo(m mg.Args) {
+	// See the documentation for `mg.Reducer`
+	// comments beginning with `gs:` denote features that replace old GoSublime settings
+
 	// add our reducers (margo plugins) to the store
 	// they are run in the specified order
 	// and should ideally not block for more than a couple milliseconds
 	m.Use(
 		mg.NewReducer(func(mx *mg.Ctx) *mg.State {
 			// By default, events (e.g. ViewSaved) are triggered in all files.
-			// Replace `mg.AllLangs` with `mg.Go` to restict events to Go(-lang) files.
+			// Replace `mg.AllLangs` with `mg.Go` to restrict events to Go(-lang) files.
 			// Please note, however, that this mode is not tested
 			// and saving a non-go file will not trigger linters, etc. for that go pkg
 			return mx.SetConfig(mx.Config.EnabledForLangs(
@@ -29,30 +32,47 @@ func Margo(m mg.Args) {
 		// you will need to install the `goimports` tool manually
 		// https://godoc.org/golang.org/x/tools/cmd/goimports
 		//
+		// gs: this replaces settings `fmt_enabled`, `fmt_tab_indent`, `fmt_tab_width`, `fmt_cmd`
+		//
 		// golang.GoFmt,
 		// or
 		// golang.GoImports,
 
 		// use gocode for autocompletion
+		// gs: this replaces the `gscomplete_enabled` setting
 		&golang.Gocode{
 			// show the function parameters. this can take up a lot of space
 			ShowFuncParams: true,
+
+			// whether or not to include Test*, Benchmark* and Example* functions in the auto-completion list
+			// gs: this replaces the `autocomplete_tests` setting
+			ProposeTests: false,
+
+			// whether or not builtin types and functions should be shown in the auto-completion list
+			// gs: this replaces the `autocomplete_builtins` setting
+			ProposeBuiltins: false,
 		},
 
 		// show func arguments/calltips in the status bar
+		// gs: this replaces the `calltips` setting
 		&golang.GocodeCalltips{},
 
-		// use guru for gotodefinition
+		// use guru for goto-definition
 		&golang.Guru{},
 
 		// add some default context aware-ish snippets
+		// gs: this replaces the `autocomplete_snippets` and `default_snippets` settings
 		golang.Snippets,
 
-		// check the file for syntax errors
-		&golang.SyntaxCheck{},
-
 		// add our own snippets
+		// gs: this replaces the `snippets` setting
 		MySnippets,
+
+		// check the file for syntax errors
+		// gs: this and other linters e.g. below,
+		//     replaces the settings `gslint_enabled`, `lint_filter`, `comp_lint_enabled`,
+		//     `comp_lint_commands`, `gslint_timeout`, `lint_enabled`, `linters`
+		&golang.SyntaxCheck{},
 
 		// run `go install` on save
 		// or use GoInstallDiscardBinaries which will additionally set $GOBIN
