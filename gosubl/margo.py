@@ -43,10 +43,10 @@ class MargoSingleton(object):
 		self._gopath = new
 
 		ag = self.agent
-		if ag and new == ag.gopath:
+		if not ag or new == ag.gopath:
 			return
 
-		self.out.println('Stopping agent. GOPATH changed: `%s` -> `%s`' % (old, new))
+		self.out.println('Stopping agent. GOPATH changed: `%s` -> `%s`' % (ag.gopath, new))
 		self.stop(ag=ag)
 
 	def render(self, rs=None):
