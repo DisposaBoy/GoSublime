@@ -41,6 +41,9 @@ type Gocode struct {
 
 func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	st, gx := initGocodeReducer(mx, g)
+	if v := Version; v.Major >= 1 && v.Minor >= 11 {
+		return st.AddStatus("see https://margo.sh/b/migrate")
+	}
 	if gx == nil || !gx.query.completions {
 		return st
 	}

@@ -12,6 +12,8 @@ import (
 	"sync"
 )
 
+var margoGocodeEnabled = true
+
 var Margo = newMargoState()
 
 type MargoConfig struct {
@@ -72,6 +74,10 @@ func newMargoState() *margoState {
 }
 
 func (m *margoState) Complete(c MargoConfig, file []byte, filename string, cursor int) []MargoCandidate {
+	if !margoGocodeEnabled {
+		return nil
+	}
+
 	m.Lock()
 	defer m.Unlock()
 

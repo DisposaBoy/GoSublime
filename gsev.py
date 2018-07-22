@@ -24,7 +24,7 @@ class UncleSam(object):
 					</a>
 				</body>
 			'''.format(
-				url='https://margo.sh/gosublime-future',
+				url='https://margo.sh/gosublime-future?_r=gs-ny',
 				src=gs.dist_path('images/fight-the-future.png')
 			),
 			sublime.LAYOUT_INLINE,
