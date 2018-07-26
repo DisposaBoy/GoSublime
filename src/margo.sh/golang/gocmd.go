@@ -37,17 +37,17 @@ func (gc *GoCmd) userCmds(mx *mg.Ctx) *mg.State {
 
 func (gc *GoCmd) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
 	return mx.State.AddBuiltinCmds(
-		mg.BultinCmd{
+		mg.BuiltinCmd{
 			Run:  gc.goBuiltin,
 			Name: "go",
 			Desc: "Wrapper around the go command, adding linter support",
 		},
-		mg.BultinCmd{
+		mg.BuiltinCmd{
 			Run:  gc.playBuiltin,
 			Name: "go.play",
 			Desc: "Automatically build and run go commands or run go test",
 		},
-		mg.BultinCmd{
+		mg.BuiltinCmd{
 			Run:  gc.replayBuiltin,
 			Name: "go.replay",
 			Desc: "Wrapper around .play limited to a single instance",

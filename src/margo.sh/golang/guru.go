@@ -51,8 +51,8 @@ func (g *Guru) Reduce(mx *mg.Ctx) *mg.State {
 			return bx.State
 		}
 		return mx.AddBuiltinCmds(
-			mg.BultinCmd{Name: "goto.definition", Run: runDef},
-			mg.BultinCmd{Name: "guru.definition", Run: runDef},
+			mg.BuiltinCmd{Name: "goto.definition", Run: runDef},
+			mg.BuiltinCmd{Name: "guru.definition", Run: runDef},
 		)
 	default:
 		return mx.State

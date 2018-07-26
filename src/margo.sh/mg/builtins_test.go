@@ -10,27 +10,27 @@ import (
 	"testing"
 )
 
-func TestBultinCmdList_Lookup(t *testing.T) {
+func TestBuiltinCmdList_Lookup(t *testing.T) {
 	t.Parallel()
-	exec := func() mg.BultinCmd {
+	exec := func() mg.BuiltinCmd {
 		r, _ := mg.Builtins.Commands().Lookup(".exec")
 		return r
 	}()
-	item := mg.BultinCmd{
+	item := mg.BuiltinCmd{
 		Name: "this name",
 		Desc: "description",
 		Run:  func(*mg.CmdCtx) *mg.State { return nil },
 	}
 	tcs := []struct {
 		name      string
-		bcl       mg.BultinCmdList
+		bcl       mg.BuiltinCmdList
 		input     string
-		wantCmd   mg.BultinCmd
+		wantCmd   mg.BuiltinCmd
 		wantFound bool
 	}{
-		{"empty cmd list", mg.BultinCmdList{}, "nothing to find", exec, false},
-		{"not found", mg.BultinCmdList{item}, "not found", exec, false},
-		{"found", mg.BultinCmdList{item}, item.Name, item, true},
+		{"empty cmd list", mg.BuiltinCmdList{}, "nothing to find", exec, false},
+		{"not found", mg.BuiltinCmdList{item}, "not found", exec, false},
+		{"found", mg.BuiltinCmdList{item}, item.Name, item, true},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
@@ -49,13 +49,13 @@ func TestBultinCmdList_Lookup(t *testing.T) {
 // tests when the Args is empty, it should pick up the available BuiltinCmd(s).
 func TestTypeCmdEmptyArgs(t *testing.T) {
 	t.Parallel()
-	item1 := mg.BultinCmd{Name: "this name", Desc: "this description"}
-	item2 := mg.BultinCmd{Name: "another one", Desc: "should appear too"}
+	item1 := mg.BuiltinCmd{Name: "this name", Desc: "this description"}
+	item2 := mg.BuiltinCmd{Name: "another one", Desc: "should appear too"}
 	buf := new(bytes.Buffer)
 	input := &mg.CmdCtx{
 		Ctx: &mg.Ctx{
 			State: &mg.State{
-				BuiltinCmds: mg.BultinCmdList{item1, item2},
+				BuiltinCmds: mg.BuiltinCmdList{item1, item2},
 			},
 		},
 		Output: &mgutil.IOWrapper{
@@ -67,7 +67,7 @@ func TestTypeCmdEmptyArgs(t *testing.T) {
 		t.Errorf("TypeCmd() = %v, want %v", got, input.State)
 	}
 	out := buf.String()
-	for _, item := range []mg.BultinCmd{item1, item2} {
+	for _, item := range []mg.BuiltinCmd{item1, item2} {
 		if !strings.Contains(out, item.Name) {
 			t.Errorf("buf.String() = (%s); want (%s) in it", out, item.Name)
 		}
@@ -77,7 +77,7 @@ func TestTypeCmdEmptyArgs(t *testing.T) {
 	}
 }
 
-func setupBultinCmdCtx(cmds mg.BultinCmdList, args []string, envMap mg.EnvMap, buf io.Writer) (*mg.CmdCtx, func()) {
+func setupBuiltinCmdCtx(cmds mg.BuiltinCmdList, args []string, envMap mg.EnvMap, buf io.Writer) (*mg.CmdCtx, func()) {
 	ctx := mg.NewTestingCtx(nil)
 	ctx.State = ctx.AddBuiltinCmds(cmds...)
 	ctx.Env = envMap
@@ -96,10 +96,10 @@ func setupBultinCmdCtx(cmds mg.BultinCmdList, args []string, envMap mg.EnvMap, b
 // tests when command is found, it should choose it.
 func TestTypeCmdLookupCmd(t *testing.T) {
 	t.Parallel()
-	item1 := mg.BultinCmd{Name: "this name", Desc: "this description"}
-	item2 := mg.BultinCmd{Name: "another one", Desc: "should not appear"}
+	item1 := mg.BuiltinCmd{Name: "this name", Desc: "this description"}
+	item2 := mg.BuiltinCmd{Name: "another one", Desc: "should not appear"}
 	buf := new(bytes.Buffer)
-	input, cleanup := setupBultinCmdCtx(mg.BultinCmdList{item1, item2}, []string{item2.Name}, nil, buf)
+	input, cleanup := setupBuiltinCmdCtx(mg.BuiltinCmdList{item1, item2}, []string{item2.Name}, nil, buf)
 	defer cleanup()
 
 	if got := mg.Builtins.TypeCmd(input); got != input.State {
@@ -125,17 +125,17 @@ type envPair struct {
 	value string
 }
 
-func setupEnvCmd(t *testing.T) ([]envPair, []mg.BultinCmd, func()) {
+func setupEnvCmd(t *testing.T) ([]envPair, []mg.BuiltinCmd, func()) {
 	envs := []envPair{
 		{"thiskey", "the value"},
 		{"anotherkey", "another value"},
 	}
-	items := make([]mg.BultinCmd, len(envs))
+	items := make([]mg.BuiltinCmd, len(envs))
 	for i, e := range envs {
 		if err := os.Setenv(e.key, e.value); err != nil {
 			t.Fatalf("cannot set environment values: %v", err)
 		}
-		items[i] = mg.BultinCmd{Name: e.key, Desc: "doesn't matter"}
+		items[i] = mg.BuiltinCmd{Name: e.key, Desc: "doesn't matter"}
 	}
 	cleanup := func() {
 		for _, e := range envs {
@@ -152,28 +152,28 @@ func TestEnvCmd(t *testing.T) {
 
 	tcs := []struct {
 		name     string
-		cmds     mg.BultinCmdList
+		cmds     mg.BuiltinCmdList
 		args     []string
 		envs     mg.EnvMap
 		wantEnvs []envPair
 	}{
-		{"no cmd no env", mg.BultinCmdList{}, []string{}, nil, nil},
+		{"no cmd no env", mg.BuiltinCmdList{}, []string{}, nil, nil},
 		{
 			"no cmd with env",
-			mg.BultinCmdList{},
+			mg.BuiltinCmdList{},
 			[]string{},
 			mg.EnvMap{"tAlbt": "gRuVbi", "wILHI": "XOmsUdw"},
 			[]envPair{{"tAlbt", "gRuVbi"}, {"wILHI", "XOmsUdw"}},
 		},
 		{
-			"one env pair", mg.BultinCmdList{items[0]},
+			"one env pair", mg.BuiltinCmdList{items[0]},
 			[]string{items[0].Name},
 			nil,
 			[]envPair{envs[0]},
 		},
 		{
 			"multiple env pairs",
-			mg.BultinCmdList{items[0], items[1]},
+			mg.BuiltinCmdList{items[0], items[1]},
 			[]string{items[0].Name, items[1].Name},
 			nil,
 			[]envPair{envs[0], envs[1]},
@@ -182,7 +182,7 @@ func TestEnvCmd(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			input, cleanup := setupBultinCmdCtx(tc.cmds, tc.args, tc.envs, buf)
+			input, cleanup := setupBuiltinCmdCtx(tc.cmds, tc.args, tc.envs, buf)
 			defer cleanup()
 			if got := mg.Builtins.EnvCmd(input); got == nil {
 				t.Error("EnvCmd() = (nil); want (*State)")
@@ -202,7 +202,7 @@ func TestEnvCmd(t *testing.T) {
 
 func TestBuiltinCmdsReduce(t *testing.T) {
 	t.Parallel()
-	isIn := func(cmd mg.BultinCmd, haystack mg.BultinCmdList) bool {
+	isIn := func(cmd mg.BuiltinCmd, haystack mg.BuiltinCmdList) bool {
 		for _, h := range haystack {
 			if h.Name == cmd.Name && h.Desc == cmd.Desc {
 				return true
@@ -211,10 +211,10 @@ func TestBuiltinCmdsReduce(t *testing.T) {
 		return false
 	}
 
-	item := mg.BultinCmd{Name: "qNgEYow", Desc: "YKjYxqMnt"}
+	item := mg.BuiltinCmd{Name: "qNgEYow", Desc: "YKjYxqMnt"}
 	ctx := &mg.Ctx{
 		State: &mg.State{
-			BuiltinCmds: mg.BultinCmdList{item},
+			BuiltinCmds: mg.BuiltinCmdList{item},
 		},
 	}
 

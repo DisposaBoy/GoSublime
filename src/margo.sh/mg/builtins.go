@@ -11,12 +11,12 @@ var (
 	Builtins = &builtins{}
 )
 
-type BultinCmdList []BultinCmd
+type BuiltinCmdList []BuiltinCmd
 
 // Lookup looks up the builtin command `name` in the list.
 // If the command is not found, it returns `Builtins.Commands().Lookup(".exec")`.
 // In either case, `found` indicates whether or not `name` was actually found.
-func (bcl BultinCmdList) Lookup(name string) (cmd BultinCmd, found bool) {
+func (bcl BuiltinCmdList) Lookup(name string) (cmd BuiltinCmd, found bool) {
 	for _, c := range bcl {
 		if c.Name == name {
 			return c, true
@@ -103,11 +103,11 @@ func (b builtins) EnvCmd(cx *CmdCtx) *State {
 }
 
 // Commands returns a list of predefined commands.
-func (b builtins) Commands() BultinCmdList {
-	return []BultinCmd{
-		BultinCmd{Name: ".env", Desc: "List env vars", Run: b.EnvCmd},
-		BultinCmd{Name: ".exec", Desc: "Run a command through os/exec", Run: b.ExecCmd},
-		BultinCmd{Name: ".type", Desc: "Lists all builtins or which builtin handles a command", Run: b.TypeCmd},
+func (b builtins) Commands() BuiltinCmdList {
+	return []BuiltinCmd{
+		BuiltinCmd{Name: ".env", Desc: "List env vars", Run: b.EnvCmd},
+		BuiltinCmd{Name: ".exec", Desc: "Run a command through os/exec", Run: b.ExecCmd},
+		BuiltinCmd{Name: ".type", Desc: "Lists all builtins or which builtin handles a command", Run: b.TypeCmd},
 	}
 }
 
@@ -154,8 +154,24 @@ func (cx *CmdCtx) StartProc() (*Proc, error) {
 	return p, p.start()
 }
 
-type BultinCmd struct {
+// BuiltinCmdRunFunc is the BuiltinCmd.Run function
+//
+// Where possible, implementations should prefer to do real work in a goroutine.
+type BuiltinCmdRunFunc func(*CmdCtx) *State
+
+type BuiltinCmd struct {
 	Name string
 	Desc string
-	Run  func(*CmdCtx) *State
+	Run  BuiltinCmdRunFunc
+}
+
+// ExecRunFunc returns a BuiltinCMd.Run function that wraps Builtins.ExecCmd
+// It sets the received CmdCtx.RunCmd's Name and Args fields
+func ExecRunFunc(name string, args ...string) BuiltinCmdRunFunc {
+	return func(cx *CmdCtx) *State {
+		x := *cx
+		x.RunCmd.Name = name
+		x.RunCmd.Args = args
+		return Builtins.ExecCmd(&x)
+	}
 }

@@ -29,7 +29,7 @@ func TestCmdSupport_Reduce_withRunCmd(t *testing.T) {
 	})
 	defer ctx.Cancel()
 
-	ctx.State = ctx.AddBuiltinCmds(BultinCmd{
+	ctx.State = ctx.AddBuiltinCmds(BuiltinCmd{
 		Name: ".mytest",
 		Run: func(cx *CmdCtx) *State {
 			called = true

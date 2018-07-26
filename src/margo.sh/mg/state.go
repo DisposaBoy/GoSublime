@@ -106,7 +106,7 @@ type State struct {
 
 	// BuiltinCmds holds the list of builtin commands.
 	// It's usually populated during the RunCmd action.
-	BuiltinCmds BultinCmdList
+	BuiltinCmds BuiltinCmdList
 
 	// UserCmds holds the list of user commands.
 	// It's usually populated during the QueryUserCmds action.
@@ -235,7 +235,7 @@ func (st *State) AddIssues(l ...Issue) *State {
 }
 
 // AddBuiltinCmds adds the list of builtin commands in l to State.BuiltinCmds
-func (st *State) AddBuiltinCmds(l ...BultinCmd) *State {
+func (st *State) AddBuiltinCmds(l ...BuiltinCmd) *State {
 	if len(l) == 0 {
 		return st
 	}

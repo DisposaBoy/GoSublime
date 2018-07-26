@@ -118,7 +118,7 @@ func (tr *taskTracker) userCmds(st *State) *State {
 
 func (tr *taskTracker) runCmd(st *State) *State {
 	return st.AddBuiltinCmds(
-		BultinCmd{
+		BuiltinCmd{
 			Name: ".kill",
 			Desc: "List and cancel active tasks",
 			Run:  tr.killBuiltin,
