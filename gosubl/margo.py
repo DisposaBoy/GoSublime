@@ -29,6 +29,7 @@ class MargoSingleton(object):
 			client_actions.Shutdown: self._handle_act_shutdown,
 			client_actions.CmdOutput: self._handle_act_output,
 		}
+		self.file_ids = []
 
 		self._views = {}
 		self._view_lock = threading.Lock()
