@@ -5,6 +5,24 @@ type QueryUserCmds struct {
 	ActionType
 }
 
+// UserCmdList is a list of UserCmd
+type UserCmdList []UserCmd
+
+// Len implements sort.Interface
+func (uc UserCmdList) Len() int {
+	return len(uc)
+}
+
+// Len implements sort.Interface using UserCmd.Title for comparison
+func (uc UserCmdList) Less(i, j int) bool {
+	return uc[i].Title < uc[j].Title
+}
+
+// Len implements sort.Interface
+func (uc UserCmdList) Swap(i, j int) {
+	uc[i], uc[j] = uc[j], uc[i]
+}
+
 // UserCmd represents a command that may be displayed in the editor ui.
 type UserCmd struct {
 	// Title is the name of the command displayed to the user

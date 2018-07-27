@@ -110,7 +110,7 @@ type State struct {
 
 	// UserCmds holds the list of user commands.
 	// It's usually populated during the QueryUserCmds action.
-	UserCmds []UserCmd
+	UserCmds UserCmdList
 
 	// clientActions is a list of client actions to dispatch in the editor
 	clientActions []clientActionType
