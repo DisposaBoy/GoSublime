@@ -26,13 +26,12 @@ type FmtFunc struct {
 	Actions []mg.Action
 }
 
-// ReducerCond returns true if Langs and Actions matches the Ctx
-func (ff FmtFunc) ReducerCond(mx *mg.Ctx) bool {
-	return mx.ActionIs(ff.Actions...) && mx.LangIs(ff.Langs...)
-}
-
 // Reduce implements the FmtFunc reducer.
 func (ff FmtFunc) Reduce(mx *mg.Ctx) *mg.State {
+	if !mx.ActionIs(ff.Actions...) || !mx.LangIs(ff.Langs...) {
+		return mx.State
+	}
+
 	fn := mx.View.Filename()
 	src, err := mx.View.ReadAll()
 	if err != nil {
