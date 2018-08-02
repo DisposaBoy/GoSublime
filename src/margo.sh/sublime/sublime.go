@@ -32,6 +32,14 @@ var (
 	}
 
 	logger = mg.NewLogger(os.Stderr)
+
+	defaultBctx = func() *build.Context {
+		bctx := build.Default
+		if gp := os.Getenv("MARGO_AGENT_GOPATH"); gp != "" {
+			bctx.GOPATH = gp
+		}
+		return &bctx
+	}()
 )
 
 func buildAction(c *cli.Context) error {
@@ -41,7 +49,7 @@ func buildAction(c *cli.Context) error {
 		fixExtPkg(pkg)
 		tags = "margo margo_extension"
 	}
-	err := goInstallAgent(os.Getenv("MARGO_AGENT_GOPATH"), tags)
+	err := goInstallAgent(tags)
 	if err != nil {
 		return fmt.Errorf("check console for errors: %s", err)
 	}
@@ -56,12 +64,12 @@ func runAction(c *cli.Context) error {
 	return cmdrunner.Cmd{Name: name, Args: c.Args()}.Run()
 }
 
-func goInstallAgent(gp string, tags string) error {
+func goInstallAgent(tags string) error {
 	args := []string{"install", "-v", "-tags=" + tags}
 	if os.Getenv("MARGO_BUILD_FLAGS_RACE") == "1" {
 		args = append(args, "-race")
 	}
-	for _, tag := range build.Default.ReleaseTags {
+	for _, tag := range defaultBctx.ReleaseTags {
 		if tag == "go1.10" {
 			args = append(args, "-i")
 			break
@@ -72,15 +80,15 @@ func goInstallAgent(gp string, tags string) error {
 		Name:     "go",
 		Args:     args,
 		OutToErr: true,
-	}
-	if gp != "" {
-		cr.Env = map[string]string{"GOPATH": gp}
+		Env: map[string]string{
+			"GOPATH": defaultBctx.GOPATH,
+		},
 	}
 	return cr.Run()
 }
 
 func extensionPkg() *build.Package {
-	pkg, err := build.Import("margo", "", 0)
+	pkg, err := defaultBctx.Import("margo", "", 0)
 	if err != nil || len(pkg.GoFiles) == 0 {
 		return nil
 	}
