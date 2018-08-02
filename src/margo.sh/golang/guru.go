@@ -78,7 +78,7 @@ func (g *Guru) definition(bx *mg.CmdCtx) {
 	}
 
 	cmd := exec.Command(
-		"/user/gp/bin/guru",
+		"guru",
 		"-json",
 		"-modified",
 		"definition",
