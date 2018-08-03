@@ -2,7 +2,7 @@ package mg
 
 import (
 	"margo.sh/mgpf"
-	"os"
+	yotsuba "margo.sh/why_would_you_make_yotsuba_cry"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -222,24 +222,24 @@ func (sto *Store) handleReqInit(rq *agentReq, mx *Ctx) (*Ctx, []Action) {
 	if len(props.Env) != 0 {
 		mx.Env = props.Env
 	}
-	mx.Env = sto.autoSwitchInternalGOPATH(mx.View, mx.Env)
+	mx.Env = sto.autoSwitchInternalGOPATH(mx)
 	return mx, acts
 }
 
-// autoSwitchInternalGOPATH automatically changes env[GOPATH] to the internal GOPATH
-// if v.Filename is a child of one of the internal GOPATH directories
-func (sto *Store) autoSwitchInternalGOPATH(v *View, env EnvMap) EnvMap {
-	fn := v.Path
+// autoSwitchInternalGOPATH returns mx.Env with GOPATH set to the agent's GOPATH
+// if mx.View.Filename is a child of said GOPATH
+func (sto *Store) autoSwitchInternalGOPATH(mx *Ctx) EnvMap {
+	fn := mx.View.Path
 	if fn == "" {
-		return env
+		return mx.Env
 	}
-	osGopath := os.Getenv("GOPATH")
-	for _, dir := range strings.Split(osGopath, string(filepath.ListSeparator)) {
+	gp := yotsuba.AgentBuildContext.GOPATH
+	for _, dir := range strings.Split(gp, string(filepath.ListSeparator)) {
 		if IsParentDir(dir, fn) {
-			return env.Add("GOPATH", osGopath)
+			return mx.Env.Add("GOPATH", gp)
 		}
 	}
-	return env
+	return mx.Env
 }
 
 // NewCtx returns a new Ctx initialized using the internal StickyState.
