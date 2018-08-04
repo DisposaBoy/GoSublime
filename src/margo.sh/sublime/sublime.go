@@ -38,16 +38,22 @@ var (
 
 func buildAction(c *cli.Context) error {
 	tags := "margo"
-	pkg := extensionPkg()
-	if pkg != nil {
+	pkg, err := extensionPkg()
+	if err == nil {
 		fixExtPkg(pkg)
 		tags = "margo margo_extension"
+		fmt.Fprintln(os.Stderr, "Using margo extension:", pkg.Dir)
+	} else {
+		err = fmt.Errorf("*Not* using margo extension: %s\nagent GOPATH is %s", err, agentBctx.GOPATH)
 	}
-	err := goInstallAgent(tags)
+
+	if e := goInstallAgent(tags); e != nil {
+		err = fmt.Errorf("%s\n%s", e, err)
+	}
 	if err != nil {
-		return fmt.Errorf("check console for errors: %s", err)
+		err = fmt.Errorf("check console for errors\n%s", err)
 	}
-	return nil
+	return err
 }
 
 func runAction(c *cli.Context) error {
@@ -81,12 +87,12 @@ func goInstallAgent(tags string) error {
 	return cr.Run()
 }
 
-func extensionPkg() *build.Package {
+func extensionPkg() (*build.Package, error) {
 	pkg, err := agentBctx.Import("margo", "", 0)
-	if err != nil || len(pkg.GoFiles) == 0 {
-		return nil
+	if err == nil && len(pkg.GoFiles) == 0 {
+		err = fmt.Errorf("%s imported but has no .go files", pkg.Dir)
 	}
-	return pkg
+	return pkg, err
 }
 
 func fixExtPkg(pkg *build.Package) {
