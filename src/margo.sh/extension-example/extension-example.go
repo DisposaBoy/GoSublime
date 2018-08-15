@@ -25,6 +25,18 @@ func Margo(m mg.Args) {
 			))
 		}),
 
+		// Add `go` command integration
+		// this adds a new commands:
+		// gs: these commands are all callable through 9o:
+		// * go: Wrapper around the go command, adding linter support
+		// * go.play: Automatically build and run go commands or run go test for packages
+		//   with support for linting and unsaved files
+		// * go.replay: Wrapper around go.play limited to a single instance
+		//   by default this command is bound to ctrl+.,ctrl+r or cmd+.,cmd+r
+		//
+		// UserCmds are also added for `Go Play` and `Go RePlay`
+		&golang.GoCmd{},
+
 		// add the day and time to the status bar
 		&DayTimeStatus{},
 
@@ -58,6 +70,8 @@ func Margo(m mg.Args) {
 		&golang.GocodeCalltips{},
 
 		// use guru for goto-definition
+		// new commands `goto.definition` and `guru.definition` are defined
+		// gs: by default `goto.definition` is bound to ctrl+.,ctrl+g or cmd+.,cmd+g
 		&golang.Guru{},
 
 		// add some default context aware-ish snippets

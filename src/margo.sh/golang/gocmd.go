@@ -45,12 +45,12 @@ func (gc *GoCmd) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
 		mg.BuiltinCmd{
 			Run:  gc.playBuiltin,
 			Name: "go.play",
-			Desc: "Automatically build and run go commands or run go test",
+			Desc: "Automatically build and run go commands or run go test for packages with support for linting and unsaved files",
 		},
 		mg.BuiltinCmd{
 			Run:  gc.replayBuiltin,
 			Name: "go.replay",
-			Desc: "Wrapper around .play limited to a single instance",
+			Desc: "Wrapper around go.play limited to a single instance",
 		},
 	)
 }
