@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"margo.sh/cmdpkg/margo/cmdrunner"
 	"margo.sh/mg"
-	"margo.sh/why_would_you_make_yotsuba_cry"
+	yotsuba "margo.sh/why_would_you_make_yotsuba_cry"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +22,6 @@ var (
 
 type Guru struct {
 	mg.ReducerType
-	env map[string]string
 }
 
 func (g *Guru) ReducerCond(mx *mg.Ctx) bool {
@@ -30,15 +29,10 @@ func (g *Guru) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (g *Guru) ReducerMount(mx *mg.Ctx) {
-	abctx := why_would_you_make_yotsuba_cry.AgentBuildContext
-	g.env = map[string]string{
-		"GOPATH": abctx.GOPATH,
-	}
-
 	go cmdrunner.Cmd{
 		Name:     "go",
 		Args:     []string{"install", "margo.sh/vendor/golang.org/x/tools/cmd/guru"},
-		Env:      g.env,
+		Env:      yotsuba.AgentBuildEnv,
 		OutToErr: true,
 	}.Run()
 }

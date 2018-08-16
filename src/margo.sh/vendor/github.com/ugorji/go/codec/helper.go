@@ -135,7 +135,7 @@ const (
 	wordSizeBits = 32 << (^uint(0) >> 63) // strconv.IntSize
 	wordSize     = wordSizeBits / 8
 
-	maxLevelsEmbedding = 15 // use this, so structFieldInfo fits into 8 bytes
+	maxLevelsEmbedding = 14 // use this, so structFieldInfo fits into 8 bytes
 )
 
 var (
@@ -814,7 +814,10 @@ type structFieldInfo struct {
 
 	is  [maxLevelsEmbedding]uint16 // (recursive/embedded) field index in struct
 	nis uint8                      // num levels of embedding. if 1, then it's not embedded.
+
+	encNameAsciiAlphaNum bool // the encName only contains ascii alphabet and numbers
 	structFieldInfoFlag
+	_ [1]byte // padding
 }
 
 func (si *structFieldInfo) setToZeroValue(v reflect.Value) {
@@ -1169,7 +1172,13 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 
 	// do not hold lock while computing this.
 	// it may lead to duplication, but that's ok.
-	ti := typeInfo{rt: rt, rtid: rtid, kind: uint8(rk), pkgpath: rt.PkgPath()}
+	ti := typeInfo{
+		rt:      rt,
+		rtid:    rtid,
+		kind:    uint8(rk),
+		pkgpath: rt.PkgPath(),
+		keyType: valueTypeString, // default it - so it's never 0
+	}
 	// ti.rv0 = reflect.Zero(rt)
 
 	// ti.comparable = rt.Comparable()
@@ -1355,6 +1364,15 @@ LOOP:
 			parsed = true
 		} else if si.encName == "" {
 			si.encName = f.Name
+		}
+		si.encNameAsciiAlphaNum = true
+		for i := len(si.encName) - 1; i >= 0; i-- {
+			b := si.encName[i]
+			if (b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') {
+				continue
+			}
+			si.encNameAsciiAlphaNum = false
+			break
 		}
 		si.fieldName = f.Name
 		si.flagSet(structFieldInfoFlagReady)
@@ -1638,9 +1656,12 @@ func (c *codecFner) reset(hh Handle) {
 		c.h, bh = bh, c.h // swap both
 		_, c.js = hh.(*JsonHandle)
 		c.be = hh.isBinary()
-		for i := range c.s {
-			c.s[i].fn.i.ready = false
+		if len(c.s) > 0 {
+			c.s = c.s[:0]
 		}
+		// for i := range c.s {
+		// 	c.s[i].fn.i.ready = false
+		// }
 	}
 }
 
@@ -2021,6 +2042,11 @@ func (p boolSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 // ---------------------
 
+type sfiRv struct {
+	v *structFieldInfo
+	r reflect.Value
+}
+
 type intRv struct {
 	v int64
 	r reflect.Value
@@ -2244,29 +2270,29 @@ type pooler struct {
 }
 
 func (p *pooler) init() {
-	p.strRv8.New = func() interface{} { return new([8]stringRv) }
-	p.strRv16.New = func() interface{} { return new([16]stringRv) }
-	p.strRv32.New = func() interface{} { return new([32]stringRv) }
-	p.strRv64.New = func() interface{} { return new([64]stringRv) }
-	p.strRv128.New = func() interface{} { return new([128]stringRv) }
+	p.strRv8.New = func() interface{} { return new([8]sfiRv) }
+	p.strRv16.New = func() interface{} { return new([16]sfiRv) }
+	p.strRv32.New = func() interface{} { return new([32]sfiRv) }
+	p.strRv64.New = func() interface{} { return new([64]sfiRv) }
+	p.strRv128.New = func() interface{} { return new([128]sfiRv) }
 	p.dn.New = func() interface{} { x := new(decNaked); x.init(); return x }
 	p.tiload.New = func() interface{} { return new(typeInfoLoadArray) }
 	p.cfn.New = func() interface{} { return new(codecFner) }
 }
 
-func (p *pooler) stringRv8() (sp *sync.Pool, v interface{}) {
+func (p *pooler) sfiRv8() (sp *sync.Pool, v interface{}) {
 	return &p.strRv8, p.strRv8.Get()
 }
-func (p *pooler) stringRv16() (sp *sync.Pool, v interface{}) {
+func (p *pooler) sfiRv16() (sp *sync.Pool, v interface{}) {
 	return &p.strRv16, p.strRv16.Get()
 }
-func (p *pooler) stringRv32() (sp *sync.Pool, v interface{}) {
+func (p *pooler) sfiRv32() (sp *sync.Pool, v interface{}) {
 	return &p.strRv32, p.strRv32.Get()
 }
-func (p *pooler) stringRv64() (sp *sync.Pool, v interface{}) {
+func (p *pooler) sfiRv64() (sp *sync.Pool, v interface{}) {
 	return &p.strRv64, p.strRv64.Get()
 }
-func (p *pooler) stringRv128() (sp *sync.Pool, v interface{}) {
+func (p *pooler) sfiRv128() (sp *sync.Pool, v interface{}) {
 	return &p.strRv128, p.strRv128.Get()
 }
 func (p *pooler) decNaked() (sp *sync.Pool, v interface{}) {

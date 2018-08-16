@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  branch = "dont-suggest-builtins-in-selectors"
+  branch = "master-tmp"
   name = "github.com/mdempsky/gocode"
   packages = [
     "lookdot",
@@ -15,7 +15,7 @@
   branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "7d51bbe6161dcb8f32a1252c27668ce36e3ef16b"
+  revision = "00b869d2f4a5e27445c2d916fa106fc72c106d4c"
 
 [[projects]]
   branch = "master"
@@ -27,13 +27,13 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
-  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
+  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["cpu"]
-  revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
+  revision = "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded"
 
 [[projects]]
   branch = "master"
@@ -47,8 +47,10 @@
     "go/callgraph",
     "go/callgraph/static",
     "go/gcexportdata",
+    "go/internal/cgo",
     "go/internal/gcimporter",
     "go/loader",
+    "go/packages",
     "go/pointer",
     "go/ssa",
     "go/ssa/ssautil",
@@ -57,7 +59,7 @@
     "internal/fastwalk",
     "refactor/importgraph"
   ]
-  revision = "18f0b668f1069d7f55ac25b6f2670e30cd6499c0"
+  revision = "9de19001913fbbc31d62e61c3c2d0a49ee352534"
 
 [solve-meta]
   analyzer-name = "dep"

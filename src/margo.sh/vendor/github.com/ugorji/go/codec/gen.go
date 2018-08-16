@@ -1057,7 +1057,13 @@ func (x *genRunner) encStruct(varname string, rtid uintptr, t reflect.Type) {
 		case valueTypeFloat:
 			x.linef("r.EncodeFloat64(z.M.Float(strconv.ParseFloat(`%s`, 64)))", si.encName)
 		default: // string
+			if si.encNameAsciiAlphaNum {
+				x.linef(`if z.IsJSONHandle() { z.WriteStr("\"%s\"") } else { `, si.encName)
+			}
 			x.linef("r.EncodeString(codecSelferCcUTF8%s, `%s`)", x.xs, si.encName)
+			if si.encNameAsciiAlphaNum {
+				x.linef("}")
+			}
 		}
 		// x.linef("r.EncStructFieldKey(codecSelferValueType%s%s, `%s`)", ti.keyType.String(), x.xs, si.encName)
 		x.line("r.WriteMapElemValue()")

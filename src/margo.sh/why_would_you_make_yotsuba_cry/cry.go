@@ -19,6 +19,14 @@ var (
 		}
 		return &bctx
 	}()
+
+	// AgentBuildEnv holds environment variables used when building the margo agent.
+	// It contains environment variables like GOPATH and GO111MODULE which may be
+	// different from the user's environment but essential for building the agent.
+	AgentBuildEnv = map[string]string{
+		"GOPATH":      AgentBuildContext.GOPATH,
+		"GO111MODULE": os.Getenv("MARGO_AGENT_GO111MODULE"),
+	}
 )
 
 // IsNil *probably* takes care of this BS: https://golang.org/doc/faq#nil_error
