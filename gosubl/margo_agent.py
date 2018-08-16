@@ -55,6 +55,7 @@ class MargoAgent(threading.Thread):
 		self.gopath = sh.getenv('GOPATH')
 		self._default_env = {
 			'GOPATH': self.gopath,
+			'MARGO_AGENT_GO111MODULE': 'off',
 			'MARGO_AGENT_GOPATH': psep.join(gopaths),
 			'PATH': psep.join([os.path.join(p, 'bin') for p in gopaths]) + psep + os.environ.get('PATH'),
 		}
@@ -107,6 +108,7 @@ class MargoAgent(threading.Thread):
 		cmd = sh.Command(install_cmd)
 		cmd.env = self._env({
 			'GOPATH': self._default_env['MARGO_AGENT_GOPATH'],
+			'GO111MODULE': self._default_env['MARGO_AGENT_GO111MODULE'],
 			'GOBIN': gs_gobin,
 		})
 		cr = cmd.run()
