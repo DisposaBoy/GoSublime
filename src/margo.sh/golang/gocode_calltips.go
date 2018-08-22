@@ -22,6 +22,11 @@ type gocodeCtAct struct {
 type GocodeCalltips struct {
 	mg.ReducerType
 
+	// Whether or not to do gocode completion using source code
+	// instead of the pre-compiled package files.
+	// Using source is often slower but offer more up-to-date completions.
+	Source bool
+
 	q      *mgutil.ChanQ
 	gsu    *gcSuggest
 	status string
@@ -32,7 +37,9 @@ func (gc *GocodeCalltips) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (gc *GocodeCalltips) ReducerMount(mx *mg.Ctx) {
-	gc.gsu = newGcSuggest(gsuOpts{})
+	gc.gsu = newGcSuggest(gsuOpts{
+		Source: gc.Source,
+	})
 	gc.q = mgutil.NewChanQ(1)
 	go gc.processer()
 }

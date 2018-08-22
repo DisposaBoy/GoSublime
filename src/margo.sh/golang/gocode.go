@@ -52,6 +52,11 @@ func (gr *gocodeReq) reduce() *mg.State {
 type Gocode struct {
 	mg.ReducerType
 
+	// Whether or not to do gocode completion using source code
+	// instead of the pre-compiled package files.
+	// Using source is often slower but offer more up-to-date completions.
+	Source bool
+
 	ProposeBuiltins          bool
 	ProposeTests             bool
 	Autobuild                bool
@@ -94,6 +99,7 @@ func (g *Gocode) ReducerCond(mx *mg.Ctx) bool {
 
 func (g *Gocode) ReducerMount(mx *mg.Ctx) {
 	g.gsu = newGcSuggest(gsuOpts{
+		Source:          g.Source,
 		Debug:           g.Debug,
 		ProposeBuiltins: g.ProposeBuiltins,
 	})

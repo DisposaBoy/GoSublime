@@ -236,6 +236,11 @@ func runCmd(mx *Ctx, rc RunCmd) *State {
 	return Builtins.ExecCmd(cx)
 }
 
+type RunCmdData struct {
+	*Ctx
+	RunCmd
+}
+
 type RunCmd struct {
 	ActionType
 
@@ -244,29 +249,34 @@ type RunCmd struct {
 	Name     string
 	Args     []string
 	CancelID string
+	Prompts  []string
 }
 
 func (rc RunCmd) Interpolate(mx *Ctx) RunCmd {
+	data := RunCmdData{
+		Ctx:    mx,
+		RunCmd: rc,
+	}
 	tpl := template.New("")
 	buf := &bytes.Buffer{}
-	rc.Name = rc.interp(mx, tpl, buf, rc.Name)
+	rc.Name = rc.interp(data, tpl, buf, rc.Name)
 	for i, s := range rc.Args {
-		rc.Args[i] = rc.interp(mx, tpl, buf, s)
+		rc.Args[i] = rc.interp(data, tpl, buf, s)
 	}
 	return rc
 }
 
-func (rc RunCmd) interp(mx *Ctx, tpl *template.Template, buf *bytes.Buffer, s string) string {
+func (rc RunCmd) interp(data RunCmdData, tpl *template.Template, buf *bytes.Buffer, s string) string {
 	if strings.Contains(s, "{{") && strings.Contains(s, "}}") {
 		if tpl, err := tpl.Parse(s); err == nil {
 			buf.Reset()
-			if err := tpl.Execute(buf, mx); err == nil {
+			if err := tpl.Execute(buf, data); err == nil {
 				s = buf.String()
 			}
 		}
 	}
 	return os.Expand(s, func(k string) string {
-		if v, ok := mx.Env[k]; ok {
+		if v, ok := data.Env[k]; ok {
 			return v
 		}
 		return "${" + k + "}"

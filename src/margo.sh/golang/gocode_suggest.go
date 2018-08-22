@@ -21,6 +21,7 @@ type gsImpKey struct {
 type gsuOpts struct {
 	ProposeBuiltins bool
 	Debug           bool
+	Source          bool
 }
 
 type gcSuggest struct {
@@ -44,6 +45,8 @@ func (gsu *gcSuggest) init() {
 func (gsu *gcSuggest) newImporter() types.ImporterFrom {
 	// TODO: switch to source importer only
 	switch {
+	case gsu.Source:
+		return importer.For("source", nil).(types.ImporterFrom)
 	case runtime.Compiler == "gc":
 		return gcexportdata.NewImporter(token.NewFileSet(), map[string]*types.Package{})
 	default:
@@ -121,6 +124,8 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 		return p, nil
 	}
 
+	defer gi.mx.Profile.Push(impPath).Pop()
+
 	bpkg, err := gi.bld.Import(impPath, srcDir, 0)
 	if err != nil {
 		gi.gsu.dbgf(gi.mx, "build.Import(%q, %q): %s\n", impPath, srcDir, err)
@@ -136,7 +141,7 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 	}
 
 	p, err := imp.ImportFrom(impPath, srcDir, mode)
-	if err == nil && p.Complete() {
+	if err == nil && p.Complete() && bpkg.Goroot {
 		cache[impKey] = p
 	}
 	if err != nil {

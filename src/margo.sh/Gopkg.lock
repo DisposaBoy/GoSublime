@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/coreos/bbolt"
+  packages = ["."]
+  revision = "583e8937c61f1af6513608ccc75c97b6abdf4ff9"
+  version = "v1.3.0"
+
+[[projects]]
   branch = "master-tmp"
   name = "github.com/mdempsky/gocode"
   packages = [
@@ -21,19 +27,22 @@
   branch = "master"
   name = "github.com/urfave/cli"
   packages = ["."]
-  revision = "8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff"
+  revision = "934abfb2f102315b5794e15ebc7949e4ca253920"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
-  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
+  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["cpu"]
-  revision = "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded"
+  packages = [
+    "cpu",
+    "unix"
+  ]
+  revision = "3b58ed4ad3395d483fc92d5d14123ce2c3581fec"
 
 [[projects]]
   branch = "master"
@@ -59,11 +68,11 @@
     "internal/fastwalk",
     "refactor/importgraph"
   ]
-  revision = "9de19001913fbbc31d62e61c3c2d0a49ee352534"
+  revision = "447b503c8ba6e20bc730585499fc01c81a78c621"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4f610f01605fd82eca8f3ae8c0e501c78bbee4fe23c63f14ef1ccdaff2fda8ba"
+  inputs-digest = "026c4f46d3f05164ae5cc62926f4129ca1101f4e43bec00be5aa941cfc3fd341"
   solver-name = "gps-cdcl"
   solver-version = 1

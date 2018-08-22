@@ -21,16 +21,14 @@ import (
 	"golang.org/x/tools/go/gcexportdata"
 )
 
-// A LoadMode specifies the amount of detail to return when loading packages.
-// The modes are all strictly additive, as you go through the list it increases
-// the amount of information available to you, but may also increase the cost
-// of collecting the information.
-// Load is always allowed to return more information than requested.
+// A LoadMode specifies the amount of detail to return when loading.
+// Higher-numbered modes cause Load to return more information,
+// but may be slower. Load may return more information than requested.
 type LoadMode int
 
 const (
 	// LoadFiles finds the packages and computes their source file lists.
-	// Package fields: ID, Name, Errors, GoFiles, OtherFiles.
+	// Package fields: ID, Name, Errors, GoFiles, and OtherFiles.
 	LoadFiles LoadMode = iota
 
 	// LoadImports adds import information for each package
@@ -38,23 +36,26 @@ const (
 	// Package fields added: Imports.
 	LoadImports
 
-	// LoadTypes adds type information for the package's exported symbols.
-	// Package fields added: Types, Fset, IllTyped.
-	// This will use the type information provided by the build system if
-	// possible, and the ExportFile field may be filled in.
+	// LoadTypes adds type information for package-level
+	// declarations in the packages matching the patterns.
+	// Package fields added: Types, Fset, and IllTyped.
+	// This mode uses type information provided by the build system when
+	// possible, and may fill in the ExportFile field.
 	LoadTypes
 
 	// LoadSyntax adds typed syntax trees for the packages matching the patterns.
-	// Package fields added: Syntax, TypesInfo, for direct pattern matches only.
+	// Package fields added: Syntax, and TypesInfo, for direct pattern matches only.
 	LoadSyntax
 
 	// LoadAllSyntax adds typed syntax trees for the packages matching the patterns
 	// and all dependencies.
-	// Package fields added: Syntax, TypesInfo, for all packages in import graph.
+	// Package fields added: Types, Fset, Illtyped, Syntax, and TypesInfo,
+	// for all packages in the import graph.
 	LoadAllSyntax
 )
 
 // An Config specifies details about how packages should be loaded.
+// The zero value is a valid configuration.
 // Calls to Load do not modify this struct.
 type Config struct {
 	// Mode controls the level of information returned for each package.
@@ -66,14 +67,14 @@ type Config struct {
 	// If Context is nil, the load cannot be cancelled.
 	Context context.Context
 
-	// Dir is the directory in which to run the build system tool
+	// Dir is the directory in which to run the build system's query tool
 	// that provides information about the packages.
 	// If Dir is empty, the tool is run in the current directory.
 	Dir string
 
-	// Env is the environment to use when invoking the build system tool.
+	// Env is the environment to use when invoking the build system's query tool.
 	// If Env is nil, the current environment is used.
-	// Like in os/exec's Cmd, only the last value in the slice for
+	// As in os/exec's Cmd, only the last value in the slice for
 	// each environment key is used. To specify the setting of only
 	// a few variables, append to the current environment, as in:
 	//
@@ -81,22 +82,20 @@ type Config struct {
 	//
 	Env []string
 
-	// Flags is a list of command-line flags to be passed through to
-	// the underlying query tool.
-	Flags []string
+	// BuildFlags is a list of command-line flags to be passed through to
+	// the build system's query tool.
+	BuildFlags []string
 
-	// Error is called for each error encountered during package loading.
+	// Error is called for each error encountered during parsing and type-checking.
 	// It must be safe to call Error simultaneously from multiple goroutines.
-	// In addition to calling Error, the loader will record each error
+	// In addition to calling Error, the loader records each error
 	// in the corresponding Package's Errors list.
-	// If Error is nil, the loader will print errors to os.Stderr.
-	// To disable printing of errors, set opt.Error = func(error){}.
-	// TODO(rsc): What happens in the Metadata loader? Currently nothing.
+	// If Error is nil, the loader prints errors to os.Stderr.
+	// To disable printing of errors, set opt.Error = func(error) {}.
 	Error func(error)
 
-	// Fset is the token.FileSet to use when parsing source files or
-	// type information provided by the build system.
-	// If Fset is nil, the loader will create one.
+	// Fset provides source position information for syntax trees and types.
+	// If Fset is nil, the loader will create a new FileSet.
 	Fset *token.FileSet
 
 	// ParseFile is called to read and parse each file
@@ -174,7 +173,7 @@ func defaultDriver(cfg *Config, patterns ...string) (*driverResponse, error) {
 	return driver(cfg, patterns...)
 }
 
-// A Package describes a single loaded Go package.
+// A Package describes a loaded Go package.
 type Package struct {
 	// ID is a unique identifier for a package,
 	// in a syntax provided by the underlying build system.
@@ -187,14 +186,16 @@ type Package struct {
 	// Name is the package name as it appears in the package source code.
 	Name string
 
-	// This is the package path as used by the types package.
-	// This is used to map entries in the type information back to the package
-	// they come from.
+	// PkgPath is the package path as used by the go/types package.
 	PkgPath string
 
-	// Errors lists any errors encountered while loading the package.
-	// TODO(rsc): Say something about the errors or at least their Strings,
-	// as far as file:line being at the beginning and so on.
+	// Errors contains any errors encountered while parsing or type-checking the package.
+	// Possible error types include *scanner.ErrorList and types.Error,
+	// whose fields provide structured position information.
+	// Error strings are typically of the form "file:line: message" or
+	// "file:line:col: message".
+	// TODO(adonovan): export packageError as packages.Error
+	// and add that type to the list of structured errors.
 	Errors []error
 
 	// GoFiles lists the absolute file paths of the package's Go source files.
@@ -209,37 +210,35 @@ type Package struct {
 	// including assembly, C, C++, Fortran, Objective-C, SWIG, and so on.
 	OtherFiles []string
 
-	// ExportFile is the absolute path to a file containing the type information
-	// provided by the build system.
+	// ExportFile is the absolute path to a file containing type
+	// information for the package as provided by the build system.
 	ExportFile string
 
 	// Imports maps import paths appearing in the package's Go source files
 	// to corresponding loaded Packages.
 	Imports map[string]*Package
 
-	// Types is the type information for the package.
-	// Modes LoadTypes and above set this field for all packages.
-	//
-	// TODO(adonovan): all packages? In Types mode this entails
-	// asymptotically more export data processing than is required
-	// to load the requested packages. Is that what we want?
+	// Types provides type information for the package.
+	// Modes LoadTypes and above set this field for packages matching the
+	// patterns; type information for dependencies may be missing or incomplete.
+	// Mode LoadSyntaxAll sets this field for all packages, including dependencies.
 	Types *types.Package
 
 	// Fset provides position information for Types, TypesInfo, and Syntax.
-	// Modes LoadTypes and above set this field for all packages.
+	// It is set only when Types is set.
 	Fset *token.FileSet
 
 	// IllTyped indicates whether the package has any type errors.
-	// Modes LoadTypes and above set this field for all packages.
+	// It is set only when Types is set.
 	IllTyped bool
 
-	// Syntax is the package's syntax trees, for the files listed in GoFiles.
+	// Syntax is the package's syntax trees, for the files listed in CompiledGoFiles.
 	//
-	// Mode LoadSyntax set this field for packages matching the patterns.
+	// Mode LoadSyntax sets this field for packages matching the patterns.
 	// Mode LoadSyntaxAll sets this field for all packages, including dependencies.
 	Syntax []*ast.File
 
-	// TypesInfo is the type-checking results for the package's syntax trees.
+	// TypesInfo provides type information about the package's syntax trees.
 	// It is set only when Syntax is set.
 	TypesInfo *types.Info
 }
@@ -276,6 +275,7 @@ type flatPackage struct {
 // The imports are written out as just a map of path to package id.
 // The errors are written using a custom type that tries to preserve the
 // structure of error types we know about.
+//
 // This method exists to enable support for additional build systems.  It is
 // not intended for use by clients of the API and we may change the format.
 func (p *Package) MarshalJSON() ([]byte, error) {
@@ -349,6 +349,7 @@ type loaderPackage struct {
 	loadOnce     sync.Once
 	color        uint8 // for cycle detection
 	needsrc      bool  // load from source (Mode >= LoadTypes)
+	needtypes    bool  // type information is either requested or depended on
 	initial      bool  // package was matched by a pattern
 }
 
@@ -413,9 +414,11 @@ func (ld *loader) refine(roots []string, list ...*Package) ([]*Package, error) {
 	for _, pkg := range list {
 		lpkg := &loaderPackage{
 			Package: pkg,
+			needtypes: ld.Mode >= LoadAllSyntax ||
+				ld.Mode >= LoadTypes && isRoot[pkg.ID],
 			needsrc: ld.Mode >= LoadAllSyntax ||
-				(ld.Mode >= LoadSyntax && isRoot[pkg.ID]) ||
-				(pkg.ExportFile == "" && pkg.PkgPath != "unsafe"),
+				ld.Mode >= LoadSyntax && isRoot[pkg.ID] ||
+				pkg.ExportFile == "" && pkg.PkgPath != "unsafe",
 		}
 		ld.pkgs[lpkg.ID] = lpkg
 		if isRoot[lpkg.ID] {
@@ -444,6 +447,7 @@ func (ld *loader) refine(roots []string, list ...*Package) ([]*Package, error) {
 	// for which we load source code.
 	var stack []*loaderPackage
 	var visit func(lpkg *loaderPackage) bool
+	var srcPkgs []*loaderPackage
 	visit = func(lpkg *loaderPackage) bool {
 		switch lpkg.color {
 		case black:
@@ -477,7 +481,9 @@ func (ld *loader) refine(roots []string, list ...*Package) ([]*Package, error) {
 			}
 			lpkg.Imports[importPath] = imp.Package
 		}
-
+		if lpkg.needsrc {
+			srcPkgs = append(srcPkgs, lpkg)
+		}
 		stack = stack[:len(stack)-1] // pop
 		lpkg.color = black
 
@@ -493,6 +499,14 @@ func (ld *loader) refine(roots []string, list ...*Package) ([]*Package, error) {
 		// For each initial package, create its import DAG.
 		for _, lpkg := range initial {
 			visit(lpkg)
+		}
+	}
+	for _, lpkg := range srcPkgs {
+		// Complete type information is required for the
+		// immediate dependencies of each source package.
+		for _, ipkg := range lpkg.Imports {
+			imp := ld.pkgs[ipkg.ID]
+			imp.needtypes = true
 		}
 	}
 	// Load type data if needed, starting at
@@ -557,6 +571,15 @@ func (ld *loader) loadPackage(lpkg *loaderPackage) {
 	// package declarations are inconsistent.
 	lpkg.Types = types.NewPackage(lpkg.PkgPath, lpkg.Name)
 
+	// Subtle: we populate all Types fields with an empty Package
+	// before loading export data so that export data processing
+	// never has to create a types.Package for an indirect dependency,
+	// which would then require that such created packages be explicitly
+	// inserted back into the Import graph as a final step after export data loading.
+	// The Diamond test exercises this case.
+	if !lpkg.needtypes {
+		return
+	}
 	if !lpkg.needsrc {
 		ld.loadFromExportData(lpkg)
 		return // not a source package, don't get syntax trees
@@ -646,8 +669,8 @@ func (ld *loader) loadPackage(lpkg *loaderPackage) {
 		for _, f := range lpkg.Syntax {
 			for _, imp := range f.Imports {
 				if imp.Path.Value == `"C"` {
-					appendError(fmt.Errorf(`%s: import "C" ignored`,
-						lpkg.Fset.Position(imp.Pos())))
+					err := types.Error{Fset: ld.Fset, Pos: imp.Pos(), Msg: `import "C" ignored`}
+					appendError(err)
 					break outer
 				}
 			}
@@ -783,7 +806,11 @@ func (ld *loader) loadFromExportData(lpkg *loaderPackage) (*types.Package, error
 	// package that might possibly be mentioned by the
 	// current package---its transitive closure.
 	//
-	// TODO(adonovan): it would be more simpler and more efficient
+	// In loadPackage, we unconditionally create a types.Package for
+	// each dependency so that export data loading does not
+	// create new ones.
+	//
+	// TODO(adonovan): it would be simpler and more efficient
 	// if the export data machinery invoked a callback to
 	// get-or-create a package instead of a map.
 	//
@@ -802,11 +829,15 @@ func (ld *loader) loadFromExportData(lpkg *loaderPackage) (*types.Package, error
 	}
 	visit(lpkg.Imports)
 
+	viewLen := len(view) + 1 // adding the self package
 	// Parse the export data.
-	// (May create/modify packages in view.)
+	// (May modify incomplete packages in view but not create new ones.)
 	tpkg, err := gcexportdata.Read(r, ld.Fset, view, lpkg.PkgPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %v", lpkg.ExportFile, err)
+	}
+	if viewLen != len(view) {
+		log.Fatalf("Unexpected package creation during export data loading")
 	}
 
 	lpkg.Types = tpkg

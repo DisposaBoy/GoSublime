@@ -77,12 +77,6 @@ func goInstallAgent(tags string) error {
 	if os.Getenv("MARGO_BUILD_FLAGS_RACE") == "1" {
 		args = append(args, "-race")
 	}
-	for _, tag := range agentBuildCtx.ReleaseTags {
-		if tag == "go1.10" {
-			args = append(args, "-i")
-			break
-		}
-	}
 	args = append(args, "margo.sh/cmd/"+AgentName)
 	cr := cmdrunner.Cmd{
 		Name:     "go",
