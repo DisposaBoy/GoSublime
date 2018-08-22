@@ -53,12 +53,15 @@ class MargoAgent(threading.Thread):
 		gopaths = (gs.user_path(), gs.dist_path())
 		psep = sh.psep
 		self.gopath = sh.getenv('GOPATH')
+		self.data_dir = gs.user_path('margo.data')
 		self._default_env = {
 			'GOPATH': self.gopath,
+			'MARGO_DATA_DIR': self.data_dir,
 			'MARGO_AGENT_GO111MODULE': 'off',
 			'MARGO_AGENT_GOPATH': psep.join(gopaths),
 			'PATH': psep.join([os.path.join(p, 'bin') for p in gopaths]) + psep + os.environ.get('PATH'),
 		}
+		gs.mkdirp(self.data_dir)
 
 		self._acts_lock = threading.Lock()
 		self._acts = []
