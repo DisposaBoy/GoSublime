@@ -267,6 +267,7 @@ class Gs9oWinOpenCommand(sublime_plugin.WindowCommand):
 		env = {},
 		push_output = [],
 		wdid = '',
+		action_data={},
 	):
 		win = self.window
 		wid = win.id()
@@ -297,15 +298,16 @@ class Gs9oWinOpenCommand(sublime_plugin.WindowCommand):
 				'cmd': ' '.join(shlex.quote(s) for s in run),
 				'save_hist': save_hist,
 				'env': env,
+				'action_data': action_data,
 			})
 
 class Gs9oPasteExecCommand(sublime_plugin.TextCommand):
-	def run(self, edit, cmd, save_hist=False, env={}):
+	def run(self, edit, cmd, save_hist=False, env={}, action_data={}):
 		view = self.view
 		view.insert(edit, view.line(view.size()-1).end(), cmd)
 		view.sel().clear()
 		view.sel().add(view.line(view.size()-1).end())
-		view.run_command('gs9o_exec', {'save_hist': save_hist, 'env': env})
+		view.run_command('gs9o_exec', {'save_hist': save_hist, 'env': env, 'action_data': action_data})
 
 class Gs9oOpenSelectionCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
@@ -386,7 +388,7 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 		pos = gs.sel(self.view).begin()
 		return self.view.score_selector(pos, 'text.9o') > 0
 
-	def run(self, edit, save_hist=False, env={}):
+	def run(self, edit, save_hist=False, env={}, action_data={}):
 		view = self.view
 		pos = gs.sel(view).begin()
 		line = view.line(pos)
@@ -472,7 +474,15 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 					f(view, edit, args, wd, rkey)
 					return
 				else:
-					_rcmd(view, edit, nm, args, wd, rkey)
+					_rcmd(
+						view=view,
+						edit=edit,
+						name=nm,
+						args=args,
+						wd=wd,
+						rkey=rkey,
+						action_data=action_data,
+					)
 					return
 
 			if nm == 'sh':
@@ -607,7 +617,7 @@ def _rcmd_output_handler(rs, act):
 
 mg.output_handler = _rcmd_output_handler
 
-def _rcmd(view, edit, nm, args, wd, rkey):
+def _rcmd(*, view, edit, name, args, wd, rkey, action_data={}):
 	def cb(rs):
 		if rs.error:
 			push_output(view, rkey, rs.error)
@@ -615,9 +625,10 @@ def _rcmd(view, edit, nm, args, wd, rkey):
 	act = actions.RunCmd.copy()
 	act['Data'] = {
 		'Fd':  _rcmd_fd(wd=wd, rkey=rkey),
-		'Name': nm,
+		'Name': name,
 		'Args': args,
 	}
+	act['Data'].update(action_data)
 	# `view` is the 9o view, but the command wants the `active/editor view`
 	run_view = None
 	mg.send(view=run_view, cb=cb, actions=[act])
@@ -684,7 +695,14 @@ def cmd_clear(view, edit, args, wd, rkey):
 
 def cmd_go(view, edit, args, wd, rkey):
 	_save_all(view.window(), wd)
-	sublime.set_timeout_async(lambda: _rcmd(view, edit, 'go', args, wd, rkey))
+	sublime.set_timeout_async(lambda: _rcmd(
+		view=view,
+		edit=edit,
+		name='go',
+		args=args,
+		wd=wd,
+		rkey=rkey,
+	))
 
 def cmd_cancel_replay(view, edit, args, wd, rkey):
 	cid = ''
@@ -733,7 +751,14 @@ def cmd_help(view, edit, args, wd, rkey):
 
 def cmd_replay(view, edit, args, wd, rkey):
 	_save_all(view.window(), wd)
-	_rcmd(view, edit, 'go.replay', args, wd, rkey)
+	_rcmd(
+		view=view,
+		edit=edit,
+		name='go.replay',
+		args=args,
+		wd=wd,
+		rkey=rkey,
+	)
 
 def _env_settings(d, view, edit, args, wd, rkey):
 	if len(args) > 0:

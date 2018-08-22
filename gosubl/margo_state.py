@@ -228,6 +228,7 @@ class UserCmd(object):
 		self.desc = v.get('Desc') or ''
 		self.name = v.get('Name') or ''
 		self.args = v.get('Args') or []
+		self.prompts = v.get('Prompts') or []
 
 # in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
 # but keep this number low (realistic source files sizes) at least until we optimize things

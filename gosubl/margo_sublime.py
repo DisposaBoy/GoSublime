@@ -46,6 +46,32 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		mg.send(view=self.view, actions=[actions.QueryUserCmds], cb=self._cb)
 
+	def _on_done(self, *, win, cmd, prompts):
+		if len(prompts) >= len(cmd.prompts):
+			self._on_done_call(win=win, cmd=cmd, prompts=prompts)
+			return
+
+		def on_done(s):
+			prompts.append(s)
+			self._on_done(win=win, cmd=cmd, prompts=prompts)
+
+		win.show_input_panel('%d/%d %s' % (
+			len(prompts) + 1,
+			len(cmd.prompts),
+			cmd.prompts[len(prompts)-1],
+		), '', on_done, None, None)
+
+	def _on_done_call(self, *, win, cmd, prompts):
+		win.run_command('gs9o_win_open', {
+			'run': [cmd.name] + cmd.args,
+			'action_data': {
+				'Prompts': prompts,
+			},
+			'save_hist': False,
+			'focus_view': False,
+			'show_view': True,
+		})
+
 	def _cb(self, rs):
 		win = self.view.window() or sublime.active_window()
 		selected = 0
@@ -58,16 +84,8 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 			items.append([c.title, desc])
 
 		def on_done(i):
-			if i < 0 or i >= len(cmds):
-				return
-
-			cmd = cmds[i]
-			win.run_command('gs9o_win_open', {
-				'run': [cmd.name] + cmd.args,
-				'save_hist': False,
-				'focus_view': False,
-				'show_view': True,
-			})
+			if i >= 0 and i < len(cmds):
+				self._on_done(win=win, cmd=cmds[i], prompts=[])
 
 		def on_highlight(i):
 			pass
