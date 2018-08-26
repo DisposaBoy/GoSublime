@@ -13,6 +13,7 @@ import (
 	"margo.sh/mg"
 	"margo.sh/mgpf"
 	"margo.sh/sublime"
+	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -65,7 +66,9 @@ type Gocode struct {
 	AllowWordCompletions     bool
 	ShowFuncParams           bool
 	ShowFuncResultNames      bool
-	Debug                    bool
+
+	// Whether or not to log debugging info
+	Debug bool
 
 	reqs chan gocodeReq
 	gsu  *gcSuggest
@@ -98,7 +101,7 @@ func (g *Gocode) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (g *Gocode) ReducerMount(mx *mg.Ctx) {
-	g.gsu = newGcSuggest(gsuOpts{
+	g.gsu = newGcSuggest(mx, gsuOpts{
 		Source:          g.Source,
 		Debug:           g.Debug,
 		ProposeBuiltins: g.ProposeBuiltins,
@@ -118,6 +121,9 @@ func (g *Gocode) ReducerUnmount(mx *mg.Ctx) {
 
 func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	start := time.Now()
+
+	g.gsu.imp.pruneCacheOnReduce(mx)
+
 	st, gx := initGocodeReducer(mx, *g)
 	if gx == nil {
 		return st
@@ -149,7 +155,14 @@ func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	case <-time.After(pTimeout):
 		go func() {
 			<-gr.res
+
 			mx.Log.Println("gocode eventually responded after", mgpf.Since(start))
+
+			if g.Debug {
+				opts := mgpf.DefaultPrintOpts
+				opts.MinDuration = 3 * time.Millisecond
+				mx.Profile.Fprint(os.Stderr, &opts)
+			}
 		}()
 
 		mx.Log.Println("gocode didn't respond after", mgpf.D(pTimeout), "taking", mgpf.Since(start))

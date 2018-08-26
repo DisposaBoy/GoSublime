@@ -27,6 +27,9 @@ type GocodeCalltips struct {
 	// Using source is often slower but offer more up-to-date completions.
 	Source bool
 
+	// Whether or not to log debugging info
+	Debug bool
+
 	q      *mgutil.ChanQ
 	gsu    *gcSuggest
 	status string
@@ -37,8 +40,9 @@ func (gc *GocodeCalltips) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (gc *GocodeCalltips) ReducerMount(mx *mg.Ctx) {
-	gc.gsu = newGcSuggest(gsuOpts{
+	gc.gsu = newGcSuggest(mx, gsuOpts{
 		Source: gc.Source,
+		Debug:  gc.Debug,
 	})
 	gc.q = mgutil.NewChanQ(1)
 	go gc.processer()
@@ -49,6 +53,8 @@ func (gc *GocodeCalltips) ReducerUnmount(mx *mg.Ctx) {
 }
 
 func (gc *GocodeCalltips) Reduce(mx *mg.Ctx) *mg.State {
+	gc.gsu.imp.pruneCacheOnReduce(mx)
+
 	st := mx.State
 	if cfg, ok := st.Config.(sublime.Config); ok {
 		st = st.SetConfig(cfg.DisableCalltips())

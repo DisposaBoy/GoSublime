@@ -42,7 +42,7 @@
     "cpu",
     "unix"
   ]
-  revision = "3b58ed4ad3395d483fc92d5d14123ce2c3581fec"
+  revision = "4910a1d54f876d7b22162a85f4d066d3ee649450"
 
 [[projects]]
   branch = "master"
@@ -68,7 +68,7 @@
     "internal/fastwalk",
     "refactor/importgraph"
   ]
-  revision = "447b503c8ba6e20bc730585499fc01c81a78c621"
+  revision = "f6ba5742950514ddd66494151ed5498ed77969ca"
 
 [solve-meta]
   analyzer-name = "dep"
