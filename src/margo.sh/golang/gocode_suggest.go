@@ -13,15 +13,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"time"
 )
-
-var (
-	gsuSharedCache = &gsuPkgCache{m: map[gsuImpKey]*types.Package{}}
-)
-
-// gsuImpKey is the key used for caching package imports
-// it's the abs path of the package directory
-type gsuImpKey string
 
 type gsuOpts struct {
 	ProposeBuiltins bool
@@ -135,46 +128,10 @@ type gsuPkgInfo struct {
 	Dir string
 
 	// the key used for caching
-	Key gsuImpKey
+	Key mgcCacheKey
 
 	// whether or not this is a stdlib package
 	Std bool
-}
-
-type gsuPkgCache struct {
-	mu sync.RWMutex
-	m  map[gsuImpKey]*types.Package
-}
-
-func (gp *gsuPkgCache) get(dbgf func(f string, a ...interface{}), k gsuImpKey) *types.Package {
-	gp.mu.RLock()
-	defer gp.mu.RUnlock()
-	return gp.m[k]
-}
-
-func (gp *gsuPkgCache) put(dbgf func(f string, a ...interface{}), k gsuImpKey, p *types.Package) {
-	if !p.Complete() {
-		dbgf("gsuCache.put: not storing %s, it's incomplete\n", k)
-		return
-	}
-
-	gp.mu.Lock()
-	defer gp.mu.Unlock()
-
-	gp.m[k] = p
-	dbgf("gsuCache.put: %s\n", k)
-}
-
-func (gp *gsuPkgCache) del(dbgf func(f string, a ...interface{}), k gsuImpKey) {
-	gp.mu.Lock()
-	defer gp.mu.Unlock()
-
-	if _, exists := gp.m[k]; !exists {
-		return
-	}
-
-	delete(gp.m, k)
-	dbgf("gsuCache.del: %s\n", k)
 }
 
 type gsuImporter struct {
@@ -193,7 +150,7 @@ func (gi *gsuImporter) Import(path string) (*types.Package, error) {
 
 func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode) (*types.Package, error) {
 	mx, gsu := gi.mx, gi.gsu
-	pkgs := gsuSharedCache
+	pkgs := mgcSharedCache
 
 	defer mx.Profile.Push("gsuImport: " + impPath).Pop()
 
@@ -219,16 +176,20 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 		return types.Unsafe, nil
 	}
 
-	if p := pkgs.get(gi.dbgf, pkgInf.Key); p != nil {
-		return p, nil
+	if e, ok := pkgs.get(pkgInf.Key); ok {
+		return e.Pkg, nil
 	}
 
+	impStart := time.Now()
 	typPkg, err := underlying.ImportFrom(impPath, srcDir, mode)
+	impDur := time.Since(impStart)
+
 	if err == nil {
-		pkgs.put(gi.dbgf, pkgInf.Key, typPkg)
+		pkgs.put(mgcCacheEnt{Key: pkgInf.Key, Pkg: typPkg, Dur: impDur})
 	} else {
 		gi.dbgf("%T.ImportFrom(%q, %q): %s\n", underlying, impPath, srcDir, err)
 	}
+
 	return typPkg, err
 }
 
@@ -248,7 +209,7 @@ func (gi *gsuImporter) pkgInfo(impPath, srcDir string) (gsuPkgInfo, error) {
 	return gsuPkgInfo{
 		Path: bpkg.ImportPath,
 		Dir:  bpkg.Dir,
-		Key:  gsuImpKey(bpkg.Dir),
+		Key:  mkMgcCacheKey(gi.gsu.Source, bpkg.Dir),
 		Std:  bpkg.Goroot,
 	}, nil
 }
@@ -260,7 +221,7 @@ func (gi *gsuImporter) pruneCacheOnReduce(mx *mg.Ctx) {
 		// which results in an updated package.a file
 
 		if pkgInf, err := gi.pkgInfo(".", mx.View.Dir()); err == nil {
-			gsuSharedCache.del(gi.dbgf, pkgInf.Key)
+			mgcSharedCache.del(pkgInf.Key)
 		}
 	}
 }
