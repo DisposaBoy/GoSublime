@@ -93,7 +93,11 @@ func (gsu *gcSuggest) candidates(mx *mg.Ctx) []suggest.Candidate {
 	}
 	if gsu.Debug {
 		cfg.Logf = func(f string, a ...interface{}) {
-			gsu.dbgf(mx, f, a...)
+			f = "Gocode: " + f
+			if !strings.HasSuffix(f, "\n") {
+				f += "\n"
+			}
+			mx.Log.Dbg.Printf(f, a...)
 		}
 	}
 
@@ -105,19 +109,6 @@ func (gsu *gcSuggest) candidates(mx *mg.Ctx) []suggest.Candidate {
 
 	l, _ := cfg.Suggest(v.Filename(), src, v.Pos)
 	return l
-}
-
-func (gsu *gcSuggest) dbgf(mx *mg.Ctx, f string, a ...interface{}) {
-	if !gsu.Debug {
-		return
-	}
-
-	f = "Gocode: " + f
-	if !strings.HasSuffix(f, "\n") {
-		f += "\n"
-	}
-
-	mx.Log.Dbg.Printf(f, a...)
 }
 
 type gsuPkgInfo struct {
@@ -138,10 +129,6 @@ type gsuImporter struct {
 	mx  *mg.Ctx
 	bld *build.Context
 	gsu *gcSuggest
-}
-
-func (gi *gsuImporter) dbgf(f string, a ...interface{}) {
-	gi.gsu.dbgf(gi.mx, f, a...)
 }
 
 func (gi *gsuImporter) Import(path string) (*types.Package, error) {
@@ -168,7 +155,7 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 
 	pkgInf, err := gi.pkgInfo(impPath, srcDir)
 	if err != nil {
-		gsu.dbgf(mx, "build.Import(%q, %q): %s\n", impPath, srcDir, err)
+		mgcDbgf("pkgInfo(%q, %q): %s\n", impPath, srcDir, err)
 		return nil, err
 	}
 
@@ -187,7 +174,7 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 	if err == nil {
 		pkgs.put(mgcCacheEnt{Key: pkgInf.Key, Pkg: typPkg, Dur: impDur})
 	} else {
-		gi.dbgf("%T.ImportFrom(%q, %q): %s\n", underlying, impPath, srcDir, err)
+		mgcDbgf("%T.ImportFrom(%q, %q): %s\n", underlying, impPath, srcDir, err)
 	}
 
 	return typPkg, err
