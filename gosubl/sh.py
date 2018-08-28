@@ -201,12 +201,13 @@ def gs_init(_={}):
 	bs_fn = gs.file_path('gosubl/sh-bootstrap.go')
 	bs_exe = gs.file_path('bin/gosubl-sh-bootstrap.exe')
 
-	def run(cmd_str):
+	def run(cmd_str, *, env={}):
 		cmd = ShellCommand(cmd_str)
 		cmd.wd = root_dir
+		cmd.env = env
 		return cmd.run()
 
-	cr = run('go build -o %s %s' % (bs_exe, bs_fn))
+	cr = run('go build -o %s %s' % (bs_exe, bs_fn), env={'GO111MODULE': 'off'})
 	if cr.exc or cr.err:
 		_print('error building %s: %s' % (bs_fn, cr.exc or cr.err))
 
