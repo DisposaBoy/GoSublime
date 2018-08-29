@@ -12,6 +12,26 @@ please donate via one of the available methods on https://margo.kuroku.io/donate
 # Changes:
 
 
+## 18.08.29
+
+* implement more aggressive gocode caching.
+  behind the scenes, imported/type-checked packages are cached until the respective package is edited.
+
+  * it should now be ok to use `Source: true` option without slowdowns.
+  * as a bonus, `go modules` should now have completion with `Source: true`
+  * please note that `Source: true` uses a lot more memory (see below for details about cache pruning)
+  * if both &golang.Gocode{Source: true} and &golang.GocodeCalltips{Source: true}
+    use `Source: true`, they will share the cache (less memory use)
+
+* add new reducer &golang.MarGocodeCtl{}
+  this allows manual cache management using the new `margocodectl` command
+
+  * to clear the cache use the command `margocodectl cache-prune`
+    run `margocodectl` for info about how to use the command
+  * automated cache pruning will be implemented in the future
+
+
+
 ## 18.08.22
 
 * merge all shell env vars named ^(MARGO|GO|CGO)\w+ into the GoSublime environment
