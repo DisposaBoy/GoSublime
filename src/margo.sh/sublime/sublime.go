@@ -1,6 +1,7 @@
 package sublime
 
 import (
+	"runtime"
 	"bytes"
 	"fmt"
 	"github.com/urfave/cli"
@@ -61,7 +62,12 @@ func buildAction(c *cli.Context) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	return fmt.Errorf("check console for errors\n%s", strings.Join(errs, "\n"))
+
+	ctrl := "ctrl"
+	if runtime.GOOS == "darwin" {
+		ctrl = "super"
+	}
+	return fmt.Errorf("press ` %s+. `,` %s+x ` to configure margo or check console for errors\n%s", ctrl, ctrl, strings.Join(errs, "\n"))
 }
 
 func runAction(c *cli.Context) error {
