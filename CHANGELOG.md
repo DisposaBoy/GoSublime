@@ -12,6 +12,19 @@ please donate via one of the available methods on https://margo.kuroku.io/donate
 # Changes:
 
 
+## 18.08.31
+
+* Switch the `ctrl+.`,`ctrl+t` / `cmd+.`,`cmd+t` keybinding to the new &golang.TestCmds{} reducer:
+
+  &golang.TestCmds{
+  	// additional args to add to the command when running tests and examples
+  	TestArgs: []string{},
+
+  	// additional args to add to the command when running benchmarks
+  	BenchArgs: []string{"-benchmem"},
+  },
+
+
 ## 18.08.29
 
 * implement more aggressive gocode caching.
