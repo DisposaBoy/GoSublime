@@ -43,8 +43,9 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 	def enabled(self):
 		return mg.enabled(self.view)
 
-	def run(self, edit):
-		mg.send(view=self.view, actions=[actions.QueryUserCmds], cb=self._cb)
+	def run(self, edit, action='QueryUserCmds'):
+		act = getattr(actions, action)
+		mg.send(view=self.view, actions=[act], cb=lambda rs: self._cb(rs=rs, action=action))
 
 	def _on_done(self, *, win, cmd, prompts):
 		if len(prompts) >= len(cmd.prompts):
@@ -72,7 +73,7 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 			'show_view': True,
 		})
 
-	def _cb(self, rs):
+	def _cb(self, *, rs, action):
 		win = self.view.window() or sublime.active_window()
 		selected = 0
 		flags = sublime.MONOSPACE_FONT
@@ -90,7 +91,7 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 		def on_highlight(i):
 			pass
 
-		win.show_quick_panel(items or ['No User Commands'], on_done, flags, selected, on_highlight)
+		win.show_quick_panel(items or ['%s returned no results' % action], on_done, flags, selected, on_highlight)
 
 class MargoIssuesCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **action):

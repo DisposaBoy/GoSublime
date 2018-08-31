@@ -125,8 +125,8 @@
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+t"],
-		"command": "gs_test",
-		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
+		"command": "margo_user_cmds",
+		"args": {"action": "QueryTestCmds"},
 	},
 	{
 		"keys": ["ctrl+.", "ctrl+space"],
