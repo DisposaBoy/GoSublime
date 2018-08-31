@@ -98,6 +98,16 @@ func Margo(m mg.Args) {
 		//     `comp_lint_commands`, `gslint_timeout`, `lint_enabled`, `linters`
 		&golang.SyntaxCheck{},
 
+		// Add user commands for running tests and benchmarks
+		// gs: this adds support for the tests command palette `ctrl+.`,`ctrl+t` or `cmd+.`,`cmd+t`
+		&golang.TestCmds{
+			// additional args to add to the command when running tests and examples
+			TestArgs: []string{},
+
+			// additional args to add to the command when running benchmarks
+			BenchArgs: []string{"-benchmem"},
+		},
+
 		// run `go install -i` on save
 		// golang.GoInstall("-i"),
 		// or

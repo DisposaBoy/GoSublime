@@ -52,6 +52,9 @@ var (
 		"QueryUserCmds": func(h codec.Handle, a agentReqAction) (Action, error) {
 			return QueryUserCmds{}, nil
 		},
+		"QueryTestCmds": func(h codec.Handle, a agentReqAction) (Action, error) {
+			return QueryTestCmds{}, nil
+		},
 	}
 )
 

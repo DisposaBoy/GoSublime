@@ -312,6 +312,9 @@ func (g Gocode) compTitle(fx *ast.FuncType, buf *bytes.Buffer, v suggest.Candida
 }
 
 func (g Gocode) matchTests(c suggest.Candidate) bool {
+	if !strings.HasPrefix(c.Type, "func(") {
+		return false
+	}
 	return strings.HasPrefix(c.Name, "Test") ||
 		strings.HasPrefix(c.Name, "Benchmark") ||
 		strings.HasPrefix(c.Name, "Example")

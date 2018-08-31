@@ -109,7 +109,7 @@ type State struct {
 	BuiltinCmds BuiltinCmdList
 
 	// UserCmds holds the list of user commands.
-	// It's usually populated during the QueryUserCmds action.
+	// It's usually populated during the QueryUserCmds and QueryTestCmds actions.
 	UserCmds UserCmdList
 
 	// clientActions is a list of client actions to dispatch in the editor

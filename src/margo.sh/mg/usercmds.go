@@ -1,9 +1,10 @@
 package mg
 
 // QueryUserCmds is the action dispatched to get a list of UserCmds.
-type QueryUserCmds struct {
-	ActionType
-}
+type QueryUserCmds struct{ ActionType }
+
+// QueryTestCmds is the action dispatched to get a list of UserCmds for testing, benchmarking, etc.
+type QueryTestCmds struct{ ActionType }
 
 // UserCmdList is a list of UserCmd
 type UserCmdList []UserCmd
