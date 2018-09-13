@@ -1,7 +1,8 @@
 %YAML 1.2
 ---
 # http://www.sublimetext.com/docs/3/syntax.html
-name: 'GoSublime: Go (Copy)'
+name: 'GoSublime: Go (Recommended)'
+comment: based on the Go syntax shipped in ST3 with some improvements (ligature, etc.)
 file_extensions:
   - go
 first_line_match: "-[*]-( Mode:)? Go -[*]-"
@@ -313,18 +314,28 @@ contexts:
       scope: storage.modifier.go
 
   operators:
-    - match: '\|\|'
+    - match: '[-]{2}'
+      scope: keyword.operator.decrement.go
+    - match: '[+]{2}'
+      scope: keyword.operator.increment.go
+    - match: '[.]{3}'
       scope: keyword.operator.go
-    - match: '&[&^]'
-      scope: keyword.operator.go
+    - match: <-
+      scope: keyword.operator.channel.go
+    - match: '<<=|>>=|&^=|[-+|^*/%&]='
+      scope: keyword.operator.assignment.go
+    - match: '&^|<<|>>'
+      scope: keyword.operator.arithmetic.go
+    - match: '[=!<>]=|[<>]'
+      scope: keyword.operator.comparison.go
+    - match: "[|&]{2}|!"
+      scope: keyword.operator.logical.go
     - match: ':='
       scope: keyword.operator.initialize.go
     - match: '[=!<>]='
       scope: keyword.operator.go
     - match: <<|>>
       scope: keyword.operator.go
-    - match: <-|->
-      scope: keyword.operator.channel.go
     - match: '='
       scope: keyword.operator.assignment.go
     - match: '[-/*&<>+|^%!]'

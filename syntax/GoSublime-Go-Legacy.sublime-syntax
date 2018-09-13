@@ -1,8 +1,8 @@
 %YAML 1.2
 ---
-name: "GoSublime: Go (Legacy)"
+name: "GoSublime: Go (Deprecated)"
 comment: Based on work from github.com/frou/GoFeather and github.com/DisposaBoy/GoSublime
-hidden: true
+hidden: false
 first_line_match: "-[*]-( Mode:)? Go -[*]-"
 scope: source.go
 contexts:
