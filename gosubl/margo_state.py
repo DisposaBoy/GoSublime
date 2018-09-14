@@ -1,5 +1,5 @@
 from . import _dbg
-from . import gs, sh
+from . import gs, sh, about
 from .margo_common import NS
 from os.path import basename, splitext
 import os
@@ -258,6 +258,10 @@ def _editor_props(view):
 	return {
 		'Name': 'sublime',
 		'Version': sublime.version(),
+		'Client': {
+			'Name': 'gosublime',
+			'Tag': about.TAG,
+		},
 		'Settings': sett,
 	}
 
