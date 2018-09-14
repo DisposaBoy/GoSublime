@@ -15,3 +15,4 @@ See https://margo.kuroku.io/gosublime-future?_r=gs for more details.
 If you find GoSublime useful and would like to support me and future development of GoSublime,
 please donate via one of the available methods on https://margo.kuroku.io/donate?_r=gs
 
+
