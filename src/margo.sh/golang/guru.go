@@ -82,6 +82,7 @@ func (g *Guru) definition(bx *mg.CmdCtx) {
 	cmd := exec.Command(
 		"guru",
 		"-json",
+		"-tags", g.wasmTags(bx.Ctx),
 		"-modified",
 		"definition",
 		fmt.Sprintf("%s:#%d", fn, v.Pos),
@@ -133,4 +134,43 @@ func (g *Guru) definition(bx *mg.CmdCtx) {
 		Row:  n(m[2]),
 		Col:  n(m[3]),
 	})
+}
+
+func (g *Guru) wasmTags(mx *mg.Ctx) string {
+	tags := "js wasm"
+	sysjs := "syscall/js"
+	v := mx.View
+	src, _ := v.ReadAll()
+	if len(src) == 0 {
+		return ""
+	}
+
+	pf := ParseFile(mx.Store, v.Filename(), src)
+	for _, spec := range pf.AstFile.Imports {
+		p := spec.Path
+		if p == nil {
+			continue
+		}
+		if s, _ := strconv.Unquote(p.Value); s == sysjs {
+			return tags
+		}
+	}
+	if v.Path == "" {
+		// file doesn't exist, so there's no package
+		return ""
+	}
+
+	pkg, _ := BuildContext(mx).ImportDir(mx.View.Dir(), 0)
+	if pkg == nil {
+		return ""
+	}
+	for _, l := range [][]string{pkg.Imports, pkg.TestImports} {
+		for _, s := range l {
+			if s == sysjs {
+				return tags
+			}
+		}
+	}
+
+	return ""
 }

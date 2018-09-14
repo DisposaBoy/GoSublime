@@ -15,6 +15,31 @@ func Margo(m mg.Args) {
 	// they are run in the specified order
 	// and should ideally not block for more than a couple milliseconds
 	m.Use(
+		// MOTD keeps you updated about new versions and important announcements
+		//
+		// It adds a new command `motd.sync` available via the UserCmd palette as `Sync MOTD`
+		//
+		// Interval can be set in order to enable automatic update fetching.
+		//
+		// When new updates are found, it displays the message in the status bar
+		// e.g. `★ margo.sh/cl/18.09.14 ★` a url where you see the upcoming changes before updating
+		//
+		// It sends the following data to the url https://api.margo.sh/motd.json:
+		// * current editor plugin name e.g. `?client=gosublime`
+		//   this tells us which editor plugin's changelog to check
+		// * current editor plugin version e.g. `?tag=r18.09.14-1`
+		//   this allows us to determine if there any updates
+		// * whether or not this is the first request of the day e.g. `?firstHit=1`
+		//   this allows us to get an estimated count of active users without storing
+		//   any personally identifiable data
+		//
+		// No other data is sent. For more info contact privacy at kuroku.io
+		//
+		&mg.MOTD{
+			// Interval, if set, specifies how often to automatically fetch messages from Endpoint
+			// Interval: 3600e9, // automatically fetch updates every hour
+		},
+
 		mg.NewReducer(func(mx *mg.Ctx) *mg.State {
 			// By default, events (e.g. ViewSaved) are triggered in all files.
 			// Replace `mg.AllLangs` with `mg.Go` to restrict events to Go(-lang) files.

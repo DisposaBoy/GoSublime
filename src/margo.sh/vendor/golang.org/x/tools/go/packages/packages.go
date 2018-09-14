@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/scanner"
 	"go/token"
 	"go/types"
 	"log"
@@ -86,14 +87,6 @@ type Config struct {
 	// the build system's query tool.
 	BuildFlags []string
 
-	// Error is called for each error encountered during parsing and type-checking.
-	// It must be safe to call Error simultaneously from multiple goroutines.
-	// In addition to calling Error, the loader records each error
-	// in the corresponding Package's Errors list.
-	// If Error is nil, the loader prints errors to os.Stderr.
-	// To disable printing of errors, set opt.Error = func(error) {}.
-	Error func(error)
-
 	// Fset provides source position information for syntax trees and types.
 	// If Fset is nil, the loader will create a new FileSet.
 	Fset *token.FileSet
@@ -154,6 +147,11 @@ type driverResponse struct {
 // as defined by the underlying build system.
 // It may return an empty list of packages without an error,
 // for instance for an empty expansion of a valid wildcard.
+// Errors associated with a particular package are recorded in the
+// corresponding Package's Errors list, and do not cause Load to
+// return an error. Clients may need to handle such errors before
+// proceeding with further analysis. The PrintErrors function is
+// provided for convenient display of all errors.
 func Load(cfg *Config, patterns ...string) ([]*Package, error) {
 	l := newLoader(cfg)
 	response, err := defaultDriver(&l.Config, patterns...)
@@ -189,14 +187,9 @@ type Package struct {
 	// PkgPath is the package path as used by the go/types package.
 	PkgPath string
 
-	// Errors contains any errors encountered while parsing or type-checking the package.
-	// Possible error types include *scanner.ErrorList and types.Error,
-	// whose fields provide structured position information.
-	// Error strings are typically of the form "file:line: message" or
-	// "file:line:col: message".
-	// TODO(adonovan): export packageError as packages.Error
-	// and add that type to the list of structured errors.
-	Errors []error
+	// Errors contains any errors encountered querying the metadata
+	// of the package, or while parsing or type-checking its files.
+	Errors []Error
 
 	// GoFiles lists the absolute file paths of the package's Go source files.
 	GoFiles []string
@@ -221,21 +214,21 @@ type Package struct {
 	// Types provides type information for the package.
 	// Modes LoadTypes and above set this field for packages matching the
 	// patterns; type information for dependencies may be missing or incomplete.
-	// Mode LoadSyntaxAll sets this field for all packages, including dependencies.
+	// Mode LoadAllSyntax sets this field for all packages, including dependencies.
 	Types *types.Package
 
 	// Fset provides position information for Types, TypesInfo, and Syntax.
 	// It is set only when Types is set.
 	Fset *token.FileSet
 
-	// IllTyped indicates whether the package has any type errors.
+	// IllTyped indicates whether the package or any dependency contains errors.
 	// It is set only when Types is set.
 	IllTyped bool
 
 	// Syntax is the package's syntax trees, for the files listed in CompiledGoFiles.
 	//
 	// Mode LoadSyntax sets this field for packages matching the patterns.
-	// Mode LoadSyntaxAll sets this field for all packages, including dependencies.
+	// Mode LoadAllSyntax sets this field for all packages, including dependencies.
 	Syntax []*ast.File
 
 	// TypesInfo provides type information about the package's syntax trees.
@@ -243,25 +236,30 @@ type Package struct {
 	TypesInfo *types.Info
 }
 
-// packageError is used to serialize structured errors as much as possible.
-// This has members compatible with the golist error type, and possibly some
-// more if we need other error information to survive.
-type packageError struct {
-	Pos string // position of error
-	Err string // the error itself
+// An Error describes a problem with a package's metadata, syntax, or types.
+type Error struct {
+	Pos string // "file:line:col" or "file:line" or "" or "-"
+	Msg string
 }
 
-func (e *packageError) Error() string {
-	return e.Pos + ": " + e.Err
+func (err Error) Error() string {
+	pos := err.Pos
+	if pos == "" {
+		pos = "-" // like token.Position{}.String()
+	}
+	return pos + ": " + err.Msg
 }
 
 // flatPackage is the JSON form of Package
-// It drops all the type and syntax fields, and transforms the Imports and Errors
+// It drops all the type and syntax fields, and transforms the Imports
+//
+// TODO(adonovan): identify this struct with Package, effectively
+// publishing the JSON protocol.
 type flatPackage struct {
 	ID              string
 	Name            string            `json:",omitempty"`
 	PkgPath         string            `json:",omitempty"`
-	Errors          []*packageError   `json:",omitempty"`
+	Errors          []Error           `json:",omitempty"`
 	GoFiles         []string          `json:",omitempty"`
 	CompiledGoFiles []string          `json:",omitempty"`
 	OtherFiles      []string          `json:",omitempty"`
@@ -283,22 +281,11 @@ func (p *Package) MarshalJSON() ([]byte, error) {
 		ID:              p.ID,
 		Name:            p.Name,
 		PkgPath:         p.PkgPath,
+		Errors:          p.Errors,
 		GoFiles:         p.GoFiles,
 		CompiledGoFiles: p.CompiledGoFiles,
 		OtherFiles:      p.OtherFiles,
 		ExportFile:      p.ExportFile,
-	}
-	if len(p.Errors) > 0 {
-		flat.Errors = make([]*packageError, len(p.Errors))
-		for i, err := range p.Errors {
-			//TODO: best effort mapping of errors to the serialized form
-			switch err := err.(type) {
-			case *packageError:
-				flat.Errors[i] = err
-			default:
-				flat.Errors[i] = &packageError{Err: err.Error()}
-			}
-		}
 	}
 	if len(p.Imports) > 0 {
 		flat.Imports = make(map[string]string, len(p.Imports))
@@ -320,16 +307,11 @@ func (p *Package) UnmarshalJSON(b []byte) error {
 		ID:              flat.ID,
 		Name:            flat.Name,
 		PkgPath:         flat.PkgPath,
+		Errors:          flat.Errors,
 		GoFiles:         flat.GoFiles,
 		CompiledGoFiles: flat.CompiledGoFiles,
 		OtherFiles:      flat.OtherFiles,
 		ExportFile:      flat.ExportFile,
-	}
-	if len(flat.Errors) > 0 {
-		p.Errors = make([]error, len(flat.Errors))
-		for i, err := range flat.Errors {
-			p.Errors[i] = err
-		}
 	}
 	if len(flat.Imports) > 0 {
 		p.Imports = make(map[string]*Package, len(flat.Imports))
@@ -382,15 +364,8 @@ func newLoader(cfg *Config) *loader {
 			ld.Fset = token.NewFileSet()
 		}
 
-		// Error and ParseFile are required even in LoadTypes mode
+		// ParseFile is required even in LoadTypes mode
 		// because we load source if export data is missing.
-
-		if ld.Error == nil {
-			ld.Error = func(e error) {
-				fmt.Fprintln(os.Stderr, e)
-			}
-		}
-
 		if ld.ParseFile == nil {
 			ld.ParseFile = func(fset *token.FileSet, filename string) (*ast.File, error) {
 				const mode = parser.AllErrors | parser.ParseComments
@@ -573,6 +548,7 @@ func (ld *loader) loadPackage(lpkg *loaderPackage) {
 	// This avoids skew between golist and go/types when the files'
 	// package declarations are inconsistent.
 	lpkg.Types = types.NewPackage(lpkg.PkgPath, lpkg.Name)
+	lpkg.Fset = ld.Fset
 
 	// Subtle: we populate all Types fields with an empty Package
 	// before loading export data so that export data processing
@@ -588,15 +564,49 @@ func (ld *loader) loadPackage(lpkg *loaderPackage) {
 		return // not a source package, don't get syntax trees
 	}
 
-	hardErrors := false
 	appendError := func(err error) {
-		if terr, ok := err.(types.Error); ok && terr.Soft {
-			// Don't mark the package as bad.
-		} else {
-			hardErrors = true
+		// Convert various error types into the one true Error.
+		var errs []Error
+		switch err := err.(type) {
+		case Error:
+			// from driver
+			errs = append(errs, err)
+
+		case *os.PathError:
+			// from parser
+			errs = append(errs, Error{
+				Pos: err.Path + ":1",
+				Msg: err.Err.Error(),
+			})
+
+		case scanner.ErrorList:
+			// from parser
+			for _, err := range err {
+				errs = append(errs, Error{
+					Pos: err.Pos.String(),
+					Msg: err.Msg,
+				})
+			}
+
+		case types.Error:
+			// from type checker
+			errs = append(errs, Error{
+				Pos: err.Fset.Position(err.Pos).String(),
+				Msg: err.Msg,
+			})
+
+		default:
+			// unexpected impoverished error from parser?
+			errs = append(errs, Error{
+				Pos: "-",
+				Msg: err.Error(),
+			})
+
+			// If you see this error message, please file a bug.
+			log.Printf("internal error: error %q (%T) without position", err, err)
 		}
-		ld.Error(err)
-		lpkg.Errors = append(lpkg.Errors, err)
+
+		lpkg.Errors = append(lpkg.Errors, errs...)
 	}
 
 	files, errs := ld.parseFiles(lpkg.CompiledGoFiles)
@@ -604,7 +614,6 @@ func (ld *loader) loadPackage(lpkg *loaderPackage) {
 		appendError(err)
 	}
 
-	lpkg.Fset = ld.Fset
 	lpkg.Syntax = files
 
 	lpkg.TypesInfo = &types.Info{
@@ -681,14 +690,16 @@ func (ld *loader) loadPackage(lpkg *loaderPackage) {
 	}
 
 	// Record accumulated errors.
-	for _, imp := range lpkg.Imports {
-		if imp.IllTyped {
-			hardErrors = true
-			break
+	illTyped := len(lpkg.Errors) > 0
+	if !illTyped {
+		for _, imp := range lpkg.Imports {
+			if imp.IllTyped {
+				illTyped = true
+				break
+			}
 		}
 	}
-
-	lpkg.IllTyped = hardErrors
+	lpkg.IllTyped = illTyped
 }
 
 // An importFunc is an implementation of the single-method

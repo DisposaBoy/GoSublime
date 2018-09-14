@@ -69,7 +69,15 @@ func (p *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*type
 	if abs, err := p.absPath(srcDir); err == nil { // see issue #14282
 		srcDir = abs
 	}
-	bp, err := p.ctxt.Import(path, srcDir, 0)
+
+	ctxt := p.ctxt
+	if path == "syscall/js" {
+		c := *p.ctxt
+		c.BuildTags = append(c.BuildTags, "js", "wasm")
+		ctxt = &c
+	}
+
+	bp, err := ctxt.Import(path, srcDir, 0)
 	if err != nil {
 		return nil, err // err may be *build.NoGoError - return as is
 	}
@@ -169,7 +177,7 @@ func (p *Importer) parseFiles(dir string, filenames []string) ([]*ast.File, erro
 				errors[i] = err // open provides operation and filename in error
 				return
 			}
-			files[i], errors[i] = parser.ParseFile(p.fset, filepath, src, 0)
+			files[i], errors[i] = p.parseFile(p.fset, filepath, src)
 			src.Close() // ignore Close error - parsing may have succeeded which is all we need
 		}(i, p.joinPath(dir, filename))
 	}
@@ -183,6 +191,23 @@ func (p *Importer) parseFiles(dir string, filenames []string) ([]*ast.File, erro
 	}
 
 	return files, nil
+}
+
+func (p *Importer) parseFile(fset *token.FileSet, fn string, src interface{}) (*ast.File, error) {
+	f, err := parser.ParseFile(fset, fn, src, 0)
+	if f == nil {
+		return nil, err
+	}
+
+	// trim func bodies to reduce memory
+	for _, d := range f.Decls {
+		switch d := d.(type) {
+		case *ast.FuncDecl:
+			d.Body = &ast.BlockStmt{}
+		}
+	}
+
+	return f, err
 }
 
 // context-controlled file system operations

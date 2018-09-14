@@ -1,17 +1,20 @@
 package bolt
 
 import (
+	"bytes"
+	"fmt"
 	bolt "github.com/coreos/bbolt"
 	"github.com/ugorji/go/codec"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 )
 
 var (
-	DefaultKV = func() *BoltKV {
+	DS = func() *DataStore {
 		dir := os.Getenv("MARGO_DATA_DIR")
 		if dir == "" {
 			d, err := ioutil.TempDir("", "margo.data~fallback~")
@@ -21,15 +24,15 @@ var (
 			dir = d
 		}
 
-		return &BoltKV{
-			Path:   filepath.Join(dir, "bolt.kv"),
+		return &DataStore{
+			Path:   filepath.Join(dir, "bolt.ds"),
 			Handle: &codec.MsgpackHandle{},
-			Bucket: []byte("kv"),
+			Bucket: []byte("ds"),
 		}
 	}()
 )
 
-type BoltKV struct {
+type DataStore struct {
 	Bucket []byte
 	Handle codec.Handle
 	Path   string
@@ -37,34 +40,43 @@ type BoltKV struct {
 	mu sync.RWMutex
 }
 
-func (bs *BoltKV) encode(v interface{}) ([]byte, error) {
+func (ds *DataStore) encodeKey(v interface{}) []byte {
+	pkg := ""
+	if t := reflect.TypeOf(v); t != nil {
+		pkg = t.PkgPath()
+	}
+	buf := &bytes.Buffer{}
+	fmt.Fprintf(buf, "pkg=%s typ=%T str=%#v", pkg, v, v)
+	return buf.Bytes()
+}
+
+func (ds *DataStore) encodeVal(v interface{}) ([]byte, error) {
 	s := []byte{}
-	err := codec.NewEncoderBytes(&s, bs.Handle).Encode(v)
+	err := codec.NewEncoderBytes(&s, ds.Handle).Encode(v)
 	return s, err
 }
 
-func (bs *BoltKV) decode(s []byte, p interface{}) error {
-	return codec.NewDecoderBytes(s, bs.Handle).Decode(p)
+func (ds *DataStore) decodeVal(s []byte, p interface{}) error {
+	return codec.NewDecoderBytes(s, ds.Handle).Decode(p)
 }
 
-func (bs *BoltKV) view(f func(*bolt.Tx) error) error {
-	bs.mu.RLock()
-	defer bs.mu.RUnlock()
+func (ds *DataStore) view(f func(*bolt.Tx) error) error {
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
 
-	return bs.tx(true, f)
+	return ds.tx(true, f)
 }
 
-func (bs *BoltKV) update(f func(*bolt.Tx) error) error {
-	bs.mu.Lock()
-	defer bs.mu.Unlock()
+func (ds *DataStore) update(f func(*bolt.Tx) error) error {
+	ds.mu.Lock()
+	defer ds.mu.Unlock()
 
-	return bs.tx(false, f)
+	return ds.tx(false, f)
 }
 
-func (bs *BoltKV) tx(view bool, f func(*bolt.Tx) error) error {
-	db, err := bolt.Open(bs.Path, 0600, &bolt.Options{
-		Timeout:  5 * time.Second,
-		ReadOnly: view,
+func (ds *DataStore) tx(view bool, f func(*bolt.Tx) error) error {
+	db, err := bolt.Open(ds.Path, 0600, &bolt.Options{
+		Timeout: 5 * time.Second,
 	})
 	if err != nil {
 		return err
@@ -77,36 +89,27 @@ func (bs *BoltKV) tx(view bool, f func(*bolt.Tx) error) error {
 	return db.Update(f)
 }
 
-func (bs *BoltKV) Load(key, ptr interface{}) error {
-	k, err := bs.encode(key)
-	if err != nil {
-		return err
-	}
-
-	return bs.view(func(tx *bolt.Tx) error {
-		bck := tx.Bucket(bs.Bucket)
+func (ds *DataStore) Load(key, ptr interface{}) error {
+	k := ds.encodeKey(key)
+	return ds.view(func(tx *bolt.Tx) error {
+		bck := tx.Bucket(ds.Bucket)
 		if bck == nil {
 			return bolt.ErrBucketNotFound
 		}
-
 		s := bck.Get(k)
-		return bs.decode(s, ptr)
+		return ds.decodeVal(s, ptr)
 	})
 }
 
-func (bs *BoltKV) Store(key, val interface{}) error {
-	k, err := bs.encode(key)
+func (ds *DataStore) Store(key, val interface{}) error {
+	k := ds.encodeKey(key)
+	v, err := ds.encodeVal(val)
 	if err != nil {
 		return err
 	}
 
-	v, err := bs.encode(val)
-	if err != nil {
-		return err
-	}
-
-	return bs.update(func(tx *bolt.Tx) error {
-		bck, err := tx.CreateBucketIfNotExists(bs.Bucket)
+	return ds.update(func(tx *bolt.Tx) error {
+		bck, err := tx.CreateBucketIfNotExists(ds.Bucket)
 		if err != nil {
 			return err
 		}
@@ -114,14 +117,10 @@ func (bs *BoltKV) Store(key, val interface{}) error {
 	})
 }
 
-func (bs *BoltKV) Delete(key interface{}) error {
-	k, err := bs.encode(key)
-	if err != nil {
-		return err
-	}
-
-	return bs.update(func(tx *bolt.Tx) error {
-		bck := tx.Bucket(bs.Bucket)
+func (ds *DataStore) Delete(key interface{}) error {
+	k := ds.encodeKey(key)
+	return ds.update(func(tx *bolt.Tx) error {
+		bck := tx.Bucket(ds.Bucket)
 		if bck == nil {
 			return nil
 		}

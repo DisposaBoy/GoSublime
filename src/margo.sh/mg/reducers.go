@@ -3,19 +3,25 @@ package mg
 import (
 	"reflect"
 	"runtime"
+	"sync"
 )
 
 var (
 	_ Reducer = &reducerType{}
 
-	defaultReducers = struct {
-		before, use, after []Reducer
-	}{
-		before: []Reducer{
+	// DefaultReducers enables the automatic registration of reducers to the Agent's store
+	//
+	// This can be used to register reducers without user-interaction
+	// but where possible, it should not be used.
+	//
+	// its methods should only be callsed during init()
+	// any calls after this may ignored
+	DefaultReducers = &defaultReducers{
+		before: reducerList{
 			&issueKeySupport{},
 			Builtins,
 		},
-		after: []Reducer{
+		after: reducerList{
 			&issueStatusSupport{},
 			&cmdSupport{},
 			&restartSupport{},
@@ -23,6 +29,38 @@ var (
 		},
 	}
 )
+
+type defaultReducers struct {
+	mu                 sync.Mutex
+	before, use, after reducerList
+}
+
+// Before arranges for the reducers in l to be registered when the agent starts
+// it's the equivalent of the user manually calling Store.Before(l...)
+func (dr *defaultReducers) Before(l ...Reducer) {
+	dr.mu.Lock()
+	defer dr.mu.Unlock()
+
+	dr.before = dr.before.Add(l...)
+}
+
+// Use arranges for the reducers in l to be registered when the agent starts
+// it's the equivalent of the user manually calling Store.Use(l...)
+func (dr *defaultReducers) Use(l ...Reducer) {
+	dr.mu.Lock()
+	defer dr.mu.Unlock()
+
+	dr.use = dr.use.Add(l...)
+}
+
+// After arranges for the reducers in l to be registered when the agent starts
+// it's the equivalent of the user manually calling Store.After(l...)
+func (dr *defaultReducers) After(l ...Reducer) {
+	dr.mu.Lock()
+	defer dr.mu.Unlock()
+
+	dr.after = dr.after.Add(l...)
+}
 
 // A Reducer is the main method of state transitions in margo.
 //

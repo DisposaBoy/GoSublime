@@ -310,10 +310,14 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 		Writer: ag.stderr,
 	}
 	ag.Log = NewLogger(ag.stderr)
-	ag.Store = newStore(ag, ag.sub).
-		Before(defaultReducers.before...).
-		Use(defaultReducers.use...).
-		After(defaultReducers.after...)
+
+	ag.Store = newStore(ag, ag.sub)
+	dr := DefaultReducers
+	dr.mu.Lock()
+	ag.Store.Before(dr.before...)
+	ag.Store.Use(dr.use...)
+	ag.Store.After(dr.after...)
+	dr.mu.Unlock()
 
 	if e := os.Getenv("MARGO_BUILD_ERROR"); e != "" {
 		ag.Store.Use(NewReducer(func(mx *Ctx) *State {

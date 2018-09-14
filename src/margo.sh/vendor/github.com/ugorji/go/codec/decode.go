@@ -126,6 +126,15 @@ type decDriver interface {
 	uncacheRead()
 }
 
+type decodeError struct {
+	codecError
+	pos int
+}
+
+func (d decodeError) Error() string {
+	return fmt.Sprintf("%s decode error [pos %d]: %v", d.name, d.pos, d.err)
+}
+
 type decDriverNoopContainerReader struct{}
 
 func (x decDriverNoopContainerReader) ReadArrayStart() (v int) { return }
@@ -1167,6 +1176,12 @@ func (d *Decoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 	elemsep := d.esep
 	sfn := structFieldNode{v: rv, update: true}
 	ctyp := dd.ContainerType()
+	var mf MissingFielder
+	if fti.mf {
+		mf = rv2i(rv).(MissingFielder)
+	} else if fti.mfp {
+		mf = rv2i(rv.Addr()).(MissingFielder)
+	}
 	if ctyp == valueTypeMap {
 		containerLen := dd.ReadMapStart()
 		if containerLen == 0 {
@@ -1192,6 +1207,12 @@ func (d *Decoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 				} else {
 					d.decodeValue(sfn.field(si), nil, true)
 				}
+			} else if mf != nil {
+				var f interface{}
+				d.decode(&f)
+				if !mf.CodecMissingField(rvkencname, f) && d.h.ErrorIfNoField {
+					d.errorf("no matching struct field found when decoding stream map with key " + stringView(rvkencname))
+				}
 			} else {
 				d.structFieldNotFound(-1, stringView(rvkencname))
 			}
@@ -1207,8 +1228,13 @@ func (d *Decoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 		// Not much gain from doing it two ways for array.
 		// Arrays are not used as much for structs.
 		hasLen := containerLen >= 0
+		var checkbreak bool
 		for j, si := range fti.sfiSrc {
-			if (hasLen && j == containerLen) || (!hasLen && dd.CheckBreak()) {
+			if hasLen && j == containerLen {
+				break
+			}
+			if !hasLen && dd.CheckBreak() {
+				checkbreak = true
 				break
 			}
 			if elemsep {
@@ -1220,9 +1246,12 @@ func (d *Decoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 				d.decodeValue(sfn.field(si), nil, true)
 			}
 		}
-		if containerLen > len(fti.sfiSrc) {
+		if (hasLen && containerLen > len(fti.sfiSrc)) || (!hasLen && !checkbreak) {
 			// read remaining values and throw away
-			for j := len(fti.sfiSrc); j < containerLen; j++ {
+			for j := len(fti.sfiSrc); ; j++ {
+				if (hasLen && j == containerLen) || (!hasLen && dd.CheckBreak()) {
+					break
+				}
 				if elemsep {
 					dd.ReadArrayElem()
 				}
@@ -2413,8 +2442,8 @@ func (d *Decoder) rawBytes() []byte {
 	return bs2
 }
 
-func (d *Decoder) wrapErrstr(v interface{}, err *error) {
-	*err = fmt.Errorf("%s decode error [pos %d]: %v", d.hh.Name(), d.r.numread(), v)
+func (d *Decoder) wrapErr(v interface{}, err *error) {
+	*err = decodeError{codecError: codecError{name: d.hh.Name(), err: v}, pos: d.r.numread()}
 }
 
 // NumBytesRead returns the number of bytes read

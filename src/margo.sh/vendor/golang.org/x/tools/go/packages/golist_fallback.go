@@ -7,7 +7,6 @@ package packages
 import (
 	"encoding/json"
 	"fmt"
-
 	"go/build"
 	"io/ioutil"
 	"os"
@@ -127,9 +126,11 @@ func golistDriverFallback(cfg *Config, words ...string) (*driverResponse, error)
 					if isRoot {
 						response.Roots = append(response.Roots, xtestID)
 					}
-					for i, imp := range p.XTestImports {
+					// Rewrite import to package under test to refer to test variant.
+					imports := importMap(p.XTestImports)
+					for imp := range imports {
 						if imp == p.ImportPath {
-							p.XTestImports[i] = testID
+							imports[imp] = &Package{ID: testID}
 							break
 						}
 					}
@@ -139,7 +140,7 @@ func golistDriverFallback(cfg *Config, words ...string) (*driverResponse, error)
 						GoFiles:         absJoin(p.Dir, p.XTestGoFiles),
 						CompiledGoFiles: absJoin(p.Dir, p.XTestGoFiles),
 						PkgPath:         pkgpath,
-						Imports:         importMap(p.XTestImports),
+						Imports:         imports,
 					})
 				}
 			}

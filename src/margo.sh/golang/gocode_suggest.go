@@ -22,6 +22,11 @@ type gsuOpts struct {
 	Source          bool
 }
 
+type gsuImpRes struct {
+	pkg *types.Package
+	err error
+}
+
 type gcSuggest struct {
 	gsuOpts
 	sync.Mutex
@@ -30,12 +35,8 @@ type gcSuggest struct {
 
 func newGcSuggest(mx *mg.Ctx, o gsuOpts) *gcSuggest {
 	gsu := &gcSuggest{gsuOpts: o}
-	gsu.init(mx)
-	return gsu
-}
-
-func (gsu *gcSuggest) init(mx *mg.Ctx) {
 	gsu.imp = gsu.newGsuImporter(mx)
+	return gsu
 }
 
 func (gsu *gcSuggest) newUnderlyingSrcImporter(mx *mg.Ctx, overlay types.ImporterFrom) types.ImporterFrom {
@@ -68,6 +69,7 @@ func (gsu *gcSuggest) newGsuImporter(mx *mg.Ctx) *gsuImporter {
 		mx:  mx,
 		bld: BuildContext(mx),
 		gsu: gsu,
+		res: map[mgcCacheKey]gsuImpRes{},
 	}
 	return gi
 }
@@ -129,17 +131,44 @@ type gsuImporter struct {
 	mx  *mg.Ctx
 	bld *build.Context
 	gsu *gcSuggest
+	res map[mgcCacheKey]gsuImpRes
 }
 
 func (gi *gsuImporter) Import(path string) (*types.Package, error) {
 	return gi.ImportFrom(path, ".", 0)
 }
 
-func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode) (*types.Package, error) {
-	mx, gsu := gi.mx, gi.gsu
-	pkgs := mgcSharedCache
+func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode) (impPkg *types.Package, err error) {
+	// TODO: add mode to the key somehow?
+	// mode is reserved, but currently not used so it's not a problem
+	// but if it's used in the future, the importer result could depend on it
+	//
+	// adding it to the key might complicate the pkginfo api because it's called
+	// by code that doesn't know anything about mode
+	pkgInf, err := gi.pkgInfo(impPath, srcDir)
+	if err != nil {
+		mctl.dbgf("pkgInfo(%q, %q): %s\n", impPath, srcDir, err)
+		return nil, err
+	}
 
-	defer mx.Profile.Push("gsuImport: " + impPath).Pop()
+	// we cache the results of the underlying importer for this *session*
+	// because if it fails, we could potentialy end up in a loop
+	// trying to import the package again.
+	if res, ok := gi.res[pkgInf.Key]; ok {
+		return res.pkg, res.err
+	}
+
+	pkg, err := gi.importFrom(pkgInf, mode)
+	res := gsuImpRes{pkg: pkg, err: err}
+	gi.res[pkgInf.Key] = res
+
+	return pkg, err
+}
+
+func (gi *gsuImporter) importFrom(pkgInf gsuPkgInfo, mode types.ImportMode) (impPkg *types.Package, err error) {
+	mx, gsu := gi.mx, gi.gsu
+
+	defer mx.Profile.Push("gsuImport: " + pkgInf.Path).Pop()
 
 	// I think we need to use a new underlying importer every time
 	// because they cache imports which might depend on srcDir
@@ -152,29 +181,26 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 	//
 	// binary imports should hopefully still be fast enough
 	underlying := gsu.newUnderlyingImporter(mx, gi)
-
-	pkgInf, err := gi.pkgInfo(impPath, srcDir)
-	if err != nil {
-		mgcDbgf("pkgInfo(%q, %q): %s\n", impPath, srcDir, err)
-		return nil, err
-	}
-
 	if pkgInf.Std && pkgInf.Path == "unsafe" {
 		return types.Unsafe, nil
 	}
 
-	if e, ok := pkgs.get(pkgInf.Key); ok {
+	if res, ok := gi.res[pkgInf.Key]; ok {
+		return res.pkg, res.err
+	}
+
+	if e, ok := mctl.pkgs.get(pkgInf.Key); ok {
 		return e.Pkg, nil
 	}
 
 	impStart := time.Now()
-	typPkg, err := underlying.ImportFrom(impPath, srcDir, mode)
+	typPkg, err := underlying.ImportFrom(pkgInf.Path, pkgInf.Dir, mode)
 	impDur := time.Since(impStart)
 
 	if err == nil {
-		pkgs.put(mgcCacheEnt{Key: pkgInf.Key, Pkg: typPkg, Dur: impDur})
+		mctl.pkgs.put(mgcCacheEnt{Key: pkgInf.Key, Pkg: typPkg, Dur: impDur})
 	} else {
-		mgcDbgf("%T.ImportFrom(%q, %q): %s\n", underlying, impPath, srcDir, err)
+		mctl.dbgf("%T.ImportFrom(%q, %q): %s\n", underlying, pkgInf.Path, pkgInf.Dir, err)
 	}
 
 	return typPkg, err
@@ -182,8 +208,7 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 
 func (gi *gsuImporter) pkgInfo(impPath, srcDir string) (gsuPkgInfo, error) {
 	// TODO: support cache these ops?
-	// it might not be worth the added complexity since we will get a lot of impPath=io
-	// with a different srcPath which means we have to look it up anyway.
+	// at least on the session level, the importFrom cache should cover this
 	//
 	// TODO: support go modules
 	// at this time, go/packages appears to be extremely slow
@@ -208,7 +233,7 @@ func (gi *gsuImporter) pruneCacheOnReduce(mx *mg.Ctx) {
 		// which results in an updated package.a file
 
 		if pkgInf, err := gi.pkgInfo(".", mx.View.Dir()); err == nil {
-			mgcSharedCache.del(pkgInf.Key)
+			mctl.pkgs.del(pkgInf.Key)
 		}
 	}
 }

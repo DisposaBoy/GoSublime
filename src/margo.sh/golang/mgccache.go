@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-var (
-	mgcSharedCache = &mgcCache{m: map[mgcCacheKey]mgcCacheEnt{}}
-)
-
 // mgcCacheKey is the key used for caching package imports
 // it's the abs path of the package directory
 type mgcCacheKey string
@@ -45,14 +41,14 @@ func (mc *mgcCache) get(k mgcCacheKey) (mgcCacheEnt, bool) {
 
 	e, ok := mc.m[k]
 	if !ok {
-		mgcDbgf("cache.miss: %s\n", k)
+		mctl.dbgf("cache.miss: %s\n", k)
 	}
 	return e, ok
 }
 
 func (mc *mgcCache) put(e mgcCacheEnt) {
 	if !e.Pkg.Complete() {
-		mgcDbgf("cache.put: not storing %s, it's incomplete\n", e.Key)
+		mctl.dbgf("cache.put: not storing %s, it's incomplete\n", e.Key)
 		return
 	}
 
@@ -60,7 +56,7 @@ func (mc *mgcCache) put(e mgcCacheEnt) {
 	defer mc.Unlock()
 
 	mc.m[e.Key] = e
-	mgcDbgf("cache.put: %s %s\n", e.Key, mgpf.D(e.Dur))
+	mctl.dbgf("cache.put: %s %s\n", e.Key, mgpf.D(e.Dur))
 }
 
 func (mc *mgcCache) del(k mgcCacheKey) {
@@ -72,14 +68,14 @@ func (mc *mgcCache) del(k mgcCacheKey) {
 	}
 
 	delete(mc.m, k)
-	mgcDbgf("cache.del: %s\n", k)
+	mctl.dbgf("cache.del: %s\n", k)
 }
 
 func (mc *mgcCache) prune(pats ...*regexp.Regexp) []mgcCacheEnt {
 	ents := []mgcCacheEnt{}
 	defer func() {
 		for _, e := range ents {
-			mgcDbgf("cache.prune: %s\n", e.Key)
+			mctl.dbgf("cache.prune: %s\n", e.Key)
 		}
 	}()
 

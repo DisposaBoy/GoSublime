@@ -31,7 +31,6 @@ type GocodeCalltips struct {
 	Debug bool
 
 	q      *mgutil.ChanQ
-	gsu    *gcSuggest
 	status string
 }
 
@@ -40,10 +39,6 @@ func (gc *GocodeCalltips) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (gc *GocodeCalltips) ReducerMount(mx *mg.Ctx) {
-	gc.gsu = newGcSuggest(mx, gsuOpts{
-		Source: gc.Source,
-		Debug:  gc.Debug,
-	})
 	gc.q = mgutil.NewChanQ(1)
 	go gc.processer()
 }
@@ -53,8 +48,6 @@ func (gc *GocodeCalltips) ReducerUnmount(mx *mg.Ctx) {
 }
 
 func (gc *GocodeCalltips) Reduce(mx *mg.Ctx) *mg.State {
-	gc.gsu.imp.pruneCacheOnReduce(mx)
-
 	st := mx.State
 	if cfg, ok := st.Config.(sublime.Config); ok {
 		st = st.SetConfig(cfg.DisableCalltips())
@@ -212,7 +205,11 @@ func (gc *GocodeCalltips) candidate(mx *mg.Ctx, src []byte, pos int, funcName st
 	mx = mx.SetView(mx.View.Copy(func(v *mg.View) {
 		v.Pos = pos
 	}))
-	candidates := gc.gsu.candidates(mx)
+	gsu := newGcSuggest(mx, gsuOpts{
+		Source: gc.Source,
+		Debug:  gc.Debug,
+	})
+	candidates := gsu.candidates(mx)
 	for _, c := range candidates {
 		if strings.HasPrefix(c.Type, "func(") && strings.EqualFold(funcName, c.Name) {
 			return c, true

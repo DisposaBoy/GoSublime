@@ -41,6 +41,8 @@ import (
 // However, codecgen doesn't support the following:
 //   - Canonical option. (codecgen IGNORES it currently)
 //     This is just because it has not been implemented.
+//   - MissingFielder implementation.
+//     If a type implements MissingFielder, it is completely ignored by codecgen.
 //
 // During encode/decode, Selfer takes precedence.
 // A type implementing Selfer will know how to encode/decode itself statically.

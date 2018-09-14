@@ -12,6 +12,14 @@ var (
 	ErrNoSettings = fmt.Errorf("no editor settings")
 )
 
+type EditorClientProps struct {
+	// Name is the name of the client
+	Name string
+
+	// Tag is the client's version
+	Tag string
+}
+
 // EditorProps holds data about the text editor
 type EditorProps struct {
 	// Name is the name of the editor
@@ -20,8 +28,20 @@ type EditorProps struct {
 	// Version is the editor's version
 	Version string
 
+	// Client hold details about client (the editor plugin)
+	Client EditorClientProps
+
 	handle   codec.Handle `mg.Nillable:"true"`
 	settings codec.Raw
+}
+
+// Ready returns true if the editor state has synced
+//
+// Reducers use this method in their ReducerCond to avoid mounting until
+// the editor has communicated its state.
+// Before the editor is ready, State.View, State.Editor, etc. might not contain usable data.
+func (ep *EditorProps) Ready() bool {
+	return ep.Name != ""
 }
 
 // Settings unmarshals the internal settings sent from the editor into v.

@@ -21,7 +21,7 @@
   branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "00b869d2f4a5e27445c2d916fa106fc72c106d4c"
+  revision = "e253f1f20942cb6dc505e504e8bbba4b7f434cb2"
 
 [[projects]]
   branch = "master"
@@ -33,7 +33,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
-  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
+  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
 
 [[projects]]
   branch = "master"
@@ -42,7 +42,7 @@
     "cpu",
     "unix"
   ]
-  revision = "4910a1d54f876d7b22162a85f4d066d3ee649450"
+  revision = "d0be0721c37eeb5299f245a996a483160fc36940"
 
 [[projects]]
   branch = "master"
@@ -68,7 +68,7 @@
     "internal/fastwalk",
     "refactor/importgraph"
   ]
-  revision = "f6ba5742950514ddd66494151ed5498ed77969ca"
+  revision = "677d2ff680c188ddb7dcd2bfa6bc7d3f2f2f75b2"
 
 [solve-meta]
   analyzer-name = "dep"
