@@ -11,6 +11,12 @@ please donate via one of the available methods on https://margo.kuroku.io/donate
 
 # Changes:
 
+## 18.09.18
+
+* fix a case where margo exits due to IPC shutdown
+* return all possible completions in gocode to allow the editor to do filtering.
+  this restores the old behaviour where typing `abc.X` proposes `abc.XYX123`
+
 
 ## 18.09.14
 
