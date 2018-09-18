@@ -613,10 +613,26 @@ def _packb3(obj, **options):
 
 
 def _read_except(fp, n):
-    data = fp.read(n)
-    if len(data) < n:
-        raise InsufficientDataException()
-    return data
+    # when reading from files, networks, etc. there's no guarantee that a read(n)
+    # will return n bytes, so we must keep reading until we get n bytes
+    data = None
+    for _ in range(1000):
+        s = fp.read(n)
+        n -= len(s)
+
+        if data is None:
+            data = s
+        else:
+            data += s
+
+        if n <= 0:
+            return data
+
+        if len(s) == 0:
+            # AFAIK, Python won't return 0 bytes unless we reached EOF
+            raise InsufficientDataException()
+
+    raise InsufficientDataException()
 
 
 def _unpack_integer(code, fp, options):
