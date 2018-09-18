@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -41,6 +42,8 @@ type gocodeReq struct {
 func (gr *gocodeReq) reduce() *mg.State {
 	candidates := gr.gx.candidates()
 	completions := make([]mg.Completion, 0, len(candidates))
+
+	gr.mx.Profile.Push("gocodeReq.finalize").Pop()
 	for _, v := range candidates {
 		if c, ok := gr.g.completion(gr.mx, gr.gx, v); ok {
 			completions = append(completions, c)
@@ -115,7 +118,8 @@ func (g *Gocode) ReducerUnmount(mx *mg.Ctx) {
 func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	start := time.Now()
 
-	st, gx := initGocodeReducer(mx, *g)
+	mx, gx := initGocodeReducer(mx, *g)
+	st := mx.State
 	if gx == nil {
 		return st
 	}
@@ -322,27 +326,45 @@ type gocodeCtx struct {
 	bctx *build.Context
 }
 
-func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.State, *gocodeCtx) {
+func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
+	// TODO: simplify and get rid of this func, it's only used once
+
 	st := mx.State
 	bctx := BuildContext(mx)
 	src, _ := st.View.ReadAll()
 	if len(src) == 0 {
-		return st, nil
+		return mx, nil
 	}
 	pos := clampSrcPos(src, st.View.Pos)
 
+	// move the cursor off the word.
+	// xxx.yyy| ~> xxx.|
+	// xxx| ~> |xxx
+	// this results in fetching all possible results
+	// which is desirable because the editor is usually better at filtering the list
+	for {
+		r, n := utf8.DecodeLastRune(src[:pos])
+		if !IsLetter(r) {
+			break
+		}
+		pos -= n
+	}
+	// seems legit...
+	st = st.SetView(st.View.Copy(func(v *mg.View) { v.Pos = pos }))
+	mx = mx.SetState(st)
+
 	cx := NewCompletionCtx(mx, src, pos)
 	if cx.Scope.Any(PackageScope, FileScope) {
-		return st, nil
+		return mx, nil
 	}
 	cn := cx.CursorNode
 	// don't do completion inside comments
 	if cn.Comment != nil {
-		return st, nil
+		return mx, nil
 	}
 	// don't do completion inside strings unless it's an import
 	if cn.ImportSpec == nil && cn.BasicLit != nil && cn.BasicLit.Kind == token.STRING {
-		return st, nil
+		return mx, nil
 	}
 
 	gx := &gocodeCtx{
@@ -358,7 +380,7 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.State, *gocodeCtx) {
 		src:  src,
 		bctx: bctx,
 	}
-	return st, gx
+	return mx, gx
 }
 
 func (gx *gocodeCtx) candidates() []suggest.Candidate {
