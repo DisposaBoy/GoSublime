@@ -11,6 +11,35 @@ please donate via one of the available methods on https://margo.kuroku.io/donate
 
 # Changes:
 
+## 18.09.25
+
+* Switch golang.Gocode and golang.GocodeCalltips to new mode SrcImporterWithFallback by default
+
+  This should improve the experience a lot:
+
+  * in the old `Source: true` mode, CGO packages often failed
+  * in the old `Source: false` mode, you had to make sure the package was installed
+    and up-to-date
+  * in this new mode, we try the more reliable source mode and fallback
+    to the binary mode if it fails
+
+  As a result, the `Source: bool` fields are now ignored.
+  To restore the old behaviour, use the golang.MarGocodeCtl reducer:
+
+      &golang.MarGocodeCtl{
+          ImporterMode: golang.SrcImporterOnly,
+          // or
+          ImporterMode: golang.BinImporterOnly,
+      }
+
+* replace margocodectl `cache-list-by-key` and `cache-list-by-dur` with `cache-list`
+  see `margocodectl cache-list --help`
+
+* Improve FmtCmd's error message
+
+  When goimports fails due to a syntax error, the parse error should now be shown as well
+  and not just the meaningless `exit 2` error message
+
 ## 18.09.18
 
 * fix a case where margo exits due to IPC shutdown
