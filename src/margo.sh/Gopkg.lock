@@ -2,50 +2,63 @@
 
 
 [[projects]]
+  digest = "1:c28625428387b63dd7154eb857f51e700465cfbf7c06f619e71f2da33cefe47e"
   name = "github.com/coreos/bbolt"
   packages = ["."]
+  pruneopts = "UT"
   revision = "583e8937c61f1af6513608ccc75c97b6abdf4ff9"
   version = "v1.3.0"
 
 [[projects]]
   branch = "master-tmp"
+  digest = "1:219a8ac7d15aa7c604321763d98489f31e37bf12e453107d61d17b69a324dfe7"
   name = "github.com/mdempsky/gocode"
   packages = [
     "lookdot",
-    "suggest"
+    "suggest",
   ]
+  pruneopts = "UT"
   revision = "5917a2de100275f43410c77e53403632a6b89b11"
   source = "github.com/KurokuLabs/gocode"
 
 [[projects]]
   branch = "master"
+  digest = "1:59a32808dc731a74dba0fefcac75c5b66ebeeeadae04538b95b81c986722ccaa"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "e253f1f20942cb6dc505e504e8bbba4b7f434cb2"
+  pruneopts = "UT"
+  revision = "2c86ab75771cd005aba08da133ce0565a19c2587"
 
 [[projects]]
   branch = "master"
+  digest = "1:3fb803863fd713550106aa42c4545b428401c6aad1002de19b1e634339e9cef6"
   name = "github.com/urfave/cli"
   packages = ["."]
+  pruneopts = "UT"
   revision = "934abfb2f102315b5794e15ebc7949e4ca253920"
 
 [[projects]]
   branch = "master"
+  digest = "1:f0b918a9d2a0d3dcd073cbb908d81b0166af14b8bc765039673d1120c71e17cc"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
+  pruneopts = "UT"
   revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
 
 [[projects]]
   branch = "master"
+  digest = "1:c5421a8113dc45cb64ea49585a5b2c95785c786f586201c5f8227ec5e08c75ec"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
-    "unix"
+    "unix",
   ]
-  revision = "d0be0721c37eeb5299f245a996a483160fc36940"
+  pruneopts = "UT"
+  revision = "d47a0f3392421c5624713c9a19fe781f651f8a50"
 
 [[projects]]
   branch = "master"
+  digest = "1:be66b27f0f1b50ecfcf7b4a0525498f21f24c2afa39e39afca3d4fd6037b51a6"
   name = "golang.org/x/tools"
   packages = [
     "cmd/guru",
@@ -66,13 +79,22 @@
     "go/types/typeutil",
     "imports",
     "internal/fastwalk",
-    "refactor/importgraph"
+    "refactor/importgraph",
   ]
-  revision = "677d2ff680c188ddb7dcd2bfa6bc7d3f2f2f75b2"
+  pruneopts = "UT"
+  revision = "90fa682c2a6e6a37b3a1364ce2fe1d5e41af9d6d"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "026c4f46d3f05164ae5cc62926f4129ca1101f4e43bec00be5aa941cfc3fd341"
+  input-imports = [
+    "github.com/coreos/bbolt",
+    "github.com/mdempsky/gocode/suggest",
+    "github.com/ugorji/go/codec",
+    "github.com/urfave/cli",
+    "golang.org/x/crypto/blake2b",
+    "golang.org/x/tools/cmd/guru",
+    "golang.org/x/tools/go/gcexportdata",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

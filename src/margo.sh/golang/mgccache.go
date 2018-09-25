@@ -3,25 +3,23 @@ package golang
 import (
 	"go/types"
 	"margo.sh/mgpf"
-	"path/filepath"
 	"regexp"
 	"sync"
 	"time"
 )
 
 // mgcCacheKey is the key used for caching package imports
-// it's the abs path of the package directory
-type mgcCacheKey string
+type mgcCacheKey struct {
+	gsuPkgInfo
 
-func mkMgcCacheKey(source bool, dir string) mgcCacheKey {
-	dir = filepath.Clean(dir)
-	dir = filepath.ToSlash(dir)
-	if source {
-		dir = "SRC:" + dir
-	} else {
-		dir = "BIN:" + dir
-	}
-	return mgcCacheKey(dir)
+	// Source indicates whether the package was imported from source code
+	Source bool
+}
+
+func (mck mgcCacheKey) fallback() mgcCacheKey {
+	fbk := mck
+	fbk.Source = !fbk.Source
+	return fbk
 }
 
 type mgcCacheEnt struct {
@@ -41,14 +39,14 @@ func (mc *mgcCache) get(k mgcCacheKey) (mgcCacheEnt, bool) {
 
 	e, ok := mc.m[k]
 	if !ok {
-		mctl.dbgf("cache.miss: %s\n", k)
+		mctl.dbgf("cache.miss: %+v\n", k)
 	}
 	return e, ok
 }
 
 func (mc *mgcCache) put(e mgcCacheEnt) {
 	if !e.Pkg.Complete() {
-		mctl.dbgf("cache.put: not storing %s, it's incomplete\n", e.Key)
+		mctl.dbgf("cache.put: not storing %+v, it's incomplete\n", e.Key)
 		return
 	}
 
@@ -56,7 +54,7 @@ func (mc *mgcCache) put(e mgcCacheEnt) {
 	defer mc.Unlock()
 
 	mc.m[e.Key] = e
-	mctl.dbgf("cache.put: %s %s\n", e.Key, mgpf.D(e.Dur))
+	mctl.dbgf("cache.put: %+v %s\n", e.Key, mgpf.D(e.Dur))
 }
 
 func (mc *mgcCache) del(k mgcCacheKey) {
@@ -68,14 +66,14 @@ func (mc *mgcCache) del(k mgcCacheKey) {
 	}
 
 	delete(mc.m, k)
-	mctl.dbgf("cache.del: %s\n", k)
+	mctl.dbgf("cache.del: %+v\n", k)
 }
 
 func (mc *mgcCache) prune(pats ...*regexp.Regexp) []mgcCacheEnt {
 	ents := []mgcCacheEnt{}
 	defer func() {
 		for _, e := range ents {
-			mctl.dbgf("cache.prune: %s\n", e.Key)
+			mctl.dbgf("cache.prune: %+v\n", e.Key)
 		}
 	}()
 
@@ -84,7 +82,7 @@ func (mc *mgcCache) prune(pats ...*regexp.Regexp) []mgcCacheEnt {
 
 	for _, e := range mc.m {
 		for _, pat := range pats {
-			if pat.MatchString(string(e.Key)) {
+			if pat.MatchString(e.Key.Path) {
 				ents = append(ents, e)
 				delete(mc.m, e.Key)
 			}

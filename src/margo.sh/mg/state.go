@@ -132,6 +132,9 @@ type State struct {
 	// It's usually populated during the QueryUserCmds and QueryTestCmds actions.
 	UserCmds UserCmdList
 
+	// Tooltips is a list of tips to show the user
+	Tooltips []Tooltip
+
 	// clientActions is a list of client actions to dispatch in the editor
 	clientActions []clientActionType
 }
@@ -166,6 +169,16 @@ func (st *State) Copy(updaters ...func(*State)) *State {
 		f(st)
 	}
 	return st
+}
+
+// AddTooltips add the list of tooltips l to State.Tooltips
+func (st *State) AddTooltips(l ...Tooltip) *State {
+	if len(l) == 0 {
+		return st
+	}
+	return st.Copy(func(st *State) {
+		st.Tooltips = append(st.Tooltips[:len(st.Tooltips):len(st.Tooltips)], l...)
+	})
 }
 
 // AddStatusf is equivalent to State.AddStatus(fmt.Sprintf())

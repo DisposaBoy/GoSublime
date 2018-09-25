@@ -22,9 +22,7 @@ type gocodeCtAct struct {
 type GocodeCalltips struct {
 	mg.ReducerType
 
-	// Whether or not to do gocode completion using source code
-	// instead of the pre-compiled package files.
-	// Using source is often slower but offer more up-to-date completions.
+	// This field is ignored, see MarGocodeCtl.ImporterMode
 	Source bool
 
 	// Whether or not to log debugging info
@@ -206,8 +204,7 @@ func (gc *GocodeCalltips) candidate(mx *mg.Ctx, src []byte, pos int, funcName st
 		v.Pos = pos
 	}))
 	gsu := newGcSuggest(mx, gsuOpts{
-		Source: gc.Source,
-		Debug:  gc.Debug,
+		Debug: gc.Debug,
 	})
 	candidates := gsu.candidates(mx)
 	for _, c := range candidates {

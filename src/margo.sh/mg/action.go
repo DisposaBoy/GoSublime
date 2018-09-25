@@ -55,6 +55,11 @@ var (
 		"QueryTestCmds": func(h codec.Handle, a agentReqAction) (Action, error) {
 			return QueryTestCmds{}, nil
 		},
+		"QueryTooltips": func(h codec.Handle, a agentReqAction) (Action, error) {
+			act := QueryTooltips{}
+			err := codec.NewDecoderBytes(a.Data, h).Decode(&act)
+			return act, err
+		},
 	}
 )
 
@@ -118,6 +123,13 @@ type Shutdown struct{ ActionType }
 
 func (s Shutdown) clientAction() clientActionType {
 	return clientActionType{Name: "Shutdown"}
+}
+
+type QueryTooltips struct {
+	ActionType
+
+	Row int
+	Col int
 }
 
 type ViewActivated struct{ ActionType }

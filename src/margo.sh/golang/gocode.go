@@ -56,9 +56,7 @@ func (gr *gocodeReq) reduce() *mg.State {
 type Gocode struct {
 	mg.ReducerType
 
-	// Whether or not to do gocode completion using source code
-	// instead of the pre-compiled package files.
-	// Using source is often slower but offer more up-to-date completions.
+	// This field is ignored, see MarGocodeCtl.ImporterMode
 	Source bool
 
 	ProposeBuiltins          bool
@@ -370,7 +368,6 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
 	gx := &gocodeCtx{
 		mx: mx,
 		gsu: newGcSuggest(mx, gsuOpts{
-			Source:          g.Source,
 			Debug:           g.Debug,
 			ProposeBuiltins: g.ProposeBuiltins,
 		}),

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"os/exec"
 )
 
@@ -85,7 +86,10 @@ func (fc FmtCmd) fmt(mx *mg.Ctx, src []byte) ([]byte, error) {
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		if stderr.Len() != 0 {
+			return nil, fmt.Errorf("`%s`: %s\nStderr: %s", mgutil.QuoteCmd(fc.Name, fc.Args...), err, stderr.Bytes())
+		}
+		return nil, fmt.Errorf("`%s`: %s", mgutil.QuoteCmd(fc.Name, fc.Args...), err)
 	}
 	if stderr.Len() != 0 {
 		return nil, fmt.Errorf("fmt completed successfully, but has output on stderr: %s", stderr.Bytes())

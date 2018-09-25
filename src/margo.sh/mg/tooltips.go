@@ -1,3 +1,5 @@
 package mg
 
-type Tooltip struct{}
+type Tooltip struct {
+	Content string
+}

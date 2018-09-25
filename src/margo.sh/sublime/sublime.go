@@ -1,7 +1,6 @@
 package sublime
 
 import (
-	"runtime"
 	"bytes"
 	"fmt"
 	"github.com/urfave/cli"
@@ -14,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 

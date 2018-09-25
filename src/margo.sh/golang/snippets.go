@@ -45,6 +45,7 @@ func (sf *SnippetFuncsList) Reduce(mx *mg.Ctx) *mg.State {
 		return mx.State
 	}
 
+	// TODO: is this correct?
 	for {
 		r, n := utf8.DecodeLastRune(src[:pos])
 		if !IsLetter(r) {
