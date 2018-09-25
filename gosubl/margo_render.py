@@ -11,6 +11,7 @@ STATUS_SEP = '    '
 
 def render(view, state, status=[]):
 	def cb():
+		_render_tooltips(view, state.tooltips)
 		_render_status(view, status + state.status)
 		_render_issues(view, state.issues)
 
@@ -102,3 +103,50 @@ def _render_issue(view, isu):
 
 	return sublime.Region(sp, ep)
 
+def _render_tooltips(view, tooltips):
+	if not tooltips:
+		return
+
+	def ren(t):
+		return '''<p>%s</p>''' % (t.content)
+
+	content = '''
+		<body>
+			<style>
+				body {
+					font-family: system;
+				}
+				h1 {
+					font-size: 1.1rem;
+					font-weight: bold;
+					margin: 0 0 0.25em 0;
+				}
+				p {
+					font-size: 1.05rem;
+					margin: 0;
+				}
+			</style>
+			%s
+		</body>
+	''' % ''.join(ren(t) for t in tooltips)
+
+	flags = sublime.COOPERATE_WITH_AUTO_COMPLETE | sublime.HIDE_ON_MOUSE_MOVE_AWAY
+	location = -1
+	max_width = 640
+	max_height = 480
+
+	def on_navigate(href):
+		pass
+
+	def on_hide():
+		pass
+
+	view.show_popup(
+		content,
+		flags=flags,
+		location=location,
+		max_width=max_width,
+		max_height=max_height,
+		on_navigate=on_navigate,
+		on_hide=on_hide
+	)

@@ -319,6 +319,15 @@ class MargoSingleton(object):
 
 		return act
 
+	def on_hover(self, view, pt, zone):
+		act = actions.QueryTooltips.copy()
+		row, col = view.rowcol(pt)
+		act['Data'] = {
+			'Row': row,
+			'Col': col,
+		}
+		self.queue(view=view, actions=[act])
+
 	def on_activated(self, view):
 		self.queue(view=view, actions=[actions.ViewActivated])
 

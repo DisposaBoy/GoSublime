@@ -155,7 +155,7 @@ class Completion(object):
 
 class Tooltip(object):
 	def __init__(self, v):
-		pass
+		self.content = v.get('Content') or ''
 
 	def __repr__(self):
 		return repr(self.__dict__)

@@ -35,6 +35,9 @@ class MargoEvents(sublime_plugin.EventListener):
 	def on_pre_close(self, view):
 		return mg.event('pre_close', view, mg.on_pre_close, [view])
 
+	def on_hover(self, view, point, hover_zone):
+		return mg.event('hover', view, mg.on_hover, [view, point, hover_zone])
+
 class MargoRenderSrcCommand(sublime_plugin.TextCommand):
 	def run(self, edit, src):
 		render_src(self.view, edit, src)
