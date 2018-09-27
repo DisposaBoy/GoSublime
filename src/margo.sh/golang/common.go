@@ -85,7 +85,7 @@ func (cn *CursorNode) ScanFile(af *ast.File) {
 	pos := af.Package
 	end := pos + token.Pos(len("package"))
 	if af.Name != nil {
-		end = pos + token.Pos(af.Name.End())
+		end = token.Pos(af.Name.End())
 	}
 	if cn.Pos >= pos && cn.Pos <= end {
 		return
