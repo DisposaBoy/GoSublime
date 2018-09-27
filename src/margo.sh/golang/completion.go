@@ -71,6 +71,10 @@ func NewCompletionCtx(mx *mg.Ctx, src []byte, pos int) *CompletionCtx {
 
 	if cx.PkgName == NilPkgName || cx.PkgName == "" {
 		cx.PkgName = NilPkgName
+		if cn.Comment != nil {
+			cx.Scope |= CommentScope
+			return cx
+		}
 		cx.Scope |= PackageScope
 		return cx
 	}
