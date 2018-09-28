@@ -64,7 +64,7 @@ contexts:
       scope: keyword.control.go
     - match: \b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\b
       scope: keyword.other.go
-    - match: '(?:[[:alpha:]_][[:alnum:]_]*)(?:,\s+[[:alpha:]_][[:alnum:]_]*)*\s*(:=)'
+    - match: '(?:[[:alpha:]_][[:alnum:]_]*)(?:(,):\s+[[:alpha:]_][[:alnum:]_]*)*\s*(:=)'
       comment: This matches the 'x := 0' style of variable declaration.
       scope: meta.initialization.short.go
       captures:
