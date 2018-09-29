@@ -345,7 +345,7 @@ def _view_hash(view):
 
 	return 'id=%s,change=%d' % (_view_id(view), view.change_count())
 
-_scope_lang_pat = re.compile(r'(?:source|text)[.]([^\s.]+)')
+_scope_lang_pat = re.compile(r'(?:source\.\w+|source|text)[.]([^\s.]+)')
 def _view_scope_lang(view, pos):
 	if view is None:
 		return ('', '')
