@@ -269,8 +269,8 @@ func MethodSnippet(cx *CompletionCtx) []mg.Completion {
 		case *ast.GenDecl:
 			for _, spec := range x.Specs {
 				spec, ok := spec.(*ast.TypeSpec)
-				if ok && spec.Name != nil {
-					types = append(types, spec.Name.String())
+				if ok && spec.Name != nil && spec.Name.Name != "_" {
+					types = append(types, spec.Name.Name)
 				}
 			}
 		}
@@ -294,7 +294,7 @@ func MethodSnippet(cx *CompletionCtx) []mg.Completion {
 				Query: `func method ` + typ,
 				Title: `(` + typ + `) method() {...}`,
 				Src: `
-					func (${1:` + nm + `} ${2:*` + typ + `}) ${3:name}($4)$5 {
+					func (${1:` + nm + `} ${2:*}` + typ + `) ${3:name}($4)$5 {
 						$0
 					}
 				`,

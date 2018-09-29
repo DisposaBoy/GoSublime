@@ -1,8 +1,10 @@
 package golang
 
 import (
+	"bytes"
 	"go/ast"
 	"go/build"
+	"go/parser"
 	"go/token"
 	"margo.sh/mg"
 	"margo.sh/why_would_you_make_yotsuba_cry"
@@ -66,6 +68,19 @@ func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
 	return pos < ne || !ne.IsValid()
 }
 
+type PosEnd struct {
+	P token.Pos
+	E token.Pos
+}
+
+func (pe PosEnd) Pos() token.Pos {
+	return pe.P
+}
+
+func (pe PosEnd) End() token.Pos {
+	return pe.E
+}
+
 type CursorNode struct {
 	Pos       token.Pos
 	AstFile   *ast.File
@@ -79,34 +94,6 @@ type CursorNode struct {
 	BasicLit   *ast.BasicLit
 	Nodes      []ast.Node
 	Node       ast.Node
-}
-
-func (cn *CursorNode) ScanFile(af *ast.File) {
-	pos := af.Package
-	end := pos + token.Pos(len("package"))
-	if af.Name != nil {
-		end = pos + token.Pos(af.Name.End())
-	}
-	if cn.Pos >= pos && cn.Pos <= end {
-		return
-	}
-
-	cn.Append(af)
-	ast.Walk(cn, af)
-	for _, cg := range af.Comments {
-		for _, c := range cg.List {
-			if NodeEnclosesPos(c, cn.Pos) {
-				cn.Append(c)
-			}
-		}
-	}
-	cn.Node = cn.Nodes[len(cn.Nodes)-1]
-	cn.Set(&cn.GenDecl)
-	cn.Set(&cn.BlockStmt)
-	cn.Set(&cn.BasicLit)
-	cn.Set(&cn.CallExpr)
-	cn.Set(&cn.Comment)
-	cn.Set(&cn.ImportSpec)
 }
 
 func (cn *CursorNode) Visit(node ast.Node) ast.Visitor {
@@ -141,13 +128,54 @@ func (cn *CursorNode) Set(destPtr interface{}) bool {
 }
 
 func ParseCursorNode(kvs mg.KVStore, src []byte, offset int) *CursorNode {
+	astFileIsValid := func(af *ast.File) bool {
+		return af.Package.IsValid() &&
+			af.Name != nil &&
+			af.Name.End().IsValid() &&
+			af.Name.Name != ""
+	}
+	srcHasComments := func() bool {
+		return bytes.Contains(src, []byte("//")) || bytes.Contains(src, []byte("/*"))
+	}
+
 	pf := ParseFile(kvs, "", src)
+	if !astFileIsValid(pf.AstFile) && srcHasComments() {
+		// we don't want any declaration errors esp. about the package name `_`
+		// we don't parse with this mode by default to increase the chance of caching
+		s := append(src[:len(src):len(src)], NilPkgSrc...)
+		pf = ParseFileWithMode(kvs, "", s, parser.ParseComments)
+	}
+
+	af := pf.AstFile
 	cn := &CursorNode{
-		AstFile:   pf.AstFile,
+		AstFile:   af,
 		TokenFile: pf.TokenFile,
 		Pos:       token.Pos(pf.TokenFile.Base() + offset),
 	}
-	cn.ScanFile(cn.AstFile)
+
+	if astFileIsValid(af) && cn.Pos > af.Name.End() {
+		cn.Append(af)
+		ast.Walk(cn, af)
+	}
+
+	for _, cg := range af.Comments {
+		for _, c := range cg.List {
+			if NodeEnclosesPos(c, cn.Pos) {
+				cn.Append(c)
+			}
+		}
+	}
+
+	if len(cn.Nodes) != 0 {
+		cn.Node = cn.Nodes[len(cn.Nodes)-1]
+		cn.Set(&cn.GenDecl)
+		cn.Set(&cn.BlockStmt)
+		cn.Set(&cn.BasicLit)
+		cn.Set(&cn.CallExpr)
+		cn.Set(&cn.Comment)
+		cn.Set(&cn.ImportSpec)
+	}
+
 	return cn
 }
 

@@ -16,7 +16,8 @@ const (
 var (
 	NilPkgName    = "_"
 	NilFset       = token.NewFileSet()
-	NilAstFile, _ = parser.ParseFile(NilFset, "", `package `+NilPkgName, 0)
+	NilPkgSrc     = "\n\npackage " + NilPkgName + "\n"
+	NilAstFile, _ = parser.ParseFile(NilFset, "", NilPkgSrc, 0)
 	NilTokenFile  = NilFset.File(NilAstFile.Pos())
 )
 
@@ -29,7 +30,10 @@ type ParsedFile struct {
 }
 
 func ParseFile(kvs mg.KVStore, fn string, src []byte) *ParsedFile {
-	mode := ParseFileMode
+	return ParseFileWithMode(kvs, fn, src, ParseFileMode)
+}
+
+func ParseFileWithMode(kvs mg.KVStore, fn string, src []byte, mode parser.Mode) *ParsedFile {
 	if len(src) == 0 {
 		var err error
 		if fn != "" {
@@ -45,8 +49,11 @@ func ParseFile(kvs mg.KVStore, fn string, src []byte) *ParsedFile {
 		}
 	}
 
-	type key struct{ hash string }
-	k := key{mg.SrcHash(src)}
+	type key struct {
+		hash string
+		mode parser.Mode
+	}
+	k := key{hash: mg.SrcHash(src), mode: mode}
 	if kvs != nil {
 		if pf, ok := kvs.Get(k).(*ParsedFile); ok {
 			return pf
@@ -55,14 +62,14 @@ func ParseFile(kvs mg.KVStore, fn string, src []byte) *ParsedFile {
 
 	pf := &ParsedFile{Fset: token.NewFileSet()}
 	pf.AstFile, pf.Error = parser.ParseFile(pf.Fset, fn, src, mode)
-	pf.TokenFile = pf.Fset.File(pf.AstFile.Pos())
-	pf.ErrorList, _ = pf.Error.(scanner.ErrorList)
 	if pf.AstFile == nil {
 		pf.AstFile = NilAstFile
 	}
+	pf.TokenFile = pf.Fset.File(pf.AstFile.Pos())
 	if pf.TokenFile == nil {
 		pf.TokenFile = NilTokenFile
 	}
+	pf.ErrorList, _ = pf.Error.(scanner.ErrorList)
 
 	if kvs != nil {
 		kvs.Put(k, pf)

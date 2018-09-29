@@ -352,16 +352,7 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
 	mx = mx.SetState(st)
 
 	cx := NewCompletionCtx(mx, src, pos)
-	if cx.Scope.Any(PackageScope, FileScope) {
-		return mx, nil
-	}
-	cn := cx.CursorNode
-	// don't do completion inside comments
-	if cn.Comment != nil {
-		return mx, nil
-	}
-	// don't do completion inside strings unless it's an import
-	if cn.ImportSpec == nil && cn.BasicLit != nil && cn.BasicLit.Kind == token.STRING {
+	if cx.Scope.Any(PackageScope, FileScope, ImportScope, StringScope, CommentScope) {
 		return mx, nil
 	}
 
@@ -371,7 +362,7 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
 			Debug:           g.Debug,
 			ProposeBuiltins: g.ProposeBuiltins,
 		}),
-		cn:   cn,
+		cn:   cx.CursorNode,
 		fn:   st.View.Filename(),
 		pos:  pos,
 		src:  src,
