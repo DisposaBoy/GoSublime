@@ -4,6 +4,9 @@
 # Links:
 
 https://margo.sh/donate - Help support future development of GoSublime.
+
+https://margo.sh/b/hello-margo - A short introduction to margo.
+
 https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 
