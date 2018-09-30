@@ -3,6 +3,8 @@ package mg
 import (
 	"bytes"
 	"fmt"
+	"margo.sh/mgpf"
+	"margo.sh/mgutil"
 	"sync"
 	"time"
 )
@@ -101,9 +103,10 @@ func (tr *taskTracker) tick() {
 
 func (tr *taskTracker) userCmds(st *State) *State {
 	cl := make([]UserCmd, len(tr.tickets))
+	now := time.Now()
 	for i, t := range tr.tickets {
 		c := UserCmd{
-			Title: "Cancel " + t.Title,
+			Title: "Task: Cancel " + t.Title,
 			Name:  ".kill",
 		}
 		for _, s := range []string{t.CancelID, t.ID} {
@@ -111,6 +114,9 @@ func (tr *taskTracker) userCmds(st *State) *State {
 				c.Args = append(c.Args, s)
 			}
 		}
+		c.Desc = fmt.Sprintf("elapsed: %s, cmd: `%s`",
+			mgpf.D(now.Sub(t.Start)), mgutil.QuoteCmd(c.Name, c.Args...),
+		)
 		cl[i] = c
 	}
 	return st.AddUserCmds(cl...)
