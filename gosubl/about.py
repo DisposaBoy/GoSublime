@@ -1,7 +1,7 @@
 import re
 import sublime
 
-TAG = '18.09.25-1'
+TAG = '18.09.30-1'
 ANN = 'a'+TAG
 VERSION = 'r'+TAG
 VERSION_PAT = re.compile(r'\d{2}[.]\d{2}[.]\d{2}-\d+', re.IGNORECASE)

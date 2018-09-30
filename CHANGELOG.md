@@ -1,15 +1,26 @@
 
 
 
-# Donate:
+# Links:
 
-If you find GoSublime useful and would like to support me and future development of GoSublime,
-please donate via one of the available methods on https://margo.kuroku.io/donate?_r=gs
+https://margo.sh/donate - Help support future development of GoSublime.
+https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 
 
 
 # Changes:
+
+## 18.09.30
+
+* Improve autocompletion scope detection
+  * snippets should now the shown when there is a comment above the package statement
+  * completion should no longer be shown when there is no package statement
+
+
+* misc tweaks to the method snippets
+  * for pointer method receivers, only the * is selected for the initial method definition
+  * when there are syntax errors in the file, methods should no longer be suggested for the invalid type `_`
 
 ## 18.09.25
 
@@ -50,13 +61,6 @@ please donate via one of the available methods on https://margo.kuroku.io/donate
 
 ## 18.09.14
 
-Note: a future release will set `Source: true` for golang.Gocode and golang.GocodeCalltips.
-You're encouraged to switch it on manually if you haven't done so already.
-This makes gocode use the source code instead of pre-compiled packages.
-It's more accurate and up-to-date but might be slightly slower and use more memory.
-If you find any new issues after switching, please file issues at margo.sh/gs/i
-
-
 * This release adds a new experimental update notifier.
 
   MOTD keeps you updated about new versions and important announcements
@@ -92,7 +96,7 @@ If you find any new issues after switching, please file issues at margo.sh/gs/i
   `ctrl+.`,`ctrl+c` / `super+.`,`super+c`
 
 
-* The `GoSulime: Go` syntax was switched to a new syntax based on the Go syntax shipped in Sublime Text
+* The `GoSublime: Go` syntax was switched to a new syntax based on the Go syntax shipped in Sublime Text
   * if you find any breakages, please file an issue at margo.sh/gs/i
   * if you prefer the colouring of the previous version, you can switch back to the old syntax
     via `Menu > View > Syntax > Open all with current extension as... > GoSublime > GoSublime: Go (Deprecated)`
