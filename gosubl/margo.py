@@ -396,8 +396,8 @@ class MargoSingleton(object):
 
 		try:
 			gs.mkdirp(src_dir)
-			with open('%s/margo.go' % src_dir, 'x') as f:
-				s = open(self.example_extension_file(), 'r').read()
+			with open('%s/margo.go' % src_dir, 'xb') as f:
+				s = open(self.example_extension_file(), 'rb').read()
 				f.write(s)
 		except FileExistsError:
 			pass
