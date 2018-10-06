@@ -1,7 +1,5 @@
 
-
-
-# Links:
+## Links:
 
 https://margo.sh/donate - Help support future development of GoSublime.
 
@@ -10,9 +8,16 @@ https://margo.sh/b/hello-margo - A short introduction to margo.
 https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 
+## 18.10.06
 
+* restore support for running individual test functions by pressing `ctrl+.`,`ctrl+g` or `ctrl+shift + left/right-click` on the function declaration's name
 
-# Changes:
+* add support for having multiple builtins with the same name
+
+* API breakage:
+  `mg.ExecRunFunc()` was replaced with the pattern `CmdCtx.WithCmd().Run()`
+  the former bypasses builtins so running `go install` has no linting support
+
 
 ## 18.09.30
 
