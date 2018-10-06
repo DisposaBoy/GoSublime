@@ -6,36 +6,6 @@ import webbrowser
 
 DOMAIN = 'GsEV'
 
-class UncleSam(object):
-	def __init__(self):
-		self.phantoms = None
-
-	def on_load(self, view):
-		if view.file_name() != gs.dist_path('CHANGELOG.md'):
-			return
-
-		self.phantoms = sublime.PhantomSet(view, 'gs.uncle-sam')
-		self.phantoms.update([sublime.Phantom(
-			sublime.Region(-1, -1),
-			'''
-				<body style="padding: 3rem 0">
-					<a href="{url}">
-						<img style="width: 338px; height: 197px" src="file://{src}"/>
-					</a>
-				</body>
-			'''.format(
-				url='https://margo.sh/gosublime-future',
-				src=gs.dist_path('images/fight-the-future.png')
-			),
-			sublime.LAYOUT_INLINE,
-			self._on_click
-		)])
-
-	def _on_click(self, url):
-		webbrowser.open_new_tab(url)
-
-uncle_sam = UncleSam()
-
 class EV(sublime_plugin.EventListener):
 	def on_pre_save(self, view):
 		view.run_command('gs_fmt')
@@ -55,7 +25,6 @@ class EV(sublime_plugin.EventListener):
 
 	def on_load(self, view):
 		sublime.set_timeout(lambda: do_set_gohtml_syntax(view), 0)
-		sublime.set_timeout_async(lambda: uncle_sam.on_load(view), 0)
 
 class GsOnLeftClick(sublime_plugin.TextCommand):
 	def run(self, edit):
