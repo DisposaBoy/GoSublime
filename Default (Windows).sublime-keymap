@@ -78,7 +78,7 @@
 	{
 		"keys": ["ctrl+.", "ctrl+g"],
 		"command": "gs9o_open",
-		"args": {"run": ["goto.definition"], "focus_view": false, "show_view": false},
+		"args": {"run": [".actuate"], "focus_view": false, "show_view": false},
 		"context": [{ "key": "selector", "operator": "equal", "operand": "source.go" }]
 	},
 	{

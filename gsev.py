@@ -61,12 +61,11 @@ class GsOnLeftClick(sublime_plugin.TextCommand):
 	def run(self, edit):
 		view = self.view
 		if gs.is_go_source_view(view):
-			if not gstest.handle_action(view, 'left-click'):
-				view.run_command('gs9o_open', {
-					"run": ["goto.definition"],
-					"focus_view": False,
-					"show_view": False,
-				})
+			view.run_command('gs9o_open', {
+				"run": [".actuate", "-button=left"],
+				"focus_view": False,
+				"show_view": False,
+			})
 		elif view.score_selector(gs.sel(view).begin(), "text.9o") > 0:
 			view.window().run_command("gs9o_open_selection")
 
@@ -74,8 +73,11 @@ class GsOnRightClick(sublime_plugin.TextCommand):
 	def run(self, edit):
 		view = self.view
 		if gs.is_go_source_view(view):
-			if not gstest.handle_action(view, 'right-click'):
-				view.run_command('gs_doc', {"mode": "hint"})
+			view.run_command('gs9o_open', {
+				"run": [".actuate", "-button=right"],
+				"focus_view": False,
+				"show_view": False,
+			})
 
 def do_post_save(view):
 	if not gs.is_pkg_view(view):
