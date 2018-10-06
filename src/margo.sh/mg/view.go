@@ -6,6 +6,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 	"io"
 	"io/ioutil"
+	"margo.sh/mgutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -106,6 +107,12 @@ func (v *View) ReadAll() ([]byte, error) {
 	}
 
 	return src, err
+}
+
+// SrcPos returns the view's src and pos taking care of reading src and clamping pos
+func (v *View) SrcPos() ([]byte, int) {
+	src, _ := v.ReadAll()
+	return src, mgutil.ClampPos(src, v.Pos)
 }
 
 func (v *View) Valid() bool {

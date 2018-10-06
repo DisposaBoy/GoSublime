@@ -27,12 +27,48 @@ func (tc *TestCmds) ReducerCond(mx *mg.Ctx) bool {
 }
 
 func (tc *TestCmds) Reduce(mx *mg.Ctx) *mg.State {
-	switch mx.Action.(type) {
+	switch act := mx.Action.(type) {
 	case mg.QueryTestCmds:
 		return tc.queryTestCmds(mx)
+	case mg.RunCmd:
+		return tc.actuateCmd(mx, act)
 	default:
 		return mx.State
 	}
+}
+
+func (tc *TestCmds) actuateCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
+	if rc.Name != mg.RcActuate {
+		return mx.State
+	}
+
+	cx := NewViewCursorCtx(mx)
+	if !cx.IsTestFile {
+		return mx.State
+	}
+
+	name, pfx, _, ok := tc.splitName(cx.FuncName())
+	if !ok {
+		return mx.State
+	}
+
+	pat := "^" + name
+	switch rc.StringFlag("button", "left") {
+	case "left":
+		pat += "$"
+	case "right":
+		pat += ".*"
+	default:
+		return mx.State
+	}
+
+	args := tc.pfxArgs(pfx, pat)
+	return mx.AddBuiltinCmds(mg.BuiltinCmd{
+		Name: mg.RcActuate,
+		Run: func(cx *mg.CmdCtx) *mg.State {
+			return cx.WithCmd("go", args...).Run()
+		},
+	})
 }
 
 func (tc *TestCmds) queryTestCmds(mx *mg.Ctx) *mg.State {
@@ -91,6 +127,13 @@ func (tc *TestCmds) benchArgs(pat string) []string {
 	return append([]string{"test", "-test.run=none", "-test.bench=" + pat}, tc.BenchArgs...)
 }
 
+func (tc *TestCmds) pfxArgs(pfx, pat string) []string {
+	if pfx == "Benchmark" {
+		return tc.benchArgs(pat)
+	}
+	return tc.testArgs(pat)
+}
+
 func (tc *TestCmds) testArgs(pat string) []string {
 	return append([]string{"test", "-test.run=" + pat}, tc.TestArgs...)
 }
@@ -105,25 +148,21 @@ func (tc *TestCmds) process(mx *mg.Ctx, cmds map[string]mg.UserCmdList, fn strin
 }
 
 func (tc *TestCmds) processIdent(cmds map[string]mg.UserCmdList, id *ast.Ident) {
-	name, pfx, sfx, ok := tc.splitIdent(id)
+	name, pfx, sfx, ok := tc.splitName(id.Name)
 	if !ok {
 		return
 	}
-
-	cmd := mg.UserCmd{
+	cmds[pfx] = append(cmds[pfx], mg.UserCmd{
 		Name:  "go",
+		Args:  tc.pfxArgs(pfx, "^"+name+"$"),
 		Title: pfx + ": " + sfx,
-	}
-	if pfx == "Benchmark" {
-		cmd.Args = tc.benchArgs("^" + name + "$")
-	} else {
-		cmd.Args = tc.testArgs("^" + name + "$")
-	}
-	cmds[pfx] = append(cmds[pfx], cmd)
+	})
 }
 
-func (tc *TestCmds) splitIdent(id *ast.Ident) (name, pfx, sfx string, ok bool) {
-	nm := id.String()
+func (tc *TestCmds) splitName(nm string) (name, pfx, sfx string, ok bool) {
+	if nm == "" {
+		return "", "", "", false
+	}
 	for _, pfx := range []string{"Test", "Benchmark", "Example"} {
 		sfx := strings.TrimPrefix(nm, pfx)
 		if sfx != nm {

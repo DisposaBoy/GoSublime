@@ -36,3 +36,20 @@ func QuoteCmd(name string, args ...string) string {
 	}
 	return strings.Join(a, " ")
 }
+
+// Clamp limits n to the interval [ lo, hi ]
+func Clamp(lo, hi int, n int) int {
+	switch {
+	case n <= lo:
+		return lo
+	case n >= hi:
+		return hi
+	default:
+		return n
+	}
+}
+
+// ClampPos limits pos to the interval [ 0, len(s) ]
+func ClampPos(s []byte, pos int) int {
+	return Clamp(0, len(s), pos)
+}

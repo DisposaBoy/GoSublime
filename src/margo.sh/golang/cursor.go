@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	completionScopesStart CompletionScope = 1 << iota
+	cursorScopesStart CursorScope = 1 << iota
 	PackageScope
 	FileScope
 	DeclScope
@@ -21,11 +21,11 @@ const (
 	CommentScope
 	StringScope
 	ImportPathScope
-	completionScopesEnd
+	cursorScopesEnd
 )
 
 var (
-	completionScopeNames = map[CompletionScope]string{
+	cursorScopeNames = map[CursorScope]string{
 		PackageScope:    "PackageScope",
 		FileScope:       "FileScope",
 		DeclScope:       "DeclScope",
@@ -40,14 +40,15 @@ var (
 	}
 )
 
-type CompletionScope uint64
+type CursorScope uint64
+type CompletionScope = CursorScope
 
-func (cs CompletionScope) String() string {
-	if cs <= completionScopesStart || cs >= completionScopesEnd {
-		return "InvalidCompletionScope"
+func (cs CursorScope) String() string {
+	if cs <= cursorScopesStart || cs >= cursorScopesEnd {
+		return "UnknownCursorScope"
 	}
 	l := []string{}
-	for scope, name := range completionScopeNames {
+	for scope, name := range cursorScopeNames {
 		if cs.Is(scope) {
 			l = append(l, name)
 		}
@@ -56,11 +57,11 @@ func (cs CompletionScope) String() string {
 	return strings.Join(l, "|")
 }
 
-func (cs CompletionScope) Is(scope CompletionScope) bool {
+func (cs CursorScope) Is(scope CursorScope) bool {
 	return cs&scope != 0
 }
 
-func (cs CompletionScope) Any(scopes ...CompletionScope) bool {
+func (cs CursorScope) Any(scopes ...CursorScope) bool {
 	for _, s := range scopes {
 		if cs&s != 0 {
 			return true
@@ -69,7 +70,7 @@ func (cs CompletionScope) Any(scopes ...CompletionScope) bool {
 	return false
 }
 
-func (cs CompletionScope) All(scopes ...CompletionScope) bool {
+func (cs CursorScope) All(scopes ...CursorScope) bool {
 	for _, s := range scopes {
 		if cs&s == 0 {
 			return false
@@ -78,22 +79,32 @@ func (cs CompletionScope) All(scopes ...CompletionScope) bool {
 	return true
 }
 
-type CompletionCtx struct {
+type CompletionCtx = CursorCtx
+type CursorCtx struct {
 	*mg.Ctx
 	CursorNode *CursorNode
 	AstFile    *ast.File
-	Scope      CompletionScope
+	Scope      CursorScope
 	PkgName    string
 	IsTestFile bool
 }
 
 func NewCompletionCtx(mx *mg.Ctx, src []byte, pos int) *CompletionCtx {
+	return NewCursorCtx(mx, src, pos)
+}
+
+func NewViewCursorCtx(mx *mg.Ctx) *CursorCtx {
+	src, pos := mx.View.SrcPos()
+	return NewCursorCtx(mx, src, pos)
+}
+
+func NewCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
 	cn := ParseCursorNode(mx.Store, src, pos)
 	af := cn.AstFile
 	if af == nil {
 		af = NilAstFile
 	}
-	cx := &CompletionCtx{
+	cx := &CursorCtx{
 		Ctx:        mx,
 		CursorNode: cn,
 		AstFile:    af,
@@ -149,17 +160,30 @@ func NewCompletionCtx(mx *mg.Ctx, src []byte, pos int) *CompletionCtx {
 	return cx
 }
 
-func DedentCompletion(s string) string {
-	s = strings.TrimLeft(s, "\n")
-	sfx := strings.TrimLeft(s, " \t")
-	pfx := s[:len(s)-len(sfx)]
-	if pfx == "" {
-		return s
+func (cx *CursorCtx) funcName() (name string, isMethod bool) {
+	var fd *ast.FuncDecl
+	cn := cx.CursorNode
+	if !cn.Set(&fd) {
+		return "", false
 	}
-	s = strings.TrimSpace(s)
-	lines := strings.Split(s, "\n")
-	for i, ln := range lines {
-		lines[i] = strings.TrimPrefix(ln, pfx)
+	if fd.Name == nil || !NodeEnclosesPos(fd.Name, cx.CursorNode.Pos) {
+		return "", false
 	}
-	return strings.Join(lines, "\n")
+	return fd.Name.Name, fd.Recv != nil
+}
+
+// FuncName returns the name of function iff the cursor is on a func declariton's name
+func (cx *CursorCtx) FuncName() string {
+	if nm, isMeth := cx.funcName(); !isMeth {
+		return nm
+	}
+	return ""
+}
+
+// FuncName returns the name of function iff the cursor is on a method declariton's name
+func (cx *CursorCtx) MethodName() string {
+	if nm, isMeth := cx.funcName(); isMeth {
+		return nm
+	}
+	return ""
 }

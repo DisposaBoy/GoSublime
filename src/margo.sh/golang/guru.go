@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"go/ast"
 	"io"
 	"io/ioutil"
 	"margo.sh/cmdpkg/margo/cmdrunner"
@@ -38,7 +39,7 @@ func (g *Guru) ReducerMount(mx *mg.Ctx) {
 }
 
 func (g *Guru) Reduce(mx *mg.Ctx) *mg.State {
-	switch mx.Action.(type) {
+	switch act := mx.Action.(type) {
 	case mg.QueryUserCmds:
 		return mx.AddUserCmds(
 			mg.UserCmd{
@@ -48,17 +49,40 @@ func (g *Guru) Reduce(mx *mg.Ctx) *mg.State {
 			},
 		)
 	case mg.RunCmd:
-		runDef := func(bx *mg.CmdCtx) *mg.State {
-			go g.definition(bx)
-			return bx.State
-		}
-		return mx.AddBuiltinCmds(
-			mg.BuiltinCmd{Name: "goto.definition", Run: runDef},
-			mg.BuiltinCmd{Name: "guru.definition", Run: runDef},
-		)
+		return g.runCmd(mx, act)
 	default:
 		return mx.State
 	}
+}
+
+func (g *Guru) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
+	if rc.Name == "goto.definition" || rc.Name == "guru.definition" {
+		return mx.AddBuiltinCmds(mg.BuiltinCmd{Name: rc.Name, Run: g.runDef})
+	}
+
+	if rc.Name != mg.RcActuate || rc.StringFlag("button", "left") != "left" {
+		return mx.State
+	}
+
+	cx := NewViewCursorCtx(mx)
+	cn := cx.CursorNode
+	var onId *ast.Ident
+	var onSel *ast.SelectorExpr
+	if !cn.Set(&onId) && !cn.Set(&onSel) {
+		// we're not on a name, nothing to look for
+		return mx.State
+	}
+	// we're on a func decl name, we're already at the definition
+	if nm, _ := cx.funcName(); nm != "" {
+		return mx.State
+	}
+
+	return mx.AddBuiltinCmds(mg.BuiltinCmd{Name: rc.Name, Run: g.runDef})
+}
+
+func (g *Guru) runDef(cx *mg.CmdCtx) *mg.State {
+	go g.definition(cx)
+	return cx.State
 }
 
 func (g *Guru) definition(bx *mg.CmdCtx) {

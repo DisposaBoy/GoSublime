@@ -69,7 +69,7 @@ func (sf *SnippetFuncsList) Reduce(mx *mg.Ctx) *mg.State {
 }
 
 func (sf *SnippetFuncsList) fixCompletion(c *mg.Completion) {
-	c.Src = DedentCompletion(c.Src)
+	c.Src = Dedent(c.Src)
 	if c.Tag == "" {
 		c.Tag = mg.SnippetTag
 	}

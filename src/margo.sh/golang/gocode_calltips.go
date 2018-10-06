@@ -86,7 +86,7 @@ func (gc *GocodeCalltips) process(act gocodeCtAct) {
 		return
 	}
 
-	srcPos := clampSrcPos(src, mx.View.Pos)
+	srcPos := mgutil.ClampPos(src, mx.View.Pos)
 	cn := ParseCursorNode(nil, src, srcPos)
 	tpos := cn.TokenFile.Pos(srcPos)
 	var call *ast.CallExpr

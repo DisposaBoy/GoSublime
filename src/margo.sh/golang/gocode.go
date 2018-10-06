@@ -12,6 +12,7 @@ import (
 	"io"
 	"margo.sh/mg"
 	"margo.sh/mgpf"
+	"margo.sh/mgutil"
 	"margo.sh/sublime"
 	"os"
 	"strings"
@@ -333,7 +334,7 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
 	if len(src) == 0 {
 		return mx, nil
 	}
-	pos := clampSrcPos(src, st.View.Pos)
+	pos := mgutil.ClampPos(src, st.View.Pos)
 
 	// move the cursor off the word.
 	// xxx.yyy| ~> xxx.|
@@ -351,7 +352,7 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
 	st = st.SetView(st.View.Copy(func(v *mg.View) { v.Pos = pos }))
 	mx = mx.SetState(st)
 
-	cx := NewCompletionCtx(mx, src, pos)
+	cx := NewCursorCtx(mx, src, pos)
 	if cx.Scope.Any(PackageScope, FileScope, ImportScope, StringScope, CommentScope) {
 		return mx, nil
 	}
@@ -376,14 +377,4 @@ func (gx *gocodeCtx) candidates() []suggest.Candidate {
 		return nil
 	}
 	return gx.gsu.candidates(gx.mx)
-}
-
-func clampSrcPos(src []byte, pos int) int {
-	if pos < 0 {
-		return 0
-	}
-	if pos > len(src) {
-		return len(src) - 1
-	}
-	return pos
 }

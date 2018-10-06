@@ -2,6 +2,7 @@ package mg
 
 import (
 	"bytes"
+	"flag"
 	"io"
 	"margo.sh/mgutil"
 	"os"
@@ -58,64 +59,55 @@ func (el ErrorList) Error() string {
 	return buf.String()
 }
 
-// OutputStream describes an object that's capable of dispatching command output
-// its main implementation is CmdOutputWriter
+// OutputStream describes an object that's capable of dispatching command output.
+//
+// An OutputSream is safe for concurrent use.
+//
+// The main implementation is CmdOut.
 type OutputStream interface {
 	io.Writer
 	io.Closer
 	Flush() error
 }
 
+// OutputStreams delegates to a list of OutputStreams.
+//
+// For each method (Write, Close, Flush):
+//
+// If none of the underlying methods return an error, a nil error is returned.
+//
+// Otherwise an ErrorList length == len(OutputStreams) is returned.
+// For each entry OutputStreams[i], ErrorList[i] contains the error
+// returned for the method called on that OutputStream.
 type OutputStreams []OutputStream
 
+// Write calls Write() on all each OutputStream
 func (sl OutputStreams) Write(p []byte) (int, error) {
-	var el ErrorList
-
-	for i, s := range sl {
+	return len(p), sl.forEach(func(s OutputStream) error {
 		n, err := s.Write(p)
 		if err == nil && n != len(p) {
-			err = io.ErrShortWrite
+			return io.ErrShortWrite
 		}
-		if err == nil {
-			continue
-		}
-		if len(el) == 0 {
-			el = make(ErrorList, len(sl))
-		}
-		el[i] = err
-	}
-
-	if len(el) == 0 {
-		return len(p), nil
-	}
-	return len(p), el
+		return err
+	})
 }
 
+// Close calls Close() on all each OutputStream
 func (sl OutputStreams) Close() error {
-	var el ErrorList
-
-	for i, s := range sl {
-		err := s.Close()
-		if err == nil {
-			continue
-		}
-		if len(el) == 0 {
-			el = make(ErrorList, len(sl))
-		}
-		el[i] = err
-	}
-
-	if len(el) == 0 {
-		return nil
-	}
-	return el
+	return sl.forEach(func(s OutputStream) error { return s.Close() })
 }
 
+// Flush calls Flush() on all each OutputStream
 func (sl OutputStreams) Flush() error {
-	var el ErrorList
+	return sl.forEach(func(s OutputStream) error { return s.Flush() })
+}
 
+// forEach calls f on each entry in the list
+// it takes care of implementing the documented error returned by OutputStreams' methods
+func (sl OutputStreams) forEach(f func(OutputStream) error) error {
+	var el ErrorList
 	for i, s := range sl {
-		err := s.Flush()
+		err := f(s)
 		if err == nil {
 			continue
 		}
@@ -124,7 +116,6 @@ func (sl OutputStreams) Flush() error {
 		}
 		el[i] = err
 	}
-
 	if len(el) == 0 {
 		return nil
 	}
@@ -229,16 +220,40 @@ func runCmd(mx *Ctx, rc RunCmd) *State {
 		RunCmd: rc,
 		Output: &CmdOut{Fd: rc.Fd, Dispatch: mx.Store.Dispatch},
 	}
+	return cx.Run()
+}
 
-	if cmd, ok := cx.BuiltinCmds.Lookup(cx.Name); ok {
-		return cmd.Run(cx)
+type outputStreamRef struct {
+	wg   *sync.WaitGroup
+	once sync.Once
+	OutputStream
+}
+
+func newOutputStreamRef(wg *sync.WaitGroup, w OutputStream) OutputStream {
+	wg.Add(1)
+	return &outputStreamRef{
+		wg:           wg,
+		OutputStream: w,
 	}
-	return Builtins.ExecCmd(cx)
+}
+
+func (osr *outputStreamRef) Close() error {
+	osr.once.Do(osr.wg.Done)
+	return nil
 }
 
 type RunCmdData struct {
 	*Ctx
 	RunCmd
+}
+
+type RunCmdFlagSet struct {
+	RunCmd RunCmd
+	*flag.FlagSet
+}
+
+func (fs RunCmdFlagSet) Parse() error {
+	return fs.FlagSet.Parse(fs.RunCmd.Args)
 }
 
 type RunCmd struct {
@@ -250,6 +265,34 @@ type RunCmd struct {
 	Args     []string
 	CancelID string
 	Prompts  []string
+}
+
+func (rc RunCmd) Flags() RunCmdFlagSet {
+	return RunCmdFlagSet{
+		RunCmd:  rc,
+		FlagSet: flag.NewFlagSet(rc.Name, flag.ContinueOnError),
+	}
+}
+
+func (rc RunCmd) StringFlag(name, value string) string {
+	fs := rc.Flags()
+	v := fs.String(name, value, "")
+	fs.Parse()
+	return *v
+}
+
+func (rc RunCmd) BoolFlag(name string, value bool) bool {
+	fs := rc.Flags()
+	v := fs.Bool(name, value, "")
+	fs.Parse()
+	return *v
+}
+
+func (rc RunCmd) IntFlag(name string, value int) int {
+	fs := rc.Flags()
+	v := fs.Int(name, value, "")
+	fs.Parse()
+	return *v
 }
 
 func (rc RunCmd) Interpolate(mx *Ctx) RunCmd {
