@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"errors"
 	"github.com/mdempsky/gocode/suggest"
 	"go/build"
 	"go/types"
@@ -9,6 +10,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
+
+var (
+	errImportCycleDetected = errors.New("import cycle detected")
 )
 
 type gsuOpts struct {
@@ -38,8 +43,8 @@ func (gsu *gcSuggest) newGsuImporter(mx *mg.Ctx) *gsuImporter {
 		mx:  mx,
 		bld: BuildContext(mx),
 		gsu: gsu,
-		res: map[mgcCacheKey]gsuImpRes{},
 	}
+	gi.res.m = map[mgcCacheKey]gsuImpRes{}
 	return gi
 }
 
@@ -101,7 +106,11 @@ type gsuImporter struct {
 	mx  *mg.Ctx
 	bld *build.Context
 	gsu *gcSuggest
-	res map[mgcCacheKey]gsuImpRes
+
+	res struct {
+		sync.Mutex
+		m map[mgcCacheKey]gsuImpRes
+	}
 }
 
 func (gi *gsuImporter) Import(path string) (*types.Package, error) {
@@ -123,13 +132,25 @@ func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode)
 	newDefImpr, newFbkImpr, srcMode := mctl.importerFactories()
 	k := pkgInf.cacheKey(srcMode)
 
+	gi.res.Lock()
+	res, seen := gi.res.m[k]
+	if !seen {
+		gi.res.m[k] = gsuImpRes{err: errImportCycleDetected}
+	}
+	gi.res.Unlock()
+
 	// we cache the results of the underlying importer for this *session*
-	// because if it fails, we could potentialy end up in a loop
+	// because if it fails, or there's an import cycle, we could potentialy end up in a loop
 	// trying to import the package again.
-	if res, ok := gi.res[k]; ok {
+	if seen {
 		return res.pkg, res.err
 	}
-	defer func() { gi.res[k] = gsuImpRes{pkg: pkg, err: err} }()
+	defer func() {
+		gi.res.Lock()
+		defer gi.res.Unlock()
+
+		gi.res.m[k] = gsuImpRes{pkg: pkg, err: err}
+	}()
 
 	defImpr := newDefImpr(gi.mx, gi)
 	pkg, err = gi.importFrom(defImpr, k, mode)
