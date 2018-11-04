@@ -277,7 +277,8 @@ class MargoSingleton(object):
 			if view is None:
 				return None
 
-		rs = self.send(view=view, actions=[act]).wait(0.500)
+		rq = self.send(view=view, actions=[act])
+		rs = rq.wait(0.500)
 		if not rs:
 			self.out.println('aborting QueryCompletions. it did not respond in time')
 			return None
@@ -285,6 +286,14 @@ class MargoSingleton(object):
 		if rs.error:
 			self.out.println('completion error: %s: %s' % (act, rs.error))
 			return
+
+		if rs.state.view.src:
+			self._fmt_rs(
+				view=view,
+				event='query_completions',
+				rq=rq,
+				rs=rs,
+			)
 
 		cl = [c.entry() for c in rs.state.completions]
 		opts = rs.state.config.auto_complete_opts
@@ -338,21 +347,30 @@ class MargoSingleton(object):
 		self.queue(view=view, actions=[actions.ViewPosChanged])
 
 	def fmt(self, view):
-		return self._fmt_save(view=view, actions=[actions.ViewFmt], name='fmt', timeout=5.000)
+		return self._fmt_save(view=view, actions=[actions.ViewFmt], event='fmt', timeout=5.000)
 
 	def on_pre_save(self, view):
-		return self._fmt_save(view=view, actions=[actions.ViewPreSave], name='pre-save', timeout=2.000)
+		return self._fmt_save(view=view, actions=[actions.ViewPreSave], event='pre_save', timeout=2.000)
 
-	def _fmt_save(self, *, view, actions, name, timeout):
-		id_nm = '%d: %s' % (view.id(), view.file_name() or view.name())
+	def _fmt_save(self, *, view, actions, event, timeout):
 		rq = self.send(view=view, actions=actions)
 		rs = rq.wait(timeout)
+		self._fmt_rs(
+			view=view,
+			event=event,
+			rq=rq,
+			rs=rs,
+		)
+
+	def _fmt_rs(self, *, view, event, rq, rs):
+		id_nm = '%d: %s' % (view.id(), view.file_name() or view.name())
+
 		if not rs:
-			self.out.println('%s timedout on view %s' % (name, id_nm))
+			self.out.println('%s timedout on view %s' % (event, id_nm))
 			return
 
 		if rs.error:
-			self.out.println('%s error in view %s: %s' % (name, id_nm, rs.error))
+			self.out.println('%s error in view %s: %s' % (event, id_nm, rs.error))
 			return
 
 		req = rq.props.get('View', {})
