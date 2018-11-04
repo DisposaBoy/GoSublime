@@ -8,6 +8,87 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ---
 
+## 18.11.04
+
+- API BREAKAGE: Rename `mg.Reducer.Reducer*` to `mg.Reducer.R*`.
+
+  Most users should be unaffected.
+  If you've _called_ any of these methods _directly_,
+  you will need to rename the following method calls:
+
+- ReducerLabel -> RLabel
+- ReducerInit -> RInit
+- ReducerConfig -> RConfig
+- ReducerCond -> RCond
+- ReducerMount -> RMount
+- Reducerduce -> Rduce
+- ReducerUnmount -> RUnmount
+
+- API BREAKAGE: mg.RunCmdData has been un-exported
+
+- The following fields in the `&golang.GoCode{}` and `&golang.GocodeCalltips{}` reducers are now ignored.
+
+  - Source: this is now the default
+  - ProposeBuiltins: this is now the default
+  - ProposeTests: use `&golang.MarGocodeCtl{}`
+  - Autobuild: we now use the source code so there are no plans to implement this
+  - UnimportedPackages: this is now the default
+
+  See `&golang.MarGocodeCtl{}` (below).
+
+- Add support for 'unimported' packages.
+
+  - auto-completing `json.` will now try to import `encoding/json`
+  - known bugs: when adding the import, the view will scroll
+  - known limitation: we don't scan GOPATH and we don't support the vendor directory
+
+  Use `NoUnimportedPackages` (below) to disable this.
+
+- Add support for preloading imported packages when a view is activated.
+
+  - This aims to keep the cache warm to speed up auto-completion.
+
+  Use `NoPreloading` (below) to disable this.
+
+* Add support for adding `unimported` packages to the file.
+
+  - Use `AddUnimportedPackages` (below) to enabled this
+
+* All the above can be configured using the `&golang.MarGocodeCtl{}` reducer
+
+  ```Go
+  &golang.MarGocodeCtl{
+    // whether or not to include Test*, Benchmark* and Example* functions in the auto-completion list
+    // gs: this replaces the `autocomplete_tests` setting
+    ProposeTests: false,
+
+    // Don't try to automatically import packages when auto-compeltion fails
+    // e.g. when `json.` is typed, if auto-complete fails
+    // "encoding/json" is imported and auto-complete attempted on that package instead
+    // See AddUnimportedPackages
+    NoUnimportedPackages: false,
+
+    // If a package was imported internally for use in auto-completion,
+    // insert it in the source code
+    // See NoUnimportedPackages
+    // e.g. after `json.` is typed, `import "encoding/json"` added to the code
+    AddUnimportedPackages: false,
+
+    // Don't preload packages to speed up auto-completion, etc.
+    NoPreloading: false,
+
+    // Don't suggest builtin types and functions
+    // gs: this replaces the `autocomplete_builtins` setting
+    NoBuiltins: false,
+  },
+  ```
+
+* Add new lang conststants for `mg.JSX`, `mg.TS`, `mg.TSX` and rename `R` to `Rlang`
+
+* Don't treat an empty non-nil slice as matching in `LangIs()` and `ActionIs()`
+
+* Fix an infinite loop when auto-completing inside packages with cyclic dependencies
+
 ## 18.10.06
 
 - restore support for running individual test functions by pressing `ctrl+.`,`ctrl+g` or `ctrl+shift + left/right-click` on the function declaration's name
