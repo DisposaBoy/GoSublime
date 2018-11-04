@@ -21,15 +21,15 @@ type restartSupport struct {
 	issues IssueSet
 }
 
-func (rs *restartSupport) ReducerLabel() string {
+func (rs *restartSupport) RLabel() string {
 	return "Mg/Restart"
 }
 
-func (rs *restartSupport) ReducerInit(mx *Ctx) {
+func (rs *restartSupport) RInit(mx *Ctx) {
 	go rs.onInit(mx)
 }
 
-func (rs *restartSupport) ReducerCond(mx *Ctx) bool {
+func (rs *restartSupport) RCond(mx *Ctx) bool {
 	if len(rs.issues) != 0 || mx.ActionIs(rsIssues{}) {
 		return true
 	}
@@ -39,12 +39,12 @@ func (rs *restartSupport) ReducerCond(mx *Ctx) bool {
 	return false
 }
 
-func (rs *restartSupport) ReducerMount(mx *Ctx) {
+func (rs *restartSupport) RMount(mx *Ctx) {
 	rs.q = mgutil.NewChanQ(1)
 	go rs.loop()
 }
 
-func (rs *restartSupport) ReducerUnmount(mx *Ctx) {
+func (rs *restartSupport) RUnmount(mx *Ctx) {
 	rs.q.Close()
 }
 
@@ -66,7 +66,7 @@ func (rs *restartSupport) loop() {
 
 func (rs *restartSupport) mgPkg(mx *Ctx) *build.Package {
 	v := mx.View
-	if !strings.HasSuffix(v.Path, ".go") {
+	if !strings.HasSuffix(v.Path, ".go") || strings.HasSuffix(v.Path, "_test.go") {
 		return nil
 	}
 
@@ -136,14 +136,14 @@ func (rs *restartSupport) slowLint(mx *Ctx, pkg *build.Package) IssueSet {
 	isuOut := &IssueOut{
 		Dir:      mx.View.Dir(),
 		Patterns: mx.CommonPatterns(),
-		Base:     Issue{Label: rs.ReducerLabel()},
+		Base:     Issue{Label: rs.RLabel()},
 	}
 	isuOut.Write(output)
 	isuOut.Close()
 	issues := isuOut.Issues()
 
 	if err != nil {
-		mx.Log.Printf(rs.ReducerLabel()+": %s\n%s\n", err, output)
+		mx.Log.Printf(rs.RLabel()+": %s\n%s\n", err, output)
 	}
 	return issues
 }

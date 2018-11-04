@@ -43,7 +43,7 @@ func (v *View) Copy(updaters ...func(*View)) *View {
 }
 
 func (v *View) LangIs(langs ...Lang) bool {
-	if len(langs) == 0 {
+	if langs == nil {
 		return true
 	}
 	for _, l := range langs {

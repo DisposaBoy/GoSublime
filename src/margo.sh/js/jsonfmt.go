@@ -12,7 +12,7 @@ type JsonFmt struct {
 	Indent string
 }
 
-func (j JsonFmt) ReducerCond(mx *mg.Ctx) bool {
+func (j JsonFmt) ReCond(mx *mg.Ctx) bool {
 	return mx.ActionIs(mg.ViewFmt{}) && mx.LangIs(mg.JSON)
 }
 

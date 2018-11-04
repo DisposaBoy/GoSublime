@@ -242,7 +242,7 @@ func (osr *outputStreamRef) Close() error {
 	return nil
 }
 
-type RunCmdData struct {
+type runCmdData struct {
 	*Ctx
 	RunCmd
 }
@@ -256,6 +256,7 @@ func (fs RunCmdFlagSet) Parse() error {
 	return fs.FlagSet.Parse(fs.RunCmd.Args)
 }
 
+type RunDmc = RunCmd
 type RunCmd struct {
 	ActionType
 
@@ -296,7 +297,7 @@ func (rc RunCmd) IntFlag(name string, value int) int {
 }
 
 func (rc RunCmd) Interpolate(mx *Ctx) RunCmd {
-	data := RunCmdData{
+	data := runCmdData{
 		Ctx:    mx,
 		RunCmd: rc,
 	}
@@ -309,7 +310,7 @@ func (rc RunCmd) Interpolate(mx *Ctx) RunCmd {
 	return rc
 }
 
-func (rc RunCmd) interp(data RunCmdData, tpl *template.Template, buf *bytes.Buffer, s string) string {
+func (rc RunCmd) interp(data runCmdData, tpl *template.Template, buf *bytes.Buffer, s string) string {
 	if strings.Contains(s, "{{") && strings.Contains(s, "}}") {
 		if tpl, err := tpl.Parse(s); err == nil {
 			buf.Reset()

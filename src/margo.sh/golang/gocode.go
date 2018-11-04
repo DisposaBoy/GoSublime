@@ -3,18 +3,19 @@ package golang
 import (
 	"bytes"
 	"fmt"
-	"github.com/mdempsky/gocode/suggest"
 	"go/ast"
 	"go/build"
 	"go/parser"
 	"go/printer"
 	"go/token"
 	"io"
+	"kuroku.io/margocode/suggest"
 	"margo.sh/mg"
 	"margo.sh/mgpf"
 	"margo.sh/mgutil"
 	"margo.sh/sublime"
 	"os"
+	"path"
 	"strings"
 	"time"
 	"unicode"
@@ -40,42 +41,82 @@ type gocodeReq struct {
 	res chan *mg.State
 }
 
+type suggestions struct {
+	candidates []suggest.Candidate
+	unimported impSpec
+}
+
+func (gr *gocodeReq) addUnimportedPkg(st *mg.State, p impSpec) *mg.State {
+	if !gr.gx.gsu.cfg.AddUnimportedPackages {
+		return st
+	}
+	if p.Path == "" {
+		return st
+	}
+
+	src, _ := st.View.ReadAll()
+	if len(src) == 0 {
+		return st
+	}
+
+	if p.Name == path.Base(p.Path) {
+		p.Name = ""
+	}
+
+	s, ok := updateImports(st.View.Filename(), src, impSpecList{p}, nil)
+	if ok {
+		st = st.SetViewSrc(s)
+	}
+
+	return st
+}
+
 func (gr *gocodeReq) reduce() *mg.State {
-	candidates := gr.gx.candidates()
-	completions := make([]mg.Completion, 0, len(candidates))
+	sugg := gr.gx.suggestions()
+	completions := make([]mg.Completion, 0, len(sugg.candidates))
+
+	st := gr.st
+	if len(sugg.candidates) != 0 {
+		st = gr.addUnimportedPkg(st, sugg.unimported)
+	}
 
 	gr.mx.Profile.Push("gocodeReq.finalize").Pop()
-	for _, v := range candidates {
+	for _, v := range sugg.candidates {
 		if c, ok := gr.g.completion(gr.mx, gr.gx, v); ok {
 			completions = append(completions, c)
 		}
 	}
 
-	return gr.st.AddCompletions(completions...)
+	return st.AddCompletions(completions...)
 }
 
 type Gocode struct {
 	mg.ReducerType
 
-	// This field is ignored, see MarGocodeCtl.ImporterMode
-	Source bool
-
-	ProposeBuiltins          bool
-	ProposeTests             bool
-	Autobuild                bool
-	UnimportedPackages       bool
 	AllowExplicitCompletions bool
 	AllowWordCompletions     bool
 	ShowFuncParams           bool
 	ShowFuncResultNames      bool
 
-	// Whether or not to log debugging info
+	// The following fields are deprecated
+
+	// Consider using MarGocodeCtl.Debug instead, it has more useful output
 	Debug bool
+	// This field is ignored, see MarGocodeCtl.ImporterMode
+	Source bool
+	// This field is ignored, see MarGocodeCtl.NoBuiltins
+	ProposeBuiltins bool
+	// This field is ignored, see MarGocodeCtl.ProposeTests
+	ProposeTests bool
+	// This field is ignored, see MarGocodeCtl.ImporterMode
+	Autobuild bool
+	// This field is ignored, See MarGocodeCtl.NoUnimportedPackages
+	UnimportedPackages bool
 
 	reqs chan gocodeReq
 }
 
-func (g *Gocode) ReducerConfig(mx *mg.Ctx) mg.EditorConfig {
+func (g *Gocode) RConfig(mx *mg.Ctx) mg.EditorConfig {
 	cfg, ok := mx.Config.(sublime.Config)
 	if !ok {
 		return nil
@@ -84,7 +125,7 @@ func (g *Gocode) ReducerConfig(mx *mg.Ctx) mg.EditorConfig {
 	// ST might query the GoSublime plugin first, so we must always disable it
 	cfg = cfg.DisableGsComplete()
 	// but we don't want to affect editor completions in non-go files
-	if !g.ReducerCond(mx) {
+	if !g.RCond(mx) {
 		return cfg
 	}
 
@@ -97,11 +138,11 @@ func (g *Gocode) ReducerConfig(mx *mg.Ctx) mg.EditorConfig {
 	return cfg
 }
 
-func (g *Gocode) ReducerCond(mx *mg.Ctx) bool {
+func (g *Gocode) RCond(mx *mg.Ctx) bool {
 	return mx.ActionIs(mg.QueryCompletions{}) && mx.LangIs(mg.Go)
 }
 
-func (g *Gocode) ReducerMount(mx *mg.Ctx) {
+func (g *Gocode) RMount(mx *mg.Ctx) {
 	g.reqs = make(chan gocodeReq)
 	go func() {
 		for gr := range g.reqs {
@@ -110,7 +151,7 @@ func (g *Gocode) ReducerMount(mx *mg.Ctx) {
 	}()
 }
 
-func (g *Gocode) ReducerUnmount(mx *mg.Ctx) {
+func (g *Gocode) RUnmount(mx *mg.Ctx) {
 	close(g.reqs)
 }
 
@@ -258,7 +299,7 @@ func (g Gocode) completion(mx *mg.Ctx, gx *gocodeCtx, v suggest.Candidate) (c mg
 		mx.Log.Printf("gocode panicked in '%s' at pos '%d'\n", gx.fn, gx.pos)
 		return c, false
 	}
-	if !g.ProposeTests && g.matchTests(v) {
+	if !gx.gsu.cfg.ProposeTests && g.matchTests(v) {
 		return c, false
 	}
 
@@ -357,12 +398,11 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
 		return mx, nil
 	}
 
+	gsu := mctl.newGcSuggest(mx)
+	gsu.suggestDebug = g.Debug
 	gx := &gocodeCtx{
-		mx: mx,
-		gsu: newGcSuggest(mx, gsuOpts{
-			Debug:           g.Debug,
-			ProposeBuiltins: g.ProposeBuiltins,
-		}),
+		mx:   mx,
+		gsu:  gsu,
 		cn:   cx.CursorNode,
 		fn:   st.View.Filename(),
 		pos:  pos,
@@ -372,9 +412,9 @@ func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
 	return mx, gx
 }
 
-func (gx *gocodeCtx) candidates() []suggest.Candidate {
+func (gx *gocodeCtx) suggestions() suggestions {
 	if len(gx.src) == 0 {
-		return nil
+		return suggestions{}
 	}
-	return gx.gsu.candidates(gx.mx)
+	return gx.gsu.suggestions(gx.mx)
 }

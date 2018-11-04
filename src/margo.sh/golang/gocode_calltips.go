@@ -2,11 +2,11 @@ package golang
 
 import (
 	"bytes"
-	"github.com/mdempsky/gocode/suggest"
 	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"kuroku.io/margocode/suggest"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
 	"margo.sh/sublime"
@@ -22,26 +22,27 @@ type gocodeCtAct struct {
 type GocodeCalltips struct {
 	mg.ReducerType
 
+	// The following fields are deprecated
+
 	// This field is ignored, see MarGocodeCtl.ImporterMode
 	Source bool
-
-	// Whether or not to log debugging info
+	// Consider using MarGocodeCtl.Debug instead, it has more useful output
 	Debug bool
 
 	q      *mgutil.ChanQ
 	status string
 }
 
-func (gc *GocodeCalltips) ReducerCond(mx *mg.Ctx) bool {
+func (gc *GocodeCalltips) RCond(mx *mg.Ctx) bool {
 	return mx.LangIs(mg.Go)
 }
 
-func (gc *GocodeCalltips) ReducerMount(mx *mg.Ctx) {
+func (gc *GocodeCalltips) RMount(mx *mg.Ctx) {
 	gc.q = mgutil.NewChanQ(1)
 	go gc.processer()
 }
 
-func (gc *GocodeCalltips) ReducerUnmount(mx *mg.Ctx) {
+func (gc *GocodeCalltips) RUnmount(mx *mg.Ctx) {
 	gc.q.Close()
 }
 
@@ -203,11 +204,10 @@ func (gc *GocodeCalltips) candidate(mx *mg.Ctx, src []byte, pos int, funcName st
 	mx = mx.SetView(mx.View.Copy(func(v *mg.View) {
 		v.Pos = pos
 	}))
-	gsu := newGcSuggest(mx, gsuOpts{
-		Debug: gc.Debug,
-	})
-	candidates := gsu.candidates(mx)
-	for _, c := range candidates {
+	gsu := mctl.newGcSuggest(mx)
+	gsu.suggestDebug = gc.Debug
+	sugg := gsu.suggestions(mx)
+	for _, c := range sugg.candidates {
 		if strings.HasPrefix(c.Type, "func(") && strings.EqualFold(funcName, c.Name) {
 			return c, true
 		}

@@ -75,19 +75,37 @@ func Margo(m mg.Args) {
 		// or
 		// golang.GoImports,
 
-		// use gocode for autocompletion
-		// gs: this replaces the `gscomplete_enabled` setting
-		&golang.Gocode{
-			// show the function parameters. this can take up a lot of space
-			ShowFuncParams: true,
-
+		// Configure general auto-completion behaviour
+		&golang.MarGocodeCtl{
 			// whether or not to include Test*, Benchmark* and Example* functions in the auto-completion list
 			// gs: this replaces the `autocomplete_tests` setting
 			ProposeTests: false,
 
-			// whether or not builtin types and functions should be shown in the auto-completion list
+			// Don't try to automatically import packages when auto-compeltion fails
+			// e.g. when `json.` is typed, if auto-complete fails
+			// "encoding/json" is imported and auto-complete attempted on that package instead
+			// See AddUnimportedPackages
+			NoUnimportedPackages: false,
+
+			// If a package was imported internally for use in auto-completion,
+			// insert it in the source code
+			// See NoUnimportedPackages
+			// e.g. after `json.` is typed, `import "encoding/json"` added to the code
+			AddUnimportedPackages: false,
+
+			// Don't preload packages to speed up auto-completion, etc.
+			NoPreloading: false,
+
+			// Don't suggest builtin types and functions
 			// gs: this replaces the `autocomplete_builtins` setting
-			ProposeBuiltins: false,
+			NoBuiltins: false,
+		},
+
+		// Enable auto-completion
+		// gs: this replaces the `gscomplete_enabled` setting
+		&golang.Gocode{
+			// show the function parameters. this can take up a lot of space
+			ShowFuncParams: true,
 		},
 
 		// show func arguments/calltips in the status bar
@@ -156,7 +174,7 @@ type DayTimeStatus struct {
 	mg.ReducerType
 }
 
-func (dts DayTimeStatus) ReducerMount(mx *mg.Ctx) {
+func (dts DayTimeStatus) RMount(mx *mg.Ctx) {
 	// kick off the ticker when we start
 	dispatch := mx.Store.Dispatch
 	go func() {

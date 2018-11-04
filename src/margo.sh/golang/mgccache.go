@@ -103,11 +103,13 @@ func (mc *mgcCache) entries() []mgcCacheEnt {
 	return l
 }
 
-func (mc *mgcCache) forEach(f func(mgcCacheEnt)) {
+func (mc *mgcCache) forEach(f func(mgcCacheEnt) bool) {
 	mc.RLock()
 	defer mc.RUnlock()
 
 	for _, e := range mc.m {
-		f(e)
+		if !f(e) {
+			break
+		}
 	}
 }

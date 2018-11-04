@@ -22,7 +22,7 @@ type TestCmds struct {
 	TestArgs []string
 }
 
-func (tc *TestCmds) ReducerCond(mx *mg.Ctx) bool {
+func (tc *TestCmds) RCond(mx *mg.Ctx) bool {
 	return mx.LangIs(mg.Go)
 }
 

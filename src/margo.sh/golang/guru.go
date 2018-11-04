@@ -25,11 +25,11 @@ type Guru struct {
 	mg.ReducerType
 }
 
-func (g *Guru) ReducerCond(mx *mg.Ctx) bool {
+func (g *Guru) RCond(mx *mg.Ctx) bool {
 	return mx.LangIs(mg.Go)
 }
 
-func (g *Guru) ReducerMount(mx *mg.Ctx) {
+func (g *Guru) RMount(mx *mg.Ctx) {
 	go cmdrunner.Cmd{
 		Name:     "go",
 		Args:     []string{"install", "margo.sh/vendor/golang.org/x/tools/cmd/guru"},

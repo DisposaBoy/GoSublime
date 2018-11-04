@@ -158,6 +158,11 @@ func init() {
 	refBitset.set(byte(reflect.Chan))
 }
 
+type clsErr struct {
+	closed    bool  // is it closed?
+	errClosed error // error on closing
+}
+
 type charEncoding uint8
 
 const (
@@ -419,18 +424,19 @@ var immutableKindsSet = [32]bool{
 // Consequently, during (en|de)code, this takes precedence over
 // (text|binary)(M|Unm)arshal or extension support.
 //
+// By definition, it is not allowed for a Selfer to directly call Encode or Decode on itself.
+// If that is done, Encode/Decode will rightfully fail with a Stack Overflow style error.
+// For example, the snippet below will cause such an error.
+//     type testSelferRecur struct{}
+//     func (s *testSelferRecur) CodecEncodeSelf(e *Encoder) { e.MustEncode(s) }
+//     func (s *testSelferRecur) CodecDecodeSelf(d *Decoder) { d.MustDecode(s) }
+//
 // Note: *the first set of bytes of any value MUST NOT represent nil in the format*.
 // This is because, during each decode, we first check the the next set of bytes
 // represent nil, and if so, we just set the value to nil.
 type Selfer interface {
 	CodecEncodeSelf(*Encoder)
 	CodecDecodeSelf(*Decoder)
-}
-
-// MissingFieldPair is a convenience value composed of the field name and the value of the field.
-type MissingFieldPair struct {
-	Field string
-	Value interface{}
 }
 
 // MissingFielder defines the interface allowing structs to internally decode or encode
@@ -449,7 +455,7 @@ type MissingFielder interface {
 	CodecMissingField(field []byte, value interface{}) bool
 
 	// CodecMissingFields returns the set of fields which are not struct fields
-	CodecMissingFields() []MissingFieldPair
+	CodecMissingFields() map[string]interface{}
 }
 
 // MapBySlice is a tag interface that denotes wrapped slice should encode as a map in the stream.
@@ -494,6 +500,18 @@ type BasicHandle struct {
 	intf2impls
 
 	RPCOptions
+
+	// TimeNotBuiltin configures whether time.Time should be treated as a builtin type.
+	//
+	// All Handlers should know how to encode/decode time.Time as part of the core
+	// format specification, or as a standard extension defined by the format.
+	//
+	// However, users can elect to handle time.Time as a custom extension, or via the
+	// standard library's encoding.Binary(M|Unm)arshaler or Text(M|Unm)arshaler interface.
+	// To elect this behavior, users can set TimeNotBuiltin=true.
+	// Note: Setting TimeNotBuiltin=true can be used to enable the legacy behavior
+	// (for Cbor and Msgpack), where time.Time was not a builtin supported type.
+	TimeNotBuiltin bool
 
 	// ---- cache line
 
@@ -1763,7 +1781,7 @@ func (c *codecFner) get(rt reflect.Type, checkFastpath, checkCodecSelfer bool) (
 		fi.addrF = true
 		fi.addrD = ti.csp
 		fi.addrE = ti.csp
-	} else if rtid == timeTypId {
+	} else if rtid == timeTypId && !c.h.TimeNotBuiltin {
 		fn.fe = (*Encoder).kTime
 		fn.fd = (*Decoder).kTime
 	} else if rtid == rawTypId {

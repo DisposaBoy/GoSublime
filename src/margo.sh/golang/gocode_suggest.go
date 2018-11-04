@@ -2,9 +2,9 @@ package golang
 
 import (
 	"errors"
-	"github.com/mdempsky/gocode/suggest"
 	"go/build"
 	"go/types"
+	"kuroku.io/margocode/suggest"
 	"margo.sh/mg"
 	"runtime/debug"
 	"strings"
@@ -16,26 +16,18 @@ var (
 	errImportCycleDetected = errors.New("import cycle detected")
 )
 
-type gsuOpts struct {
-	ProposeBuiltins bool
-	Debug           bool
-}
-
 type gsuImpRes struct {
 	pkg *types.Package
 	err error
 }
 
 type gcSuggest struct {
-	gsuOpts
+	suggestDebug bool
+
+	cfg MarGocodeCtl
+
 	sync.Mutex
 	imp *gsuImporter
-}
-
-func newGcSuggest(mx *mg.Ctx, o gsuOpts) *gcSuggest {
-	gsu := &gcSuggest{gsuOpts: o}
-	gsu.imp = gsu.newGsuImporter(mx)
-	return gsu
 }
 
 func (gsu *gcSuggest) newGsuImporter(mx *mg.Ctx) *gsuImporter {
@@ -48,8 +40,10 @@ func (gsu *gcSuggest) newGsuImporter(mx *mg.Ctx) *gsuImporter {
 	return gi
 }
 
-func (gsu *gcSuggest) candidates(mx *mg.Ctx) []suggest.Candidate {
-	defer mx.Profile.Push("candidates").Pop()
+func (gsu *gcSuggest) suggestions(mx *mg.Ctx) suggestions {
+	sugg := suggestions{}
+
+	defer mx.Profile.Push("suggestions").Pop()
 	gsu.Lock()
 	defer gsu.Unlock()
 
@@ -64,10 +58,21 @@ func (gsu *gcSuggest) candidates(mx *mg.Ctx) []suggest.Candidate {
 		// GoSublime works around this for other packages by restarting the agent
 		// if GOPATH changes, so we should be ok
 		Importer:   gsu.imp,
-		Builtin:    gsu.ProposeBuiltins,
+		Builtin:    !gsu.cfg.NoBuiltins,
 		IgnoreCase: true,
 	}
-	if gsu.Debug {
+	if !gsu.cfg.NoUnimportedPackages {
+		srcDir := mx.View.Dir()
+		cfg.UnimportedPackage = func(nm string) *types.Package {
+			pkg, pth := gsu.imp.importFromName(nm, srcDir)
+			if pkg != nil {
+				sugg.unimported.Name = nm
+				sugg.unimported.Path = pth
+			}
+			return pkg
+		}
+	}
+	if gsu.suggestDebug {
 		cfg.Logf = func(f string, a ...interface{}) {
 			f = "Gocode: " + f
 			if !strings.HasSuffix(f, "\n") {
@@ -78,13 +83,11 @@ func (gsu *gcSuggest) candidates(mx *mg.Ctx) []suggest.Candidate {
 	}
 
 	v := mx.View
-	src, _ := v.ReadAll()
-	if len(src) == 0 {
-		return nil
+	src, pos := v.SrcPos()
+	if len(src) != 0 {
+		sugg.candidates, _ = cfg.Suggest(v.Filename(), src, pos)
 	}
-
-	l, _ := cfg.Suggest(v.Filename(), src, v.Pos)
-	return l
+	return sugg
 }
 
 type gsuPkgInfo struct {
@@ -115,6 +118,15 @@ type gsuImporter struct {
 
 func (gi *gsuImporter) Import(path string) (*types.Package, error) {
 	return gi.ImportFrom(path, ".", 0)
+}
+
+func (gi *gsuImporter) importFromName(pkgName, srcDir string) (pkg *types.Package, impPath string) {
+	impPath = mctl.importPathByName(pkgName)
+	if impPath == "" {
+		return nil, ""
+	}
+	pkg, _ = gi.ImportFrom(impPath, srcDir, 0)
+	return pkg, impPath
 }
 
 func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode) (pkg *types.Package, err error) {

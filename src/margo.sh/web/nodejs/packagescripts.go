@@ -19,11 +19,11 @@ type PackageScripts struct {
 	Cmd string
 }
 
-func (ps *PackageScripts) ReducerCond(mx *mg.Ctx) bool {
+func (ps *PackageScripts) RCond(mx *mg.Ctx) bool {
 	return mx.ActionIs(mg.QueryUserCmds{})
 }
 
-func (ps *PackageScripts) ReducerMount(mx *mg.Ctx) {
+func (ps *PackageScripts) RMount(mx *mg.Ctx) {
 	if ps.Cmd == "" {
 		ps.Cmd = ps.yarnOrNPM()
 	}

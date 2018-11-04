@@ -114,9 +114,9 @@ func (mx *Ctx) AgentName() string {
 }
 
 // ActionIs returns true if Ctx.Action is the same type as any of those in actions
-// for convenience, it returns true if actionsis empty
+// for convenience, it returns true if actions is nil
 func (mx *Ctx) ActionIs(actions ...Action) bool {
-	if len(actions) == 0 {
+	if actions == nil {
 		return true
 	}
 	typ := reflect.TypeOf(mx.Action)

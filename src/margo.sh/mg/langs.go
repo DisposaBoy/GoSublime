@@ -1,7 +1,8 @@
 package mg
 
-var (
-	AllLangs     Lang = "*"
+const (
+	AllLangs Lang = "*"
+
 	ActionScript Lang = "actionscript"
 	AppleScript  Lang = "applescript"
 	ASP          Lang = "asp"
@@ -23,6 +24,7 @@ var (
 	Java         Lang = "java"
 	JS           Lang = "js"
 	JSON         Lang = "json"
+	JSX          Lang = "JSX"
 	LaTeX        Lang = "latex"
 	LISP         Lang = "lisp"
 	Lua          Lang = "lua"
@@ -36,13 +38,15 @@ var (
 	PHP          Lang = "php"
 	Plist        Lang = "plist"
 	Python       Lang = "python"
-	R            Lang = "r"
+	Rlang        Lang = "r"
 	Ruby         Lang = "ruby"
 	Rust         Lang = "rust"
 	Scala        Lang = "scala"
 	ShellScript  Lang = "shell"
 	SQL          Lang = "sql"
 	Tcl          Lang = "tcl"
+	TS           Lang = "ts"
+	TSX          Lang = "tsx"
 	Yaml         Lang = "yaml"
 )
 

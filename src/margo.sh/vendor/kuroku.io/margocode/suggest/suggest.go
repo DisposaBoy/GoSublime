@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mdempsky/gocode/lookdot"
+	"kuroku.io/margocode/lookdot"
 )
 
 type Config struct {
@@ -19,6 +19,11 @@ type Config struct {
 	Logf       func(fmt string, args ...interface{})
 	Builtin    bool
 	IgnoreCase bool
+
+	// UnimportedPackage returns a package with name pkgName.
+	// It's used as a resort for unknown selector types like `fmt` in `fmt.`
+	// when the corresponding package has not been imported
+	UnimportedPackage func(pkgName string) *types.Package
 }
 
 // Suggest returns a list of suggestion candidates and the length of
@@ -53,6 +58,10 @@ func (c *Config) Suggest(filename string, data []byte, cursor int) ([]Candidate,
 		_, obj := scope.LookupParent(expr, pos)
 		if pkgName, isPkg := obj.(*types.PkgName); isPkg {
 			c.packageCandidates(pkgName.Imported(), &b)
+			break
+		}
+
+		if c.unimportedPackageCandidates(expr, &b) {
 			break
 		}
 
@@ -134,6 +143,18 @@ func (c *Config) fieldNameCandidates(typ types.Type, b *candidateCollector) {
 
 func (c *Config) packageCandidates(pkg *types.Package, b *candidateCollector) {
 	c.scopeCandidates(pkg.Scope(), token.NoPos, b)
+}
+
+func (c *Config) unimportedPackageCandidates(name string, b *candidateCollector) (ok bool) {
+	if c.UnimportedPackage == nil {
+		return false
+	}
+	pkg := c.UnimportedPackage(name)
+	if pkg == nil {
+		return false
+	}
+	c.packageCandidates(pkg, b)
+	return true
 }
 
 func (c *Config) scopeCandidates(scope *types.Scope, pos token.Pos, b *candidateCollector) {

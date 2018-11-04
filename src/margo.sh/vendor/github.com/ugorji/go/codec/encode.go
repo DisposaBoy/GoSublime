@@ -570,7 +570,7 @@ func (e *Encoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 	tisfi := fti.sfiSrc
 	var newlen int
 	toMap := !(fti.toArray || e.h.StructToArray)
-	var mf []MissingFieldPair
+	var mf map[string]interface{}
 	if f.ti.mf {
 		mf = rv2i(rv).(MissingFielder).CodecMissingFields()
 		toMap = true
@@ -656,12 +656,13 @@ func (e *Encoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 	}
 
 	var mflen int
-	for i := range mf {
-		if mf[i].Field == "" {
+	for k, v := range mf {
+		if k == "" {
+			delete(mf, k)
 			continue
 		}
-		if fti.infoFieldOmitempty && isEmptyValue(reflect.ValueOf(mf[i].Value), e.h.TypeInfos, recur, recur) {
-			mf[i].Field = ""
+		if fti.infoFieldOmitempty && isEmptyValue(reflect.ValueOf(v), e.h.TypeInfos, recur, recur) {
+			delete(mf, k)
 			continue
 		}
 		mflen++
@@ -687,14 +688,11 @@ func (e *Encoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 			}
 		}
 		// now, add the others
-		for i := range mf {
-			if mf[i].Field == "" {
-				continue
-			}
+		for k, v := range mf {
 			ee.WriteMapElemKey()
-			e.kStructFieldKeyName(fti.keyType, mf[i].Field)
+			e.kStructFieldKeyName(fti.keyType, k)
 			ee.WriteMapElemValue()
-			e.encode(mf[i].Value)
+			e.encode(v)
 		}
 		ee.WriteMapEnd()
 	} else {

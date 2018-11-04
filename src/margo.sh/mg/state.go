@@ -37,7 +37,7 @@ type EditorProps struct {
 
 // Ready returns true if the editor state has synced
 //
-// Reducers use this method in their ReducerCond to avoid mounting until
+// Reducers can call Ready in their RCond method to avoid mounting until
 // the editor has communicated its state.
 // Before the editor is ready, State.View, State.Editor, etc. might not contain usable data.
 func (ep *EditorProps) Ready() bool {

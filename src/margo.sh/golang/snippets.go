@@ -34,7 +34,7 @@ func SnippetFuncs(l ...SnippetFunc) *SnippetFuncsList {
 	return &SnippetFuncsList{Funcs: l}
 }
 
-func (sf *SnippetFuncsList) ReducerCond(mx *mg.Ctx) bool {
+func (sf *SnippetFuncsList) RCond(mx *mg.Ctx) bool {
 	return mx.ActionIs(mg.QueryCompletions{}) && mx.LangIs(mg.Go)
 }
 

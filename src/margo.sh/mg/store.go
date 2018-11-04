@@ -26,13 +26,13 @@ type storeReducers struct {
 
 func (sr storeReducers) Reduce(mx *Ctx) *Ctx {
 	mx.Profile.Do("Before", func() {
-		mx = sr.before.callReducers(mx)
+		mx = sr.before.reduction(mx)
 	})
 	mx.Profile.Do("Use", func() {
-		mx = sr.use.callReducers(mx)
+		mx = sr.use.reduction(mx)
 	})
 	mx.Profile.Do("After", func() {
-		mx = sr.after.callReducers(mx)
+		mx = sr.after.reduction(mx)
 	})
 	return mx
 }
@@ -73,8 +73,6 @@ type Store struct {
 		hi        chan dispatchHandler
 		unmounted bool
 	}
-
-	mounted map[*ReducerType]bool
 }
 
 func (sto *Store) mount() {
@@ -265,8 +263,6 @@ func newStore(ag *Agent, sub Subscriber) *Store {
 	// 640 slots ought to be enough for anybody
 	sto.dsp.lo = make(chan dispatchHandler, 640)
 	sto.dsp.hi = make(chan dispatchHandler, 640)
-
-	sto.mounted = map[*ReducerType]bool{}
 
 	return sto
 }

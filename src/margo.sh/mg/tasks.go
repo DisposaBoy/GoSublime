@@ -54,7 +54,7 @@ type taskTracker struct {
 	buf     bytes.Buffer
 }
 
-func (tr *taskTracker) ReducerMount(mx *Ctx) {
+func (tr *taskTracker) RMount(mx *Ctx) {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
@@ -67,7 +67,7 @@ func (tr *taskTracker) ReducerMount(mx *Ctx) {
 	}()
 }
 
-func (tr *taskTracker) ReducerUnmount(*Ctx) {
+func (tr *taskTracker) RUnmount(*Ctx) {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 

@@ -76,17 +76,17 @@ type MOTD struct {
 	mu sync.Mutex
 }
 
-func (m *MOTD) ReducerInit(mx *Ctx) {
+func (m *MOTD) RInit(mx *Ctx) {
 	if m.Endpoint == "" {
 		m.Endpoint = "https://api.margo.sh/motd.json"
 	}
 }
 
-func (m *MOTD) ReducerCond(mx *Ctx) bool {
+func (m *MOTD) RCond(mx *Ctx) bool {
 	return mx.Editor.Ready()
 }
 
-func (m *MOTD) ReducerMount(mx *Ctx) {
+func (m *MOTD) RMount(mx *Ctx) {
 	go m.proc(mx)
 }
 

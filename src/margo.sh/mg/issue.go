@@ -179,7 +179,7 @@ type issueKeySupport struct {
 	issues map[IssueKey]IssueSet
 }
 
-func (iks *issueKeySupport) ReducerMount(mx *Ctx) {
+func (iks *issueKeySupport) RMount(mx *Ctx) {
 	iks.issues = map[IssueKey]IssueSet{}
 }
 

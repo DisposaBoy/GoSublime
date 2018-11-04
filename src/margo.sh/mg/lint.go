@@ -23,7 +23,7 @@ type Linter struct {
 	q *mgutil.ChanQ
 }
 
-func (lt *Linter) ReducerCond(mx *Ctx) bool {
+func (lt *Linter) RCond(mx *Ctx) bool {
 	return mx.LangIs(lt.Langs...) &&
 		(mx.ActionIs(lt.userActs()...) || mx.ActionIs(lt.auxActs()...))
 }
@@ -50,12 +50,12 @@ func (lt *Linter) Reduce(mx *Ctx) *State {
 	}
 }
 
-func (lt *Linter) ReducerMount(mx *Ctx) {
+func (lt *Linter) RMount(mx *Ctx) {
 	lt.q = mgutil.NewChanQ(1)
 	go lt.loop()
 }
 
-func (lt *Linter) ReducerUnmount(mx *Ctx) {
+func (lt *Linter) RUnmount(mx *Ctx) {
 	lt.q.Close()
 }
 
