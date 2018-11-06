@@ -261,10 +261,13 @@ func (mgc *marGocodeCtl) Reduce(mx *mg.Ctx) *mg.State {
 func (mgc *marGocodeCtl) initIPBN(mx *mg.Ctx) {
 	// TODO: scan GOPATH as well
 
-	cmd := exec.Command("go", "list", "-find", "-e", "-f={{.Name}},{{.ImportPath}}", "std")
-	out, err := cmd.Output()
-	if err != nil {
-		mx.Log.Printf("cannot load the list of stdlib packages", err)
+	cmd := exec.Command("go", "list", "-f={{.Name}},{{.ImportPath}}", "std")
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	cmd.Stdout = outBuf
+	cmd.Stderr = errBuf
+	if err := cmd.Run(); err != nil {
+		mx.Log.Printf("``` %s ```\n%s\n%s\n", mgutil.QuoteCmd(cmd.Path, cmd.Args...), errBuf.Bytes(), err)
 	}
 
 	mgc.ipbn.Lock()
@@ -283,7 +286,7 @@ func (mgc *marGocodeCtl) initIPBN(mx *mg.Ctx) {
 		"main":     true,
 	}
 
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+	scanner := bufio.NewScanner(outBuf)
 	for scanner.Scan() {
 		line := strings.SplitN(scanner.Text(), ",", 2)
 		if len(line) != 2 {
