@@ -264,7 +264,7 @@ func (mgc *marGocodeCtl) initIPBN(mx *mg.Ctx) {
 	cmd := exec.Command("go", "list", "-find", "-e", "-f={{.Name}},{{.ImportPath}}", "std")
 	out, err := cmd.Output()
 	if err != nil {
-		mx.Log.Printf("cannot load the list of stdlib packages", err)
+		mx.Log.Printf("cannot load the list of stdlib packages: %v", err)
 	}
 
 	mgc.ipbn.Lock()
