@@ -8,6 +8,12 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ---
 
+## Changes
+
+## 18.11.06
+
+- Fix `UnimportedPackages` support for stdlib packages in go1.10 and earlier versions.
+
 ## 18.11.04
 
 - API BREAKAGE: Rename `mg.Reducer.Reducer*` to `mg.Reducer.R*`.
