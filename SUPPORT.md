@@ -1,62 +1,50 @@
-This document aims clarify what level of support you can expect when using GoSublime.
-Use of GoSublime assumes you've read and understood *all* the points herein.
+# Support
 
-Discussion of support and this file in particular are tracked here: https://github.com/DisposaBoy/GoSublime/issues/689
+This document aims to clarify what level of support you can expect while using GoSublime.
 
+Use of GoSublime assumes you've read and understood _all_ the points herein.
 
+## Sublime Text
 
-# Sublime Text
+- All versions of Sublime Text **3** should be supported.
+- For versions before the official 3.0 release in September 2017, graceful fall-backs are in place.
+- Testing is only done for the current non-beta version and only on Linux.
 
-* **Sublime Text 2 is *not* supported.**
-* It's several years old at this point and Sublime HQ does not respond to my support requests.
-* Furthermore, they've changed the default download link to Sublime Text 3 implying they do not support it either.
+## Experience
 
-If you have a *good* reason to not upgrade to Sublime Text 3,
-discuss it here https://github.com/DisposaBoy/GoSublime/issues/689
+- It is assumed that you are experienced with Sublime Text, basic key bindings, its settings system, etc.
+- It is assumed that you already have a working Go installation: https://golang.org/doc/install.
 
+## Package Control
 
+- Package Control is not supported
 
-# Experience
+## Go
 
-* It is assumed that you are experienced with Sublime Text, basic key bindings, its settings system, etc.
-* It is assumed that you already have a working Go installation: https://golang.org/doc/install
-* You are expect to have read and understand the contents of the files: GoSublime.sublime-settings, USAGE.md and 9o.md
+GoSublime is backed by https://margo.sh/ to which the following points apply:
 
-# Sublime Text's Go package
+- Like the official Go [release policy](https://golang.org/doc/devel/release.html#policy), only the current and previous released versions of Go are supported.
+- Only the main `gc` tool-chain distributed by https://golang.org/ is supported.
+- margo should not require a cgo-enabled Go installation, but non-cgo builds i.e. `CGO_ENABLED=1` are not tested.
 
-* I disable the built-in Go package so I do not test for compatibility or conflicts with GoSublime.
+## Operating Systems
 
-# Package Control
+- Testing is only done on Linux.
+- Windows and macOS should work without issue, but no testing is done on them.
 
-* I do not use Package Control and therefore not able to offer support for any issue related to it.
-* As a user, *you* are expected take care when updating GoSublime.
-* You are advised *not* to utomatically update GoSublime.
-
-# Go
-
-Please note that GoSublime is backed by a Go program named MarGo to which the following points apply.
-
-* The minimum supported version of Go is go1.6.
-* Older versions of Go might be able to compile MarGo without issue, but I will not test these older versions.
-* I also do not test the gccgo, llvm, etc. tool-chains. Only the main `gc` tool-chain is supported.
-* MarGo should not require a cgo-enabled Go installation, but I do not test installations with it disabled.
-
-# Operating Systems
-
-* I only test Linux.
-* Windows and OS X should work without issue, but I do *not* test anything on them.
-
-# Tools
+## Tools
 
 Please note:
 
-* GoSublime uses its own fork of `gocode` so any installation on your system is ignored.
-* By default `fmt` is achieved through direct use of the packages in the stdlib and not the binaries on your system.
+- GoSublime uses its own fork of `gocode` so any installation on your system is ignored.
+- By default `fmt` is achieved through direct use of the packages in the stdlib and not the binaries on your system.
 
-I do not use the following tools and do *not* test for compatibility with them:
+## Sponsors & Backers
 
-* GVM or any other Go version manager
-* GB or any other other alternative to the `go` tool
-* `goimports`, the `gofmt`/`go fmt` *binary* or any other `gofmt` alternative
-* If you use the `fmt_cmd` setting with `goimports` or any other slow command
-   you should read and understand the `ipc_timeout` setting documented in `GoSublime.sublime-settings`
+While we will make an effort to respond to all issues, we have only a limited amount of time and have chosen to give higher priority to our sponsors and backers (including those who donate outside of Open Collective and Patreon).
+
+If an urgent response is required, or an issue has gone without response for more than a few days, our sponsors and backers are welcome to send an email to support@margo.sh.
+
+## Issues with sensitive details
+
+If your issue contains sensitive details or you would otherwise prefer not to post it publicly, you're welcome to send an email to support@margo.sh.
