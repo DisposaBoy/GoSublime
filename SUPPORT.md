@@ -25,7 +25,7 @@ GoSublime is backed by https://margo.sh/ to which the following points apply:
 
 - Like the official Go [release policy](https://golang.org/doc/devel/release.html#policy), only the current and previous released versions of Go are supported.
 - Only the main `gc` tool-chain distributed by https://golang.org/ is supported.
-- margo should not require a cgo-enabled Go installation, but non-cgo builds i.e. `CGO_ENABLED=1` are not tested.
+- margo should not require a cgo-enabled Go installation, but non-cgo builds i.e. `CGO_ENABLED=0` are not tested.
 
 ## Operating Systems
 
