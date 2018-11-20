@@ -190,8 +190,11 @@ class MargoSingleton(object):
 				file_ids.append(v.id())
 
 		self.file_ids = file_ids
-
 		self.view(view.id(), view=view)
+
+		with self._view_lock:
+			m = self._views
+			self._views = {k: m[k] for k in set(file_ids).intersection(set(m.keys()))}
 
 	def event(self, name, view, handler, args):
 		if view is None:
