@@ -1,12 +1,12 @@
 {
-    "name": "Mariana",
-    "author": "Sublime HQ Pty Ltd, Dmitri Voronianski",
+    "name": "Ariana",
+    "author": "DisposaBoy, Sublime HQ Pty Ltd, Dmitri Voronianski",
     "variables":
     {
         "black": "hsl(0, 0%, 0%)",
         "blue": "hsl(210, 50%, 60%)",
         "blue2": "hsl(209, 13%, 35%)",
-        "blue3": "hsl(210, 15%, 24%)",
+        "blue3": "hsl(210, 36%, 21%)",
         "blue4": "hsl(210, 13%, 45%)",
         "blue5": "hsl(180, 36%, 54%)",
         "blue6": "hsl(221, 12%, 69%)",
