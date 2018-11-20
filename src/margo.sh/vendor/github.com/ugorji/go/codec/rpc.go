@@ -10,7 +10,7 @@ import (
 	"net/rpc"
 )
 
-var errRpcJsonNeedsTermWhitespace = errors.New("rpc requires a JsonHandle with TermWhitespace set to true")
+var errRpcJsonNeedsTermWhitespace = errors.New("rpc requires JsonHandle with TermWhitespace=true")
 
 // Rpc provides a rpc Server or Client Codec for rpc communication.
 type Rpc interface {

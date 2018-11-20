@@ -1,7 +1,6 @@
 package golang
 
 import (
-	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
@@ -12,13 +11,13 @@ import (
 	"go/types"
 	"golang.org/x/tools/go/gcexportdata"
 	"log"
+	"margo.sh/golang/internal/pkglst"
 	"margo.sh/golang/internal/srcimporter"
 	"margo.sh/mg"
 	"margo.sh/mgpf"
 	"margo.sh/mgutil"
 	"math"
-	"os/exec"
-	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"runtime/debug"
@@ -64,10 +63,7 @@ type marGocodeCtl struct {
 	cmdMap map[string]func(*mg.CmdCtx)
 	logs   *log.Logger
 
-	ipbn struct {
-		sync.RWMutex
-		m map[string]string
-	}
+	plst pkglst.Cache
 }
 
 func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImporter importerFactory, srcMode bool) {
@@ -86,32 +82,44 @@ func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImp
 }
 
 // importPathByName returns an import path whose pkg's name is pkgName
-func (mgc *marGocodeCtl) importPathByName(pkgName string) string {
-	// try the cache first
+func (mgc *marGocodeCtl) importPathByName(pkgName, srcDir string) string {
+	pkl := mgc.plst.View().ByName[pkgName]
+	switch len(pkl) {
+	case 0:
+		return ""
+	case 1:
+		if p := pkl[0]; p.Importable(srcDir) {
+			return p.ImportPath
+		}
+		return ""
+	}
+
+	// check the cache
 	// it includes packages the user actually imported
 	// so there's theoretically a better chance of importing the ideal package
 	// in cases where there's a name collision
-	if p := mgc.ipbnFromCache(pkgName); p != "" {
-		return p
+	cached := func(pk *pkglst.Pkg) bool {
+		ok := false
+		mgc.pkgs.forEach(func(e mgcCacheEnt) bool {
+			if p := e.Pkg; p.Name() == pk.Name && e.Key.Path == pk.ImportPath {
+				ok = true
+				return false
+			}
+			return true
+		})
+		return ok
 	}
 
-	mgc.ipbn.RLock()
-	defer mgc.ipbn.RUnlock()
-	return mgc.ipbn.m[pkgName]
-}
-
-func (mgc *marGocodeCtl) ipbnFromCache(pkgName string) string {
-	mgc.mu.RLock()
-	defer mgc.mu.RUnlock()
-
 	importPath := ""
-	mgc.pkgs.forEach(func(e mgcCacheEnt) bool {
-		if p := e.Pkg; p.Name() == pkgName {
-			importPath = e.Key.Path
-			return false
+	for _, p := range pkl {
+		if !p.Importable(srcDir) {
+			continue
 		}
-		return true
-	})
+		importPath = p.ImportPath
+		if cached(p) {
+			break
+		}
+	}
 	return importPath
 }
 
@@ -181,6 +189,9 @@ func (mgc *marGocodeCtl) autoPruneCache(mx *mg.Ctx) {
 		for _, source := range []bool{true, false} {
 			mgc.pkgs.del(pkgInf.cacheKey(source))
 		}
+		// TODO: should we prune the plst?
+		// we only need to do anything if the pkg is deleted or its name changes
+		// both cases are rare and we would need to reload it somehow
 	}
 
 	dpr := mgc.cfg().DebugPrune
@@ -242,7 +253,7 @@ func (mgc *marGocodeCtl) RCond(mx *mg.Ctx) bool {
 }
 
 func (mgc *marGocodeCtl) RMount(mx *mg.Ctx) {
-	go mgc.initIPBN(mx)
+	go mgc.initPlst(mx)
 }
 
 func (mgc *marGocodeCtl) Reduce(mx *mg.Ctx) *mg.State {
@@ -258,47 +269,18 @@ func (mgc *marGocodeCtl) Reduce(mx *mg.Ctx) *mg.State {
 	return mx.State
 }
 
-func (mgc *marGocodeCtl) initIPBN(mx *mg.Ctx) {
-	// TODO: scan GOPATH as well
-
-	cmd := exec.Command("go", "list", "-f={{.Name}},{{.ImportPath}}", "std")
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	cmd.Stdout = outBuf
-	cmd.Stderr = errBuf
-	if err := cmd.Run(); err != nil {
-		mx.Log.Printf("``` %s ```\n%s\n%s\n", mgutil.QuoteCmd(cmd.Path, cmd.Args...), errBuf.Bytes(), err)
-	}
-
-	mgc.ipbn.Lock()
-	defer mgc.ipbn.Unlock()
-
-	if mgc.ipbn.m == nil {
-		mgc.ipbn.m = map[string]string{}
-	}
-	m := mgc.ipbn.m
-
-	skip := map[string]bool{
-		"":         true,
-		"cmd":      true,
-		"internal": true,
-		"vendor":   true,
-		"main":     true,
-	}
-
-	scanner := bufio.NewScanner(outBuf)
-	for scanner.Scan() {
-		line := strings.SplitN(scanner.Text(), ",", 2)
-		if len(line) != 2 {
-			continue
-		}
-		nm, pth := line[0], line[1]
-		if nm == "" {
-			nm = path.Base(pth)
-		}
-		if !skip[nm] && !skip[strings.Split(pth, "/")[0]] {
-			m[nm] = pth
-		}
+func (mgc *marGocodeCtl) initPlst(mx *mg.Ctx) {
+	bctx := BuildContext(mx)
+	roots := mg.StrSet{bctx.GOROOT}.Add(PathList(bctx.GOPATH)...)
+	for _, dir := range roots {
+		dir = filepath.Join(dir, "src")
+		tsk := mx.Begin(mg.Task{
+			Title:  "Scanning Package List: " + dir,
+			NoEcho: true,
+		})
+		out, _ := mgc.plst.Scan(mx, dir)
+		mx.Log.Printf("\n%s", out)
+		tsk.Done()
 	}
 }
 
@@ -437,29 +419,19 @@ func (mgc *marGocodeCtl) unimportedPackagesCmd(cx *mg.CmdCtx) {
 		pth string
 	}
 
-	mgc.ipbn.RLock()
-	ents := make([]ent, 0, len(mgc.ipbn.m))
-	for nm, pth := range mgc.ipbn.m {
-		ents = append(ents, ent{nm: nm, pth: pth})
-	}
-	mgc.ipbn.RUnlock()
-
+	pkl := mgc.plst.View().List
 	buf := &bytes.Buffer{}
 	tbw := tabwriter.NewWriter(cx.Output, 1, 4, 1, ' ', 0)
 	defer tbw.Flush()
 
-	digits := int(math.Floor(math.Log10(float64(len(ents)))) + 1)
+	digits := int(math.Floor(math.Log10(float64(len(pkl)))) + 1)
 	sfxFormat := "\t%s\t%s\n"
 	hdrFormat := "%s" + sfxFormat
-	rowFormat := fmt.Sprintf("%%%dd/%d", digits, len(ents)) + sfxFormat
-
-	sort.Slice(ents, func(i, j int) bool {
-		return ents[i].nm < ents[j].nm
-	})
+	rowFormat := fmt.Sprintf("%%%dd/%d", digits, len(pkl)) + sfxFormat
 
 	fmt.Fprintf(buf, hdrFormat, "Count:", "Name:", "ImportPath:")
-	for i, e := range ents {
-		fmt.Fprintf(buf, rowFormat, i+1, e.nm, e.pth)
+	for i, p := range pkl {
+		fmt.Fprintf(buf, rowFormat, i+1, p.Name, p.ImportPath)
 	}
 	tbw.Write(buf.Bytes())
 }

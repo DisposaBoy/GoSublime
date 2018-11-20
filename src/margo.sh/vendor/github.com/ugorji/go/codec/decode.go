@@ -24,7 +24,7 @@ const (
 	decDefMaxDepth         = 1024 // maximum depth
 	decDefSliceCap         = 8
 	decDefChanCap          = 64 // should be large, as cap cannot be expanded
-	decScratchByteArrayLen = cacheLineSize - 8
+	decScratchByteArrayLen = cacheLineSize - (8 * 1)
 )
 
 var (
@@ -44,7 +44,9 @@ var (
 
 // decReader abstracts the reading source, allowing implementations that can
 // read from an io.Reader or directly off a byte slice with zero-copying.
-type decReader interface {
+//
+// Deprecated: Use decReaderSwitch instead.
+type __decReader interface {
 	unreadn1()
 	// readx will use the implementation scratch buffer if possible i.e. n < len(scratchbuf), OR
 	// just return a view of the []byte being decoded from.
@@ -172,13 +174,14 @@ type DecodeOptions struct {
 	// Instead, we provision up to MaxInitLen, fill that up, and start appending after that.
 	MaxInitLen int
 
-	// MaxDepth defines the maximum depth when decoding nested
-	// maps and slices. If 0 or negative, we default to a suitably large number (currently 1024).
-	MaxDepth int16
 	// ReaderBufferSize is the size of the buffer used when reading.
 	//
 	// if > 0, we use a smart buffer internally for performance purposes.
 	ReaderBufferSize int
+
+	// MaxDepth defines the maximum depth when decoding nested
+	// maps and slices. If 0 or negative, we default to a suitably large number (currently 1024).
+	MaxDepth int16
 
 	// If ErrorIfNoField, return an error when decoding a map
 	// from a codec stream into a struct, and no matching struct field is found.
@@ -255,23 +258,16 @@ type DecodeOptions struct {
 // ------------------------------------
 
 type bufioDecReader struct {
-	buf []byte
-	r   io.Reader
+	ioDecReaderCommon
 
 	c   int // cursor
-	n   int // num read
+	buf []byte
 	err error
-
-	tr  []byte
-	trb bool
-	b   [4]byte
 }
 
 func (z *bufioDecReader) reset(r io.Reader) {
-	z.r, z.c, z.n, z.err, z.trb = r, 0, 0, nil, false
-	if z.tr != nil {
-		z.tr = z.tr[:0]
-	}
+	z.ioDecReaderCommon.reset(r)
+	z.c, z.err = 0, nil
 }
 
 func (z *bufioDecReader) Read(p []byte) (n int, err error) {
@@ -349,7 +345,7 @@ func (z *bufioDecReader) Read(p []byte) (n int, err error) {
 }
 
 func (z *bufioDecReader) ReadByte() (b byte, err error) {
-	z.b[0] = 0
+	// z.b[0] = 0 // unnecessary, as err is returned if problem
 	_, err = z.Read(z.b[:1])
 	b = z.b[0]
 	return
@@ -368,10 +364,6 @@ func (z *bufioDecReader) UnreadByte() (err error) {
 		return
 	}
 	return errDecUnreadByteNothingToRead
-}
-
-func (z *bufioDecReader) numread() int {
-	return z.n
 }
 
 func (z *bufioDecReader) readx(n int) (bs []byte) {
@@ -402,6 +394,14 @@ func (z *bufioDecReader) readb(bs []byte) {
 	}
 }
 
+func (z *bufioDecReader) readn1() (b uint8) {
+	b, err := z.ReadByte()
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
 // func (z *bufioDecReader) readn1eof() (b uint8, eof bool) {
 // 	b, err := z.ReadByte()
 // 	if err != nil {
@@ -414,59 +414,31 @@ func (z *bufioDecReader) readb(bs []byte) {
 // 	return
 // }
 
-func (z *bufioDecReader) readn1() (b uint8) {
-	b, err := z.ReadByte()
-	if err != nil {
-		panic(err)
+func (z *bufioDecReader) skipLoopFn(i int) {
+	z.n += (i - z.c) - 1
+	i++
+	if z.trb {
+		z.tr = append(z.tr, z.buf[z.c:i]...)
 	}
-	return
+	z.c = i
 }
 
-func (z *bufioDecReader) search(in []byte, accept *bitset256, stop, flag uint8) (token byte, out []byte) {
-	// flag: 1 (skip), 2 (readTo), 4 (readUntil)
-	if flag == 4 {
-		for i := z.c; i < len(z.buf); i++ {
-			if z.buf[i] == stop {
-				token = z.buf[i]
-				z.n = z.n + (i - z.c) - 1
-				i++
-				out = z.buf[z.c:i]
-				if z.trb {
-					z.tr = append(z.tr, z.buf[z.c:i]...)
-				}
-				z.c = i
-				return
-			}
-		}
-	} else {
-		for i := z.c; i < len(z.buf); i++ {
-			if !accept.isset(z.buf[i]) {
-				token = z.buf[i]
-				z.n = z.n + (i - z.c) - 1
-				if flag == 1 {
-					i++
-				} else {
-					out = z.buf[z.c:i]
-				}
-				if z.trb {
-					z.tr = append(z.tr, z.buf[z.c:i]...)
-				}
-				z.c = i
-				return
-			}
+func (z *bufioDecReader) skip(accept *bitset256) (token byte) {
+	// token, _ = z.search(nil, accept, 0, 1); return
+	for i := z.c; i < len(z.buf); i++ {
+		if token = z.buf[i]; !accept.isset(token) {
+			z.skipLoopFn(i)
+			return
 		}
 	}
 	z.n += len(z.buf) - z.c
-	if flag != 1 {
-		out = append(in, z.buf[z.c:]...)
-	}
 	if z.trb {
 		z.tr = append(z.tr, z.buf[z.c:]...)
 	}
-	var n2 int
 	if z.err != nil {
-		return
+		return 0
 	}
+	var n2 int
 	for {
 		z.c = 0
 		z.buf = z.buf[0:cap(z.buf)]
@@ -475,42 +447,66 @@ func (z *bufioDecReader) search(in []byte, accept *bitset256, stop, flag uint8) 
 			z.err = nil
 		}
 		z.buf = z.buf[:n2]
-		if flag == 4 {
-			for i := 0; i < n2; i++ {
-				if z.buf[i] == stop {
-					token = z.buf[i]
-					z.n += i - 1
-					i++
-					out = append(out, z.buf[z.c:i]...)
-					if z.trb {
-						z.tr = append(z.tr, z.buf[z.c:i]...)
-					}
-					z.c = i
-					return
-				}
-			}
-		} else {
-			for i := 0; i < n2; i++ {
-				if !accept.isset(z.buf[i]) {
-					token = z.buf[i]
-					z.n += i - 1
-					if flag == 1 {
-						i++
-					}
-					if flag != 1 {
-						out = append(out, z.buf[z.c:i]...)
-					}
-					if z.trb {
-						z.tr = append(z.tr, z.buf[z.c:i]...)
-					}
-					z.c = i
-					return
-				}
+		for i := 0; i < n2; i++ {
+			if token = z.buf[i]; !accept.isset(token) {
+				z.skipLoopFn(i)
+				return
 			}
 		}
-		if flag != 1 {
-			out = append(out, z.buf[:n2]...)
+		z.n += n2
+		if z.err != nil {
+			return 0
 		}
+		if z.trb {
+			z.tr = append(z.tr, z.buf[:n2]...)
+		}
+	}
+}
+
+func (z *bufioDecReader) readToLoopFn(i int, out0 []byte) (out []byte) {
+	z.n += (i - z.c) - 1
+	if out0 == nil {
+		out = z.buf[z.c:i]
+	} else {
+		out = append(out0, z.buf[z.c:i]...)
+	}
+	if z.trb {
+		z.tr = append(z.tr, z.buf[z.c:i]...)
+	}
+	z.c = i
+	return
+}
+
+func (z *bufioDecReader) readTo(in []byte, accept *bitset256) (out []byte) {
+	// _, out = z.search(in, accept, 0, 2); return
+	for i := z.c; i < len(z.buf); i++ {
+		if !accept.isset(z.buf[i]) {
+			return z.readToLoopFn(i, nil)
+		}
+	}
+	z.n += len(z.buf) - z.c
+	out = append(in, z.buf[z.c:]...)
+	if z.trb {
+		z.tr = append(z.tr, z.buf[z.c:]...)
+	}
+	if z.err != nil {
+		return
+	}
+	var n2 int
+	for {
+		z.c = 0
+		z.buf = z.buf[0:cap(z.buf)]
+		n2, z.err = z.r.Read(z.buf)
+		if n2 > 0 && z.err != nil {
+			z.err = nil
+		}
+		z.buf = z.buf[:n2]
+		for i := 0; i < n2; i++ {
+			if !accept.isset(z.buf[i]) {
+				return z.readToLoopFn(i, out)
+			}
+		}
+		out = append(out, z.buf[:n2]...)
 		z.n += n2
 		if z.err != nil {
 			return
@@ -521,19 +517,59 @@ func (z *bufioDecReader) search(in []byte, accept *bitset256, stop, flag uint8) 
 	}
 }
 
-func (z *bufioDecReader) skip(accept *bitset256) (token byte) {
-	token, _ = z.search(nil, accept, 0, 1)
-	return
-}
-
-func (z *bufioDecReader) readTo(in []byte, accept *bitset256) (out []byte) {
-	_, out = z.search(in, accept, 0, 2)
+func (z *bufioDecReader) readUntilLoopFn(i int, out0 []byte) (out []byte) {
+	z.n += (i - z.c) - 1
+	i++
+	if out0 == nil {
+		out = z.buf[z.c:i]
+	} else {
+		out = append(out0, z.buf[z.c:i]...)
+	}
+	if z.trb {
+		z.tr = append(z.tr, z.buf[z.c:i]...)
+	}
+	z.c = i
 	return
 }
 
 func (z *bufioDecReader) readUntil(in []byte, stop byte) (out []byte) {
-	_, out = z.search(in, nil, stop, 4)
-	return
+	// _, out = z.search(in, nil, stop, 4); return
+	for i := z.c; i < len(z.buf); i++ {
+		if z.buf[i] == stop {
+			return z.readUntilLoopFn(i, nil)
+		}
+	}
+	z.n += len(z.buf) - z.c
+	out = append(in, z.buf[z.c:]...)
+	if z.trb {
+		z.tr = append(z.tr, z.buf[z.c:]...)
+	}
+	if z.err != nil {
+		return
+	}
+	var n2 int
+	for {
+		z.c = 0
+		z.buf = z.buf[0:cap(z.buf)]
+		n2, z.err = z.r.Read(z.buf)
+		if n2 > 0 && z.err != nil {
+			z.err = nil
+		}
+		z.buf = z.buf[:n2]
+		for i := 0; i < n2; i++ {
+			if z.buf[i] == stop {
+				return z.readUntilLoopFn(i, out)
+			}
+		}
+		out = append(out, z.buf[:n2]...)
+		z.n += n2
+		if z.err != nil {
+			return
+		}
+		if z.trb {
+			z.tr = append(z.tr, z.buf[:n2]...)
+		}
+	}
 }
 
 func (z *bufioDecReader) unreadn1() {
@@ -543,14 +579,40 @@ func (z *bufioDecReader) unreadn1() {
 	}
 }
 
-func (z *bufioDecReader) track() {
+type ioDecReaderCommon struct {
+	r io.Reader // the reader passed in
+
+	n int // num read
+
+	l   byte // last byte
+	ls  byte // last byte status. 0: init-canDoNothing, 1: canRead, 2: canUnread
+	trb bool // tracking bytes turned on
+	_   bool
+	b   [4]byte // tiny buffer for reading single bytes
+
+	tr []byte // tracking bytes read
+}
+
+func (z *ioDecReaderCommon) reset(r io.Reader) {
+	z.r = r
+	z.l, z.ls, z.n, z.trb = 0, 0, 0, false
+	if z.tr != nil {
+		z.tr = z.tr[:0]
+	}
+}
+
+func (z *ioDecReaderCommon) numread() int {
+	return z.n
+}
+
+func (z *ioDecReaderCommon) track() {
 	if z.tr != nil {
 		z.tr = z.tr[:0]
 	}
 	z.trb = true
 }
 
-func (z *bufioDecReader) stopTrack() (bs []byte) {
+func (z *ioDecReaderCommon) stopTrack() (bs []byte) {
 	z.trb = false
 	return z.tr
 }
@@ -559,31 +621,21 @@ func (z *bufioDecReader) stopTrack() (bs []byte) {
 //
 // It also has a fallback implementation of ByteScanner if needed.
 type ioDecReader struct {
-	r io.Reader // the reader passed in
+	ioDecReaderCommon
 
 	rr io.Reader
 	br io.ByteScanner
 
-	l   byte // last byte
-	ls  byte // last byte status. 0: init-canDoNothing, 1: canRead, 2: canUnread
-	trb bool // tracking bytes turned on
-	_   bool
-	b   [4]byte // tiny buffer for reading single bytes
-
-	x  [scratchByteArrayLen]byte // for: get struct field name, swallow valueTypeBytes, etc
-	n  int                       // num read
-	tr []byte                    // tracking bytes read
+	x [scratchByteArrayLen]byte // for: get struct field name, swallow valueTypeBytes, etc
 }
 
 func (z *ioDecReader) reset(r io.Reader) {
-	z.r = r
-	z.rr = r
-	z.l, z.ls, z.n, z.trb = 0, 0, 0, false
-	if z.tr != nil {
-		z.tr = z.tr[:0]
-	}
+	z.ioDecReaderCommon.reset(r)
+
 	var ok bool
-	if z.br, ok = r.(io.ByteScanner); !ok {
+	z.rr = r
+	z.br, ok = r.(io.ByteScanner)
+	if !ok {
 		z.br = z
 		z.rr = z
 	}
@@ -643,10 +695,6 @@ func (z *ioDecReader) UnreadByte() (err error) {
 	return
 }
 
-func (z *ioDecReader) numread() int {
-	return z.n
-}
-
 func (z *ioDecReader) readx(n int) (bs []byte) {
 	if n <= 0 {
 		return
@@ -667,9 +715,9 @@ func (z *ioDecReader) readx(n int) (bs []byte) {
 }
 
 func (z *ioDecReader) readb(bs []byte) {
-	// if len(bs) == 0 {
-	// 	return
-	// }
+	if len(bs) == 0 {
+		return
+	}
 	if _, err := decReadFull(z.rr, bs); err != nil {
 		panic(err)
 	}
@@ -695,8 +743,8 @@ func (z *ioDecReader) readn1eof() (b uint8, eof bool) {
 }
 
 func (z *ioDecReader) readn1() (b uint8) {
-	var err error
-	if b, err = z.br.ReadByte(); err == nil {
+	b, err := z.br.ReadByte()
+	if err == nil {
 		z.n++
 		if z.trb {
 			z.tr = append(z.tr, b)
@@ -707,47 +755,78 @@ func (z *ioDecReader) readn1() (b uint8) {
 }
 
 func (z *ioDecReader) skip(accept *bitset256) (token byte) {
-	for {
-		var eof bool
-		token, eof = z.readn1eof()
-		if eof {
-			return
-		}
-		if accept.isset(token) {
-			continue
-		}
+	var eof bool
+	// for {
+	// 	token, eof = z.readn1eof()
+	// 	if eof {
+	// 		return
+	// 	}
+	// 	if accept.isset(token) {
+	// 		continue
+	// 	}
+	// 	return
+	// }
+LOOP:
+	token, eof = z.readn1eof()
+	if eof {
 		return
 	}
+	if accept.isset(token) {
+		goto LOOP
+	}
+	return
 }
 
 func (z *ioDecReader) readTo(in []byte, accept *bitset256) (out []byte) {
 	out = in
-	for {
-		token, eof := z.readn1eof()
-		if eof {
-			return
-		}
-		if accept.isset(token) {
-			out = append(out, token)
-		} else {
-			z.unreadn1()
-			return
-		}
+	// for {
+	// 	token, eof := z.readn1eof()
+	// 	if eof {
+	// 		return
+	// 	}
+	// 	if accept.isset(token) {
+	// 		out = append(out, token)
+	// 	} else {
+	// 		z.unreadn1()
+	// 		return
+	// 	}
+	// }
+LOOP:
+	token, eof := z.readn1eof()
+	if eof {
+		return
 	}
+	if accept.isset(token) {
+		out = append(out, token)
+	} else {
+		z.unreadn1()
+		return
+	}
+	goto LOOP
 }
 
 func (z *ioDecReader) readUntil(in []byte, stop byte) (out []byte) {
 	out = in
-	for {
-		token, eof := z.readn1eof()
-		if eof {
-			panic(io.EOF)
-		}
-		out = append(out, token)
-		if token == stop {
-			return
-		}
+	// for {
+	// 	token, eof := z.readn1eof()
+	// 	if eof {
+	// 		panic(io.EOF)
+	// 	}
+	// 	out = append(out, token)
+	// 	if token == stop {
+	// 		return
+	// 	}
+	// }
+LOOP:
+	token, eof := z.readn1eof()
+	if eof {
+		panic(io.EOF)
 	}
+	out = append(out, token)
+	if token == stop {
+		return
+	}
+	goto LOOP
 }
 
 func (z *ioDecReader) unreadn1() {
@@ -761,18 +840,6 @@ func (z *ioDecReader) unreadn1() {
 			z.tr = z.tr[:l]
 		}
 	}
-}
-
-func (z *ioDecReader) track() {
-	if z.tr != nil {
-		z.tr = z.tr[:0]
-	}
-	z.trb = true
-}
-
-func (z *ioDecReader) stopTrack() (bs []byte) {
-	z.trb = false
-	return z.tr
 }
 
 // ------------------------------------
@@ -807,23 +874,38 @@ func (z *bytesDecReader) unreadn1() {
 	return
 }
 
+// // go:noinline
 func (z *bytesDecReader) readx(n int) (bs []byte) {
 	// slicing from a non-constant start position is more expensive,
 	// as more computation is required to decipher the pointer start position.
 	// However, we do it only once, and it's better than reslicing both z.b and return value.
 
+	// if n <= 0 {
+	// } else if z.a == 0 {
+	// 	panic(io.EOF)
+	// } else if n > z.a {
+	// 	panic(io.ErrUnexpectedEOF)
+	// } else {
+	// 	c0 := z.c
+	// 	z.c = c0 + n
+	// 	z.a = z.a - n
+	// 	bs = z.b[c0:z.c]
+	// }
+	// return
+
 	if n <= 0 {
-	} else if z.a == 0 {
-		panic(io.EOF)
-	} else if n > z.a {
-		panic(io.ErrUnexpectedEOF)
-	} else {
-		c0 := z.c
-		z.c = c0 + n
-		z.a = z.a - n
-		bs = z.b[c0:z.c]
+		return
 	}
-	return
+	if z.a == 0 {
+		panic(io.EOF)
+	}
+	if n > z.a {
+		panic(io.ErrUnexpectedEOF)
+	}
+
+	z.a -= n
+	z.c += n
+	return z.b[z.c-n : z.c]
 }
 
 func (z *bytesDecReader) readb(bs []byte) {
@@ -851,48 +933,110 @@ func (z *bytesDecReader) readn1() (v uint8) {
 // 	return
 // }
 
+// // go:noinline
 func (z *bytesDecReader) skip(accept *bitset256) (token byte) {
 	if z.a == 0 {
 		return
 	}
 	blen := len(z.b)
-	for i := z.c; i < blen; i++ {
-		if !accept.isset(z.b[i]) {
-			token = z.b[i]
+	// Replace loop with goto construct, so that this can be inlined
+	// for i := z.c; i < blen; i++ {
+	// 	if !accept.isset(z.b[i]) {
+	// 		token = z.b[i]
+	// 		i++
+	// 		z.a -= (i - z.c)
+	// 		z.c = i
+	// 		return
+	// 	}
+	// }
+	i := z.c
+LOOP:
+	if i < blen {
+		if accept.isset(z.b[i]) {
 			i++
-			z.a -= (i - z.c)
-			z.c = i
-			return
+			goto LOOP
 		}
+		token = z.b[i]
+		i++
+		z.a -= (i - z.c)
+		z.c = i
+		return
 	}
 	z.a, z.c = 0, blen
 	return
 }
 
+// // go:noinline
 func (z *bytesDecReader) readTo(_ []byte, accept *bitset256) (out []byte) {
 	if z.a == 0 {
 		return
 	}
 	blen := len(z.b)
-	for i := z.c; i < blen; i++ {
-		if !accept.isset(z.b[i]) {
-			out = z.b[z.c:i]
-			z.a -= (i - z.c)
-			z.c = i
-			return
+
+	// Replace loop with goto construct, so that this can be inlined
+	// for i := z.c; i < blen; i++ {
+	// 	if !accept.isset(z.b[i]) {
+	// 		out = z.b[z.c:i]
+	// 		z.a -= (i - z.c)
+	// 		z.c = i
+	// 		return
+	// 	}
+	// }
+	// out = z.b[z.c:]
+	// z.a, z.c = 0, blen
+	// return
+
+	// 	i := z.c
+	// LOOP:
+	// 	if i < blen {
+	// 		if accept.isset(z.b[i]) {
+	// 			i++
+	// 			goto LOOP
+	// 		}
+	// 		out = z.b[z.c:i]
+	// 		z.a -= (i - z.c)
+	// 		z.c = i
+	// 		return
+	// 	}
+	// 	out = z.b[z.c:]
+	// 	// z.a, z.c = 0, blen
+	// 	z.a = 0
+	// 	z.c = blen
+	// 	return
+
+	i := z.c
+LOOP:
+	if i < blen {
+		if accept.isset(z.b[i]) {
+			i++
+			goto LOOP
 		}
 	}
-	out = z.b[z.c:]
-	z.a, z.c = 0, blen
+	out = z.b[z.c:i]
+	z.a -= (i - z.c)
+	z.c = i
 	return
 }
 
+// // go:noinline
 func (z *bytesDecReader) readUntil(_ []byte, stop byte) (out []byte) {
 	if z.a == 0 {
 		panic(io.EOF)
 	}
 	blen := len(z.b)
-	for i := z.c; i < blen; i++ {
+	// Replace loop with goto construct, so that this can be inlined
+	// for i := z.c; i < blen; i++ {
+	// 	if z.b[i] == stop {
+	// 		i++
+	// 		out = z.b[z.c:i]
+	// 		z.a -= (i - z.c)
+	// 		z.c = i
+	// 		return
+	// 	}
+	// }
+	i := z.c
+LOOP:
+	if i < blen {
 		if z.b[i] == stop {
 			i++
 			out = z.b[z.c:i]
@@ -900,6 +1044,8 @@ func (z *bytesDecReader) readUntil(_ []byte, stop byte) (out []byte) {
 			z.c = i
 			return
 		}
+		i++
+		goto LOOP
 	}
 	z.a, z.c = 0, blen
 	panic(io.EOF)
@@ -1219,7 +1365,8 @@ func (d *Decoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 				var f interface{}
 				d.decode(&f)
 				if !mf.CodecMissingField(rvkencname, f) && d.h.ErrorIfNoField {
-					d.errorf("no matching struct field found when decoding stream map with key " + stringView(rvkencname))
+					d.errorf("no matching struct field found when decoding stream map with key: %s ",
+						stringView(rvkencname))
 				}
 			} else {
 				d.structFieldNotFound(-1, stringView(rvkencname))
@@ -1737,7 +1884,7 @@ type decNaked struct {
 
 	ru, ri, rf, rl, rs, rb, rt reflect.Value // mapping to the primitives above
 
-	// _ [6]uint64 // padding // no padding - rt goes into next cache line
+	_ [2]uint64 // padding
 }
 
 func (n *decNaked) init() {
@@ -1777,6 +1924,15 @@ type rtid2rv struct {
 
 // --------------
 
+type decReaderType uint8
+
+const (
+	decReaderTypeBytes decReaderType = iota // make this 0, so a comparison is cheap
+	decReaderTypeIo
+	decReaderTypeBufio
+	decReaderTypeUnset = 255
+)
+
 type decReaderSwitch struct {
 	rb bytesDecReader
 	// ---- cpu cache line boundary?
@@ -1785,20 +1941,142 @@ type decReaderSwitch struct {
 
 	mtr, str bool // whether maptype or slicetype are known types
 
-	be    bool // is binary encoding
-	bytes bool // is bytes reader
-	js    bool // is json handle
-	jsms  bool // is json handle, and MapKeyAsString
-	esep  bool // has elem separators
-	bufio bool // is this a bufioDecReader?
+	be   bool // is binary encoding
+	js   bool // is json handle
+	jsms bool // is json handle, and MapKeyAsString
+	esep bool // has elem separators
+
+	bytes bool
+	typ   decReaderType
+	// bytes bool // is bytes reader
+	// bufio bool // is this a bufioDecReader?
+}
+
+// these first 3 functions all always inlined, as they just check int fields, etc.
+func (z *decReaderSwitch) numread() int {
+	switch z.typ {
+	case decReaderTypeBytes:
+		return z.rb.numread()
+	case decReaderTypeIo:
+		return z.ri.numread()
+	default:
+		return z.bi.numread()
+	}
+}
+func (z *decReaderSwitch) track() {
+	switch z.typ {
+	case decReaderTypeBytes:
+		z.rb.track()
+	case decReaderTypeIo:
+		z.ri.track()
+	default:
+		z.bi.track()
+	}
+}
+func (z *decReaderSwitch) stopTrack() []byte {
+	switch z.typ {
+	case decReaderTypeBytes:
+		return z.rb.stopTrack()
+	case decReaderTypeIo:
+		return z.ri.stopTrack()
+	default:
+		return z.bi.stopTrack()
+	}
+}
+
+func (z *decReaderSwitch) unreadn1() {
+	switch z.typ {
+	case decReaderTypeBytes:
+		z.rb.unreadn1()
+	case decReaderTypeIo:
+		z.ri.unreadn1()
+	default:
+		z.bi.unreadn1()
+	}
+}
+func (z *decReaderSwitch) readx(n int) []byte {
+	switch z.typ {
+	case decReaderTypeBytes:
+		return z.rb.readx(n)
+	case decReaderTypeIo:
+		return z.ri.readx(n)
+	default:
+		return z.bi.readx(n)
+	}
+}
+func (z *decReaderSwitch) readb(s []byte) {
+	switch z.typ {
+	case decReaderTypeBytes:
+		z.rb.readb(s)
+	case decReaderTypeIo:
+		z.ri.readb(s)
+	default:
+		z.bi.readb(s)
+	}
+}
+func (z *decReaderSwitch) readn1() uint8 {
+	switch z.typ {
+	case decReaderTypeBytes:
+		return z.rb.readn1()
+	case decReaderTypeIo:
+		return z.ri.readn1()
+	default:
+		return z.bi.readn1()
+	}
+}
+func (z *decReaderSwitch) skip(accept *bitset256) (token byte) {
+	switch z.typ {
+	case decReaderTypeBytes:
+		return z.rb.skip(accept)
+	case decReaderTypeIo:
+		return z.ri.skip(accept)
+	default:
+		return z.bi.skip(accept)
+	}
+}
+func (z *decReaderSwitch) readTo(in []byte, accept *bitset256) (out []byte) {
+	switch z.typ {
+	case decReaderTypeBytes:
+		return z.rb.readTo(in, accept)
+	case decReaderTypeIo:
+		return z.ri.readTo(in, accept)
+	default:
+		return z.bi.readTo(in, accept)
+	}
+}
+func (z *decReaderSwitch) readUntil(in []byte, stop byte) (out []byte) {
+	switch z.typ {
+	case decReaderTypeBytes:
+		return z.rb.readUntil(in, stop)
+	case decReaderTypeIo:
+		return z.ri.readUntil(in, stop)
+	default:
+		return z.bi.readUntil(in, stop)
+	}
 }
 
 /*
 
+// the if/else-if/else block is expensive to inline.
+// Each node of this construct costs a lot and dominates the budget.
+// Best to only do an if fast-path else block (so fast-path is inlined).
+// This is irrespective of inlineExtraCallCost set in $GOROOT/src/cmd/compile/internal/gc/inl.go
+//
+// In decReaderSwitch methods below, we delegate all IO functions into their own methods.
+// This allows for the inlining of the common path when z.bytes=true.
+// Go 1.12+ supports inlining methods with up to 1 inlined function (or 2 if no other constructs).
+
 func (z *decReaderSwitch) unreadn1() {
 	if z.bytes {
 		z.rb.unreadn1()
-	} else if z.bufio {
+	} else {
+		z.unreadn1IO()
+	}
+}
+
+//go:noinline
+func (z *decReaderSwitch) unreadn1IO() {
+	if z.bufio {
 		z.bi.unreadn1()
 	} else {
 		z.ri.unreadn1()
@@ -1807,7 +2085,13 @@ func (z *decReaderSwitch) unreadn1() {
 func (z *decReaderSwitch) readx(n int) []byte {
 	if z.bytes {
 		return z.rb.readx(n)
-	} else if z.bufio {
+	}
+	return z.readxIO(n)
+}
+
+//go:noinline
+func (z *decReaderSwitch) readxIO(n int) []byte {
+	if z.bufio {
 		return z.bi.readx(n)
 	}
 	return z.ri.readx(n)
@@ -1815,7 +2099,14 @@ func (z *decReaderSwitch) readx(n int) []byte {
 func (z *decReaderSwitch) readb(s []byte) {
 	if z.bytes {
 		z.rb.readb(s)
-	} else if z.bufio {
+	} else {
+		z.readbIO(s)
+	}
+}
+
+//go:noinline
+func (z *decReaderSwitch) readbIO(s []byte) {
+	if z.bufio {
 		z.bi.readb(s)
 	} else {
 		z.ri.readb(s)
@@ -1824,40 +2115,27 @@ func (z *decReaderSwitch) readb(s []byte) {
 func (z *decReaderSwitch) readn1() uint8 {
 	if z.bytes {
 		return z.rb.readn1()
-	} else if z.bufio {
+	}
+	return z.readn1IO()
+}
+
+//go:noinline
+func (z *decReaderSwitch) readn1IO() uint8 {
+	if z.bufio {
 		return z.bi.readn1()
 	}
 	return z.ri.readn1()
 }
-func (z *decReaderSwitch) numread() int {
-	if z.bytes {
-		return z.rb.numread()
-	} else if z.bufio {
-		return z.bi.numread()
-	}
-	return z.ri.numread()
-}
-func (z *decReaderSwitch) track() {
-	if z.bytes {
-		z.rb.track()
-	} else if z.bufio {
-		z.bi.track()
-	} else {
-		z.ri.track()
-	}
-}
-func (z *decReaderSwitch) stopTrack() []byte {
-	if z.bytes {
-		return z.rb.stopTrack()
-	} else if z.bufio {
-		return z.bi.stopTrack()
-	}
-	return z.ri.stopTrack()
-}
 func (z *decReaderSwitch) skip(accept *bitset256) (token byte) {
 	if z.bytes {
 		return z.rb.skip(accept)
-	} else if z.bufio {
+	}
+	return z.skipIO(accept)
+}
+
+//go:noinline
+func (z *decReaderSwitch) skipIO(accept *bitset256) (token byte) {
+	if z.bufio {
 		return z.bi.skip(accept)
 	}
 	return z.ri.skip(accept)
@@ -1865,7 +2143,13 @@ func (z *decReaderSwitch) skip(accept *bitset256) (token byte) {
 func (z *decReaderSwitch) readTo(in []byte, accept *bitset256) (out []byte) {
 	if z.bytes {
 		return z.rb.readTo(in, accept)
-	} else if z.bufio {
+	}
+	return z.readToIO(in, accept)
+}
+
+//go:noinline
+func (z *decReaderSwitch) readToIO(in []byte, accept *bitset256) (out []byte) {
+	if z.bufio {
 		return z.bi.readTo(in, accept)
 	}
 	return z.ri.readTo(in, accept)
@@ -1873,7 +2157,13 @@ func (z *decReaderSwitch) readTo(in []byte, accept *bitset256) (out []byte) {
 func (z *decReaderSwitch) readUntil(in []byte, stop byte) (out []byte) {
 	if z.bytes {
 		return z.rb.readUntil(in, stop)
-	} else if z.bufio {
+	}
+	return z.readUntilIO(in, stop)
+}
+
+//go:noinline
+func (z *decReaderSwitch) readUntilIO(in []byte, stop byte) (out []byte) {
+	if z.bufio {
 		return z.bi.readUntil(in, stop)
 	}
 	return z.ri.readUntil(in, stop)
@@ -1888,9 +2178,11 @@ type Decoder struct {
 	// Try to put things that go together to fit within a cache line (8 words).
 
 	d decDriver
+
 	// NOTE: Decoder shouldn't call it's read methods,
 	// as the handler MAY need to do some coordination.
-	r decReader
+	r *decReaderSwitch
+
 	// bi *bufioDecReader
 	// cache the mapTypeId and sliceTypeId for faster comparisons
 	mtid uintptr
@@ -1899,24 +2191,23 @@ type Decoder struct {
 	n   *decNaked
 	nsp *sync.Pool
 
+	h *BasicHandle
+
 	// ---- cpu cache line boundary?
 	decReaderSwitch
 
-	// ---- cpu cache line boundary?
 	codecFnPooler
 	// cr containerStateRecv
 	err error
-
-	h *BasicHandle
 
 	depth    int16
 	maxdepth int16
 	_        [4]uint8 // padding
 
 	// ---- cpu cache line boundary?
-	b  [decScratchByteArrayLen]byte // scratch buffer, used by Decoder and xxxEncDrivers
-	is map[string]string            // used for interning strings
+	b [decScratchByteArrayLen]byte // scratch buffer, used by Decoder and xxxEncDrivers
 
+	is map[string]string // used for interning strings
 	// padding - false sharing help // modify 232 if Decoder struct changes.
 	// _ [cacheLineSize - 232%cacheLineSize]byte
 }
@@ -1943,6 +2234,7 @@ var defaultDecNaked decNaked
 
 func newDecoder(h Handle) *Decoder {
 	d := &Decoder{h: h.getBasicHandle(), err: errDecoderNotInitialized}
+	d.r = &d.decReaderSwitch
 	d.hh = h
 	d.be = h.isBinary()
 	// NOTE: do not initialize d.n here. It is lazily initialized in d.naked()
@@ -1990,6 +2282,7 @@ func (d *Decoder) Reset(r io.Reader) {
 		return
 	}
 	d.bytes = false
+	d.typ = decReaderTypeUnset
 	if d.h.ReaderBufferSize > 0 {
 		if d.bi == nil {
 			d.bi = new(bufioDecReader)
@@ -2000,8 +2293,8 @@ func (d *Decoder) Reset(r io.Reader) {
 			d.bi.buf = d.bi.buf[:0]
 		}
 		d.bi.reset(r)
-		d.r = d.bi
-		d.bufio = true
+		// d.r = d.bi
+		d.typ = decReaderTypeBufio
 	} else {
 		// d.ri.x = &d.b
 		// d.s = d.sa[:0]
@@ -2009,8 +2302,8 @@ func (d *Decoder) Reset(r io.Reader) {
 			d.ri = new(ioDecReader)
 		}
 		d.ri.reset(r)
-		d.r = d.ri
-		d.bufio = false
+		// d.r = d.ri
+		d.typ = decReaderTypeIo
 	}
 	d.resetCommon()
 }
@@ -2022,8 +2315,9 @@ func (d *Decoder) ResetBytes(in []byte) {
 		return
 	}
 	d.bytes = true
+	d.typ = decReaderTypeBytes
 	d.rb.reset(in)
-	d.r = &d.rb
+	// d.r = &d.rb
 	d.resetCommon()
 }
 
@@ -2109,6 +2403,8 @@ func (d *Decoder) naked() *decNaked {
 // A nil value in the encoded stream where a map key is expected is treated as an error.
 func (d *Decoder) Decode(v interface{}) (err error) {
 	defer d.deferred(&err)
+	// defer func() { d.deferred(&err) }() // use closure, as runtime optimizes defer with no params
+	// { x := d; y := &err; defer func() { x.deferred(y) }() } // https://github.com/golang/go/issues/14939#issuecomment-417836139
 	d.MustDecode(v)
 	return
 }
@@ -2547,7 +2843,7 @@ func (x decSliceHelper) ElemContainerState(index int) {
 	}
 }
 
-func decByteSlice(r decReader, clen, maxInitLen int, bs []byte) (bsOut []byte) {
+func decByteSlice(r *decReaderSwitch, clen, maxInitLen int, bs []byte) (bsOut []byte) {
 	if clen == 0 {
 		return zeroByteSlice
 	}

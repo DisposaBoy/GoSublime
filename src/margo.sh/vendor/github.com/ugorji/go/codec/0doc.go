@@ -39,7 +39,7 @@ Rich Feature Set includes:
   - Careful selected use of 'unsafe' for targeted performance gains.
     100% mode exists where 'unsafe' is not used at all.
   - Lock-free (sans mutex) concurrency for scaling to 100's of cores
-  - In-place updates during decode, with option to zero the value in maps and slices prior to decode
+  - In-place updates during decode, with option to zero value in maps and slices prior to decode
   - Coerce types where appropriate
     e.g. decode an int in the stream into a float, decode numbers from formatted strings, etc
   - Corner Cases:
@@ -226,15 +226,9 @@ with some caveats. See Encode documentation.
 package codec
 
 // TODO:
-//   - For Go 1.11, when mid-stack inlining is enabled,
-//     we should use committed functions for writeXXX and readXXX calls.
-//     This involves uncommenting the methods for decReaderSwitch and encWriterSwitch
-//     and using those (decReaderSwitch and encWriterSwitch) in all handles
-//     instead of encWriter and decReader.
-//     The benefit is that, for the (En|De)coder over []byte, the encWriter/decReader
-//     will be inlined, giving a performance bump for that typical case.
-//     However, it will only  be inlined if mid-stack inlining is enabled,
-//     as we call panic to raise errors, and panic currently prevents inlining.
+//   - When mid-stack inlining is enabled, do the following:
+//     - if 41<=inlineExtraCallCost<=56, make ioEncWriter.{writen1,writen2,writestr,writeb,atEndOfEncode} go:noinline
+//     - if <=40, do nothing
 //
 // PUNTED:
 //   - To make Handle comparable, make extHandle in BasicHandle a non-embedded pointer,

@@ -135,6 +135,9 @@ type State struct {
 	// Tooltips is a list of tips to show the user
 	Tooltips []Tooltip
 
+	// HUD contains information to the displayed to the user
+	HUD HUDState
+
 	// clientActions is a list of client actions to dispatch in the editor
 	clientActions []clientActionType
 }
@@ -169,6 +172,16 @@ func (st *State) Copy(updaters ...func(*State)) *State {
 		f(st)
 	}
 	return st
+}
+
+// AddHUD adds a new article to State.HUD
+func (st *State) AddHUD(title string, content ...string) *State {
+	if len(content) == 0 {
+		return st
+	}
+	return st.Copy(func(st *State) {
+		st.HUD = st.HUD.Add(HUDArticle{Title: title, Content: content})
+	})
 }
 
 // AddTooltips add the list of tooltips l to State.Tooltips

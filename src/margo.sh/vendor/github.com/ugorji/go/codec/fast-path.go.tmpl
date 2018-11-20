@@ -1,6 +1,6 @@
 // +build !notfastpath
 
-// Copyright (c) 2012-2015 Ugorji Nwoke. All rights reserved.
+// Copyright (c) 2012-2018 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
 
 // Code generated from fast-path.go.tmpl - DO NOT EDIT.
@@ -251,7 +251,7 @@ func (_ fastpathT) {{ .MethodNamePfx "Enc" false }}V(v map[{{ .MapKey }}]{{ .Ele
 		v2 := make([]bytesI, len(v))
 		var i, l int
 		var vp *bytesI {{/* put loop variables outside. seems currently needed for better perf */}}
-		for k2, _ := range v {
+		for k2 := range v {
 			l = len(mksv)
 			e2.MustEncode(k2)
 			vp = &v2[i]
@@ -280,7 +280,7 @@ func (_ fastpathT) {{ .MethodNamePfx "Enc" false }}V(v map[{{ .MapKey }}]{{ .Ele
 			e.encode(v[v2[j].i])
 		} */}} {{else}}{{ $x := sorttype .MapKey true}}v2 := make([]{{ $x }}, len(v))
 		var i int 
-		for k, _ := range v {
+		for k := range v {
 			v2[i] = {{ $x }}(k)
 			i++
 		}
@@ -288,19 +288,19 @@ func (_ fastpathT) {{ .MethodNamePfx "Enc" false }}V(v map[{{ .MapKey }}]{{ .Ele
 		if esep {
 			for _, k2 := range v2 {
 				ee.WriteMapElemKey()
-				{{if eq .MapKey "string"}}ee.EncodeString(cUTF8, k2){{else}}{{ $y := printf "%s(k2)" .MapKey }}{{ encmd .MapKey $y }}{{end}}
+				{{if eq .MapKey "string"}}ee.EncodeStringEnc(cUTF8, k2){{else}}{{ $y := printf "%s(k2)" .MapKey }}{{ encmd .MapKey $y }}{{end}}
 				ee.WriteMapElemValue()
 				{{ $y := printf "v[%s(k2)]" .MapKey }}{{ encmd .Elem $y }}
 			} 
 		} else {
 			for _, k2 := range v2 {
-				{{if eq .MapKey "string"}}ee.EncodeString(cUTF8, k2){{else}}{{ $y := printf "%s(k2)" .MapKey }}{{ encmd .MapKey $y }}{{end}}
+				{{if eq .MapKey "string"}}ee.EncodeStringEnc(cUTF8, k2){{else}}{{ $y := printf "%s(k2)" .MapKey }}{{ encmd .MapKey $y }}{{end}}
 				{{ $y := printf "v[%s(k2)]" .MapKey }}{{ encmd .Elem $y }}
 			} 
 		} {{/*
 		for _, k2 := range v2 {
 			if esep { ee.WriteMapElemKey() }
-			{{if eq .MapKey "string"}}ee.EncodeString(cUTF8, k2){{else}}{{ $y := printf "%s(k2)" .MapKey }}{{ encmd .MapKey $y }}{{end}}
+			{{if eq .MapKey "string"}}ee.EncodeStringEnc(cUTF8, k2){{else}}{{ $y := printf "%s(k2)" .MapKey }}{{ encmd .MapKey $y }}{{end}}
 			if esep { ee.WriteMapElemValue() }
 			{{ $y := printf "v[%s(k2)]" .MapKey }}{{ encmd .Elem $y }}
 		} */}} {{end}}
@@ -308,19 +308,19 @@ func (_ fastpathT) {{ .MethodNamePfx "Enc" false }}V(v map[{{ .MapKey }}]{{ .Ele
 		if esep {
 			for k2, v2 := range v {
 				ee.WriteMapElemKey()
-				{{if eq .MapKey "string"}}ee.EncodeString(cUTF8, k2){{else}}{{ encmd .MapKey "k2"}}{{end}}
+				{{if eq .MapKey "string"}}ee.EncodeStringEnc(cUTF8, k2){{else}}{{ encmd .MapKey "k2"}}{{end}}
 				ee.WriteMapElemValue()
 				{{ encmd .Elem "v2"}}
 			}
 		} else {
 			for k2, v2 := range v {
-				{{if eq .MapKey "string"}}ee.EncodeString(cUTF8, k2){{else}}{{ encmd .MapKey "k2"}}{{end}}
+				{{if eq .MapKey "string"}}ee.EncodeStringEnc(cUTF8, k2){{else}}{{ encmd .MapKey "k2"}}{{end}}
 				{{ encmd .Elem "v2"}}
 			}
 		} {{/*
 		for k2, v2 := range v {
 			if esep { ee.WriteMapElemKey() }
-			{{if eq .MapKey "string"}}ee.EncodeString(cUTF8, k2){{else}}{{ encmd .MapKey "k2"}}{{end}}
+			{{if eq .MapKey "string"}}ee.EncodeStringEnc(cUTF8, k2){{else}}{{ encmd .MapKey "k2"}}{{end}}
 			if esep { ee.WriteMapElemValue() }
 			{{ encmd .Elem "v2"}}
 		} */}}

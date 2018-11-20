@@ -29,3 +29,26 @@ func TestIssueWriter(t *testing.T) {
 		t.Errorf("IssueWriter parsing failed. Expected %#v, got %#v", expect, issues)
 	}
 }
+
+func BenchmarkIssueSetAdd(b *testing.B) {
+	// if we make a syntax error at the top of a large file
+	// we can end up with thousands of errors
+	large := make(IssueSet, 2000)
+	for i, _ := range large {
+		large[i] = Issue{Row: i, Col: i}
+	}
+	small := large[:100]
+
+	run := func(b *testing.B, s, add IssueSet) {
+		b.Helper()
+		for i := 0; i < b.N; i++ {
+			s.Add(add...)
+		}
+	}
+	b.Run("empty, large", func(b *testing.B) { run(b, IssueSet{}, large) })
+	b.Run("small, large", func(b *testing.B) { run(b, small, large) })
+	b.Run("large, large", func(b *testing.B) { run(b, large, large) })
+	b.Run("empty, small", func(b *testing.B) { run(b, IssueSet{}, small) })
+	b.Run("small, small", func(b *testing.B) { run(b, small, small) })
+	b.Run("large, small", func(b *testing.B) { run(b, large, small) })
+}

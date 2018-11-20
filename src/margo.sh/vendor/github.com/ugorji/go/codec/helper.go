@@ -166,12 +166,14 @@ type clsErr struct {
 type charEncoding uint8
 
 const (
-	cRAW charEncoding = iota
+	_ charEncoding = iota // make 0 unset
 	cUTF8
 	cUTF16LE
 	cUTF16BE
 	cUTF32LE
 	cUTF32BE
+	// Deprecated: not a true char encoding value
+	cRAW charEncoding = 255
 )
 
 // valueType is the stream type
@@ -698,7 +700,7 @@ func (noElemSeparators) recreateEncDriver(e encDriver) (v bool) { return }
 // Users must already slice the x completely, because we will not reslice.
 type bigenHelper struct {
 	x []byte // must be correctly sliced to appropriate len. slicing is a cost.
-	w encWriter
+	w *encWriterSwitch
 }
 
 func (z bigenHelper) writeUint16(v uint16) {
@@ -2419,12 +2421,11 @@ func (panicHdl) errorstr(message string) {
 }
 
 func (panicHdl) errorf(format string, params ...interface{}) {
-	if format != "" {
-		if len(params) == 0 {
-			panic(format)
-		} else {
-			panic(fmt.Sprintf(format, params...))
-		}
+	if format == "" {
+	} else if len(params) == 0 {
+		panic(format)
+	} else {
+		panic(fmt.Sprintf(format, params...))
 	}
 }
 

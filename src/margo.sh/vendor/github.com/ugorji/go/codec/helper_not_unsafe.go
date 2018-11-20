@@ -211,7 +211,7 @@ func (e *Encoder) kTime(f *codecFnInfo, rv reflect.Value) {
 }
 
 func (e *Encoder) kString(f *codecFnInfo, rv reflect.Value) {
-	e.e.EncodeString(cUTF8, rv.String())
+	e.e.EncodeStringEnc(cUTF8, rv.String())
 }
 
 func (e *Encoder) kFloat64(f *codecFnInfo, rv reflect.Value) {

@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"margo.sh/why_would_you_make_yotsuba_cry"
 	"os"
 	"path/filepath"
@@ -60,8 +61,18 @@ func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
 	if np := node.Pos(); !np.IsValid() || pos <= np {
 		return false
 	}
+
 	ne := node.End()
-	if c, ok := node.(*ast.Comment); ok && strings.HasPrefix(c.Text, "//") {
+	var cmnt *ast.Comment
+	switch x := node.(type) {
+	case *ast.Comment:
+		cmnt = x
+	case *ast.CommentGroup:
+		if l := x.List; len(l) != 0 {
+			cmnt = l[len(l)-1]
+		}
+	}
+	if cmnt != nil && strings.HasPrefix(cmnt.Text, "//") {
 		// line comments' end don't include the newline
 		ne++
 	}
@@ -81,10 +92,11 @@ func (pe PosEnd) End() token.Pos {
 	return pe.E
 }
 
-type CursorNode struct {
+type cursorNode struct {
 	Pos       token.Pos
 	AstFile   *ast.File
 	TokenFile *token.File
+	Doc       *DocNode
 
 	GenDecl    *ast.GenDecl
 	ImportSpec *ast.ImportSpec
@@ -96,14 +108,13 @@ type CursorNode struct {
 	Node       ast.Node
 }
 
-func (cn *CursorNode) Visit(node ast.Node) ast.Visitor {
-	if NodeEnclosesPos(node, cn.Pos) {
-		cn.Append(node)
+func (cn *cursorNode) append(n ast.Node) {
+	// ignore bad nodes, they usually just make scope detection fail with no obvious benefit
+	switch n.(type) {
+	case *ast.BadDecl, *ast.BadExpr, *ast.BadStmt:
+		return
 	}
-	return cn
-}
 
-func (cn *CursorNode) Append(n ast.Node) {
 	for _, x := range cn.Nodes {
 		if n == x {
 			return
@@ -112,7 +123,7 @@ func (cn *CursorNode) Append(n ast.Node) {
 	cn.Nodes = append(cn.Nodes, n)
 }
 
-func (cn *CursorNode) Set(destPtr interface{}) bool {
+func (cn *cursorNode) Set(destPtr interface{}) bool {
 	v := reflect.ValueOf(destPtr).Elem()
 	if !v.CanSet() {
 		return false
@@ -127,7 +138,29 @@ func (cn *CursorNode) Set(destPtr interface{}) bool {
 	return false
 }
 
-func ParseCursorNode(kvs mg.KVStore, src []byte, offset int) *CursorNode {
+func (cn *cursorNode) Each(f func(ast.Node)) {
+	for i := len(cn.Nodes) - 1; i >= 0; i-- {
+		f(cn.Nodes[i])
+	}
+}
+
+func (cn *cursorNode) Some(f func(ast.Node) bool) bool {
+	for i := len(cn.Nodes) - 1; i >= 0; i-- {
+		if f(cn.Nodes[i]) {
+			return true
+		}
+	}
+	return false
+}
+
+func (cn *cursorNode) Contains(typ ast.Node) bool {
+	t := reflect.TypeOf(typ)
+	return cn.Some(func(n ast.Node) bool {
+		return reflect.TypeOf(n) == t
+	})
+}
+
+func (cn *cursorNode) init(kvs mg.KVStore, src []byte, offset int) {
 	astFileIsValid := func(af *ast.File) bool {
 		return af.Package.IsValid() &&
 			af.Name != nil &&
@@ -147,36 +180,95 @@ func ParseCursorNode(kvs mg.KVStore, src []byte, offset int) *CursorNode {
 	}
 
 	af := pf.AstFile
-	cn := &CursorNode{
-		AstFile:   af,
-		TokenFile: pf.TokenFile,
-		Pos:       token.Pos(pf.TokenFile.Base() + offset),
-	}
+	cn.AstFile = af
+	cn.TokenFile = pf.TokenFile
+	cn.Pos = token.Pos(pf.TokenFile.Base() + offset)
 
 	if astFileIsValid(af) && cn.Pos > af.Name.End() {
-		cn.Append(af)
-		ast.Walk(cn, af)
+		cn.append(af)
+		ast.Inspect(af, func(n ast.Node) bool {
+			if NodeEnclosesPos(n, cn.Pos) {
+				cn.append(n)
+			}
+			return true
+		})
 	}
 
 	for _, cg := range af.Comments {
 		for _, c := range cg.List {
 			if NodeEnclosesPos(c, cn.Pos) {
-				cn.Append(c)
+				cn.append(c)
 			}
 		}
 	}
 
-	if len(cn.Nodes) != 0 {
-		cn.Node = cn.Nodes[len(cn.Nodes)-1]
-		cn.Set(&cn.GenDecl)
-		cn.Set(&cn.BlockStmt)
-		cn.Set(&cn.BasicLit)
-		cn.Set(&cn.CallExpr)
-		cn.Set(&cn.Comment)
-		cn.Set(&cn.ImportSpec)
+	if len(cn.Nodes) == 0 {
+		return
 	}
+	cn.Node = cn.Nodes[len(cn.Nodes)-1]
+	cn.Each(func(n ast.Node) {
+		switch x := n.(type) {
+		case *ast.GenDecl:
+			cn.GenDecl = x
+		case *ast.BlockStmt:
+			cn.BlockStmt = x
+		case *ast.BasicLit:
+			cn.BasicLit = x
+		case *ast.CallExpr:
+			cn.CallExpr = x
+		case *ast.Comment:
+			cn.Comment = x
+		case *ast.ImportSpec:
+			cn.ImportSpec = x
+		}
+	})
 
-	return cn
+	if cn.Comment == nil {
+		return
+	}
+	setDoc := func(n ast.Node) bool {
+		if cn.Doc != nil {
+			return true
+		}
+
+		var cg *ast.CommentGroup
+		switch x := n.(type) {
+		case *ast.GenDecl:
+			cg = x.Doc
+		case *ast.ImportSpec:
+			cg = x.Doc
+		case *ast.File:
+			cg = x.Doc
+		case *ast.Field:
+			cg = x.Doc
+		case *ast.TypeSpec:
+			cg = x.Doc
+		case *ast.FuncDecl:
+			cg = x.Doc
+		case *ast.ValueSpec:
+			cg = x.Doc
+		}
+		if cg == nil || !NodeEnclosesPos(cg, cn.Pos) {
+			return false
+		}
+
+		cn.Doc = &DocNode{
+			Node:         n,
+			CommentGroup: *cg,
+		}
+		return true
+	}
+	setDoc(af)
+	for _, n := range af.Decls {
+		if setDoc(n) {
+			break
+		}
+	}
+	for _, n := range af.Imports {
+		if setDoc(n) {
+			break
+		}
+	}
 }
 
 func IsLetter(ch rune) bool {
@@ -217,4 +309,12 @@ func Dedent(s string) string {
 		lines[i] = strings.TrimPrefix(ln, pfx)
 	}
 	return strings.Join(lines, "\n")
+}
+
+func consumeLeft(src []byte, pos int, cond func(rune) bool) int {
+	return mgutil.RepositionLeft(src, pos, cond)
+}
+
+func consumeRight(src []byte, pos int, cond func(rune) bool) int {
+	return mgutil.RepositionRight(src, pos, cond)
 }

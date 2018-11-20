@@ -65,10 +65,9 @@ func (g *Guru) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
 	}
 
 	cx := NewViewCursorCtx(mx)
-	cn := cx.CursorNode
 	var onId *ast.Ident
 	var onSel *ast.SelectorExpr
-	if !cn.Set(&onId) && !cn.Set(&onSel) {
+	if !cx.Set(&onId) && !cx.Set(&onSel) {
 		// we're not on a name, nothing to look for
 		return mx.State
 	}

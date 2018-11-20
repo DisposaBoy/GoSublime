@@ -60,6 +60,12 @@ const (
 	Notice  = IssueTag("notice")
 )
 
+type issueHash struct {
+	loc string
+	row int
+	msg string
+}
+
 type Issue struct {
 	Path    string
 	Name    string
@@ -71,25 +77,38 @@ type Issue struct {
 	Message string
 }
 
-func (isu Issue) finalize() Issue {
-	if isu.Tag == "" {
-		isu.Tag = Error
+func (isu *Issue) finalize() Issue {
+	v := *isu
+	if v.Tag == "" {
+		v.Tag = Error
 	}
-	return isu
+	return v
 }
 
-func (isu Issue) Equal(p Issue) bool {
-	return isu.SameFile(p) && isu.Row == p.Row && isu.Message == p.Message
+func (isu *Issue) hash() issueHash {
+	h := issueHash{
+		loc: isu.Path,
+		row: isu.Row,
+		msg: isu.Message,
+	}
+	if h.loc == "" {
+		h.loc = isu.Name
+	}
+	return h
 }
 
-func (isu Issue) SameFile(p Issue) bool {
+func (isu *Issue) Equal(p Issue) bool {
+	return isu.hash() == p.hash()
+}
+
+func (isu *Issue) SameFile(p Issue) bool {
 	if isu.Path != "" {
 		return isu.Path == p.Path
 	}
 	return isu.Name == p.Name
 }
 
-func (isu Issue) InView(v *View) bool {
+func (isu *Issue) InView(v *View) bool {
 	if isu.Path != "" && isu.Path == v.Path {
 		return true
 	}
@@ -99,7 +118,7 @@ func (isu Issue) InView(v *View) bool {
 	return false
 }
 
-func (isu Issue) Valid() bool {
+func (isu *Issue) Valid() bool {
 	return (isu.Name != "" || isu.Path != "") && isu.Message != ""
 }
 
@@ -118,16 +137,18 @@ func (s IssueSet) Equal(issues IssueSet) bool {
 }
 
 func (s IssueSet) Add(l ...Issue) IssueSet {
-	res := make(IssueSet, 0, len(s)+len(l))
+	m := make(map[issueHash]*Issue, len(s)+len(l))
 	for _, lst := range []IssueSet{s, IssueSet(l)} {
-		for _, p := range lst {
-			p = p.finalize()
-			if !res.Has(p) {
-				res = append(res, p)
-			}
+		for i, _ := range lst {
+			isu := &lst[i]
+			m[isu.hash()] = isu
 		}
 	}
-	return res
+	s = make(IssueSet, 0, len(m))
+	for _, isu := range m {
+		s = append(s, isu.finalize())
+	}
+	return s
 }
 
 func (s IssueSet) Remove(l ...Issue) IssueSet {
@@ -278,7 +299,7 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 	if msg != "" {
 		status = append(status, msg)
 	}
-	return mx.AddStatus(status...)
+	return mx.AddStatus(status...).AddHUD("Issues", status...)
 }
 
 type IssueOut struct {

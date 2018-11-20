@@ -1,43 +1,61 @@
 package golang
 
 import (
+	"bytes"
 	"go/ast"
 	"go/token"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"sort"
 	"strings"
 )
 
 const (
 	cursorScopesStart CursorScope = 1 << iota
-	PackageScope
-	FileScope
-	DeclScope
+	AssignmentScope
 	BlockScope
-	ImportScope
-	ConstScope
-	VarScope
-	TypeScope
 	CommentScope
-	StringScope
+	ConstScope
+	DeferScope
+	DocScope
+	ExprScope
+	FileScope
+	FuncDeclScope
+	IdentScope
 	ImportPathScope
+	ImportScope
+	PackageScope
+	ReturnScope
+	SelectorScope
+	StringScope
+	TypeDeclScope
+	VarScope
 	cursorScopesEnd
 )
 
 var (
 	cursorScopeNames = map[CursorScope]string{
-		PackageScope:    "PackageScope",
-		FileScope:       "FileScope",
-		DeclScope:       "DeclScope",
+		AssignmentScope: "AssignmentScope",
 		BlockScope:      "BlockScope",
-		ImportScope:     "ImportScope",
-		ConstScope:      "ConstScope",
-		VarScope:        "VarScope",
-		TypeScope:       "TypeScope",
 		CommentScope:    "CommentScope",
-		StringScope:     "StringScope",
+		ConstScope:      "ConstScope",
+		DeferScope:      "DeferScope",
+		DocScope:        "DocScope",
+		ExprScope:       "ExprScope",
+		FileScope:       "FileScope",
+		FuncDeclScope:   "FuncDeclScope",
+		IdentScope:      "IdentScope",
 		ImportPathScope: "ImportPathScope",
+		ImportScope:     "ImportScope",
+		PackageScope:    "PackageScope",
+		ReturnScope:     "ReturnScope",
+		SelectorScope:   "SelectorScope",
+		StringScope:     "StringScope",
+		TypeDeclScope:   "TypeDeclScope",
+		VarScope:        "VarScope",
 	}
+
+	_ ast.Node = (*DocNode)(nil)
 )
 
 type CursorScope uint64
@@ -57,36 +75,29 @@ func (cs CursorScope) String() string {
 	return strings.Join(l, "|")
 }
 
-func (cs CursorScope) Is(scope CursorScope) bool {
-	return cs&scope != 0
-}
-
-func (cs CursorScope) Any(scopes ...CursorScope) bool {
+func (cs CursorScope) Is(scopes ...CursorScope) bool {
 	for _, s := range scopes {
-		if cs&s != 0 {
+		if s&cs != 0 {
 			return true
 		}
 	}
 	return false
 }
 
-func (cs CursorScope) All(scopes ...CursorScope) bool {
-	for _, s := range scopes {
-		if cs&s == 0 {
-			return false
-		}
-	}
-	return true
+type DocNode struct {
+	Node ast.Node
+	ast.CommentGroup
 }
 
 type CompletionCtx = CursorCtx
 type CursorCtx struct {
-	*mg.Ctx
-	CursorNode *CursorNode
-	AstFile    *ast.File
+	cursorNode
+	Ctx        *mg.Ctx
+	View       *mg.View
 	Scope      CursorScope
 	PkgName    string
 	IsTestFile bool
+	Line       []byte
 }
 
 func NewCompletionCtx(mx *mg.Ctx, src []byte, pos int) *CompletionCtx {
@@ -99,21 +110,40 @@ func NewViewCursorCtx(mx *mg.Ctx) *CursorCtx {
 }
 
 func NewCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
-	cn := ParseCursorNode(mx.Store, src, pos)
-	af := cn.AstFile
+	pos = mgutil.ClampPos(src, pos)
+
+	// if we're at the end of the line, move the cursor onto the last thing on the line
+	space := func(r rune) bool { return r == ' ' || r == '\t' }
+	if i := mgutil.RepositionRight(src, pos, space); i < len(src) && src[i] == '\n' {
+		pos = mgutil.RepositionLeft(src, pos, space)
+		if j := pos - 1; j >= 0 && src[j] != '\n' && src[j] != '}' {
+			pos = j
+		}
+	}
+
+	ll := mgutil.RepositionLeft(src, pos, func(r rune) bool { return r != '\n' })
+	lr := mgutil.RepositionRight(src, pos, func(r rune) bool { return r != '\n' })
+	cx := &CursorCtx{
+		Ctx:  mx,
+		View: mx.View,
+		Line: bytes.TrimSpace(src[ll:lr]),
+	}
+	cx.init(mx.Store, src, pos)
+
+	af := cx.AstFile
 	if af == nil {
 		af = NilAstFile
 	}
-	cx := &CursorCtx{
-		Ctx:        mx,
-		CursorNode: cn,
-		AstFile:    af,
-		PkgName:    af.Name.String(),
-	}
+	cx.PkgName = af.Name.String()
+
 	cx.IsTestFile = strings.HasSuffix(mx.View.Filename(), "_test.go") ||
 		strings.HasSuffix(cx.PkgName, "_test")
 
-	if cn.Comment != nil {
+	if cx.Comment != nil {
+		cx.Scope |= CommentScope
+	}
+	if cx.Doc != nil {
+		cx.Scope |= DocScope
 		cx.Scope |= CommentScope
 	}
 
@@ -123,7 +153,7 @@ func NewCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
 		return cx
 	}
 
-	switch x := cx.CursorNode.Node.(type) {
+	switch x := cx.Node.(type) {
 	case nil:
 		cx.Scope |= PackageScope
 	case *ast.File:
@@ -131,12 +161,27 @@ func NewCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
 	case *ast.BlockStmt:
 		cx.Scope |= BlockScope
 	case *ast.CaseClause:
-		if NodeEnclosesPos(PosEnd{x.Colon, x.End()}, cn.Pos) {
+		if NodeEnclosesPos(PosEnd{x.Colon, x.End()}, cx.Pos) {
 			cx.Scope |= BlockScope
 		}
+	case *ast.Ident:
+		cx.Scope |= IdentScope
 	}
 
-	if gd := cn.GenDecl; gd != nil {
+	cx.Each(func(n ast.Node) {
+		switch n.(type) {
+		case *ast.AssignStmt:
+			cx.Scope |= AssignmentScope
+		case *ast.SelectorExpr:
+			cx.Scope |= SelectorScope
+		case *ast.ReturnStmt:
+			cx.Scope |= ReturnScope
+		case *ast.DeferStmt:
+			cx.Scope |= DeferScope
+		}
+	})
+
+	if gd := cx.GenDecl; gd != nil {
 		switch gd.Tok {
 		case token.IMPORT:
 			cx.Scope |= ImportScope
@@ -144,17 +189,46 @@ func NewCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
 			cx.Scope |= ConstScope
 		case token.VAR:
 			cx.Scope |= VarScope
-		case token.TYPE:
-			cx.Scope |= TypeScope
 		}
 	}
 
-	if lit := cn.BasicLit; lit != nil && lit.Kind == token.STRING {
-		if cn.ImportSpec != nil {
+	if lit := cx.BasicLit; lit != nil && lit.Kind == token.STRING {
+		cx.Scope |= StringScope
+		if cx.ImportSpec != nil {
 			cx.Scope |= ImportPathScope
-		} else {
-			cx.Scope |= StringScope
 		}
+	}
+
+	// we want to allow `kw`, `kw name`, `kw (\n|\n)`
+	punct := func(r rune) bool { return r != ' ' && r != '\t' && !IsLetter(r) }
+	if cx.Scope == 0 && bytes.IndexFunc(cx.Line, punct) < 0 {
+		switch x := cx.Node.(type) {
+		case *ast.FuncType:
+			cx.Scope |= FuncDeclScope
+		case *ast.GenDecl:
+			if x.Tok == token.TYPE {
+				cx.Scope |= TypeDeclScope
+			}
+		}
+	}
+
+	exprOk := cx.Scope.Is(
+		AssignmentScope,
+		BlockScope,
+		ConstScope,
+		DeferScope,
+		ReturnScope,
+		VarScope,
+	) && !cx.Scope.Is(
+		SelectorScope,
+		StringScope,
+		CommentScope,
+	)
+	if asn := (*ast.AssignStmt)(nil); exprOk && cx.Set(&asn) {
+		exprOk = pos >= cx.TokenFile.Offset(asn.TokPos)+len(asn.Tok.String())
+	}
+	if exprOk {
+		cx.Scope |= ExprScope
 	}
 
 	return cx
@@ -162,11 +236,10 @@ func NewCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
 
 func (cx *CursorCtx) funcName() (name string, isMethod bool) {
 	var fd *ast.FuncDecl
-	cn := cx.CursorNode
-	if !cn.Set(&fd) {
+	if !cx.Set(&fd) {
 		return "", false
 	}
-	if fd.Name == nil || !NodeEnclosesPos(fd.Name, cx.CursorNode.Pos) {
+	if fd.Name == nil || !NodeEnclosesPos(fd.Name, cx.Pos) {
 		return "", false
 	}
 	return fd.Name.Name, fd.Recv != nil
