@@ -200,3 +200,8 @@ class MargoOpenExtensionCommand(sublime_plugin.WindowCommand):
 		if fn:
 			gs.focus(fn, row=-1, focus_pat='')
 
+class margo_show_hud(sublime_plugin.WindowCommand):
+	def run(self):
+		self.window.run_command('show_panel', {'panel': 'output.%s' % mg.hud_name})
+		self.window.focus_view(self.window.active_view())
+

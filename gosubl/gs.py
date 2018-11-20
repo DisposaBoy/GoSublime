@@ -755,6 +755,7 @@ def tm_path(name):
 		'doc': 'syntax/GoSublime-GsDoc.sublime-syntax',
 		'go': 'syntax/GoSublime-Go.sublime-syntax',
 		'gohtml': 'syntax/GoSublime-HTML.sublime-syntax',
+		'hud': 'syntax/GoSublime-HUD.sublime-syntax',
 	}
 
 	return 'Packages/GoSublime/%s' % d[name]

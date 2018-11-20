@@ -2,7 +2,7 @@ from . import _dbg
 from . import gs, gsq, sh
 from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter
-from .margo_render import render, render_src
+from .margo_render import render
 from .margo_state import State, actions, client_actions, Config, _view_scope_lang, view_is_9o, MgView
 from collections import namedtuple
 import glob
@@ -30,7 +30,9 @@ class MargoSingleton(object):
 			client_actions.CmdOutput: self._handle_act_output,
 		}
 		self.file_ids = []
-
+		self._hud_cache = {}
+		self.hud_name = 'GoSublime/HUD'
+		self.hud_id = self.hud_name.replace('/','-').lower()
 		self._views = {}
 		self._view_lock = threading.Lock()
 		self._gopath = ''
@@ -64,7 +66,12 @@ class MargoSingleton(object):
 				gs._mg_override_settings = cfg.override_settings
 
 		def _render():
-			render(view=gs.active_view(), state=self.state, status=self.status)
+			render(
+				mg=mg,
+				view=gs.active_view(),
+				state=self.state,
+				status=self.status,
+			)
 
 			if rs:
 				self._handle_client_actions(rs)
@@ -161,6 +168,52 @@ class MargoSingleton(object):
 
 		mg._ready = True
 		mg.start()
+
+	def _hud_create_panel(self, win):
+		view = win.create_output_panel(self.hud_name)
+		win.focus_view(win.active_view())
+		syntax = gs.tm_path('hud')
+		settings = view.settings()
+		if settings.get('syntax') == syntax:
+			return view
+
+		view.set_syntax_file(syntax)
+		view.set_read_only(True)
+		opts = {
+			'line_numbers': False,
+			'gutter': False,
+			'margin': 0,
+			'highlight_line': False,
+			'rulers': [],
+			'fold_buttons': False,
+			'scroll_past_end': False,
+		}
+		settings.erase('color_scheme')
+		for k, v in opts.items():
+			settings.set(k, v)
+
+		return view
+
+	def hud_panel(self, win):
+		wid = win.id()
+		view, phantoms = self._hud_cache.get(wid) or (None, None)
+		m = self._hud_cache
+
+		if view is None:
+			view = self._hud_create_panel(win)
+			m[wid] = (view, phantoms)
+
+		if phantoms is None:
+			phantoms = sublime.PhantomSet(view, self.hud_name)
+			m[wid] = (view, phantoms)
+
+		if len(m) > 1:
+			wids = [w.id() for w in sublime.windows()]
+			for id in m.keys():
+				if id not in wids:
+					del m[k]
+
+		return (view, phantoms)
 
 	def view(self, id, view=None):
 		with self._view_lock:

@@ -1,0 +1,8 @@
+%YAML 1.2
+---
+name: 'GoSublime: HUD'
+hidden: true
+scope: text.gosublime-hud
+contexts:
+  main: []
+

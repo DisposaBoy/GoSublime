@@ -89,6 +89,7 @@ class State(object):
 		self.tooltips = [Tooltip(t) for t in (v.get('Tooltips') or [])]
 		self.issues = [Issue(l) for l in (v.get('Issues') or [])]
 		self.user_cmds = [UserCmd(c) for c in (v.get('UserCmds') or [])]
+		self.hud = HUD(v=v.get('HUD') or {})
 
 		self.client_actions = []
 		for ca in (v.get('ClientActions') or []):
@@ -230,6 +231,15 @@ class UserCmd(object):
 		self.name = v.get('Name') or ''
 		self.args = v.get('Args') or []
 		self.prompts = v.get('Prompts') or []
+
+class HUDArticle(object):
+	def __init__(self, v={}):
+		self.title = v.get('Title') or ''
+		self.content = v.get('Content') or []
+
+class HUD(object):
+	def __init__(self, v={}):
+		self.articles = [HUDArticle(v=a) for a in v.get('Articles') or []]
 
 # in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
 # but keep this number low (realistic source files sizes) at least until we optimize things

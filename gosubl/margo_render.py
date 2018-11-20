@@ -1,19 +1,23 @@
+from . import about
 from . import _dbg
 from . import gs
 from . import gspatch
 from .margo_state import ViewPathName
 import sublime
+import webbrowser
+
 
 STATUS_KEY = '#mg.Status'
 STATUS_PFX = '  '
 STATUS_SFX = '  '
 STATUS_SEP = '    '
 
-def render(view, state, status=[]):
+def render(*, mg, view, state, status):
 	def cb():
 		_render_tooltips(view, state.tooltips)
 		_render_status(view, status + state.status)
 		_render_issues(view, state.issues)
+		_render_hud(mg, state)
 
 	sublime.set_timeout(cb)
 
@@ -150,3 +154,94 @@ def _render_tooltips(view, tooltips):
 		on_navigate=on_navigate,
 		on_hide=on_hide
 	)
+
+def _hud_navigate(*, mg, href):
+	if href.startswith('https://') or href.startswith('http://'):
+		webbrowser.open_new_tab(href)
+
+def _render_hud(mg, st):
+	html = '''
+		<body id="%s">
+			<style>
+				body {
+					padding: 0.25rem;
+				}
+				ul, ol {
+					padding: 0 0 0 1.1rem;
+				}
+				ul, ol, li {
+					margin: 0;
+				}
+				.header{
+					font-size: 0.6rem;
+				}
+				.header, .header a {
+					color: color(var(--foreground) alpha(0.50))
+				}
+				.footer {}
+				.articles {}
+				.article, .header {
+					margin-bottom: 0.5rem;
+				}
+				.article-title {
+					font-size: 1rem;
+					font-weight: bold;
+					color: color(var(--foreground) alpha(0.60))
+				}
+				.article-content {
+					font-size: 0.8rem;
+				}
+				.spacer {
+					padding: 0 0.5rem;
+				}
+				.highlight {
+					background-color: color(var(--foreground) alpha(0.10));
+				}
+			</style>
+
+			<div class="header">
+				GoSublime/HUD
+				<span class="spacer">·</span>
+				<a href="https://margo.sh/cl/%s?_r=gs-hud">margo.sh/cl/%s</a>
+			</div>
+
+			<div class="articles">
+				%s
+			</div>
+
+		</body>
+	''' % (
+		mg.hud_id,
+		about.VERSION,
+		about.VERSION,
+		_render_hud_articles(st.hud.articles),
+	)
+
+	def ren(win):
+		view, phantoms = mg.hud_panel(win)
+		phantom = sublime.Phantom(
+			sublime.Region(view.size()),
+			html,
+			sublime.LAYOUT_INLINE,
+			lambda href: _hud_navigate(mg=mg, href=href)
+		)
+		vp = view.viewport_position()
+		phantoms.update([phantom])
+		view.set_viewport_position(vp)
+
+	for w in sublime.windows():
+		ren(w)
+
+def _render_hud_article(article):
+	content = ''.join('''
+		<li><div class="article-content">%s</div></li>
+	''' % s for s in article.content)
+	return '''
+		<div class="article">
+			<div class="article-title">%s</div>
+			<ul>%s</ul>
+		</div>
+	''' % (article.title, content)
+
+def _render_hud_articles(articles):
+	return ''.join((_render_hud_article(a) for a in articles))

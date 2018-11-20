@@ -135,7 +135,15 @@
 	},
 	{
 		"keys": ["ctrl+9"],
-		"command": "gs9o_open"
+		"command": "gs9o_win_open"
+	},
+	{
+		"keys": ["ctrl+.","ctrl+9"],
+		"command": "gs9o_win_open"
+	},
+	{
+		"keys": ["ctrl+.","ctrl+0"],
+		"command": "margo_show_hud"
 	},
 	{
 		"keys": ["ctrl+space"],
