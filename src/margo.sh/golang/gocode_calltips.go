@@ -66,8 +66,8 @@ func (gc *GocodeCalltips) Reduce(mx *mg.Ctx) *mg.State {
 	case gocodeCtAct:
 		gc.status = act.status
 		gc.hud = strings.NewReplacer(
-			calltipOpenTag, `<strong class="highlight">`,
-			calltipCloseTag, `</strong>`,
+			calltipOpenTag, `<span class="highlight">`,
+			calltipCloseTag, `</span>`,
 		).Replace(gc.status)
 	}
 

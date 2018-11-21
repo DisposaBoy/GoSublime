@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -296,10 +297,14 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 		}
 		status = append(status, fmt.Sprintf("%d/%d %s", cfg.inView, cfg.total, cfg.title))
 	}
+	st := mx.State.AddHUD(
+		fmt.Sprintf("Issues (%s)", strings.Join(status, ", ")),
+		msg,
+	)
 	if msg != "" {
 		status = append(status, msg)
 	}
-	return mx.AddStatus(status...).AddHUD("Issues", status...)
+	return st.AddStatus(status...)
 }
 
 type IssueOut struct {
