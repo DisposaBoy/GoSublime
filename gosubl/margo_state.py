@@ -83,6 +83,7 @@ class Config(object):
 class State(object):
 	def __init__(self, v={}):
 		self.config = Config(v.get('Config') or {})
+		self.errors = v.get('Errors') or []
 		self.status = v.get('Status') or []
 		self.view = ResView(v=v.get('View') or {})
 		self.completions = [Completion(c) for c in (v.get('Completions') or [])]

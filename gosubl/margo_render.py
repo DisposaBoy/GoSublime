@@ -4,7 +4,6 @@ from . import gs
 from . import gspatch
 from .margo_state import ViewPathName
 import sublime
-import webbrowser
 
 
 STATUS_KEY = '#mg.Status'
@@ -17,7 +16,7 @@ def render(*, mg, view, state, status):
 		_render_tooltips(view, state.tooltips)
 		_render_status(view, status + state.status)
 		_render_issues(view, state.issues)
-		_render_hud(mg, state)
+		_render_hud(mg=mg, state=state, view=view)
 
 	sublime.set_timeout(cb)
 
@@ -155,11 +154,7 @@ def _render_tooltips(view, tooltips):
 		on_hide=on_hide
 	)
 
-def _hud_navigate(*, mg, href):
-	if href.startswith('https://') or href.startswith('http://'):
-		webbrowser.open_new_tab(href)
-
-def _render_hud(mg, st):
+def _render_hud(*, mg, state, view):
 	html = '''
 		<body id="%s">
 			<style>
@@ -183,18 +178,20 @@ def _render_hud(mg, st):
 				.article, .header {
 					margin-bottom: 0.5rem;
 				}
-				.article-title {
-					font-size: 1rem;
-					font-weight: bold;
-					color: color(var(--foreground) alpha(0.60))
-				}
-				.article-content {
+				.article {
 					font-size: 0.8rem;
+				}
+				.article-title {
+					font-weight: bold;
+					color: color(var(--foreground) alpha(0.50))
+				}
+				.article-item {
 				}
 				.spacer {
 					padding: 0 0.5rem;
 				}
 				.highlight {
+					font-weight: bold;
 					background-color: color(var(--foreground) alpha(0.10));
 				}
 			</style>
@@ -214,34 +211,39 @@ def _render_hud(mg, st):
 		mg.hud_id,
 		about.VERSION,
 		about.VERSION,
-		_render_hud_articles(st.hud.articles),
+		_render_hud_articles(state.hud.articles),
 	)
 
 	def ren(win):
-		view, phantoms = mg.hud_panel(win)
+		v, phantoms = mg.hud_panel(win)
 		phantom = sublime.Phantom(
-			sublime.Region(view.size()),
+			sublime.Region(v.size()),
 			html,
 			sublime.LAYOUT_INLINE,
-			lambda href: _hud_navigate(mg=mg, href=href)
+			lambda href: mg.navigate(href, view=view),
 		)
-		vp = view.viewport_position()
+		vp = v.viewport_position()
 		phantoms.update([phantom])
-		view.set_viewport_position(vp)
+		v.set_viewport_position(vp)
 
 	for w in sublime.windows():
 		ren(w)
 
 def _render_hud_article(article):
-	content = ''.join('''
-		<li><div class="article-content">%s</div></li>
-	''' % s for s in article.content)
+	if len(article.content) == 0:
+		items = ''
+	elif len(article.content) == 1:
+		items = '''<span class="article-item">%s</span>''' % article.content[0]
+	else:
+		items = ''.join('''<li class="article-item">%s</li>''' % (s) for s in article.content)
+		items = '''<ul>%s</ul>''' % items
+
 	return '''
 		<div class="article">
-			<div class="article-title">%s</div>
-			<ul>%s</ul>
+			<span class="article-title">%s: </span>
+			%s
 		</div>
-	''' % (article.title, content)
+	''' % (article.title.rstrip(':'), items)
 
 def _render_hud_articles(articles):
 	return ''.join((_render_hud_article(a) for a in articles))

@@ -11,6 +11,7 @@ import shlex
 import sublime
 import threading
 import time
+import webbrowser
 
 class MargoSingleton(object):
 	def __init__(self):
@@ -30,7 +31,7 @@ class MargoSingleton(object):
 			client_actions.CmdOutput: self._handle_act_output,
 		}
 		self.file_ids = []
-		self._hud_cache = {}
+		self._hud_state = {}
 		self.hud_name = 'GoSublime/HUD'
 		self.hud_id = self.hud_name.replace('/','-').lower()
 		self._views = {}
@@ -57,6 +58,9 @@ class MargoSingleton(object):
 		# don't access things like sublime.active_view() directly
 
 		if rs:
+			for err in rs.state.errors:
+				self.out.println('Error: %s' % err)
+
 			self.state = rs.state
 			cfg = rs.state.config
 
@@ -179,6 +183,7 @@ class MargoSingleton(object):
 
 		view.set_syntax_file(syntax)
 		view.set_read_only(True)
+		view.set_name(self.hud_name)
 		opts = {
 			'line_numbers': False,
 			'gutter': False,
@@ -194,10 +199,24 @@ class MargoSingleton(object):
 
 		return view
 
+	def is_hud_view(self, view):
+		if view is None:
+			return False
+
+		v, _ = self._hud_win_state(view.window())
+		return v is not None and view.id() == v.id()
+
+	def _hud_win_state(self, win):
+		default = (None, None)
+		if win is None:
+			return default
+
+		return self._hud_state.get(win.id()) or default
+
 	def hud_panel(self, win):
+		view, phantoms = self._hud_win_state(win)
 		wid = win.id()
-		view, phantoms = self._hud_cache.get(wid) or (None, None)
-		m = self._hud_cache
+		m = self._hud_state
 
 		if view is None:
 			view = self._hud_create_panel(win)
@@ -255,6 +274,12 @@ class MargoSingleton(object):
 
 		_pf=_dbg.pf(dot=name)
 
+
+		win = view.window()
+		if self.is_hud_view(view):
+			view = gs.active_view(win=win)
+			win.focus_view(view)
+
 		def handle_event(gt=0):
 			if gt > 0:
 				_pf.gt=gt
@@ -279,6 +304,31 @@ class MargoSingleton(object):
 			return handle_event(gt=0.100)
 
 		sublime.set_timeout(handle_event)
+
+	def _is_str(self, s):
+		return isinstance(s, str)
+
+	def _is_act(self, m):
+		return isinstance(m, dict) and self._is_str(m.get('Name'))
+
+	def _lst_of(self, l, f):
+		return isinstance(l, list) and l and len(list(filter(f, l))) == len(l)
+
+	def navigate(self, href, *, view=None, win=None):
+		if href.startswith('https://') or href.startswith('http://'):
+			gsq.launch('mg.navigate', lambda: webbrowser.open_new_tab(href))
+			return
+
+		view = gs.active_view(view=view, win=win)
+		x, err = gs.json_decode(href, None)
+		if self._is_act(x):
+			self.queue(actions=[x], view=view)
+		elif self._lst_of(x, self._is_act):
+			self.queue(actions=x, view=view)
+		elif self._lst_of(x, self._is_str):
+			view.window().run_command('gs9o_open', {'run': x, 'focus_view': False})
+		else:
+			self.out.println('mg.navigate: Invalid href `%s`, expected `http(s)://` oro json`[command]` or json`{Name: action}`, error: %s' % (href, err))
 
 	def agent_starting(self, ag):
 		if ag is not self.agent:

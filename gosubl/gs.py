@@ -809,7 +809,7 @@ def home_path(*a):
 def json_decode(s, default):
 	try:
 		res = json.loads(s)
-		if is_a(res, default):
+		if default is None or is_a(res, default):
 			return (res, '')
 		return (res, 'Unexpected value type')
 	except Exception as ex:
