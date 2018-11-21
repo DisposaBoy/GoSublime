@@ -230,7 +230,7 @@ class MargoSingleton(object):
 			wids = [w.id() for w in sublime.windows()]
 			for id in m.keys():
 				if id not in wids:
-					del m[k]
+					del m[id]
 
 		return (view, phantoms)
 
