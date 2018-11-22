@@ -96,7 +96,7 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 
 		win.show_quick_panel(items or ['%s returned no results' % action], on_done, flags, selected, on_highlight)
 
-class MargoIssuesCommand(sublime_plugin.TextCommand):
+class margo_display_issues(sublime_plugin.TextCommand):
 	def run(self, edit, **action):
 		if mg.enabled(self.view):
 			self._run()
@@ -110,6 +110,9 @@ class MargoIssuesCommand(sublime_plugin.TextCommand):
 
 	def _cb(self, rs):
 		show_issues(self.view, rs.state.issues)
+
+class margo_issues(margo_display_issues):
+	pass
 
 def issues_to_items(view, issues):
 	vp = ViewPathName(view)

@@ -28,6 +28,7 @@ client_actions = NS(**{k: k for k in (
 	'Restart',
 	'Shutdown',
 	'CmdOutput',
+	'DisplayIssues',
 )})
 
 class MgView(sublime.View):

@@ -29,6 +29,7 @@ class MargoSingleton(object):
 			client_actions.Restart: self._handle_act_restart,
 			client_actions.Shutdown: self._handle_act_shutdown,
 			client_actions.CmdOutput: self._handle_act_output,
+			client_actions.DisplayIssues: self._handle_DisplayIssues,
 		}
 		self.file_ids = []
 		self._hud_state = {}
@@ -99,6 +100,9 @@ class MargoSingleton(object):
 		h = self.output_handler
 		if h:
 			h(rs, act)
+
+	def _handle_DisplayIssues(self, rs, act):
+		gs.active_view().run_command('margo_display_issues')
 
 	def _handle_client_actions(self, rs):
 		for act in rs.state.client_actions:
