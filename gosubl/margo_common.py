@@ -38,10 +38,10 @@ class TokenCounter(object):
 			return self.n, self.format.format(self.name, self.n)
 
 class Chan(object):
-	def __init__(self, zero=None):
+	def __init__(self, *, zero=None, discard=None):
 		self.lock = threading.Lock()
 		self.ev = threading.Event()
-		self.dq = deque()
+		self.dq = deque([], maxlen=discard)
 		self.closed = False
 		self.zero = zero
 

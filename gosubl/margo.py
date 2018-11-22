@@ -326,9 +326,9 @@ class MargoSingleton(object):
 		view = gs.active_view(view=view, win=win)
 		x, err = gs.json_decode(href, None)
 		if self._is_act(x):
-			self.queue(actions=[x], view=view)
+			self.queue(actions=[x], view=view, delay=0.100)
 		elif self._lst_of(x, self._is_act):
-			self.queue(actions=x, view=view)
+			self.queue(actions=x, view=view, delay=0.100)
 		elif self._lst_of(x, self._is_str):
 			view.window().run_command('gs9o_open', {'run': x, 'focus_view': False})
 		else:
@@ -358,9 +358,9 @@ class MargoSingleton(object):
 		if not self.agent:
 			self.start()
 
-	def queue(self, *, actions=[], view=None):
+	def queue(self, *, actions=[], view=None, delay=-1):
 		self._send_start()
-		self.agent.queue(actions=actions, view=view)
+		self.agent.queue(actions=actions, view=view, delay=delay)
 
 	def send(self, *, actions=[], cb=None, view=None):
 		self._send_start()
