@@ -29,6 +29,9 @@ var (
 		"ViewFmt": func(codec.Handle, agentReqAction) (Action, error) {
 			return ViewFmt{}, nil
 		},
+		"DisplayIssues": func(codec.Handle, agentReqAction) (Action, error) {
+			return DisplayIssues{}, nil
+		},
 		"ViewLoaded": func(codec.Handle, agentReqAction) (Action, error) {
 			return ViewLoaded{}, nil
 		},
@@ -81,6 +84,12 @@ type Action interface {
 	actionType() actionType
 
 	ActionLabel() string
+}
+
+type DisplayIssues struct{ ActionType }
+
+func (di DisplayIssues) clientAction() clientActionType {
+	return clientActionType{Name: "DisplayIssues", Data: di}
 }
 
 type Activate struct {

@@ -298,7 +298,7 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 		status = append(status, fmt.Sprintf("%d/%d %s", cfg.inView, cfg.total, cfg.title))
 	}
 	st := mx.State.AddHUD(
-		fmt.Sprintf("Issues (%s)", strings.Join(status, ", ")),
+		fmt.Sprintf(`<a href='{"Name": "DisplayIssues"}'>Issues</a> ( %s )`, strings.Join(status, ", ")),
 		msg,
 	)
 	if msg != "" {

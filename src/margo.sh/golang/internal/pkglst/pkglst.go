@@ -205,11 +205,12 @@ func (cc *Cache) goList(mx *mg.Ctx, dir string) (_ []*Pkg, output []byte, _ erro
 	errBuf := &bytes.Buffer{}
 	cmd := exec.Command("go", "list", "-e", "-json", "./...")
 	cmd.Dir = dir
-	cmd.Env = mx.Env.Environ()
+	cmd.Env = mx.Env.Merge(mg.EnvMap{
+		"GOPROXY":     "off",
+		"GO111MODULE": "off",
+	}).Environ()
 	cmd.Stdout = outBuf
 	cmd.Stderr = errBuf
-
-	fmt.Fprintf(errBuf, "``` scan: %s ```\n", dir)
 
 	err := cmd.Run()
 	cmdDur := mgpf.D(time.Since(start))

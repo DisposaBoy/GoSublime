@@ -227,7 +227,8 @@ func newMarGocodeCtl() *marGocodeCtl {
 		"help":                mgc.helpCmd,
 		"cache-list":          mgc.cacheListCmd,
 		"cache-prune":         mgc.cachePruneCmd,
-		"unimported-packages": mgc.unimportedPackagesCmd,
+		"unimported-packages": mgc.pkglistPackagesCmd,
+		"pkg-list":            mgc.pkglistPackagesCmd,
 	}
 	mgc.mxQ = mgutil.NewChanQ(10)
 	go func() {
@@ -253,7 +254,7 @@ func (mgc *marGocodeCtl) RCond(mx *mg.Ctx) bool {
 }
 
 func (mgc *marGocodeCtl) RMount(mx *mg.Ctx) {
-	go mgc.initPlst(mx)
+	mgc.initPlst(mx)
 }
 
 func (mgc *marGocodeCtl) Reduce(mx *mg.Ctx) *mg.State {
@@ -269,18 +270,27 @@ func (mgc *marGocodeCtl) Reduce(mx *mg.Ctx) *mg.State {
 	return mx.State
 }
 
+func (mgc *marGocodeCtl) scanPlst(mx *mg.Ctx, rootName, rootDir string) {
+	dir := filepath.Join(rootDir, "src")
+	title := "Scan " + rootName + " (" + dir + ")"
+	defer mx.Begin(mg.Task{Title: title, NoEcho: true}).Done()
+
+	out, _ := mgc.plst.Scan(mx, dir)
+	mx.Log.Printf("%s\n%s", title, out)
+}
+
 func (mgc *marGocodeCtl) initPlst(mx *mg.Ctx) {
 	bctx := BuildContext(mx)
-	roots := mg.StrSet{bctx.GOROOT}.Add(PathList(bctx.GOPATH)...)
-	for _, dir := range roots {
-		dir = filepath.Join(dir, "src")
-		tsk := mx.Begin(mg.Task{
-			Title:  "Scanning Package List: " + dir,
-			NoEcho: true,
-		})
-		out, _ := mgc.plst.Scan(mx, dir)
-		mx.Log.Printf("\n%s", out)
-		tsk.Done()
+	mx = mx.SetState(mx.SetEnv(
+		mx.Env.Merge(mg.EnvMap{
+			"GOROOT": bctx.GOROOT,
+			"GOPATH": bctx.GOPATH,
+		}),
+	))
+
+	go mgc.scanPlst(mx, "GOROOT", bctx.GOROOT)
+	for _, root := range PathList(bctx.GOPATH) {
+		go mgc.scanPlst(mx, "GOPATH", root)
 	}
 }
 
@@ -411,7 +421,7 @@ func (mgc *marGocodeCtl) cacheListCmd(cx *mg.CmdCtx) {
 	tbw.Write(buf.Bytes())
 }
 
-func (mgc *marGocodeCtl) unimportedPackagesCmd(cx *mg.CmdCtx) {
+func (mgc *marGocodeCtl) pkglistPackagesCmd(cx *mg.CmdCtx) {
 	defer cx.Output.Close()
 
 	type ent struct {
@@ -425,13 +435,13 @@ func (mgc *marGocodeCtl) unimportedPackagesCmd(cx *mg.CmdCtx) {
 	defer tbw.Flush()
 
 	digits := int(math.Floor(math.Log10(float64(len(pkl)))) + 1)
-	sfxFormat := "\t%s\t%s\n"
+	sfxFormat := "\t%s\t%s\t%s\n"
 	hdrFormat := "%s" + sfxFormat
 	rowFormat := fmt.Sprintf("%%%dd/%d", digits, len(pkl)) + sfxFormat
 
-	fmt.Fprintf(buf, hdrFormat, "Count:", "Name:", "ImportPath:")
+	fmt.Fprintf(buf, hdrFormat, "Count:", "Name:", "ImportPath:", "Dir:")
 	for i, p := range pkl {
-		fmt.Fprintf(buf, rowFormat, i+1, p.Name, p.ImportPath)
+		fmt.Fprintf(buf, rowFormat, i+1, p.Name, p.ImportPath, strings.TrimSuffix(p.Dir, p.ImportPath))
 	}
 	tbw.Write(buf.Bytes())
 }
@@ -468,7 +478,7 @@ func (mgc *marGocodeCtl) helpCmd(cx *mg.CmdCtx) {
 	cx.Output.Write([]byte(`Usage: ` + cx.Name + ` $subcmd [args...]
 	cache-prune [regexp, or path...] - remove packages matching glob from the cache. default: '.*'
 	cache-list                       - list cached packages, see '` + cx.Name + ` cache-list --help' for more details
-	unimported-packages              - list the packages for the UnimportedPackages feature
+	pkg-list                         - list packages known to exist (in GOROOT, GOPATH, etc.)
 `))
 }
 
