@@ -185,6 +185,7 @@ def install(aso_install_vesion, force_install, _reinstall=False):
 			'CGO_ENABLED': '0',
 			'GOBIN': '',
 			'GOPATH': install_gopath(),
+			'GO111MODULE': 'off',
 		}
 
 		ev.debug('%s.build' % DOMAIN, {
