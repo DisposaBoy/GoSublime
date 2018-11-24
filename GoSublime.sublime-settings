@@ -318,8 +318,6 @@
 	// see 9o help(ctrl+9 "help") for more details about what commands are supported
 	"build_command": ["^1"],
 
-	"auto_complete_triggers": [ {"selector": "source.go", "characters": "."} ],
-
 	// exclude files with the listed prefixes from the file browsing palette (ctrl+dot,ctrl+m)
 	"fn_exclude_prefixes": [".", "_"],
 
