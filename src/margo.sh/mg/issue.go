@@ -3,6 +3,7 @@ package mg
 import (
 	"bytes"
 	"fmt"
+	"margo.sh/htm"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -298,8 +299,11 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 		status = append(status, fmt.Sprintf("%d/%d %s", cfg.inView, cfg.total, cfg.title))
 	}
 	st := mx.State.AddHUD(
-		fmt.Sprintf(`<a href='{"Name": "DisplayIssues"}'>Issues</a> ( %s )`, strings.Join(status, ", ")),
-		msg,
+		htm.Span(nil,
+			htm.A(&htm.AAttrs{Action: DisplayIssues{}}, htm.Text("Issues")),
+			htm.Textf(" ( %s )", strings.Join(status, ", ")),
+		),
+		htm.Text(msg),
 	)
 	if msg != "" {
 		status = append(status, msg)

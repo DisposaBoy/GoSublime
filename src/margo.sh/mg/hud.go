@@ -1,15 +1,18 @@
 package mg
 
-type HUDArticle struct {
-	Title   string
-	Content []string
-}
+import (
+	"bytes"
+	"margo.sh/htm"
+)
 
 type HUDState struct {
-	Articles []HUDArticle
+	Articles []string
 }
 
-func (h HUDState) Add(l ...HUDArticle) HUDState {
-	h.Articles = append(h.Articles[:len(h.Articles):len(h.Articles)], l...)
+func (h HUDState) AddArticle(heading htm.IElement, content ...htm.Element) HUDState {
+	buf := &bytes.Buffer{}
+	htm.Article(heading, content...).FPrintHTML(buf)
+	l := h.Articles
+	h.Articles = append(l[:len(l):len(l)], buf.String())
 	return h
 }

@@ -6,8 +6,8 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"io"
 	"kuroku.io/margocode/suggest"
+	"margo.sh/htm"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
 	"margo.sh/sublime"
@@ -38,7 +38,7 @@ type GocodeCalltips struct {
 
 	q      *mgutil.ChanQ
 	status string
-	hud    string
+	hud    htm.Element
 }
 
 func (gc *GocodeCalltips) RCond(mx *mg.Ctx) bool {
@@ -64,18 +64,29 @@ func (gc *GocodeCalltips) Reduce(mx *mg.Ctx) *mg.State {
 	case mg.ViewPosChanged, mg.ViewActivated:
 		gc.q.Put(gocodeCtAct{mx: mx, status: gc.status})
 	case gocodeCtAct:
-		gc.status = act.status
-		gc.hud = strings.NewReplacer(
-			calltipOpenTag, `<span class="highlight">`,
-			calltipCloseTag, `</span>`,
-		).Replace(gc.status)
+		s := act.status
+		gc.status = s
+		i := strings.Index(s, calltipOpenTag)
+		j := strings.Index(s, calltipCloseTag)
+		switch {
+		case i >= 0 && j > i:
+			gc.hud = htm.Span(nil,
+				htm.Text(s[:i]),
+				htm.HighlightText(s[i+len(calltipOpenTag):j]),
+				htm.Text(s[j+len(calltipOpenTag):]),
+			)
+		case gc.status == "":
+			gc.hud = nil
+		default:
+			gc.hud = htm.Text(s)
+		}
 	}
 
 	if gc.status != "" {
 		st = st.AddStatus(gc.status)
 	}
-	if gc.hud != "" {
-		st = st.AddHUD("Calltips", gc.hud)
+	if gc.hud != nil {
+		st = st.AddHUD(htm.Text("Calltips"), gc.hud)
 	}
 	return st
 }
@@ -191,7 +202,7 @@ func (gc *GocodeCalltips) funcSrc(fx *ast.FuncType, funcName string, highlight a
 	fieldPrinter{
 		fset:      fset,
 		fields:    params,
-		output:    buf,
+		buf:       buf,
 		parens:    true,
 		names:     true,
 		types:     true,
@@ -203,7 +214,7 @@ func (gc *GocodeCalltips) funcSrc(fx *ast.FuncType, funcName string, highlight a
 		fieldPrinter{
 			fset:      fset,
 			fields:    p.List,
-			output:    buf,
+			buf:       buf,
 			parens:    len(p.List) != 0 && len(p.List[0].Names) != 0,
 			names:     true,
 			types:     true,
@@ -293,7 +304,7 @@ func (gc *GocodeCalltips) exprIdent(x ast.Expr) *ast.Ident {
 type fieldPrinter struct {
 	fset      *token.FileSet
 	fields    []*ast.Field
-	output    io.Writer
+	buf       *bytes.Buffer
 	names     bool
 	types     bool
 	parens    bool
@@ -301,18 +312,19 @@ type fieldPrinter struct {
 }
 
 func (p fieldPrinter) print() {
+	w := p.buf
 	if p.parens {
-		p.output.Write([]byte("("))
+		w.WriteByte('(')
 	}
 
 	hlId, _ := p.highlight.(*ast.Ident)
 	hlField, _ := p.highlight.(*ast.Field)
-	hlWriteOpen := func() { p.output.Write([]byte(calltipOpenTag)) }
-	hlWriteClose := func() { p.output.Write([]byte(calltipCloseTag)) }
+	hlWriteOpen := func() { w.WriteString(calltipOpenTag) }
+	hlWriteClose := func() { w.WriteString(calltipCloseTag) }
 
 	for i, f := range p.fields {
 		if i > 0 {
-			p.output.Write([]byte(", "))
+			w.WriteString(", ")
 		}
 
 		if f == hlField {
@@ -325,12 +337,12 @@ func (p fieldPrinter) print() {
 		}
 		for j, id := range names {
 			if j > 0 {
-				p.output.Write([]byte(", "))
+				w.WriteString(", ")
 			}
 			if hlId == id {
 				hlWriteOpen()
 			}
-			p.output.Write([]byte(id.String()))
+			w.WriteString(id.String())
 
 			if hlId == id && j < len(names)-1 {
 				hlWriteClose()
@@ -339,9 +351,9 @@ func (p fieldPrinter) print() {
 
 		if p.types {
 			if len(names) != 0 {
-				p.output.Write([]byte(" "))
+				w.WriteByte(' ')
 			}
-			printer.Fprint(p.output, p.fset, f.Type)
+			printer.Fprint(w, p.fset, f.Type)
 		}
 
 		if l := names; f == hlField || (len(l) > 0 && l[len(l)-1] == hlId) {
@@ -350,6 +362,6 @@ func (p fieldPrinter) print() {
 	}
 
 	if p.parens {
-		p.output.Write([]byte(")"))
+		w.WriteByte(')')
 	}
 }

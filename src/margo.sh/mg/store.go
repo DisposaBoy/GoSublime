@@ -34,7 +34,7 @@ func (sr storeReducers) Reduce(mx *Ctx) *Ctx {
 	mx.Profile.Do("After", func() {
 		mx = sr.after.reduction(mx)
 	})
-	return mx
+	return mx.defr.reduction(mx)
 }
 
 func (sr storeReducers) Copy(updaters ...func(*storeReducers)) storeReducers {
@@ -197,7 +197,7 @@ func (sto *Store) handleReqInit(rq *agentReq, mx *Ctx) (*Ctx, []Action) {
 
 	acts := make([]Action, 0, len(rq.Actions))
 	for _, ra := range rq.Actions {
-		act, err := sto.ag.createAction(ra, sto.ag.handle)
+		act, err := sto.ag.createAction(ra)
 		if err != nil {
 			mx.State = mx.AddErrorf("createAction(%s): %s", ra.Name, err)
 		} else {

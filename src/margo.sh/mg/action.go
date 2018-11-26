@@ -1,95 +1,42 @@
 package mg
 
 import (
-	"github.com/ugorji/go/codec"
+	"margo.sh/mg/actions"
 )
 
 var (
-	_ Action = actionType{}
-
-	actionCreators = map[string]actionCreator{
-		"QueryCompletions": func(codec.Handle, agentReqAction) (Action, error) {
-			return QueryCompletions{}, nil
-		},
-		"QueryCmdCompletions": func(codec.Handle, agentReqAction) (Action, error) {
-			return QueryCmdCompletions{}, nil
-		},
-		"QueryIssues": func(codec.Handle, agentReqAction) (Action, error) {
-			return QueryIssues{}, nil
-		},
-		"Restart": func(codec.Handle, agentReqAction) (Action, error) {
-			return Restart{}, nil
-		},
-		"Shutdown": func(codec.Handle, agentReqAction) (Action, error) {
-			return Shutdown{}, nil
-		},
-		"ViewActivated": func(codec.Handle, agentReqAction) (Action, error) {
-			return ViewActivated{}, nil
-		},
-		"ViewFmt": func(codec.Handle, agentReqAction) (Action, error) {
-			return ViewFmt{}, nil
-		},
-		"DisplayIssues": func(codec.Handle, agentReqAction) (Action, error) {
-			return DisplayIssues{}, nil
-		},
-		"ViewLoaded": func(codec.Handle, agentReqAction) (Action, error) {
-			return ViewLoaded{}, nil
-		},
-		"ViewModified": func(codec.Handle, agentReqAction) (Action, error) {
-			return ViewModified{}, nil
-		},
-		"ViewPosChanged": func(codec.Handle, agentReqAction) (Action, error) {
-			return ViewPosChanged{}, nil
-		},
-		"ViewPreSave": func(codec.Handle, agentReqAction) (Action, error) {
-			return ViewPreSave{}, nil
-		},
-		"ViewSaved": func(codec.Handle, agentReqAction) (Action, error) {
-			return ViewSaved{}, nil
-		},
-		"RunCmd": func(h codec.Handle, a agentReqAction) (Action, error) {
-			act := RunCmd{}
-			err := codec.NewDecoderBytes(a.Data, h).Decode(&act)
-			return act, err
-		},
-		"QueryUserCmds": func(h codec.Handle, a agentReqAction) (Action, error) {
-			return QueryUserCmds{}, nil
-		},
-		"QueryTestCmds": func(h codec.Handle, a agentReqAction) (Action, error) {
-			return QueryTestCmds{}, nil
-		},
-		"QueryTooltips": func(h codec.Handle, a agentReqAction) (Action, error) {
-			act := QueryTooltips{}
-			err := codec.NewDecoderBytes(a.Data, h).Decode(&act)
-			return act, err
-		},
-	}
+	ActionCreators = (&actions.Registry{}).
+		Register("QueryCompletions", QueryCompletions{}).
+		Register("QueryCmdCompletions", QueryCmdCompletions{}).
+		Register("QueryIssues", QueryIssues{}).
+		Register("Restart", Restart{}).
+		Register("Shutdown", Shutdown{}).
+		Register("ViewActivated", ViewActivated{}).
+		Register("ViewFmt", ViewFmt{}).
+		Register("DisplayIssues", DisplayIssues{}).
+		Register("ViewLoaded", ViewLoaded{}).
+		Register("ViewModified", ViewModified{}).
+		Register("ViewPosChanged", ViewPosChanged{}).
+		Register("ViewPreSave", ViewPreSave{}).
+		Register("ViewSaved", ViewSaved{}).
+		Register("QueryUserCmds", QueryUserCmds{}).
+		Register("QueryTestCmds", QueryTestCmds{}).
+		Register("RunCmd", RunCmd{}).
+		Register("QueryTooltips", QueryTooltips{})
 )
 
 // initAction is dispatched to indicate the start of IPC communication.
 // It's the first action that is dispatched.
 type initAction struct{ ActionType }
 
-type actionCreator func(codec.Handle, agentReqAction) (Action, error)
+type ActionType = actions.ActionType
 
-type actionType struct{ ActionType }
-
-type ActionType struct{}
-
-func (ActionType) actionType() actionType { return actionType{} }
-
-func (ActionType) ActionLabel() string { return "" }
-
-type Action interface {
-	actionType() actionType
-
-	ActionLabel() string
-}
+type Action = actions.Action
 
 type DisplayIssues struct{ ActionType }
 
-func (di DisplayIssues) clientAction() clientActionType {
-	return clientActionType{Name: "DisplayIssues", Data: di}
+func (di DisplayIssues) ClientAction() actions.ClientData {
+	return actions.ClientData{Name: "DisplayIssues", Data: di}
 }
 
 type Activate struct {
@@ -101,8 +48,8 @@ type Activate struct {
 	Col  int
 }
 
-func (a Activate) clientAction() clientActionType {
-	return clientActionType{Name: "Activate", Data: a}
+func (a Activate) ClientAction() actions.ClientData {
+	return actions.ClientData{Name: "Activate", Data: a}
 }
 
 var Render Action = nil
@@ -123,15 +70,15 @@ type QueryIssues struct{ ActionType }
 // Restart is the action dispatched to initiate a graceful restart of the agent
 type Restart struct{ ActionType }
 
-func (r Restart) clientAction() clientActionType {
-	return clientActionType{Name: "Restart"}
+func (r Restart) ClientAction() actions.ClientData {
+	return actions.ClientData{Name: "Restart"}
 }
 
 // Shutdown is the action dispatched to initiate a graceful shutdown of the agent
 type Shutdown struct{ ActionType }
 
-func (s Shutdown) clientAction() clientActionType {
-	return clientActionType{Name: "Shutdown"}
+func (s Shutdown) ClientAction() actions.ClientData {
+	return actions.ClientData{Name: "Shutdown"}
 }
 
 type QueryTooltips struct {

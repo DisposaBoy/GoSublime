@@ -105,11 +105,34 @@ func NewCompletionCtx(mx *mg.Ctx, src []byte, pos int) *CompletionCtx {
 }
 
 func NewViewCursorCtx(mx *mg.Ctx) *CursorCtx {
-	src, pos := mx.View.SrcPos()
-	return NewCursorCtx(mx, src, pos)
+	type Key struct{ *mg.View }
+	k := Key{mx.View}
+	if cx, ok := mx.Store.Get(k).(*CursorCtx); ok {
+		return cx
+	}
+
+	src, pos := k.SrcPos()
+	cx := NewCursorCtx(mx, src, pos)
+	mx.Store.Put(k, cx)
+	return cx
 }
 
 func NewCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
+	type Key struct {
+		hash string
+		pos  int
+	}
+	key := Key{mg.SrcHash(src), pos}
+	if cx, ok := mx.Store.Get(key).(*CursorCtx); ok {
+		return cx
+	}
+
+	cx := newCursorCtx(mx, src, pos)
+	mx.Store.Put(key, cx)
+	return cx
+}
+
+func newCursorCtx(mx *mg.Ctx, src []byte, pos int) *CursorCtx {
 	pos = mgutil.ClampPos(src, pos)
 
 	// if we're at the end of the line, move the cursor onto the last thing on the line

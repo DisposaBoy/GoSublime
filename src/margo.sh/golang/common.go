@@ -8,7 +8,7 @@ import (
 	"go/token"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
-	"margo.sh/why_would_you_make_yotsuba_cry"
+	yotsuba "margo.sh/why_would_you_make_yotsuba_cry"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -55,7 +55,7 @@ func PathList(p string) []string {
 }
 
 func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
-	if why_would_you_make_yotsuba_cry.IsNil(node) {
+	if yotsuba.IsNil(node) {
 		return false
 	}
 	if np := node.Pos(); !np.IsValid() || pos <= np {
@@ -184,12 +184,14 @@ func (cn *cursorNode) init(kvs mg.KVStore, src []byte, offset int) {
 	cn.TokenFile = pf.TokenFile
 	cn.Pos = token.Pos(pf.TokenFile.Base() + offset)
 
+	cn.initDocNode(af)
 	if astFileIsValid(af) && cn.Pos > af.Name.End() {
 		cn.append(af)
 		ast.Inspect(af, func(n ast.Node) bool {
 			if NodeEnclosesPos(n, cn.Pos) {
 				cn.append(n)
 			}
+			cn.initDocNode(n)
 			return true
 		})
 	}
@@ -222,52 +224,38 @@ func (cn *cursorNode) init(kvs mg.KVStore, src []byte, offset int) {
 			cn.ImportSpec = x
 		}
 	})
+}
 
-	if cn.Comment == nil {
+func (cn *cursorNode) initDocNode(n ast.Node) {
+	if cn.Doc != nil || yotsuba.IsNil(n) {
 		return
 	}
-	setDoc := func(n ast.Node) bool {
-		if cn.Doc != nil {
-			return true
-		}
 
-		var cg *ast.CommentGroup
-		switch x := n.(type) {
-		case *ast.GenDecl:
-			cg = x.Doc
-		case *ast.ImportSpec:
-			cg = x.Doc
-		case *ast.File:
-			cg = x.Doc
-		case *ast.Field:
-			cg = x.Doc
-		case *ast.TypeSpec:
-			cg = x.Doc
-		case *ast.FuncDecl:
-			cg = x.Doc
-		case *ast.ValueSpec:
-			cg = x.Doc
+	setCg := func(cg *ast.CommentGroup) {
+		if cn.Doc != nil || cg == nil || !NodeEnclosesPos(cg, cn.Pos) {
+			return
 		}
-		if cg == nil || !NodeEnclosesPos(cg, cn.Pos) {
-			return false
-		}
-
 		cn.Doc = &DocNode{
 			Node:         n,
 			CommentGroup: *cg,
 		}
-		return true
 	}
-	setDoc(af)
-	for _, n := range af.Decls {
-		if setDoc(n) {
-			break
-		}
-	}
-	for _, n := range af.Imports {
-		if setDoc(n) {
-			break
-		}
+
+	switch x := n.(type) {
+	case *ast.File:
+		setCg(x.Doc)
+	case *ast.Field:
+		setCg(x.Doc)
+	case *ast.GenDecl:
+		setCg(x.Doc)
+	case *ast.TypeSpec:
+		setCg(x.Doc)
+	case *ast.FuncDecl:
+		setCg(x.Doc)
+	case *ast.ValueSpec:
+		setCg(x.Doc)
+	case *ast.ImportSpec:
+		setCg(x.Doc)
 	}
 }
 
