@@ -808,9 +808,13 @@ def home_path(*a):
 
 def json_decode(s, default):
 	try:
+		if isinstance(s, bytes):
+			s = s.decode('utf-8')
+
 		res = json.loads(s)
 		if default is None or is_a(res, default):
 			return (res, '')
+
 		return (res, 'Unexpected value type')
 	except Exception as ex:
 		return (default, 'Decode Error: %s' % ex)

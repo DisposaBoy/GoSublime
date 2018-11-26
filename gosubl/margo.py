@@ -4,6 +4,7 @@ from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter
 from .margo_render import render
 from .margo_state import State, actions, client_actions, Config, _view_scope_lang, view_is_9o, MgView
+from base64 import b64decode
 from collections import namedtuple
 import glob
 import os
@@ -323,8 +324,11 @@ class MargoSingleton(object):
 			gsq.launch('mg.navigate', lambda: webbrowser.open_new_tab(href))
 			return
 
+		dataPfx = 'data:application/json;base64,'
+		data = b64decode(href[len(dataPfx):]) if href.startswith(dataPfx) else href
+
 		view = gs.active_view(view=view, win=win)
-		x, err = gs.json_decode(href, None)
+		x, err = gs.json_decode(data, None)
 		if self._is_act(x):
 			self.queue(actions=[x], view=view, delay=0.100)
 		elif self._lst_of(x, self._is_act):
@@ -332,7 +336,7 @@ class MargoSingleton(object):
 		elif self._lst_of(x, self._is_str):
 			view.window().run_command('gs9o_open', {'run': x, 'focus_view': False})
 		else:
-			self.out.println('mg.navigate: Invalid href `%s`, expected `http(s)://` oro json`[command]` or json`{Name: action}`, error: %s' % (href, err))
+			self.out.println('mg.navigate: Invalid href `%s`, expected `http(s)://` or data:json`{Name: action}|[command args...]`, error: %s' % (href, err))
 
 	def agent_starting(self, ag):
 		if ag is not self.agent:

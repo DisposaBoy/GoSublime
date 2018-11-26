@@ -234,14 +234,9 @@ class UserCmd(object):
 		self.args = v.get('Args') or []
 		self.prompts = v.get('Prompts') or []
 
-class HUDArticle(object):
-	def __init__(self, v={}):
-		self.title = v.get('Title') or ''
-		self.content = v.get('Content') or []
-
 class HUD(object):
 	def __init__(self, v={}):
-		self.articles = [HUDArticle(v=a) for a in v.get('Articles') or []]
+		self.articles = v.get('Articles') or []
 
 # in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
 # but keep this number low (realistic source files sizes) at least until we optimize things

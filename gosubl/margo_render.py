@@ -170,7 +170,8 @@ def _render_hud(*, mg, state, view):
 				.header{
 					font-size: 0.6rem;
 				}
-				.header, .header a {
+				.header,
+				.header a {
 					color: color(var(--foreground) alpha(0.50))
 				}
 				.footer {}
@@ -181,11 +182,10 @@ def _render_hud(*, mg, state, view):
 				.article {
 					font-size: 0.8rem;
 				}
-				.article-title {
+				.article .heading,
+				.article .heading a {
 					font-weight: bold;
 					color: color(var(--foreground) alpha(0.50))
-				}
-				.article-item {
 				}
 				.spacer {
 					padding: 0 0.5rem;
@@ -211,9 +211,8 @@ def _render_hud(*, mg, state, view):
 		mg.hud_id,
 		about.VERSION,
 		about.VERSION,
-		_render_hud_articles(state.hud.articles),
+		''.join(state.hud.articles),
 	)
-
 	def ren(win):
 		v, phantoms = mg.hud_panel(win)
 		phantom = sublime.Phantom(
@@ -228,22 +227,3 @@ def _render_hud(*, mg, state, view):
 
 	for w in sublime.windows():
 		ren(w)
-
-def _render_hud_article(article):
-	if len(article.content) == 0:
-		items = ''
-	elif len(article.content) == 1:
-		items = '''<span class="article-item">%s</span>''' % article.content[0]
-	else:
-		items = ''.join('''<li class="article-item">%s</li>''' % (s) for s in article.content)
-		items = '''<ul>%s</ul>''' % items
-
-	return '''
-		<div class="article">
-			<span class="article-title">%s: </span>
-			%s
-		</div>
-	''' % (article.title.rstrip(':'), items)
-
-def _render_hud_articles(articles):
-	return ''.join((_render_hud_article(a) for a in articles))
