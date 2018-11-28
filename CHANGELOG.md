@@ -10,6 +10,73 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 18.11.28
+
+This release introduces the HUD and comes with many improvements to snippets and a tweaked version of the Mariana color schemed named Ariana.
+
+- The HUD is an output panel that's automatically populated with info traditionally found in the status bar and various pop-ups/tool-tips.
+
+  Currently, the following info will be displayed there:
+
+  - The `Issues` status, including the error messages for the current line.
+
+  - The `GocodeCalltips` status, including positional highlighting of params and return statement.
+
+  It's bound to the keys `ctrl+.`,`ctrl+0`.
+
+  You can manually bind it to another key. e.g. via `Preferences > Key Bindings`:
+  ```json
+    {
+      "keys": ["ctrl+0"],
+      "command": "margo_show_hud",
+    },
+  ```
+
+- Several new snippets have been added and old ones improved.
+
+  - AppendSnippet: `name = |` suggests:
+    - `name = append(name, ...)`
+    - `slice = append(slice[:len(slice):len(slice)], ...)`
+
+  - DeferSnippet:
+    - `defer func() {}()`
+    - `defer f()`
+
+  - ReturnSnippet:
+    - `return`
+
+  - MutexSnippet: `mu.|` suggests:
+    - `mu.Lock(); defer mu.Unlock(); |`
+    - `mu.Lock(); |; mu.Unlock()`
+
+  - PackageNameSnippet:
+    - `package main; func main() { | }`
+
+  - DocSnippet: suggest function names, field names, etc. inside the corresponding _documentation_ comment
+
+- Fix the golang.Gocode{} reducer changing View.Pos
+
+- The `(Add)UnimportedPackages` feature no longer adds circular imports
+
+- Show the tasks animation after 500ms instead of 1s to (hopefully) make things feel more responsive
+
+- GOROOT and GOPATH are scanned in parallel at startup
+
+- All packages in GOROOT and GOPATH are available for the unimported packages feature, not just those in GOROOT and the package cache.
+
+- Add better named alias `pkg-list` for `unimported-packages` and show the directory where the package is
+
+- API BREAKAGE:
+  Most users should not be affected, but there were some API changes/breakages.
+
+  - removed CursorScope.Any and CursorScope.All
+
+  - make CursorCtx.Pos the int offset instead of token.Pos
+
+  - `CursorNode` and `ParseCursorNode` were removed
+
+  - `CursorCtx.Ctx` is no longer embedded
+
 ## 18.11.06
 
 - Fix `UnimportedPackages` support for stdlib packages in go1.10 and earlier versions.
@@ -22,13 +89,13 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
   If you've _called_ any of these methods _directly_,
   you will need to rename the following method calls:
 
-- ReducerLabel -> RLabel
-- ReducerInit -> RInit
-- ReducerConfig -> RConfig
-- ReducerCond -> RCond
-- ReducerMount -> RMount
-- Reducerduce -> Rduce
-- ReducerUnmount -> RUnmount
+  - ReducerLabel -> RLabel
+  - ReducerInit -> RInit
+  - ReducerConfig -> RConfig
+  - ReducerCond -> RCond
+  - ReducerMount -> RMount
+  - Reducerduce -> Rduce
+  - ReducerUnmount -> RUnmount
 
 - API BREAKAGE: mg.RunCmdData has been un-exported
 
