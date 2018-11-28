@@ -7,6 +7,7 @@ import (
 	"kuroku.io/margocode/suggest"
 	"margo.sh/golang/internal/pkglst"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -48,7 +49,7 @@ func (gsu *gcSuggest) noPartialsPos(src []byte, pos int) int {
 	// xxx| ~> |xxx
 	// this results in fetching all possible results
 	// which is desirable because the editor is usually better at filtering the list
-	return consumeLeft(src, pos, IsLetter)
+	return mgutil.RepositionLeft(src, pos, IsLetter)
 }
 
 func (gsu *gcSuggest) suggestions(mx *mg.Ctx, src []byte, pos int) suggestions {

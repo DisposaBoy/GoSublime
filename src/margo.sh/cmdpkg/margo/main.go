@@ -64,6 +64,7 @@ func Main() {
 		runCmd,
 		startCmd,
 		devCmd,
+		ciCmd,
 	}
 	app.RunAndExitOnError()
 }

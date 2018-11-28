@@ -258,8 +258,8 @@ func (gc *GocodeCalltips) selectedFieldName(fl *ast.FieldList, fieldIndex int) a
 
 func (gc *GocodeCalltips) selectedFieldExpr(offset func(token.Pos) int, src []byte, pos int, fields []ast.Expr) int {
 	for i, a := range fields {
-		np := consumeLeft(src, offset(a.Pos()), unicode.IsSpace)
-		ne := consumeRight(src, offset(a.End()), unicode.IsSpace)
+		np := mgutil.RepositionLeft(src, offset(a.Pos()), unicode.IsSpace)
+		ne := mgutil.RepositionRight(src, offset(a.End()), unicode.IsSpace)
 		if np <= pos && pos <= ne {
 			return i
 		}

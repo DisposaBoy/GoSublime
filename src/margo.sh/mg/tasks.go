@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+const (
+	taskAnimInerval = 500 * time.Millisecond
+)
+
 type Task struct {
 	Title    string
 	Cancel   func()
@@ -95,7 +99,7 @@ func (tr *taskTracker) tick() {
 		}
 	}
 	if resched > 0 {
-		time.AfterFunc(1*time.Second, tr.tick)
+		time.AfterFunc(taskAnimInerval, tr.tick)
 	}
 }
 
@@ -204,8 +208,9 @@ func (tr *taskTracker) render() (status string, fresh int) {
 	freshFrames := []string{"", " ◔", " ◑", " ◕"}
 	staleFrame := " ●"
 	for _, t := range tr.tickets {
-		age := int(now.Sub(t.Start) / time.Second)
-		if age == 0 && t.ShowNow {
+		dur := now.Sub(t.Start)
+		age := int(dur / time.Second)
+		if age == 0 && (t.ShowNow || dur >= taskAnimInerval) {
 			age = 1
 		}
 		if age < len(freshFrames) {

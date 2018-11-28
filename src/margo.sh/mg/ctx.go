@@ -33,6 +33,9 @@ type Ctx struct {
 	// e.g. that the view is about to be saved or that it was changed.
 	Action Action `mg.Nillable:"true"`
 
+	// KVMap is an in-memory cache of data with for the lifetime of the Ctx.
+	*KVMap
+
 	// Store is the global store
 	Store *Store
 
@@ -65,6 +68,7 @@ func newCtx(sto *Store, st *State, act Action, cookie string, p *mgpf.Profile) *
 	return &Ctx{
 		State:      st,
 		Action:     act,
+		KVMap:      &KVMap{},
 		Store:      sto,
 		Log:        sto.ag.Log,
 		Cookie:     cookie,

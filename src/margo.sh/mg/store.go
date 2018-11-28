@@ -46,8 +46,10 @@ func (sr storeReducers) Copy(updaters ...func(*storeReducers)) storeReducers {
 
 // Store holds global, shared state
 type Store struct {
-	// KVMap is an in-memory cache of data with automatic eviction
-	// eviction might happen if the active view changes
+	// KVMap is an in-memory cache of data with automatic eviction.
+	// Eviction might happen if the active view changes.
+	//
+	// NOTE: it's not safe to store values with *Ctx objects here; use *Ctx.KVMap instead
 	KVMap
 
 	mu       sync.Mutex

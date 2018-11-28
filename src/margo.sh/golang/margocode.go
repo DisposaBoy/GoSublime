@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 	"text/tabwriter"
+	"time"
 )
 
 const (
@@ -307,6 +308,14 @@ func (mgc *marGocodeCtl) srcMode() bool {
 }
 
 func (mgc *marGocodeCtl) pkgInfo(mx *mg.Ctx, impPath, srcDir string) (gsuPkgInfo, error) {
+	start := time.Now()
+	defer func() {
+		dur := time.Since(start)
+		if dur > 10*time.Millisecond {
+			mgc.dbgf("pkgInfo: %s: %s\n", impPath, dur)
+		}
+	}()
+
 	// TODO: cache these ops?
 	// it might not be worth the added complexity since we will get a lot of impPath=io
 	// with a different srcPath which means we have to look it up anyway.

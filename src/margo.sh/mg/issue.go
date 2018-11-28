@@ -268,6 +268,7 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 	}
 
 	msg := ""
+	els := []htm.Element{}
 	for _, isu := range mx.Issues {
 		cfg, ok := cfgs[isu.Tag]
 		if !ok {
@@ -280,13 +281,19 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 		}
 		cfg.inView++
 
-		if len(msg) > 1 || isu.Message == "" || isu.Row != mx.View.Row {
+		if isu.Message == "" || isu.Row != mx.View.Row {
 			continue
 		}
+
+		s := ""
 		if isu.Label == "" {
-			msg = isu.Message
+			s = isu.Message
 		} else {
-			msg = isu.Label + ": " + isu.Message
+			s = isu.Label + ": " + isu.Message
+		}
+		els = append(els, htm.Text(s))
+		if len(msg) <= 1 {
+			msg = s
 		}
 	}
 
@@ -303,7 +310,7 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 			htm.A(&htm.AAttrs{Action: DisplayIssues{}}, htm.Text("Issues")),
 			htm.Textf(" ( %s )", strings.Join(status, ", ")),
 		),
-		htm.Text(msg),
+		els...,
 	)
 	if msg != "" {
 		status = append(status, msg)

@@ -34,6 +34,9 @@ func (p *Pkg) Importable(srcDir string) bool {
 	if p.IsCommand {
 		return false
 	}
+	if p.Dir == srcDir {
+		return false
+	}
 	if s := p.ImportablePfx; s != "" {
 		return strings.HasPrefix(srcDir, s) || srcDir == s[:len(s)-1]
 	}

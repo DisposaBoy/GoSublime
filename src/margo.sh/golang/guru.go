@@ -72,7 +72,7 @@ func (g *Guru) runCmd(mx *mg.Ctx, rc mg.RunCmd) *mg.State {
 		return mx.State
 	}
 	// we're on a func decl name, we're already at the definition
-	if nm, _ := cx.funcName(); nm != "" {
+	if nm, _ := cx.FuncDeclName(); nm != "" {
 		return mx.State
 	}
 
