@@ -10,7 +10,7 @@ import (
 const (
 	devRemoteFork     = "origin"
 	devRemoteUpstream = "margo"
-	devUpstreamURL    = "https://git.kuroku.io/margo"
+	devUpstreamURL    = "https://margo.sh/"
 )
 
 var (

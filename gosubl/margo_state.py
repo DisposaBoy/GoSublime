@@ -28,6 +28,7 @@ client_actions = NS(**{k: k for k in (
 	'Restart',
 	'Shutdown',
 	'CmdOutput',
+	'DisplayIssues',
 )})
 
 class MgView(sublime.View):
@@ -83,12 +84,14 @@ class Config(object):
 class State(object):
 	def __init__(self, v={}):
 		self.config = Config(v.get('Config') or {})
+		self.errors = v.get('Errors') or []
 		self.status = v.get('Status') or []
 		self.view = ResView(v=v.get('View') or {})
 		self.completions = [Completion(c) for c in (v.get('Completions') or [])]
 		self.tooltips = [Tooltip(t) for t in (v.get('Tooltips') or [])]
 		self.issues = [Issue(l) for l in (v.get('Issues') or [])]
 		self.user_cmds = [UserCmd(c) for c in (v.get('UserCmds') or [])]
+		self.hud = HUD(v=v.get('HUD') or {})
 
 		self.client_actions = []
 		for ca in (v.get('ClientActions') or []):
@@ -230,6 +233,10 @@ class UserCmd(object):
 		self.name = v.get('Name') or ''
 		self.args = v.get('Args') or []
 		self.prompts = v.get('Prompts') or []
+
+class HUD(object):
+	def __init__(self, v={}):
+		self.articles = v.get('Articles') or []
 
 # in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
 # but keep this number low (realistic source files sizes) at least until we optimize things

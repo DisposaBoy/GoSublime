@@ -184,7 +184,7 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) b
 // We now just atomically store and load the pointer to the value directly.
 
 type atomicTypeInfoSlice struct { // expected to be 2 words
-	l int            // length of the data array (must be first in struct, for 64-bit alignment necessary for 386)
+	l int            // length of data array (must be first in struct, for 64-bit alignment in i386)
 	v unsafe.Pointer // data array - Pointer (not uintptr) to maintain GC reference
 }
 
@@ -322,7 +322,7 @@ func (e *Encoder) kTime(f *codecFnInfo, rv reflect.Value) {
 
 func (e *Encoder) kString(f *codecFnInfo, rv reflect.Value) {
 	v := (*unsafeReflectValue)(unsafe.Pointer(&rv))
-	e.e.EncodeString(cUTF8, *(*string)(v.ptr))
+	e.e.EncodeStringEnc(cUTF8, *(*string)(v.ptr))
 }
 
 func (e *Encoder) kFloat64(f *codecFnInfo, rv reflect.Value) {

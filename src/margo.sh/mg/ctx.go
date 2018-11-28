@@ -33,6 +33,9 @@ type Ctx struct {
 	// e.g. that the view is about to be saved or that it was changed.
 	Action Action `mg.Nillable:"true"`
 
+	// KVMap is an in-memory cache of data with for the lifetime of the Ctx.
+	*KVMap
+
 	// Store is the global store
 	Store *Store
 
@@ -46,6 +49,7 @@ type Ctx struct {
 	doneC      chan struct{}
 	cancelOnce *sync.Once
 	handle     codec.Handle
+	defr       *redFns
 }
 
 // newCtx creates a new Ctx
@@ -64,6 +68,7 @@ func newCtx(sto *Store, st *State, act Action, cookie string, p *mgpf.Profile) *
 	return &Ctx{
 		State:      st,
 		Action:     act,
+		KVMap:      &KVMap{},
 		Store:      sto,
 		Log:        sto.ag.Log,
 		Cookie:     cookie,
@@ -71,6 +76,7 @@ func newCtx(sto *Store, st *State, act Action, cookie string, p *mgpf.Profile) *
 		doneC:      make(chan struct{}),
 		cancelOnce: &sync.Once{},
 		handle:     sto.ag.handle,
+		defr:       &redFns{},
 	}
 }
 
@@ -153,6 +159,9 @@ func (mx *Ctx) Copy(updaters ...func(*Ctx)) *Ctx {
 }
 
 func (mx *Ctx) SetState(st *State) *Ctx {
+	if mx.State == st {
+		return mx
+	}
 	mx = mx.Copy()
 	mx.State = st
 	return mx
@@ -165,4 +174,39 @@ func (mx *Ctx) SetView(v *View) *Ctx {
 // Begin is a short-hand for Ctx.Store.Begin
 func (mx *Ctx) Begin(t Task) *TaskTicket {
 	return mx.Store.Begin(t)
+}
+
+func (mx *Ctx) Defer(f ReduceFn) {
+	mx.defr.prepend(f)
+}
+
+type redFns struct {
+	sync.RWMutex
+	l []ReduceFn
+}
+
+func (r *redFns) prepend(f ReduceFn) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.l = append([]ReduceFn{f}, r.l...)
+}
+
+func (r *redFns) append(f ReduceFn) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.l = append(r.l[:len(r.l):len(r.l)], f)
+}
+
+func (r *redFns) reduction(mx *Ctx) *Ctx {
+	r.RLock()
+	l := r.l
+	r.l = nil
+	r.RUnlock()
+
+	for _, reduce := range l {
+		mx = mx.SetState(reduce(mx))
+	}
+	return mx
 }

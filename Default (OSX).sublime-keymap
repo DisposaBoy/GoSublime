@@ -129,7 +129,15 @@
 	},
 	{
 		"keys": ["super+9"],
-		"command": "gs9o_open"
+		"command": "gs9o_win_open"
+	},
+		{
+		"keys": ["super+.","super+9"],
+		"command": "gs9o_win_open"
+	},
+	{
+		"keys": ["super+.","super+0"],
+		"command": "margo_show_hud"
 	},
 	{
 		"keys": ["shift+space"],

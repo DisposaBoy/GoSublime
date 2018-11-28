@@ -114,8 +114,7 @@ func (rs *restartSupport) slowLint(mx *Ctx, pkg *build.Package) IssueSet {
 	}
 	if pkg != nil && pkg.ImportPath != "margo" {
 		cmds = append([]*exec.Cmd{
-			exec.Command("go", "vet", "margo.sh/..."),
-			exec.Command("go", "test", "-race", "margo.sh/..."),
+			exec.Command("margo.sh", "ci", "-quick"),
 		}, cmds...)
 	}
 

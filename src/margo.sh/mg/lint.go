@@ -94,7 +94,7 @@ func (lt *Linter) lint(mx *Ctx) {
 	if len(lt.TempDir) != 0 {
 		tmpDir, err := MkTempDir(lt.Label)
 		if err != nil {
-			mx.Log.Println("cannot create tempDir for linter `%s`:", cmdStr, err)
+			mx.Log.Printf("cannot create tempDir for linter `%s`: %s\n", cmdStr, err)
 			return
 		}
 		defer os.RemoveAll(tmpDir)

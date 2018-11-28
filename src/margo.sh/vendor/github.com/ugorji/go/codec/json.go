@@ -115,7 +115,7 @@ func init() {
 // ----------------
 
 type jsonEncDriverTypical struct {
-	w  encWriter
+	w  *encWriterSwitch
 	b  *[jsonScratchArrayLen]byte
 	tw bool // term white space
 	c  containerState
@@ -203,7 +203,7 @@ func (e *jsonEncDriverTypical) atEndOfEncode() {
 // ----------------
 
 type jsonEncDriverGeneric struct {
-	w encWriter
+	w *encWriterSwitch
 	b *[jsonScratchArrayLen]byte
 	c containerState
 	// ds string // indent string
@@ -405,7 +405,7 @@ type jsonEncDriver struct {
 	noBuiltInTypes
 	e  *Encoder
 	h  *JsonHandle
-	ew encWriter
+	ew *encWriterSwitch
 	se extWrapper
 	// ---- cpu cache line boundary?
 	bs []byte // scratch
@@ -462,6 +462,10 @@ func (e *jsonEncDriver) EncodeString(c charEncoding, v string) {
 	e.quoteStr(v)
 }
 
+func (e *jsonEncDriver) EncodeStringEnc(c charEncoding, v string) {
+	e.quoteStr(v)
+}
+
 func (e *jsonEncDriver) EncodeStringBytes(c charEncoding, v []byte) {
 	// if encoding raw bytes and RawBytesExt is configured, use it to encode
 	if v == nil {
@@ -487,6 +491,29 @@ func (e *jsonEncDriver) EncodeStringBytes(c charEncoding, v []byte) {
 	} else {
 		e.quoteStr(stringView(v))
 	}
+}
+
+func (e *jsonEncDriver) EncodeStringBytesRaw(v []byte) {
+	// if encoding raw bytes and RawBytesExt is configured, use it to encode
+	if v == nil {
+		e.EncodeNil()
+		return
+	}
+	if e.se.InterfaceExt != nil {
+		e.EncodeExt(v, 0, &e.se, e.e)
+		return
+	}
+
+	slen := base64.StdEncoding.EncodedLen(len(v))
+	if cap(e.bs) >= slen+2 {
+		e.bs = e.bs[:slen+2]
+	} else {
+		e.bs = make([]byte, slen+2)
+	}
+	e.bs[0] = '"'
+	base64.StdEncoding.Encode(e.bs[1:], v)
+	e.bs[slen+1] = '"'
+	e.ew.writeb(e.bs)
 }
 
 func (e *jsonEncDriver) EncodeAsis(v []byte) {
@@ -568,7 +595,7 @@ type jsonDecDriver struct {
 	noBuiltInTypes
 	d  *Decoder
 	h  *JsonHandle
-	r  decReader
+	r  *decReaderSwitch
 	se extWrapper
 
 	// ---- writable fields during execution --- *try* to keep in sep cache line
@@ -583,7 +610,7 @@ type jsonDecDriver struct {
 	b  [jsonScratchArrayLen]byte // scratch 1, used for parsing strings or numbers or time.Time
 	b2 [jsonScratchArrayLen]byte // scratch 2, used only for readUntil, decNumBytes
 
-	_ [3]uint64 // padding
+	// _ [3]uint64 // padding
 	// n jsonNum
 }
 
@@ -712,7 +739,6 @@ func (d *jsonDecDriver) readLit(length, fromIdx uint8) {
 	d.tok = 0
 	if jsonValidateSymbols && !bytes.Equal(bs, jsonLiterals[fromIdx:fromIdx+length]) {
 		d.d.errorf("expecting %s: got %s", jsonLiterals[fromIdx:fromIdx+length], bs)
-		return
 	}
 }
 
@@ -1321,7 +1347,7 @@ func (h *JsonHandle) SetInterfaceExt(rt reflect.Type, tag uint64, ext InterfaceE
 type jsonEncDriverTypicalImpl struct {
 	jsonEncDriver
 	jsonEncDriverTypical
-	_ [3]uint64 // padding
+	_ [1]uint64 // padding
 }
 
 func (x *jsonEncDriverTypicalImpl) reset() {
@@ -1332,7 +1358,7 @@ func (x *jsonEncDriverTypicalImpl) reset() {
 type jsonEncDriverGenericImpl struct {
 	jsonEncDriver
 	jsonEncDriverGeneric
-	_ [2]uint64 // padding
+	// _ [2]uint64 // padding
 }
 
 func (x *jsonEncDriverGenericImpl) reset() {

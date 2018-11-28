@@ -755,6 +755,7 @@ def tm_path(name):
 		'doc': 'syntax/GoSublime-GsDoc.sublime-syntax',
 		'go': 'syntax/GoSublime-Go.sublime-syntax',
 		'gohtml': 'syntax/GoSublime-HTML.sublime-syntax',
+		'hud': 'syntax/GoSublime-HUD.sublime-syntax',
 	}
 
 	return 'Packages/GoSublime/%s' % d[name]
@@ -807,9 +808,13 @@ def home_path(*a):
 
 def json_decode(s, default):
 	try:
+		if isinstance(s, bytes):
+			s = s.decode('utf-8')
+
 		res = json.loads(s)
-		if is_a(res, default):
+		if default is None or is_a(res, default):
 			return (res, '')
+
 		return (res, 'Unexpected value type')
 	except Exception as ex:
 		return (default, 'Decode Error: %s' % ex)

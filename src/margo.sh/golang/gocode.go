@@ -12,14 +12,12 @@ import (
 	"kuroku.io/margocode/suggest"
 	"margo.sh/mg"
 	"margo.sh/mgpf"
-	"margo.sh/mgutil"
 	"margo.sh/sublime"
 	"os"
 	"path"
 	"strings"
 	"time"
 	"unicode"
-	"unicode/utf8"
 )
 
 var (
@@ -158,7 +156,7 @@ func (g *Gocode) RUnmount(mx *mg.Ctx) {
 func (g *Gocode) Reduce(mx *mg.Ctx) *mg.State {
 	start := time.Now()
 
-	mx, gx := initGocodeReducer(mx, *g)
+	gx := initGocodeReducer(mx, *g)
 	st := mx.State
 	if gx == nil {
 		return st
@@ -357,64 +355,52 @@ func (g Gocode) matchTests(c suggest.Candidate) bool {
 
 type gocodeCtx struct {
 	Gocode
+	*CursorCtx
 	gsu  *gcSuggest
 	mx   *mg.Ctx
-	cn   *CursorNode
 	fn   string
 	src  []byte
 	pos  int
 	bctx *build.Context
 }
 
-func initGocodeReducer(mx *mg.Ctx, g Gocode) (*mg.Ctx, *gocodeCtx) {
+func initGocodeReducer(mx *mg.Ctx, g Gocode) *gocodeCtx {
 	// TODO: simplify and get rid of this func, it's only used once
 
-	st := mx.State
-	bctx := BuildContext(mx)
-	src, _ := st.View.ReadAll()
+	src, pos := mx.View.SrcPos()
 	if len(src) == 0 {
-		return mx, nil
+		return nil
 	}
-	pos := mgutil.ClampPos(src, st.View.Pos)
-
-	// move the cursor off the word.
-	// xxx.yyy| ~> xxx.|
-	// xxx| ~> |xxx
-	// this results in fetching all possible results
-	// which is desirable because the editor is usually better at filtering the list
-	for {
-		r, n := utf8.DecodeLastRune(src[:pos])
-		if !IsLetter(r) {
-			break
-		}
-		pos -= n
-	}
-	// seems legit...
-	st = st.SetView(st.View.Copy(func(v *mg.View) { v.Pos = pos }))
-	mx = mx.SetState(st)
 
 	cx := NewCursorCtx(mx, src, pos)
-	if cx.Scope.Any(PackageScope, FileScope, ImportScope, StringScope, CommentScope) {
-		return mx, nil
+	if cx.Scope.Is(
+		PackageScope,
+		FileScope,
+		ImportScope,
+		StringScope,
+		CommentScope,
+		FuncDeclScope,
+		TypeDeclScope,
+	) {
+		return nil
 	}
 
 	gsu := mctl.newGcSuggest(mx)
 	gsu.suggestDebug = g.Debug
-	gx := &gocodeCtx{
-		mx:   mx,
-		gsu:  gsu,
-		cn:   cx.CursorNode,
-		fn:   st.View.Filename(),
-		pos:  pos,
-		src:  src,
-		bctx: bctx,
+	return &gocodeCtx{
+		mx:        mx,
+		CursorCtx: cx,
+		gsu:       gsu,
+		fn:        mx.View.Filename(),
+		pos:       pos,
+		src:       src,
+		bctx:      BuildContext(mx),
 	}
-	return mx, gx
 }
 
 func (gx *gocodeCtx) suggestions() suggestions {
 	if len(gx.src) == 0 {
 		return suggestions{}
 	}
-	return gx.gsu.suggestions(gx.mx)
+	return gx.gsu.suggestions(gx.mx, gx.src, gx.pos)
 }

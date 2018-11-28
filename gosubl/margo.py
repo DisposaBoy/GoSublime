@@ -2,8 +2,9 @@ from . import _dbg
 from . import gs, gsq, sh
 from .margo_agent import MargoAgent
 from .margo_common import OutputLogger, TokenCounter
-from .margo_render import render, render_src
+from .margo_render import render
 from .margo_state import State, actions, client_actions, Config, _view_scope_lang, view_is_9o, MgView
+from base64 import b64decode
 from collections import namedtuple
 import glob
 import os
@@ -11,6 +12,7 @@ import shlex
 import sublime
 import threading
 import time
+import webbrowser
 
 class MargoSingleton(object):
 	def __init__(self):
@@ -28,9 +30,12 @@ class MargoSingleton(object):
 			client_actions.Restart: self._handle_act_restart,
 			client_actions.Shutdown: self._handle_act_shutdown,
 			client_actions.CmdOutput: self._handle_act_output,
+			client_actions.DisplayIssues: self._handle_DisplayIssues,
 		}
 		self.file_ids = []
-
+		self._hud_state = {}
+		self.hud_name = 'GoSublime/HUD'
+		self.hud_id = self.hud_name.replace('/','-').lower()
 		self._views = {}
 		self._view_lock = threading.Lock()
 		self._gopath = ''
@@ -55,6 +60,9 @@ class MargoSingleton(object):
 		# don't access things like sublime.active_view() directly
 
 		if rs:
+			for err in rs.state.errors:
+				self.out.println('Error: %s' % err)
+
 			self.state = rs.state
 			cfg = rs.state.config
 
@@ -64,7 +72,12 @@ class MargoSingleton(object):
 				gs._mg_override_settings = cfg.override_settings
 
 		def _render():
-			render(view=gs.active_view(), state=self.state, status=self.status)
+			render(
+				mg=mg,
+				view=gs.active_view(),
+				state=self.state,
+				status=self.status,
+			)
 
 			if rs:
 				self._handle_client_actions(rs)
@@ -88,6 +101,9 @@ class MargoSingleton(object):
 		h = self.output_handler
 		if h:
 			h(rs, act)
+
+	def _handle_DisplayIssues(self, rs, act):
+		gs.active_view().run_command('margo_display_issues')
 
 	def _handle_client_actions(self, rs):
 		for act in rs.state.client_actions:
@@ -162,6 +178,67 @@ class MargoSingleton(object):
 		mg._ready = True
 		mg.start()
 
+	def _hud_create_panel(self, win):
+		view = win.create_output_panel(self.hud_name)
+		win.focus_view(win.active_view())
+		syntax = gs.tm_path('hud')
+		settings = view.settings()
+		if settings.get('syntax') == syntax:
+			return view
+
+		view.set_syntax_file(syntax)
+		view.set_read_only(True)
+		view.set_name(self.hud_name)
+		opts = {
+			'line_numbers': False,
+			'gutter': False,
+			'margin': 0,
+			'highlight_line': False,
+			'rulers': [],
+			'fold_buttons': False,
+			'scroll_past_end': False,
+		}
+		settings.erase('color_scheme')
+		for k, v in opts.items():
+			settings.set(k, v)
+
+		return view
+
+	def is_hud_view(self, view):
+		if view is None:
+			return False
+
+		v, _ = self._hud_win_state(view.window())
+		return v is not None and view.id() == v.id()
+
+	def _hud_win_state(self, win):
+		default = (None, None)
+		if win is None:
+			return default
+
+		return self._hud_state.get(win.id()) or default
+
+	def hud_panel(self, win):
+		view, phantoms = self._hud_win_state(win)
+		wid = win.id()
+		m = self._hud_state
+
+		if view is None:
+			view = self._hud_create_panel(win)
+			m[wid] = (view, phantoms)
+
+		if phantoms is None:
+			phantoms = sublime.PhantomSet(view, self.hud_name)
+			m[wid] = (view, phantoms)
+
+		if len(m) > 1:
+			wids = [w.id() for w in sublime.windows()]
+			for id in m.keys():
+				if id not in wids:
+					del m[id]
+
+		return (view, phantoms)
+
 	def view(self, id, view=None):
 		with self._view_lock:
 			mgv = self._views.get(id)
@@ -190,14 +267,23 @@ class MargoSingleton(object):
 				file_ids.append(v.id())
 
 		self.file_ids = file_ids
-
 		self.view(view.id(), view=view)
+
+		with self._view_lock:
+			m = self._views
+			self._views = {k: m[k] for k in set(file_ids).intersection(set(m.keys()))}
 
 	def event(self, name, view, handler, args):
 		if view is None:
 			return None
 
 		_pf=_dbg.pf(dot=name)
+
+
+		win = view.window()
+		if self.is_hud_view(view):
+			view = gs.active_view(win=win)
+			win.focus_view(view)
 
 		def handle_event(gt=0):
 			if gt > 0:
@@ -224,6 +310,34 @@ class MargoSingleton(object):
 
 		sublime.set_timeout(handle_event)
 
+	def _is_str(self, s):
+		return isinstance(s, str)
+
+	def _is_act(self, m):
+		return isinstance(m, dict) and self._is_str(m.get('Name'))
+
+	def _lst_of(self, l, f):
+		return isinstance(l, list) and l and len(list(filter(f, l))) == len(l)
+
+	def navigate(self, href, *, view=None, win=None):
+		if href.startswith('https://') or href.startswith('http://'):
+			gsq.launch('mg.navigate', lambda: webbrowser.open_new_tab(href))
+			return
+
+		dataPfx = 'data:application/json;base64,'
+		data = b64decode(href[len(dataPfx):]) if href.startswith(dataPfx) else href
+
+		view = gs.active_view(view=view, win=win)
+		x, err = gs.json_decode(data, None)
+		if self._is_act(x):
+			self.queue(actions=[x], view=view, delay=0.100)
+		elif self._lst_of(x, self._is_act):
+			self.queue(actions=x, view=view, delay=0.100)
+		elif self._lst_of(x, self._is_str):
+			view.window().run_command('gs9o_open', {'run': x, 'focus_view': False})
+		else:
+			self.out.println('mg.navigate: Invalid href `%s`, expected `http(s)://` or data:json`{Name: action}|[command args...]`, error: %s' % (href, err))
+
 	def agent_starting(self, ag):
 		if ag is not self.agent:
 			return
@@ -248,9 +362,9 @@ class MargoSingleton(object):
 		if not self.agent:
 			self.start()
 
-	def queue(self, *, actions=[], view=None):
+	def queue(self, *, actions=[], view=None, delay=-1):
 		self._send_start()
-		self.agent.queue(actions=actions, view=view)
+		self.agent.queue(actions=actions, view=view, delay=delay)
 
 	def send(self, *, actions=[], cb=None, view=None):
 		self._send_start()

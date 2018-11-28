@@ -92,6 +92,13 @@ func (mc *mgcCache) prune(pats ...*regexp.Regexp) []mgcCacheEnt {
 	return ents
 }
 
+func (mc *mgcCache) size() int {
+	mc.RLock()
+	defer mc.RUnlock()
+
+	return len(mc.m)
+}
+
 func (mc *mgcCache) entries() []mgcCacheEnt {
 	mc.RLock()
 	defer mc.RUnlock()

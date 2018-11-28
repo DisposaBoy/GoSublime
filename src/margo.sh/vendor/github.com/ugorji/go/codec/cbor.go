@@ -33,31 +33,31 @@ const (
 
 const (
 	cborBdIndefiniteBytes  byte = 0x5f
-	cborBdIndefiniteString      = 0x7f
-	cborBdIndefiniteArray       = 0x9f
-	cborBdIndefiniteMap         = 0xbf
-	cborBdBreak                 = 0xff
+	cborBdIndefiniteString byte = 0x7f
+	cborBdIndefiniteArray  byte = 0x9f
+	cborBdIndefiniteMap    byte = 0xbf
+	cborBdBreak            byte = 0xff
 )
 
 // These define some in-stream descriptors for
 // manual encoding e.g. when doing explicit indefinite-length
 const (
 	CborStreamBytes  byte = 0x5f
-	CborStreamString      = 0x7f
-	CborStreamArray       = 0x9f
-	CborStreamMap         = 0xbf
-	CborStreamBreak       = 0xff
+	CborStreamString byte = 0x7f
+	CborStreamArray  byte = 0x9f
+	CborStreamMap    byte = 0xbf
+	CborStreamBreak  byte = 0xff
 )
 
 const (
 	cborBaseUint   byte = 0x00
-	cborBaseNegInt      = 0x20
-	cborBaseBytes       = 0x40
-	cborBaseString      = 0x60
-	cborBaseArray       = 0x80
-	cborBaseMap         = 0xa0
-	cborBaseTag         = 0xc0
-	cborBaseSimple      = 0xe0
+	cborBaseNegInt byte = 0x20
+	cborBaseBytes  byte = 0x40
+	cborBaseString byte = 0x60
+	cborBaseArray  byte = 0x80
+	cborBaseMap    byte = 0xa0
+	cborBaseTag    byte = 0xc0
+	cborBaseSimple byte = 0xe0
 )
 
 func cbordesc(bd byte) string {
@@ -106,7 +106,7 @@ type cborEncDriver struct {
 	noBuiltInTypes
 	encDriverNoopContainerWriter
 	e *Encoder
-	w encWriter
+	w *encWriterSwitch
 	h *CborHandle
 	x [8]byte
 	// _ [3]uint64 // padding
@@ -172,7 +172,7 @@ func (e *cborEncDriver) EncodeTime(t time.Time) {
 		e.EncodeNil()
 	} else if e.h.TimeRFC3339 {
 		e.encUint(0, cborBaseTag)
-		e.EncodeString(cUTF8, t.Format(time.RFC3339Nano))
+		e.EncodeStringEnc(cUTF8, t.Format(time.RFC3339Nano))
 	} else {
 		e.encUint(1, cborBaseTag)
 		t = t.UTC().Round(time.Microsecond)
@@ -239,6 +239,10 @@ func (e *cborEncDriver) EncodeString(c charEncoding, v string) {
 	e.encStringBytesS(cborBaseString, v)
 }
 
+func (e *cborEncDriver) EncodeStringEnc(c charEncoding, v string) {
+	e.encStringBytesS(cborBaseString, v)
+}
+
 func (e *cborEncDriver) EncodeStringBytes(c charEncoding, v []byte) {
 	if v == nil {
 		e.EncodeNil()
@@ -246,6 +250,14 @@ func (e *cborEncDriver) EncodeStringBytes(c charEncoding, v []byte) {
 		e.encStringBytesS(cborBaseBytes, stringView(v))
 	} else {
 		e.encStringBytesS(cborBaseString, stringView(v))
+	}
+}
+
+func (e *cborEncDriver) EncodeStringBytesRaw(v []byte) {
+	if v == nil {
+		e.EncodeNil()
+	} else {
+		e.encStringBytesS(cborBaseBytes, stringView(v))
 	}
 }
 
@@ -286,7 +298,7 @@ func (e *cborEncDriver) encStringBytesS(bb byte, v string) {
 type cborDecDriver struct {
 	d      *Decoder
 	h      *CborHandle
-	r      decReader
+	r      *decReaderSwitch
 	br     bool // bytes reader
 	bdRead bool
 	bd     byte
@@ -382,7 +394,8 @@ func (d *cborDecDriver) decCheckInteger() (neg bool) {
 	} else if major == cborMajorNegInt {
 		neg = true
 	} else {
-		d.d.errorf("not an integer - invalid major %v from descriptor %x/%s", major, d.bd, cbordesc(d.bd))
+		d.d.errorf("not an integer - invalid major %v from descriptor %x/%s",
+			major, d.bd, cbordesc(d.bd))
 		return
 	}
 	return

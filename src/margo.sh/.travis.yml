@@ -15,5 +15,4 @@ matrix:
 go_import_path: margo.sh
 
 script:
-  - go test -race -v ./...
-  - go vet ./...
+  - margo.sh ci

@@ -11,11 +11,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9277145fda3716710628b0ea2c973abfc7c7bc8c8e00d32bdca630c12d1725fc"
+  digest = "1:0a1d820f01897ed80b3d9e5edbd0c55a437cd09955e3b0f08820765b4accb808"
   name = "github.com/ugorji/go"
   packages = ["codec"]
   pruneopts = "UT"
-  revision = "e5e69e061d4f7ee3a69b793cf9c1b41afe21918e"
+  revision = "e105254e6a511a48fa0bd9f2811fb0a4e3c6078d"
 
 [[projects]]
   branch = "master"
@@ -31,22 +31,22 @@
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
   pruneopts = "UT"
-  revision = "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06"
+  revision = "3d3f9f413869b949e48070b5bc593aa22cc2b8f2"
 
 [[projects]]
   branch = "master"
-  digest = "1:3f6e1af4cc2c512f2001d5870dc317ab93e68baf0f005d558d4c957c125602d9"
+  digest = "1:48e1b07b9dceeaf83f2ef76da14e563ee7aac89ae2364fc4b97a85092f591d0a"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "9b800f95dbbc54abff0acf7ee32d88ba4e328c89"
+  revision = "93218def8b18e66adbdab3eca8ec334700329f1f"
 
 [[projects]]
   branch = "master"
-  digest = "1:1fc4a6e61adafd991a9af51f76861ca96622171cd61abcae5f431ff6bcce5290"
+  digest = "1:b981bb5ad263ab0a3858519fdb7716874eb55cac7a9ea34f52ae75817cf4051b"
   name = "golang.org/x/tools"
   packages = [
     "cmd/guru",
@@ -72,18 +72,18 @@
     "refactor/importgraph",
   ]
   pruneopts = "UT"
-  revision = "96e9e165b75e735822645eff82850b08c377be36"
+  revision = "2ddaf7f79a0937ffa9072ede7b696fd084abfe86"
 
 [[projects]]
   branch = "master"
-  digest = "1:e187353e2be984ecb3467c5c1170b1b15e78681ee6299a1c874f25f66fce456a"
+  digest = "1:c6125c56c22c64c3fec0f2e3ad37490545b55d7d001b5306b89bf7d0e959a9ba"
   name = "kuroku.io/margocode"
   packages = [
     "lookdot",
     "suggest",
   ]
   pruneopts = "UT"
-  revision = "b6d4b7239cc2bbf0bb2cd0e4f2a7b9abdaefefa5"
+  revision = "a1431e3c0752dcbcfa76f3bdd0ceff11c041ff4c"
 
 [solve-meta]
   analyzer-name = "dep"

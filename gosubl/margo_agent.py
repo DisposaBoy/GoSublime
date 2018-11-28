@@ -49,6 +49,7 @@ class MargoAgent(threading.Thread):
 		self.starting.set()
 		self.started = threading.Event()
 		self.stopped = threading.Event()
+		self._queue_ch = Chan(discard=1)
 		self.ready = threading.Event()
 		gopaths = (gs.user_path(), gs.dist_path())
 		psep = sh.psep
@@ -80,6 +81,7 @@ class MargoAgent(threading.Thread):
 
 		self.starting.clear()
 		self.stopped.set()
+		self._queue_ch.close()
 		self.req_chan.close()
 		self._stop_proc()
 		self._release_handlers()
@@ -137,7 +139,7 @@ class MargoAgent(threading.Thread):
 		stderr = pr.p.stderr
 		self.proc = pr.p
 		gsq.launch(self.domain, self._handle_send)
-		gsq.launch(self.domain, self._handle_acts)
+		gsq.launch(self.domain, self._handle_queue)
 		gsq.launch(self.domain, self._handle_recv)
 		gsq.launch(self.domain, self._handle_log)
 		self.started.set()
@@ -197,7 +199,7 @@ class MargoAgent(threading.Thread):
 
 		return acts
 
-	def queue(self, *, actions=[], view=None):
+	def queue(self, *, actions=[], view=None, delay=-1):
 		with self._acts_lock:
 			for act in actions:
 				p = (act, view.id())
@@ -207,6 +209,8 @@ class MargoAgent(threading.Thread):
 					pass
 
 				self._acts.append(p)
+
+		self._queue_ch.put(delay)
 
 	def send(self, *, actions=[], cb=None, view=None):
 		view = gs.active_view(view=view)
@@ -230,9 +234,9 @@ class MargoAgent(threading.Thread):
 		if acts:
 			self.send(actions=acts, view=view).wait()
 
-	def _handle_acts(self):
-		while not self.stopped.is_set():
-			time.sleep(0.750)
+	def _handle_queue(self):
+		for n in self._queue_ch:
+			time.sleep(n if n >= 0 else 0.600)
 			self._send_acts()
 
 	def _handle_send(self):

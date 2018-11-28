@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"io"
+	"margo.sh/mg/actions"
 	"margo.sh/mgutil"
 	"os"
 	"os/exec"
@@ -199,8 +200,8 @@ type CmdOutput struct {
 	Close  bool
 }
 
-func (out CmdOutput) clientAction() clientActionType {
-	return clientActionType{Name: "CmdOutput", Data: out}
+func (out CmdOutput) ClientAction() actions.ClientData {
+	return actions.ClientData{Name: "CmdOutput", Data: out}
 }
 
 type cmdSupport struct{ ReducerType }
@@ -220,6 +221,7 @@ func runCmd(mx *Ctx, rc RunCmd) *State {
 		RunCmd: rc,
 		Output: &CmdOut{Fd: rc.Fd, Dispatch: mx.Store.Dispatch},
 	}
+	defer mx.Profile.Push(cx.Name).Pop()
 	return cx.Run()
 }
 

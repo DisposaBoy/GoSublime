@@ -5,7 +5,9 @@ import (
 	"go/build"
 	"go/types"
 	"kuroku.io/margocode/suggest"
+	"margo.sh/golang/internal/pkglst"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -23,6 +25,7 @@ type gsuImpRes struct {
 
 type gcSuggest struct {
 	suggestDebug bool
+	partials     bool
 
 	cfg MarGocodeCtl
 
@@ -40,10 +43,24 @@ func (gsu *gcSuggest) newGsuImporter(mx *mg.Ctx) *gsuImporter {
 	return gi
 }
 
-func (gsu *gcSuggest) suggestions(mx *mg.Ctx) suggestions {
+func (gsu *gcSuggest) noPartialsPos(src []byte, pos int) int {
+	// move the cursor off the word.
+	// xxx.yyy| ~> xxx.|
+	// xxx| ~> |xxx
+	// this results in fetching all possible results
+	// which is desirable because the editor is usually better at filtering the list
+	return mgutil.RepositionLeft(src, pos, IsLetter)
+}
+
+func (gsu *gcSuggest) suggestions(mx *mg.Ctx, src []byte, pos int) suggestions {
+	defer mx.Profile.Push("suggestions").Pop()
+
 	sugg := suggestions{}
 
-	defer mx.Profile.Push("suggestions").Pop()
+	if len(src) == 0 {
+		return sugg
+	}
+
 	gsu.Lock()
 	defer gsu.Unlock()
 
@@ -82,11 +99,10 @@ func (gsu *gcSuggest) suggestions(mx *mg.Ctx) suggestions {
 		}
 	}
 
-	v := mx.View
-	src, pos := v.SrcPos()
-	if len(src) != 0 {
-		sugg.candidates, _ = cfg.Suggest(v.Filename(), src, pos)
+	if !gsu.partials {
+		pos = gsu.noPartialsPos(src, pos)
 	}
+	sugg.candidates, _ = cfg.Suggest(mx.View.Filename(), src, pos)
 	return sugg
 }
 
@@ -121,7 +137,7 @@ func (gi *gsuImporter) Import(path string) (*types.Package, error) {
 }
 
 func (gi *gsuImporter) importFromName(pkgName, srcDir string) (pkg *types.Package, impPath string) {
-	impPath = mctl.importPathByName(pkgName)
+	impPath = mctl.importPathByName(pkgName, srcDir)
 	if impPath == "" {
 		return nil, ""
 	}
@@ -232,6 +248,14 @@ func (gi *gsuImporter) importFrom(underlying types.ImporterFrom, k mgcCacheKey, 
 
 	if err == nil {
 		mctl.pkgs.put(mgcCacheEnt{Key: k, Pkg: pkg, Dur: impDur})
+
+		if _, ok := mctl.plst.View().ByDir[k.Dir]; !ok {
+			mctl.plst.Add(pkglst.Pkg{
+				Dir:        k.Dir,
+				ImportPath: k.Path,
+				Name:       pkg.Name(),
+			})
+		}
 	} else {
 		mctl.dbgf("%T.ImportFrom(%q, %q): %s\n", underlying, k.Path, k.Dir, err)
 	}

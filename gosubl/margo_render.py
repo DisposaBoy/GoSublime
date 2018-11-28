@@ -1,19 +1,22 @@
+from . import about
 from . import _dbg
 from . import gs
 from . import gspatch
 from .margo_state import ViewPathName
 import sublime
 
+
 STATUS_KEY = '#mg.Status'
 STATUS_PFX = '  '
 STATUS_SFX = '  '
 STATUS_SEP = '    '
 
-def render(view, state, status=[]):
+def render(*, mg, view, state, status):
 	def cb():
 		_render_tooltips(view, state.tooltips)
 		_render_status(view, status + state.status)
 		_render_issues(view, state.issues)
+		_render_hud(mg=mg, state=state, view=view)
 
 	sublime.set_timeout(cb)
 
@@ -150,3 +153,77 @@ def _render_tooltips(view, tooltips):
 		on_navigate=on_navigate,
 		on_hide=on_hide
 	)
+
+def _render_hud(*, mg, state, view):
+	html = '''
+		<body id="%s">
+			<style>
+				body {
+					padding: 0.25rem;
+				}
+				ul, ol {
+					padding: 0 0 0 1.1rem;
+				}
+				ul, ol, li {
+					margin: 0;
+				}
+				.header{
+					font-size: 0.6rem;
+				}
+				.header,
+				.header a {
+					color: color(var(--foreground) alpha(0.50))
+				}
+				.footer {}
+				.articles {}
+				.article, .header {
+					margin-bottom: 0.5rem;
+				}
+				.article {
+					font-size: 0.8rem;
+				}
+				.article .heading,
+				.article .heading a {
+					font-weight: bold;
+					color: color(var(--foreground) alpha(0.50))
+				}
+				.spacer {
+					padding: 0 0.5rem;
+				}
+				.highlight {
+					font-weight: bold;
+					background-color: color(var(--foreground) alpha(0.10));
+				}
+			</style>
+
+			<div class="header">
+				GoSublime/HUD
+				<span class="spacer">·</span>
+				<a href="https://margo.sh/cl/%s?_r=gs-hud">margo.sh/cl/%s</a>
+			</div>
+
+			<div class="articles">
+				%s
+			</div>
+
+		</body>
+	''' % (
+		mg.hud_id,
+		about.VERSION,
+		about.VERSION,
+		''.join(state.hud.articles),
+	)
+	def ren(win):
+		v, phantoms = mg.hud_panel(win)
+		phantom = sublime.Phantom(
+			sublime.Region(v.size()),
+			html,
+			sublime.LAYOUT_INLINE,
+			lambda href: mg.navigate(href, view=view),
+		)
+		vp = v.viewport_position()
+		phantoms.update([phantom])
+		v.set_viewport_position(vp)
+
+	for w in sublime.windows():
+		ren(w)

@@ -328,7 +328,7 @@ type RFunc struct {
 
 	// Func is the equivalent of Reducer.Reduce
 	// If Func is nil, the current state is returned as-is
-	Func func(*Ctx) *State
+	Func ReduceFn
 
 	// The following optional fields correspond with the Reducer lifecycle methods
 
@@ -420,7 +420,7 @@ func (rf *RFunc) Reduce(mx *Ctx) *State {
 // NewReducer creates a new RFunc
 // reduce can be nil, in which case RFunc.Reduce method will simply return the current state
 // each function in options is called on the newly created RFunc
-func NewReducer(reduce func(*Ctx) *State, options ...func(*RFunc)) *RFunc {
+func NewReducer(reduce ReduceFn, options ...func(*RFunc)) *RFunc {
 	rf := &RFunc{Func: reduce}
 	for _, o := range options {
 		o(rf)
@@ -439,3 +439,5 @@ func ReducerLabel(r Reducer) string {
 	}
 	return "mg.Reducer"
 }
+
+type ReduceFn func(*Ctx) *State

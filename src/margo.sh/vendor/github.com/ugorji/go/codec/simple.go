@@ -36,7 +36,7 @@ type simpleEncDriver struct {
 	// encNoSeparator
 	e *Encoder
 	h *SimpleHandle
-	w encWriter
+	w *encWriterSwitch
 	b [8]byte
 	// c containerState
 	encDriverTrackContainerWriter
@@ -157,7 +157,11 @@ func (e *simpleEncDriver) WriteMapStart(length int) {
 	e.encLen(simpleVdMap, length)
 }
 
-func (e *simpleEncDriver) EncodeString(c charEncoding, v string) {
+// func (e *simpleEncDriver) EncodeSymbol(v string) {
+// 	e.EncodeString(cUTF8, v)
+// }
+
+func (e *simpleEncDriver) EncodeStringEnc(c charEncoding, v string) {
 	if false && e.h.EncZeroValuesAsNil && e.c != containerMapKey && v == "" {
 		e.EncodeNil()
 		return
@@ -166,11 +170,15 @@ func (e *simpleEncDriver) EncodeString(c charEncoding, v string) {
 	e.w.writestr(v)
 }
 
-// func (e *simpleEncDriver) EncodeSymbol(v string) {
-// 	e.EncodeString(cUTF8, v)
-// }
+func (e *simpleEncDriver) EncodeString(c charEncoding, v string) {
+	e.EncodeStringEnc(c, v)
+}
 
 func (e *simpleEncDriver) EncodeStringBytes(c charEncoding, v []byte) {
+	e.EncodeStringBytesRaw(v)
+}
+
+func (e *simpleEncDriver) EncodeStringBytesRaw(v []byte) {
 	// if e.h.EncZeroValuesAsNil && e.c != containerMapKey && v == nil {
 	if v == nil {
 		e.EncodeNil()
@@ -201,7 +209,7 @@ func (e *simpleEncDriver) EncodeTime(t time.Time) {
 type simpleDecDriver struct {
 	d      *Decoder
 	h      *SimpleHandle
-	r      decReader
+	r      *decReaderSwitch
 	bdRead bool
 	bd     byte
 	br     bool // a bytes reader?
