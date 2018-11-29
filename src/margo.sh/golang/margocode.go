@@ -2,6 +2,7 @@ package golang
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"go/build"
@@ -40,7 +41,8 @@ const (
 )
 
 var (
-	mctl *marGocodeCtl
+	mctl               *marGocodeCtl
+	errModNotSupported = errors.New("go mod not supported")
 )
 
 func init() {
@@ -315,6 +317,21 @@ func (mgc *marGocodeCtl) pkgInfo(mx *mg.Ctx, impPath, srcDir string) (gsuPkgInfo
 			mgc.dbgf("pkgInfo: %s: %s\n", impPath, dur)
 		}
 	}()
+
+	if pkglst.ModEnabled(mx, srcDir) {
+		for _, p := range mgc.plst.View().ByImportPath[impPath] {
+			if p.Standard {
+				return gsuPkgInfo{
+					Path: p.ImportPath,
+					Dir:  p.Dir,
+					Std:  true,
+				}, nil
+			}
+		}
+		return gsuPkgInfo{}, errModNotSupported
+	}
+
+	// TODO: move this into pkglst so it's available globally
 
 	// TODO: cache these ops?
 	// it might not be worth the added complexity since we will get a lot of impPath=io
