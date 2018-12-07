@@ -48,7 +48,7 @@ type CurCtx struct {
 	Node       ast.Node
 
 	printer struct {
-		sync.Mutex
+		*sync.Mutex
 		printer.Config
 		fset *token.FileSet
 		buf  *bytes.Buffer
@@ -58,7 +58,7 @@ type CurCtx struct {
 func NewViewCurCtx(mx *mg.Ctx) *CurCtx {
 	type Key struct{ *mg.View }
 	k := Key{mx.View}
-	if cx, ok := mx.Get(k).(*CurCtx); ok {
+	if cx := cachedCx(mx, k); cx != nil {
 		return cx
 	}
 
@@ -74,13 +74,24 @@ func NewCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
 		pos  int
 	}
 	key := Key{mg.SrcHash(src), pos}
-	if cx, ok := mx.Get(key).(*CurCtx); ok {
+	if cx := cachedCx(mx, key); cx != nil {
 		return cx
 	}
 
 	cx := newCurCtx(mx, src, pos)
 	mx.Put(key, cx)
 	return cx
+}
+
+func cachedCx(mx *mg.Ctx, k interface{}) *CurCtx {
+	cx, _ := mx.Get(k).(*CurCtx)
+	if cx == nil {
+		return nil
+	}
+	// make sure not to re-use old State and other fields of Ctx that might've changed
+	x := *cx
+	x.Ctx = mx
+	return &x
 }
 
 func newCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
@@ -104,6 +115,7 @@ func newCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
 		Src:  src,
 		Pos:  pos,
 	}
+	cx.printer.Mutex = &sync.Mutex{}
 	cx.printer.fset = token.NewFileSet()
 	cx.printer.buf = &bytes.Buffer{}
 	cx.init(mx)

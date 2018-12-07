@@ -12,8 +12,10 @@ import (
 	"go/types"
 	"golang.org/x/tools/go/gcexportdata"
 	"log"
+	"margo.sh/golang/goutil"
 	"margo.sh/golang/internal/pkglst"
 	"margo.sh/golang/internal/srcimporter"
+	"margo.sh/internal/vfs"
 	"margo.sh/mg"
 	"margo.sh/mgpf"
 	"margo.sh/mgutil"
@@ -282,6 +284,66 @@ func (mgc *marGocodeCtl) scanPlst(mx *mg.Ctx, rootName, rootDir string) {
 	mx.Log.Printf("%s\n%s", title, out)
 }
 
+func (mgc *marGocodeCtl) scanVFS(mx *mg.Ctx, rootName, rootDir string) {
+	dir := filepath.Join(rootDir, "src")
+	title := "VFS.Scan " + rootName + " (" + dir + ")"
+	defer mx.Begin(mg.Task{Title: title, NoEcho: true}).Done()
+
+	type dent struct {
+		dir string
+		*vfs.Node
+	}
+	mu := sync.Mutex{}
+	pkgs := 0
+	load := func(d dent) {
+		if !d.SomeSuffix(".go") {
+			return
+		}
+		_, err := pkglst.ImportDir(mx, d.dir)
+		if err != nil {
+			return
+		}
+		mu.Lock()
+		pkgs++
+		mu.Unlock()
+	}
+	start := time.Now()
+	wg := &sync.WaitGroup{}
+	procs := runtime.NumCPU()
+	dents := make(chan dent, procs*1000)
+	proc := func(wg *sync.WaitGroup) {
+		defer wg.Done()
+
+		for de := range dents {
+			load(de)
+		}
+	}
+	for i := 0; i < procs; i++ {
+		wg.Add(1)
+		go proc(wg)
+	}
+	vfs.Root.Scan(dir, vfs.ScanOptions{
+		MaxDepth: -1,
+		Filter: func(de *vfs.Dirent) bool {
+			switch de.Name() {
+			case
+				"node_modules",
+				"testdata":
+				return false
+			}
+			return vfs.DefaultScanFilter(de)
+		},
+		Dirs: func(dir string, nd *vfs.Node) {
+			dents <- dent{dir, nd}
+		},
+	})
+	close(dents)
+	wg.Wait()
+	dur := mgpf.Since(start)
+
+	mx.Log.Printf("%s: %d packages preloaded in %s\n", title, pkgs, dur)
+}
+
 func (mgc *marGocodeCtl) initPlst(mx *mg.Ctx) {
 	bctx := BuildContext(mx)
 	mx = mx.SetState(mx.SetEnv(
@@ -291,8 +353,10 @@ func (mgc *marGocodeCtl) initPlst(mx *mg.Ctx) {
 		}),
 	))
 
+	go mgc.scanVFS(mx, "GOROOT", bctx.GOROOT)
 	go mgc.scanPlst(mx, "GOROOT", bctx.GOROOT)
 	for _, root := range PathList(bctx.GOPATH) {
+		go mgc.scanVFS(mx, "GOPATH", root)
 		go mgc.scanPlst(mx, "GOPATH", root)
 	}
 }
@@ -318,7 +382,7 @@ func (mgc *marGocodeCtl) pkgInfo(mx *mg.Ctx, impPath, srcDir string) (gsuPkgInfo
 		}
 	}()
 
-	if pkglst.ModEnabled(mx, srcDir) {
+	if goutil.ModEnabled(mx, srcDir) {
 		for _, p := range mgc.plst.View().ByImportPath[impPath] {
 			if p.Standard {
 				return gsuPkgInfo{

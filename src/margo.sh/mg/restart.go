@@ -75,6 +75,9 @@ func (rs *restartSupport) mgPkg(mx *Ctx) *build.Package {
 		return nil
 	}
 	imp := pkg.ImportPath + "/"
+	if strings.Contains(imp, "/cmd/") {
+		return nil
+	}
 	if !strings.HasPrefix(imp, "margo/") && !strings.HasPrefix(imp, "margo.sh/") {
 		return nil
 	}

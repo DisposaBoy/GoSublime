@@ -10,6 +10,22 @@
   version = "v1.3.0"
 
 [[projects]]
+  digest = "1:d395d2621c61bdbcaf62fb749d90ec55a51d112329e653aeca87fbd1075723aa"
+  name = "github.com/karrick/godirwalk"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2de2192f9e35ce981c152a873ed943b93b79ced4"
+  version = "v1.7.5"
+
+[[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   branch = "master"
   digest = "1:0a1d820f01897ed80b3d9e5edbd0c55a437cd09955e3b0f08820765b4accb808"
   name = "github.com/ugorji/go"
@@ -90,6 +106,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/coreos/bbolt",
+    "github.com/karrick/godirwalk",
     "github.com/ugorji/go/codec",
     "github.com/urfave/cli",
     "golang.org/x/crypto/blake2b",
