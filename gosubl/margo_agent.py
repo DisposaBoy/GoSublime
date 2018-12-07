@@ -18,7 +18,7 @@ ipc_silent_exceptions = (
 if ipc_codec == 'msgpack':
 	from .vendor import umsgpack
 	ipc_loads = umsgpack.loads
-	ipc_dec = umsgpack.load
+	ipc_dec = lambda fp: umsgpack.load(fp, allow_invalid_utf8=True)
 	ipc_enc = umsgpack.dump
 	ipc_silent_exceptions += (
 		umsgpack.InsufficientDataException,
