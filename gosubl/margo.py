@@ -34,6 +34,7 @@ class MargoSingleton(object):
 		}
 		self.file_ids = []
 		self._hud_state = {}
+		self._hud_state_lock = threading.Lock()
 		self.hud_name = 'GoSublime/HUD'
 		self.hud_id = self.hud_name.replace('/','-').lower()
 		self._views = {}
@@ -208,7 +209,9 @@ class MargoSingleton(object):
 		if view is None:
 			return False
 
-		v, _ = self._hud_win_state(view.window())
+		with self._hud_state_lock:
+			v, _ = self._hud_win_state(view.window())
+
 		return v is not None and view.id() == v.id()
 
 	def _hud_win_state(self, win):
@@ -219,23 +222,24 @@ class MargoSingleton(object):
 		return self._hud_state.get(win.id()) or default
 
 	def hud_panel(self, win):
-		view, phantoms = self._hud_win_state(win)
-		wid = win.id()
-		m = self._hud_state
+		with self._hud_state_lock:
+			view, phantoms = self._hud_win_state(win)
+			wid = win.id()
+			m = self._hud_state
 
-		if view is None:
-			view = self._hud_create_panel(win)
-			m[wid] = (view, phantoms)
+			if view is None:
+				view = self._hud_create_panel(win)
+				m[wid] = (view, phantoms)
 
-		if phantoms is None:
-			phantoms = sublime.PhantomSet(view, self.hud_name)
-			m[wid] = (view, phantoms)
+			if phantoms is None:
+				phantoms = sublime.PhantomSet(view, self.hud_name)
+				m[wid] = (view, phantoms)
 
-		if len(m) > 1:
-			wids = [w.id() for w in sublime.windows()]
-			for id in m.keys():
-				if id not in wids:
-					del m[id]
+			if len(m) > 1:
+				wids = [w.id() for w in sublime.windows()]
+				for id in m.keys():
+					if id not in wids:
+						del m[id]
 
 		return (view, phantoms)
 
