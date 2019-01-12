@@ -33,51 +33,39 @@ func quote(s string) string {
 	return `"` + unquote(s) + `"`
 }
 
-func updateImports(fn string, src []byte, add, rem impSpecList) (_ []byte, changed bool) {
-	parse := func(src []byte) (_ *token.FileSet, _ *ast.File, endOffset int, ok bool) {
-		fset := token.NewFileSet()
-		af, err := parser.ParseFile(fset, fn, src, parser.ImportsOnly)
-		if err != nil || af == nil {
-			return nil, nil, -1, false
-		}
-		end := endOfDeclsOffset(fset, af)
-		if end < 0 || end > len(src) {
-			return nil, nil, -1, false
-		}
-		return fset, af, end, true
-	}
-	print := func(fset *token.FileSet, af *ast.File) (_ []byte, ok bool) {
-		buf := &bytes.Buffer{}
-		if err := printer.Fprint(buf, fset, af); err != nil {
-			return src, false
-		}
-		return buf.Bytes(), true
-	}
-	fset, af, end, ok := parse(src)
-	if !ok {
+func updateImports(fn string, src []byte, add, rem impSpecList) (_ []byte, updated bool) {
+	fset := token.NewFileSet()
+	af, err := parser.ParseFile(fset, fn, src, parser.ImportsOnly|parser.ParseComments)
+	if err != nil || af.Name == nil || !af.End().IsValid() {
 		return src, false
 	}
-	updateImpSpecs(fset, af, add, rem)
-	impSrc, ok := print(fset, af)
-	if !ok {
+	tf := fset.File(af.Pos())
+	ep := tf.Offset(af.End())
+	if i := bytes.IndexByte(src[ep:], '\n'); i >= 0 {
+		// make sure to include the ImportComment
+		ep += i + 1
+	} else {
+		ep = tf.Size()
+	}
+	updateImpSpecs(fset, af, ep, add, rem)
+	buf := &bytes.Buffer{}
+	pr := &printer.Config{Tabwidth: 4, Mode: printer.TabIndent | printer.UseSpaces}
+	if pr.Fprint(buf, fset, af) != nil {
 		return src, false
 	}
-	// parsing+printing might introduce whitespace and other garbage
-	// so re-parse to find the end of the imports
-	_, _, impEnd, ok := parse(impSrc)
-	if !ok {
-		return src, false
+	p, s := buf.Bytes(), src[ep:]
+	if len(s) >= 2 && s[0] == '\n' && s[1] == '\n' {
+		p = bytes.TrimRight(p, "\n")
 	}
-
-	return append(impSrc[:impEnd], src[end:]...), true
+	return append(p, s...), true
 }
 
-func updateImpSpecs(fset *token.FileSet, af *ast.File, add, rem impSpecList) {
-	var firstDecl *ast.GenDecl
+func updateImpSpecs(fset *token.FileSet, af *ast.File, ep int, add, rem impSpecList) {
+	var firstImpDecl *ast.GenDecl
 	imports := map[impSpec]bool{}
 	for _, decl := range af.Decls {
 		gdecl, ok := decl.(*ast.GenDecl)
-		if !ok || len(gdecl.Specs) == 0 {
+		if !ok || gdecl.Tok != token.IMPORT {
 			continue
 		}
 		hasC := false
@@ -112,24 +100,24 @@ func updateImpSpecs(fset *token.FileSet, af *ast.File, add, rem impSpecList) {
 		}
 		gdecl.Specs = gdecl.Specs[:i]
 
-		if !hasC && firstDecl == nil {
-			firstDecl = gdecl
+		if !hasC && firstImpDecl == nil {
+			firstImpDecl = gdecl
 		}
 	}
 
 	if len(add) > 0 {
-		if firstDecl == nil {
-			firstDecl = &ast.GenDecl{Tok: token.IMPORT, Lparen: 1}
-			af.Decls = append(af.Decls, firstDecl)
-		} else if firstDecl.Lparen == token.NoPos {
-			firstDecl.Lparen = 1
+		if firstImpDecl == nil {
+			tf := fset.File(af.Pos())
+			firstImpDecl = &ast.GenDecl{TokPos: tf.Pos(ep), Tok: token.IMPORT, Lparen: 1}
+			af.Decls = append(af.Decls, firstImpDecl)
 		}
 
-		addSpecs := make([]ast.Spec, 0, len(firstDecl.Specs)+len(add))
+		addSpecs := make([]ast.Spec, 0, len(firstImpDecl.Specs)+len(add))
 		for _, sd := range add {
 			if imports[sd] {
 				continue
 			}
+			imports[sd] = true
 			ispec := &ast.ImportSpec{
 				Path: &ast.BasicLit{Value: quote(sd.Path), Kind: token.STRING},
 			}
@@ -137,37 +125,7 @@ func updateImpSpecs(fset *token.FileSet, af *ast.File, add, rem impSpecList) {
 				ispec.Name = &ast.Ident{Name: sd.Name}
 			}
 			addSpecs = append(addSpecs, ispec)
-			imports[sd] = true
 		}
-		firstDecl.Specs = append(addSpecs, firstDecl.Specs...)
+		firstImpDecl.Specs = append(addSpecs, firstImpDecl.Specs...)
 	}
-
-	i := 0
-	for _, decl := range af.Decls {
-		if gdecl, ok := decl.(*ast.GenDecl); ok && len(gdecl.Specs) == 0 {
-			continue
-		}
-		af.Decls[i] = decl
-		i += 1
-	}
-	af.Decls = af.Decls[:i]
-}
-
-func endOfDeclsOffset(fset *token.FileSet, af *ast.File) int {
-	tf := fset.File(af.Pos())
-	if len(af.Decls) == 0 {
-		return tf.Position(af.End()).Offset
-	}
-
-	end := token.NoPos
-	for _, d := range af.Decls {
-		n := d.End()
-		if n > end {
-			end = n
-		}
-	}
-	if end.IsValid() {
-		return tf.Position(end).Offset
-	}
-	return -1
 }
