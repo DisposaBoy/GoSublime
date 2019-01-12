@@ -36,7 +36,7 @@ func quote(s string) string {
 func updateImports(fn string, src []byte, add, rem impSpecList) (_ []byte, changed bool) {
 	parse := func(src []byte) (_ *token.FileSet, _ *ast.File, endOffset int, ok bool) {
 		fset := token.NewFileSet()
-		af, err := parser.ParseFile(fset, fn, src, parser.ImportsOnly)
+		af, err := parser.ParseFile(fset, fn, src, parser.ImportsOnly|parser.ParseComments)
 		if err != nil || af == nil {
 			return nil, nil, -1, false
 		}
