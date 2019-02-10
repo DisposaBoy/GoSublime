@@ -237,7 +237,7 @@ class MargoSingleton(object):
 
 			if len(m) > 1:
 				wids = [w.id() for w in sublime.windows()]
-				for id in m.keys():
+				for id in list(m.keys()):
 					if id not in wids:
 						del m[id]
 
