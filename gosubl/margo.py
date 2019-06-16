@@ -209,10 +209,7 @@ class MargoSingleton(object):
 		if view is None:
 			return False
 
-		with self._hud_state_lock:
-			v, _ = self._hud_win_state(view.window())
-
-		return v is not None and view.id() == v.id()
+		return view.settings().get('syntax') == gs.tm_path('hud')
 
 	def _hud_win_state(self, win):
 		default = (None, None)
