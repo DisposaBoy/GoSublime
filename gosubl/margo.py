@@ -181,7 +181,8 @@ class MargoSingleton(object):
 
 	def _hud_create_panel(self, win):
 		view = win.create_output_panel(self.hud_name)
-		win.focus_view(win.active_view())
+		if win == sublime.active_window():
+			win.focus_view(win.active_view())
 		syntax = gs.tm_path('hud')
 		settings = view.settings()
 		if settings.get('syntax') == syntax:
