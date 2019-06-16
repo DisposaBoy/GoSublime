@@ -10,6 +10,10 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 19.06.16
+  * Fix a deadlock/freeze (seen on Mac OS) when starting up with multiple windows open.
+  * Fix an issue where the active window loses focus when starting up.
+
 ## 18.11.28
 
 This release introduces the HUD and comes with many improvements to snippets and a tweaked version of the Mariana color schemed named Ariana.
