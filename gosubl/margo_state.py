@@ -240,7 +240,7 @@ class HUD(object):
 
 # in testing, we should be able to push 50MiB+ files constantly without noticing a performance problem
 # but keep this number low (realistic source files sizes) at least until we optimize things
-MAX_VIEW_SIZE = 512 << 10
+MAX_VIEW_SIZE = 8 << 20
 
 # TODO: only send the content when it actually changes
 # TODO: do chunked copying i.e. copy e.g. 1MiB at a time
@@ -352,6 +352,11 @@ def _view_hash(view):
 
 	return 'id=%s,change=%d' % (_view_id(view), view.change_count())
 
+
+_lang_by_basename = {
+	'go.mod': 'go.mod',
+	'go.sum': 'go.sum',
+}
 _scope_lang_pat = re.compile(r'(?:source\.\w+|source|text)[.]([^\s.]+)')
 def _view_scope_lang(view, pos):
 	if view is None:
@@ -362,6 +367,11 @@ def _view_scope_lang(view, pos):
 
 	if view_is_9o(view):
 		return (scope, 'cmd-prompt')
+
+	nm = basename(view_path(view))
+	lb = _lang_by_basename.get(nm)
+	if lb:
+		return (scope, lb)
 
 	l = _scope_lang_pat.findall(scope)
 	if not l:
