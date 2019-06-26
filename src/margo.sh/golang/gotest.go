@@ -139,7 +139,7 @@ func (tc *TestCmds) testArgs(pat string) []string {
 }
 
 func (tc *TestCmds) process(mx *mg.Ctx, cmds map[string]mg.UserCmdList, fn string) {
-	for _, d := range ParseFile(mx.Store, fn, nil).AstFile.Decls {
+	for _, d := range ParseFile(mx, fn, nil).AstFile.Decls {
 		fun, ok := d.(*ast.FuncDecl)
 		if ok && fun.Name != nil {
 			tc.processIdent(cmds, fun.Name)

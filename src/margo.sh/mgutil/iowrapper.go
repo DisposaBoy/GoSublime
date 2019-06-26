@@ -5,6 +5,14 @@ import (
 	"sync"
 )
 
+var (
+	_ io.Reader = (*IOWrapper)(nil)
+	_ io.Writer = (*IOWrapper)(nil)
+	_ io.Closer = (*IOWrapper)(nil)
+	_ io.Reader = (ReaderFunc)(nil)
+	_ io.Writer = (WriterFunc)(nil)
+)
+
 // IOWrapper implements various optional io interfaces.
 // It delegates to the interface fields that are not nil
 type IOWrapper struct {
@@ -77,3 +85,15 @@ func (iow *IOWrapper) Flush() error {
 	}
 	return nil
 }
+
+// WriterFunc implements io.Writer using a function.
+type WriterFunc func([]byte) (int, error)
+
+// Write calls f(p)
+func (f WriterFunc) Write(p []byte) (int, error) { return f(p) }
+
+// ReaderFunc implements io.Reader using a function.
+type ReaderFunc func([]byte) (int, error)
+
+// Read calls f(p)
+func (f ReaderFunc) Read(p []byte) (int, error) { return f(p) }

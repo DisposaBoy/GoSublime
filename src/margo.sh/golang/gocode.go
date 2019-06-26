@@ -61,8 +61,8 @@ func (gr *gocodeReq) addUnimportedPkg(st *mg.State, p impSpec) *mg.State {
 		p.Name = ""
 	}
 
-	s, ok := updateImports(st.View.Filename(), src, impSpecList{p}, nil)
-	if ok {
+	s, merged, _ := impSpecList{p}.mergeWithSrc(st.View.Filename(), src)
+	if len(merged) != 0 {
 		st = st.SetViewSrc(s)
 	}
 

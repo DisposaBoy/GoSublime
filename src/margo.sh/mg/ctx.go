@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ugorji/go/codec"
 	"margo.sh/mgpf"
+	"margo.sh/vfs"
 	"reflect"
 	"regexp"
 	"sync"
@@ -46,6 +47,8 @@ type Ctx struct {
 
 	Profile *mgpf.Profile
 
+	VFS *vfs.FS
+
 	doneC      chan struct{}
 	cancelOnce *sync.Once
 	handle     codec.Handle
@@ -73,6 +76,7 @@ func newCtx(sto *Store, st *State, act Action, cookie string, p *mgpf.Profile) *
 		Log:        sto.ag.Log,
 		Cookie:     cookie,
 		Profile:    p,
+		VFS:        vFS,
 		doneC:      make(chan struct{}),
 		cancelOnce: &sync.Once{},
 		handle:     sto.ag.handle,

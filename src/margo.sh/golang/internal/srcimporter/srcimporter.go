@@ -1,9 +1,3 @@
-// Copyright 2017 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Package srcimporter implements importing directly
-// from source files rather than installed packages.
 package srcimporter
 
 import (
@@ -14,6 +8,8 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+	"margo.sh/golang/gopkg"
+	"margo.sh/mg"
 	"os"
 	"path/filepath"
 	"sync"
@@ -21,6 +17,7 @@ import (
 
 // An Importer provides the context for importing packages from source code.
 type Importer struct {
+	mx      *mg.Ctx
 	overlay types.ImporterFrom
 
 	ctxt     *build.Context
@@ -35,8 +32,9 @@ type Importer struct {
 // non-nil file system functions, they are used instead of the regular package
 // os functions. The file set is used to track position information of package
 // files; and imported packages are added to the packages map.
-func New(overlay types.ImporterFrom, ctxt *build.Context, fset *token.FileSet, packages map[string]*types.Package) *Importer {
+func New(mx *mg.Ctx, overlay types.ImporterFrom, ctxt *build.Context, fset *token.FileSet, packages map[string]*types.Package) *Importer {
 	return &Importer{
+		mx:      mx,
 		overlay: overlay,
 
 		ctxt:     ctxt,
@@ -77,7 +75,12 @@ func (p *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*type
 		ctxt = &c
 	}
 
-	bp, err := ctxt.Import(path, srcDir, 0)
+	pp, err := gopkg.FindPkg(p.mx, path, srcDir)
+	if err != nil {
+		return nil, err
+	}
+
+	bp, err := ctxt.ImportDir(pp.Dir, 0)
 	if err != nil {
 		return nil, err // err may be *build.NoGoError - return as is
 	}

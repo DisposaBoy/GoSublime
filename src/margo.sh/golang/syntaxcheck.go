@@ -41,7 +41,7 @@ func (sc *SyntaxCheck) checker() {
 
 func (sc *SyntaxCheck) check(mx *mg.Ctx) {
 	src, _ := mx.View.ReadAll()
-	pf := ParseFile(mx.Store, mx.View.Filename(), src)
+	pf := ParseFile(mx, mx.View.Filename(), src)
 	type iKey struct{}
 	mx.Store.Dispatch(mg.StoreIssues{
 		IssueKey: mg.IssueKey{Key: iKey{}},

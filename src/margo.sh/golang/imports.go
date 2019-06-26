@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,113 @@ func (l impSpecList) contains(p impSpec) bool {
 		}
 	}
 	return false
+}
+
+func (l impSpecList) mergeWithSrc(fn string, src []byte) (updatedSrc []byte, mergedImports impSpecList, err error) {
+	// modifying the AST in areas near comments is a losing battle
+	// so we're trying a different strategy:
+	// * `import "C"` is ignored as usual
+	// * if there are no other imports:
+	//   insert `import ("P")\n` below the `package` line
+	// * if there is an `import ("X")`:
+	//   insert `import ("P";X")`
+	// * if there is an `import "X"`:
+	//   insert `import ("P";"X"\n)\n`
+
+	eol := func(src []byte, pos int) int {
+		if i := bytes.IndexByte(src[pos:], '\n'); i >= 0 {
+			return pos + i + 1
+		}
+		return len(src)
+	}
+
+	fset, af, err := parseImportsOnly(fn, src)
+	if err != nil {
+		return nil, nil, err
+	}
+	tf := fset.File(af.Pos())
+	tailPos := eol(src, tf.Offset(af.End()))
+
+	var target *ast.GenDecl
+	skip := map[impSpec]bool{}
+	for _, decl := range af.Decls {
+		decl, ok := decl.(*ast.GenDecl)
+		if !ok || decl.Tok != token.IMPORT {
+			continue
+		}
+		for _, spec := range decl.Specs {
+			spec, ok := spec.(*ast.ImportSpec)
+			if !ok || spec.Path == nil {
+				continue
+			}
+			imp := impSpec{}
+			imp.Path, _ = strconv.Unquote(spec.Path.Value)
+			if spec.Name != nil {
+				imp.Name = spec.Name.Name
+			}
+			skip[imp] = true
+			if imp.Path != "C" && target == nil {
+				target = decl
+			}
+		}
+	}
+
+	out := &bytes.Buffer{}
+	merge := func() {
+		for _, imp := range l {
+			if skip[imp] {
+				continue
+			}
+			skip[imp] = true
+
+			if imp.Name != "" {
+				out.WriteString(imp.Name)
+			}
+			out.WriteString(strconv.Quote(imp.Path))
+			out.WriteByte(';')
+			mergedImports = append(mergedImports, imp)
+		}
+	}
+
+	switch {
+	case target == nil:
+		i := eol(src, tf.Offset(af.Name.End()))
+		out.Write(src[:i])
+		out.WriteString("\nimport (")
+		merge()
+		out.WriteString(")\n")
+		out.Write(src[i:])
+	case target.Lparen > target.TokPos:
+		i := tf.Offset(target.Lparen) + 1
+		out.Write(src[:i])
+		merge()
+		out.Write(src[i:])
+	default:
+		i := tf.Offset(target.TokPos) + len("import")
+		j := eol(src, i)
+		out.Write(src[:i])
+		out.WriteString("(")
+		merge()
+		out.Write(src[i:j])
+		out.WriteString("\n)\n")
+		out.Write(src[j:])
+	}
+
+	fset, af, err = parseImportsOnly(fn, out.Bytes())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	out.Reset()
+	pr := &printer.Config{
+		Tabwidth: 4,
+		Mode:     printer.TabIndent | printer.UseSpaces,
+	}
+	if err := pr.Fprint(out, fset, af); err != nil {
+		return nil, nil, err
+	}
+	out.Write(src[tailPos:])
+	return out.Bytes(), mergedImports, nil
 }
 
 func unquote(s string) string {
@@ -128,4 +236,10 @@ func updateImpSpecs(fset *token.FileSet, af *ast.File, ep int, add, rem impSpecL
 		}
 		firstImpDecl.Specs = append(addSpecs, firstImpDecl.Specs...)
 	}
+}
+
+func parseImportsOnly(fn string, src []byte) (*token.FileSet, *ast.File, error) {
+	fset := token.NewFileSet()
+	af, err := parser.ParseFile(fset, fn, src, parser.ParseComments|parser.ImportsOnly)
+	return fset, af, err
 }

@@ -107,18 +107,16 @@ func (tr *taskTracker) userCmds(st *State) *State {
 	cl := make([]UserCmd, len(tr.tickets))
 	now := time.Now()
 	for i, t := range tr.tickets {
-		c := UserCmd{
-			Title: "Task: Cancel " + t.Title,
-			Name:  ".kill",
+		c := UserCmd{Name: ".kill"}
+		dur := mgpf.D(now.Sub(t.Start))
+		if cid := t.CancelID; cid == "" {
+			c.Title = "Task: " + t.Title
+			c.Desc = fmt.Sprintf("elapsed: %s", dur)
+		} else {
+			c.Args = []string{cid}
+			c.Title = "Task: Cancel " + t.Title
+			c.Desc = fmt.Sprintf("elapsed: %s, cmd: `%s`", dur, mgutil.QuoteCmd(c.Name, c.Args...))
 		}
-		for _, s := range []string{t.CancelID, t.ID} {
-			if s != "" {
-				c.Args = append(c.Args, s)
-			}
-		}
-		c.Desc = fmt.Sprintf("elapsed: %s, cmd: `%s`",
-			mgpf.D(now.Sub(t.Start)), mgutil.QuoteCmd(c.Name, c.Args...),
-		)
 		cl[i] = c
 	}
 	return st.AddUserCmds(cl...)

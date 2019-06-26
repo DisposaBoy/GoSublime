@@ -318,7 +318,7 @@ func (cx *CurCtx) append(n ast.Node) {
 	cx.Nodes = append(cx.Nodes, n)
 }
 
-func (cx *CurCtx) init(kvs mg.KVStore) {
+func (cx *CurCtx) init(mx *mg.Ctx) {
 	src, pos := cx.Src, cx.Pos
 	astFileIsValid := func(af *ast.File) bool {
 		return af.Package.IsValid() &&
@@ -330,12 +330,12 @@ func (cx *CurCtx) init(kvs mg.KVStore) {
 		return bytes.Contains(src, []byte("//")) || bytes.Contains(src, []byte("/*"))
 	}
 
-	pf := goutil.ParseFile(kvs, "", src)
+	pf := goutil.ParseFile(mx, "", src)
 	if !astFileIsValid(pf.AstFile) && srcHasComments() {
 		// we don't want any declaration errors esp. about the package name `_`
 		// we don't parse with this mode by default to increase the chance of caching
 		s := append(src[:len(src):len(src)], goutil.NilPkgSrc...)
-		pf = goutil.ParseFileWithMode(kvs, "", s, parser.ParseComments)
+		pf = goutil.ParseFileWithMode(mx, "", s, parser.ParseComments)
 	}
 
 	af := pf.AstFile

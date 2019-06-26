@@ -61,6 +61,17 @@ func (v *View) Dir() string {
 	return v.Wd
 }
 
+func (v *View) Basename() string {
+	if v.Path != "" {
+		return filepath.Base(v.Path)
+	}
+	return v.Name
+}
+
+func (v *View) ShortFilename() string {
+	return mgutil.ShortFilename(v.Filename())
+}
+
 func (v *View) Filename() string {
 	if v.Path != "" {
 		return v.Path

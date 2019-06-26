@@ -1,90 +1,26 @@
 package pkglst
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/ugorji/go/codec"
+	"margo.sh/golang/gopkg"
 	"margo.sh/mg"
-	"margo.sh/mgpf"
-	"os/exec"
+	"margo.sh/vfs"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
-	"time"
 )
-
-type Pkg struct {
-	IsCommand     bool
-	ImportablePfx string
-
-	// The following fields are a subset of build.Package
-	Dir        string
-	Name       string
-	ImportPath string
-	Standard   bool
-}
-
-var (
-	internalSepDir = filepath.FromSlash("/internal/")
-	vendorSepDir   = filepath.FromSlash("/vendor/")
-)
-
-func (p *Pkg) Importable(srcDir string) bool {
-	if p.IsCommand {
-		return false
-	}
-	if p.Dir == srcDir {
-		return false
-	}
-	if s := p.ImportablePfx; s != "" {
-		return strings.HasPrefix(srcDir, s) || srcDir == s[:len(s)-1]
-	}
-	return true
-}
-
-func (p *Pkg) dirPfx(dir, slash string) string {
-	if i := strings.LastIndex(dir, slash); i >= 0 {
-		return filepath.Dir(dir[:i+len(slash)-1]) + string(filepath.Separator)
-	}
-	if d := strings.TrimSuffix(dir, slash[:len(slash)-1]); d != dir {
-		return filepath.Dir(d) + string(filepath.Separator)
-	}
-	return ""
-}
-
-func (p *Pkg) finalize() {
-	p.Dir = filepath.Clean(p.Dir)
-	p.IsCommand = p.Name == "main"
-
-	// does importing from the 'vendor' and 'internal' dirs work the same?
-	// who cares... I'm the supreme, I make the rules in this outpost...
-	p.ImportablePfx = p.dirPfx(p.Dir, internalSepDir)
-	if p.ImportablePfx == "" {
-		p.ImportablePfx = p.dirPfx(p.Dir, vendorSepDir)
-	}
-
-	s := p.ImportPath
-	switch i := strings.LastIndex(s, "/vendor/"); {
-	case i >= 0:
-		p.ImportPath = s[i+len("/vendor/"):]
-	case strings.HasPrefix(s, "vendor/"):
-		p.ImportPath = s[len("vendor/"):]
-	}
-}
 
 type View struct {
-	List         []*Pkg
-	ByDir        map[string]*Pkg
-	ByImportPath map[string][]*Pkg
-	ByName       map[string][]*Pkg
+	List         []*gopkg.Pkg
+	ByDir        map[string]*gopkg.Pkg
+	ByImportPath map[string][]*gopkg.Pkg
+	ByName       map[string][]*gopkg.Pkg
 }
 
 func (vu View) shallowClone(lstLen int) View {
 	x := View{
-		ByDir:        make(map[string]*Pkg, len(vu.ByDir)+lstLen),
-		ByImportPath: make(map[string][]*Pkg, len(vu.ByImportPath)+lstLen),
-		ByName:       make(map[string][]*Pkg, len(vu.ByName)+lstLen),
+		ByDir:        make(map[string]*gopkg.Pkg, len(vu.ByDir)+lstLen),
+		ByImportPath: make(map[string][]*gopkg.Pkg, len(vu.ByImportPath)+lstLen),
+		ByName:       make(map[string][]*gopkg.Pkg, len(vu.ByName)+lstLen),
 	}
 	for k, p := range vu.ByDir {
 		x.ByDir[k] = p
@@ -105,13 +41,13 @@ func (vu View) PruneDir(dir string) View {
 		return vu
 	}
 
-	delpkg := func(m map[string][]*Pkg, k string) {
+	delpkg := func(m map[string][]*gopkg.Pkg, k string) {
 		l := m[k]
 		if len(l) == 0 {
 			return
 		}
 
-		x := make([]*Pkg, 0, len(l)-1)
+		x := make([]*gopkg.Pkg, 0, len(l)-1)
 		for _, p := range l {
 			if p.Dir != dir {
 				x = append(x, p)
@@ -131,7 +67,7 @@ func (vu View) PruneDir(dir string) View {
 	return x
 }
 
-func (vu View) Add(lst ...*Pkg) View {
+func (vu View) Add(lst ...*gopkg.Pkg) View {
 	x := vu.shallowClone(len(lst))
 
 	for _, p := range lst {
@@ -140,7 +76,7 @@ func (vu View) Add(lst ...*Pkg) View {
 		x.ByName[p.Name] = append(x.ByName[p.Name], p)
 	}
 
-	x.List = make([]*Pkg, 0, len(x.ByDir))
+	x.List = make([]*gopkg.Pkg, 0, len(x.ByDir))
 	for _, p := range x.ByDir {
 		x.List = append(x.List, p)
 	}
@@ -165,8 +101,7 @@ type Cache struct {
 }
 
 func (cc *Cache) Scan(mx *mg.Ctx, dir string) (output []byte, _ error) {
-	lst, out, err := cc.goList(mx, dir)
-
+	lst, out, err := cc.vfsList(mx, dir)
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
 
@@ -182,10 +117,10 @@ func (cc *Cache) PruneDir(dir string) {
 	cc.view = cc.view.PruneDir(dir)
 }
 
-func (cc *Cache) Add(l ...Pkg) {
-	x := make([]*Pkg, len(l))
+func (cc *Cache) Add(l ...gopkg.Pkg) {
+	x := make([]*gopkg.Pkg, len(l))
 	for i, p := range l {
-		p.finalize()
+		p.Finalize()
 		x[i] = &p
 	}
 
@@ -202,42 +137,12 @@ func (cc *Cache) View() View {
 	return cc.view
 }
 
-func (cc *Cache) goList(mx *mg.Ctx, dir string) (_ []*Pkg, output []byte, _ error) {
-	start := time.Now()
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	cmd := exec.Command("go", "list", "-e", "-json", "./...")
-	cmd.Dir = dir
-	cmd.Env = mx.Env.Merge(mg.EnvMap{
-		"GOPROXY":     "off",
-		"GO111MODULE": "off",
-	}).Environ()
-	cmd.Stdout = outBuf
-	cmd.Stderr = errBuf
-
-	err := cmd.Run()
-	cmdDur := mgpf.D(time.Since(start))
-
-	start = time.Now()
-	lst := []*Pkg{}
-	dec := codec.NewDecoder(outBuf, &codec.JsonHandle{})
-	for {
-		p := &Pkg{}
-		err := dec.Decode(p)
-		if p.Name != "" && p.ImportPath != "" && p.Dir != "" {
-			p.finalize()
+func (cc *Cache) vfsList(mx *mg.Ctx, dir string) ([]*gopkg.Pkg, []byte, error) {
+	lst := []*gopkg.Pkg{}
+	mx.VFS.Peek(dir).Branches(func(nd *vfs.Node) {
+		if p, err := gopkg.ImportDirNd(mx, nd); err == nil {
 			lst = append(lst, p)
 		}
-		if err != nil {
-			break
-		}
-	}
-	decDur := mgpf.D(time.Since(start))
-
-	fmt.Fprintf(errBuf, "``` packages=%d, list=%s, decode=%s, error=%v ```\n", len(lst), cmdDur, decDur, err)
-	if err != nil {
-		fmt.Fprintf(errBuf, "``` Error: %s```\n", err)
-	}
-
-	return lst, bytes.TrimSpace(errBuf.Bytes()), err
+	})
+	return lst, nil, nil
 }
