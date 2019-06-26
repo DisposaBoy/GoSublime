@@ -1,7 +1,7 @@
 from . import _dbg
 from . import gs, gsq, sh
 from .margo_agent import MargoAgent
-from .margo_common import OutputLogger, TokenCounter
+from .margo_common import OutputLogger, TokenCounter, Mutex
 from .margo_render import render
 from .margo_state import State, actions, client_actions, Config, _view_scope_lang, view_is_9o, MgView
 from base64 import b64decode
@@ -10,7 +10,6 @@ import glob
 import os
 import shlex
 import sublime
-import threading
 import time
 import webbrowser
 
@@ -34,11 +33,11 @@ class MargoSingleton(object):
 		}
 		self.file_ids = []
 		self._hud_state = {}
-		self._hud_state_lock = threading.Lock()
+		self._hud_state_lock = Mutex(name='margo.MargoSingleton._hud_state_lock')
 		self.hud_name = 'GoSublime/HUD'
 		self.hud_id = self.hud_name.replace('/','-').lower()
 		self._views = {}
-		self._view_lock = threading.Lock()
+		self._view_lock = Mutex(name='margo.MargoSingleton._view_lock')
 		self._gopath = ''
 
 	def _sync_settings(self):

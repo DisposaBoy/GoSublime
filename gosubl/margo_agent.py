@@ -1,6 +1,6 @@
 from . import _dbg
 from . import sh, gs, gsq
-from .margo_common import TokenCounter, OutputLogger, Chan
+from .margo_common import TokenCounter, OutputLogger, Chan, Mutex
 from .margo_state import State, make_props, actions
 from datetime import datetime
 import os
@@ -40,7 +40,7 @@ class MargoAgent(threading.Thread):
 		_, self.domain = mg.agent_tokens.next()
 		self.cookies = TokenCounter('%s,request' % self.domain)
 		self.proc = None
-		self.lock = threading.Lock()
+		self.lock = Mutex(name='margo.MargoAgent.lock')
 		self.out = OutputLogger(self.domain, parent=mg.out)
 		self.global_handlers = {}
 		self.req_handlers = {}
@@ -64,7 +64,7 @@ class MargoAgent(threading.Thread):
 		}
 		gs.mkdirp(self.data_dir)
 
-		self._acts_lock = threading.Lock()
+		self._acts_lock = Mutex(name='margo.MargoAgent._acts_lock')
 		self._acts = []
 
 	def __del__(self):
@@ -341,7 +341,7 @@ class AgentReq(object):
 		self.cb = cb
 		self.props = make_props(view=view)
 		self.rs = DEFAULT_RESPONSE
-		self.lock = threading.Lock()
+		self.lock = Mutex(name='margo.AgentReq.lock')
 		self.ev = threading.Event()
 		self.view = view
 
