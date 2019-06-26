@@ -154,6 +154,9 @@ class MargoSingleton(object):
 		if view is None:
 			return False
 
+		if view.is_loading():
+			return False
+
 		if not self.enabled(view):
 			return False
 
@@ -511,7 +514,7 @@ class MargoSingleton(object):
 		self.queue(view=view, actions=[actions.ViewSaved])
 
 	def on_load(self, view):
-		self.queue(view=view, actions=[actions.ViewLoaded])
+		self.on_activated(view)
 
 	def example_extension_file(self):
 		return gs.dist_path('src/margo.sh/extension-example/extension-example.go')
