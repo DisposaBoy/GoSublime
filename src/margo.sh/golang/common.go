@@ -10,10 +10,13 @@ import (
 )
 
 func init() {
-	mg.AddCommonPatterns(mg.Go,
+	pats := []*regexp.Regexp{
 		regexp.MustCompile(`^\s*(?P<path>.+?\.\w+):(?P<line>\d+:)(?P<column>\d+:?)?(?:(?P<tag>warning|error)[:])?(?P<message>.+?)(?: [(](?P<label>[-\w]+)[)])?$`),
 		regexp.MustCompile(`(?P<message>can't load package: package .+: found packages .+ \((?P<path>.+?\.go)\).+)`),
-	)
+	}
+	for _, lang := range goutil.Langs {
+		mg.AddCommonPatterns(lang, pats...)
+	}
 }
 
 // BuildContext is an alias of goutil.BuildContext

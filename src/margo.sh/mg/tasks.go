@@ -9,8 +9,9 @@ import (
 	"time"
 )
 
-const (
-	taskAnimInerval = 500 * time.Millisecond
+var (
+	evnFrames = []rune{'🄌', '➊', '➋', '➌', '➍', '➎', '➏', '➐', '➑', '➒'}
+	oddFrames = []rune{'🄋', '➀', '➁', '➂', '➃', '➄', '➅', '➆', '➇', '➈'}
 )
 
 type Task struct {
@@ -53,9 +54,13 @@ type taskTracker struct {
 	buf      bytes.Buffer
 	dispatch Dispatcher
 	status   string
+	timer    *time.Timer
 }
 
 func (tr *taskTracker) RInit(mx *Ctx) {
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
+
 	tr.dispatch = mx.Store.Dispatch
 }
 
@@ -85,21 +90,35 @@ func (tr *taskTracker) Reduce(mx *Ctx) *State {
 	return st
 }
 
+func (tr *taskTracker) resetTimer() {
+	d := 1 * time.Second
+	if tr.timer == nil {
+		tr.timer = time.NewTimer(d)
+		go tr.ticker()
+	} else {
+		tr.timer.Reset(d)
+	}
+}
+
+func (tr *taskTracker) ticker() {
+	for range tr.timer.C {
+		tr.tick()
+	}
+}
+
 func (tr *taskTracker) tick() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
-	status, resched := tr.render()
+	status := tr.render()
 	if status != tr.status {
 		tr.status = status
 		if disp := tr.dispatch; disp != nil {
 			disp(Render)
-		} else {
-			resched++
 		}
 	}
-	if resched > 0 {
-		time.AfterFunc(taskAnimInerval, tr.tick)
+	if len(tr.tickets) != 0 {
+		tr.resetTimer()
 	}
 }
 
@@ -193,47 +212,61 @@ func (tr *taskTracker) listAll(cx *CmdCtx) {
 	cx.Output.Write(buf.Bytes())
 }
 
-func (tr *taskTracker) render() (status string, fresh int) {
-	if len(tr.tickets) == 0 {
-		return "", 0
+func (tr *taskTracker) drawDigits(n int, f func(int)) {
+	if n < 10 {
+		f(n)
+		return
 	}
+	m := n / 10
+	tr.drawDigits(m, f)
+	f(n - m*10)
+}
 
-	tr.buf.Reset()
+func (tr *taskTracker) render() string {
+	if len(tr.tickets) == 0 {
+		return ""
+	}
 	now := time.Now()
-	tr.buf.WriteString("Tasks")
-	initLen := tr.buf.Len()
+	visible := false
+	showAnim := false
 	title := ""
-	freshFrames := []string{"", " ◔", " ◑", " ◕"}
-	staleFrame := " ●"
 	for _, t := range tr.tickets {
 		dur := now.Sub(t.Start)
-		age := int(dur / time.Second)
-		if age == 0 && (t.ShowNow || dur >= taskAnimInerval) {
-			age = 1
+		if dur < 1*time.Second {
+			continue
 		}
-		if age < len(freshFrames) {
-			fresh++
-			if !t.NoEcho && title == "" && t.Title != "" {
-				title = t.Title
-			}
-			tr.buf.WriteString(freshFrames[age])
-		} else {
-			tr.buf.WriteString(staleFrame)
+		visible = true
+		if t.NoEcho || t.Title == "" {
+			continue
+		}
+		if dur < 16*time.Second {
+			showAnim = true
+		}
+		if dur < 8*time.Second {
+			title = t.Title
+			break
 		}
 	}
-	if tr.buf.Len() == initLen && title == "" {
-		return "", fresh
+	if !visible {
+		return ""
 	}
+	tr.buf.Reset()
+	tr.buf.WriteString("Tasks ")
+	frames := oddFrames
+	if now.Second()%2 == 0 || !showAnim {
+		frames = evnFrames
+	}
+	tr.drawDigits(len(tr.tickets), func(n int) {
+		tr.buf.WriteRune(frames[n])
+	})
 	if title != "" {
 		tr.buf.WriteByte(' ')
 		tr.buf.WriteString(title)
 	}
-	return tr.buf.String(), fresh
+	return tr.buf.String()
 }
 
 func (tr *taskTracker) done(id string) {
-	defer tr.tick()
-
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
@@ -247,8 +280,6 @@ func (tr *taskTracker) done(id string) {
 }
 
 func (tr *taskTracker) Begin(o Task) *TaskTicket {
-	defer tr.tick()
-
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 
@@ -261,12 +292,17 @@ func (tr *taskTracker) Begin(o Task) *TaskTicket {
 	}
 
 	tr.id++
+	id := fmt.Sprintf("@%d", tr.id)
+	if o.CancelID == "" {
+		o.CancelID = id
+	}
 	t := &TaskTicket{
 		Task:    o,
-		ID:      fmt.Sprintf("@%d", tr.id),
+		ID:      id,
 		Start:   time.Now(),
 		tracker: tr,
 	}
 	tr.tickets = append(tr.tickets, t)
+	tr.resetTimer()
 	return t
 }

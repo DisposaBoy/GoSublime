@@ -60,6 +60,8 @@ func (fs *FS) ReadDir(path string) ([]os.FileInfo, error) { return fs.Poke(path)
 
 func (fs *FS) IsDir(path string) bool { return fs.Poke(path).IsDir() }
 
+func (fs *FS) IsFile(path string) bool { return fs.Poke(path).IsFile() }
+
 func (fs *FS) Memo(path string) (*Node, *mgutil.Memo, error) {
 	nd := fs.Poke(path)
 	m, err := nd.Memo()
@@ -460,6 +462,18 @@ func (nd *Node) IsDir() bool {
 
 	mt, err := nd.sync()
 	return err == nil && mt.fmode.IsDir()
+}
+
+func (nd *Node) IsFile() bool {
+	if nd == nil {
+		return false
+	}
+
+	nd.mu.Lock()
+	defer nd.mu.Unlock()
+
+	mt, err := nd.sync()
+	return err == nil && mt.fmode.IsRegular()
 }
 
 func (nd *Node) ReadDir() ([]os.FileInfo, error) {

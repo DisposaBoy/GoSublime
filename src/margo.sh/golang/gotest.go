@@ -2,6 +2,7 @@ package golang
 
 import (
 	"go/ast"
+	"margo.sh/golang/goutil"
 	"margo.sh/mg"
 	"path/filepath"
 	"sort"
@@ -23,7 +24,7 @@ type TestCmds struct {
 }
 
 func (tc *TestCmds) RCond(mx *mg.Ctx) bool {
-	return mx.LangIs(mg.Go)
+	return mx.LangIs(goutil.Langs...)
 }
 
 func (tc *TestCmds) Reduce(mx *mg.Ctx) *mg.State {

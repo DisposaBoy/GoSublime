@@ -2,6 +2,7 @@ package gopkg
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/rogpeppe/go-internal/modfile"
 	"github.com/rogpeppe/go-internal/module"
@@ -15,6 +16,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+)
+
+var (
+	pkgModFilepath     = string(filepath.Separator) + "pkg" + string(filepath.Separator) + "mod" + string(filepath.Separator)
+	errPkgPathNotFound = errors.New("pkg path not found")
 )
 
 func ScanFilter(de *vfs.Dirent) bool {
@@ -113,6 +119,9 @@ func FindPkg(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 	if goutil.ModEnabled(mx, srcDir) {
 		return findPkgGm(mx, importPath, srcDir)
 	}
+	if p, err := findPkgPm(mx, importPath, srcDir); err == nil {
+		return p, nil
+	}
 	return findPkgGp(mx, bctx, importPath, srcDir)
 }
 
@@ -145,6 +154,40 @@ func findPkgGp(mx *mg.Ctx, bctx *build.Context, importPath, srcDir string) (*Pkg
 	return v.p, v.e
 }
 
+func findPkgPm(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
+	srcDir = filepath.Clean(srcDir)
+	pmPos := strings.Index(srcDir, pkgModFilepath)
+	if pmPos < 0 {
+		return nil, errPkgPathNotFound
+	}
+	vPos := strings.Index(srcDir[pmPos:], "@v")
+	if vPos < 0 {
+		return nil, errPkgPathNotFound
+	}
+	vPos += pmPos
+	modDir := srcDir
+	if i := strings.IndexByte(srcDir[vPos:], filepath.Separator); i >= 0 {
+		modDir = srcDir[:vPos+i]
+	}
+	mod := filepath.ToSlash(modDir[pmPos+len(pkgModFilepath) : vPos])
+	sfx := strings.TrimPrefix(importPath, mod)
+	if sfx != "" && sfx[0] != '/' {
+		return nil, errPkgPathNotFound
+	}
+	ver := modDir[vPos+1:]
+	if !semver.IsValid(ver) {
+		return nil, errPkgPathNotFound
+	}
+	dir := filepath.Join(modDir, filepath.ToSlash(sfx))
+	if !mx.VFS.Poke(dir).Ls().Some(pkgNdFilter) {
+		return nil, errPkgPathNotFound
+	}
+	return &PkgPath{
+		Dir:        dir,
+		ImportPath: importPath,
+	}, nil
+}
+
 func findPkgGm(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 	fileNd := goutil.ModFileNd(mx, srcDir)
 	if fileNd == nil {
@@ -164,7 +207,7 @@ func findPkgGm(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 	bctx := goutil.BuildContext(mx)
 	k := K{goutil.MakeSrcDirKey(bctx, srcDir), importPath}
 	v := memo.Read(k, func() interface{} {
-		mf, err := loadModSum(dirNd.Path())
+		mf, err := loadModSum(mx.VFS, dirNd.Path())
 		if err != nil {
 			return V{e: err}
 		}
@@ -178,51 +221,40 @@ func findPkgGm(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 type modFile struct {
 	Dir  string
 	Path string
-	Deps map[string]module.Version
+	Deps map[string]modDep
 	File *modfile.File
 }
 
-type modVer struct {
-	Path       string
-	Version    string
-	ImportPath string
-	Suffix     string
+type modDep struct {
+	Dir     string
+	ModPath string
+	SubPkg  string
+	Version string
 }
 
-func (mf *modFile) requireMV(importPath string) (_ module.Version, isSelf bool, found bool) {
-	if mv := mf.File.Module.Mod; mv.Path == importPath {
-		return mv, true, true
+func (mf *modFile) requireMD(modPath string) (_ modDep, found bool) {
+	if md, ok := mf.Deps[modPath]; ok {
+		return md, true
 	}
-	if mv, ok := mf.Deps[importPath]; ok {
-		return mv, false, true
+	if p := mgutil.PathParent(modPath); p != "" {
+		return mf.requireMD(p)
 	}
-	if p := mgutil.PathParent(importPath); p != "" {
-		return mf.requireMV(p)
-	}
-	return module.Version{}, false, false
+	return modDep{}, false
 }
 
-func (mf *modFile) require(importPath string) (_ modVer, isSelf bool, _ error) {
-	v, isSelf, found := mf.requireMV(importPath)
+func (mf *modFile) require(importPath string) (modDep, error) {
+	md, found := mf.requireMD(importPath)
 	if !found {
-		return modVer{}, false, fmt.Errorf("require(%s) not found in %s", importPath, mf.Path)
+		return modDep{}, fmt.Errorf("require(%s) not found in %s", importPath, mf.Path)
 	}
-	mv := modVer{
-		ImportPath: importPath,
-		Path:       v.Path,
-		Version:    v.Version,
-	}
-	mv.Suffix = strings.TrimPrefix(mv.ImportPath, mv.Path)
-	mv.Suffix = strings.TrimLeft(mv.Suffix, "/")
-	if isSelf && mv.Suffix == "" {
-		return modVer{}, false, fmt.Errorf("cannot import the main module `%s`", importPath)
-	}
-	return mv, isSelf, nil
+	md.SubPkg = strings.TrimPrefix(importPath, md.ModPath)
+	md.SubPkg = strings.TrimLeft(md.SubPkg, "/")
+	return md, nil
 }
 
-// TODO: add support `std`. stdlib pkgs are vendored, so AFAIK, it's not used yet.
+// TODO: support `std`. stdlib pkgs are vendored, so AFAIK, it's not used yet.
 func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string) (*PkgPath, error) {
-	mv, isSelf, err := mf.require(importPath)
+	md, err := mf.require(importPath)
 	if err != nil {
 		return nil, err
 	}
@@ -230,62 +262,83 @@ func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string) (*Pk
 		dir := filepath.Join(pfx, filepath.FromSlash(sfx))
 		ok := mx.VFS.Poke(dir).Ls().Some(pkgNdFilter)
 		if ok {
-			return &PkgPath{Dir: dir, ImportPath: mv.ImportPath}
+			return &PkgPath{Dir: dir, ImportPath: importPath}
 		}
 		return nil
 	}
 
-	// if we importing a sub/module package don't search anywhere else
-	if isSelf {
-		dir := filepath.Dir(mf.Path)
-		if p := lsPkg(dir, mv.Suffix); p != nil {
+	// if we're importing a self/sub-module or local replacement package don't search anywhere else
+	if md.Dir != "" {
+		if p := lsPkg(md.Dir, md.SubPkg); p != nil {
 			return p, nil
 		}
-		return nil, fmt.Errorf("cannot find module src for `%s` in main module `%s`", mv.ImportPath, dir)
+		return nil, fmt.Errorf("cannot find local/replacement package `%s` in `%s`", importPath, md.Dir)
 	}
 
-	// check local vendor first to support un-imaginable use-cases like editing third-party packages.
+	// local vendor first to support un-imaginable use-cases like editing third-party packages.
 	// we don't care about BS like `-mod=vendor`
-	if p := lsPkg(filepath.Join(mf.Dir, "vendor"), mv.ImportPath); p != nil {
-		return p, nil
+	searchLocalVendor := func() *PkgPath {
+		return lsPkg(filepath.Join(mf.Dir, "vendor"), importPath)
 	}
-
-	// then check pkg/mod
-	mpath, err := module.EncodePath(mv.Path)
+	mpath, err := module.EncodePath(md.ModPath)
 	if err != nil {
 		return nil, err
 	}
-	roots := map[string]bool{mx.VFS.Poke(bctx.GOROOT).Poke("src").Path(): true}
-	gopath := mgutil.PathList(bctx.GOPATH)
-	pkgMod := filepath.FromSlash("pkg/mod/" + mpath + "@" + mv.Version)
-	for _, gp := range gopath {
-		roots[mx.VFS.Poke(gp).Poke("src").Path()] = true
-		if p := lsPkg(filepath.Join(gp, pkgMod), mv.Suffix); p != nil {
+	grSrc := mx.VFS.Poke(bctx.GOROOT).Poke("src")
+	roots := map[string]bool{grSrc.Path(): true}
+	searchPkgMod := func() *PkgPath {
+		gopath := mgutil.PathList(bctx.GOPATH)
+		pkgMod := filepath.FromSlash("pkg/mod/" + mpath + "@" + md.Version)
+		for _, gp := range gopath {
+			roots[mx.VFS.Poke(gp).Poke("src").Path()] = true
+			if p := lsPkg(filepath.Join(gp, pkgMod), md.SubPkg); p != nil {
+				return p
+			}
+		}
+		return nil
+	}
+	// check all the parent vendor dirs. we check mf.Dir separately
+	searchOtherVendors := func() *PkgPath {
+		for sd := mx.VFS.Poke(mf.Dir).Parent(); !sd.IsRoot(); sd = sd.Parent() {
+			dir := sd.Path()
+			if roots[dir] {
+				break
+			}
+			if p := lsPkg(filepath.Join(dir, "vendor"), importPath); p != nil {
+				return p
+			}
+		}
+		return nil
+	}
+	// check GOROOT/vendor to support the `std` module
+	searchGrVendor := func() *PkgPath {
+		return lsPkg(filepath.Join(bctx.GOROOT, "src", "vendor"), importPath)
+	}
+	search := []func() *PkgPath{
+		searchLocalVendor,
+		searchPkgMod,
+		searchOtherVendors,
+		searchGrVendor,
+	}
+	if !strings.Contains(strings.Split(importPath, "/")[0], ".") {
+		// apparently import paths without dots are reserved for the stdlib
+		// checking first also avoids the many misses for each stdlib pkg
+		search = []func() *PkgPath{
+			searchGrVendor,
+			searchLocalVendor,
+			searchPkgMod,
+			searchOtherVendors,
+		}
+	}
+	for _, f := range search {
+		if p := f(); p != nil {
 			return p, nil
 		}
 	}
-
-	// then check all the parent vendor dirs. we've already checked mf.Dir
-	for sd := mx.VFS.Poke(mf.Dir).Parent(); !sd.IsRoot(); sd = sd.Parent() {
-		dir := sd.Path()
-		if roots[dir] {
-			break
-		}
-		if p := lsPkg(filepath.Join(dir, "vendor"), mv.ImportPath); p != nil {
-			return p, nil
-		}
-	}
-
-	// then check GOROOT to support the `std` module
-	if p := lsPkg(filepath.Join(bctx.GOROOT, "src", "vendor"), mv.ImportPath); p != nil {
-		return p, nil
-	}
-
-	return nil, fmt.Errorf("cannot find module src for `%s` using `%s`", importPath, mf.Path)
+	return nil, fmt.Errorf("cannot find `%s` using `%s`", importPath, mf.Path)
 }
 
-// TODO: add support for `replace`
-func loadModSum(dir string) (*modFile, error) {
+func loadModSum(fs *vfs.FS, dir string) (*modFile, error) {
 	gomod := filepath.Join(dir, "go.mod")
 	modSrc, err := ioutil.ReadFile(gomod)
 	if err != nil {
@@ -294,15 +347,50 @@ func loadModSum(dir string) (*modFile, error) {
 	mf := &modFile{
 		Dir:  dir,
 		Path: gomod,
-		Deps: map[string]module.Version{},
+		Deps: map[string]modDep{},
 	}
-	mf.File, err = modfile.ParseLax(gomod, modSrc, nil)
+	mf.File, err = modfile.Parse(gomod, modSrc, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, r := range mf.File.Require {
-		mf.Deps[r.Mod.Path] = r.Mod
+		mf.Deps[r.Mod.Path] = modDep{
+			ModPath: r.Mod.Path,
+			Version: r.Mod.Version,
+		}
 	}
+
+	for _, r := range mf.File.Replace {
+		md := modDep{
+			ModPath: r.New.Path,
+			Version: r.New.Version,
+		}
+		// if dir := r.New.Path; modfile.IsDirectoryPath(dir) {
+		if dir := r.New.Path; dir[0] == '/' || dir[0] == '.' {
+			if !filepath.IsAbs(dir) {
+				dir = filepath.Join(mf.Dir, dir)
+			}
+			nd := fs.Poke(dir)
+			// replacement isn't valid unless the go.mod file exists
+			// TODO: should we ignore this rule? I don't know what problem it solves
+			// but it makes is more annoying to just point a module at a local directory
+			if nd.Poke("go.mod").IsFile() {
+				md.Dir = nd.Path()
+				// the path is a filesystem path, not an import path
+				md.ModPath = r.Old.Path
+			}
+		}
+		mf.Deps[r.Old.Path] = md
+	}
+
+	self := mf.File.Module.Mod
+	mf.Deps[self.Path] = modDep{
+		Dir:     mf.Dir,
+		ModPath: self.Path,
+		Version: self.Version,
+	}
+
 	gosum := filepath.Join(dir, "go.sum")
 	sumSrc, err := ioutil.ReadFile(gosum)
 	if err != nil {
@@ -313,14 +401,14 @@ func loadModSum(dir string) (*modFile, error) {
 		if len(fields) != 3 {
 			continue
 		}
-		mv := module.Version{Path: string(fields[0]), Version: string(fields[1])}
-		if !semver.IsValid(mv.Version) {
+		md := modDep{ModPath: string(fields[0]), Version: string(fields[1])}
+		if !semver.IsValid(md.Version) {
 			continue
 		}
-		if _, exists := mf.Deps[mv.Path]; exists {
+		if _, exists := mf.Deps[md.ModPath]; exists {
 			continue
 		}
-		mf.Deps[mv.Path] = mv
+		mf.Deps[md.ModPath] = md
 	}
 	return mf, nil
 }

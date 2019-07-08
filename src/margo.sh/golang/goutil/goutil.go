@@ -14,6 +14,11 @@ import (
 	"unicode/utf8"
 )
 
+var (
+	// Langs is the list of all Go related langs
+	Langs = []mg.Lang{mg.Go, mg.GoMod, mg.GoSum}
+)
+
 type SrcDirKey struct {
 	GOROOT, GOPATH, SrcDir string
 }

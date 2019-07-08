@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"margo.sh/golang/goutil"
 	"margo.sh/mg"
 )
 
@@ -35,7 +36,7 @@ func (lt *Linter) RInit(mx *mg.Ctx) {
 
 // RCond restricts reduction to Go files
 func (lt *Linter) RCond(mx *mg.Ctx) bool {
-	return mx.LangIs(mg.Go) && lt.Linter.RCond(mx)
+	return mx.LangIs(goutil.Langs...) && lt.Linter.RCond(mx)
 }
 
 // GoInstall returns a Linter that runs `go install args...`

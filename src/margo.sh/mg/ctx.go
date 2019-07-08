@@ -12,6 +12,9 @@ import (
 )
 
 var (
+	// StatusPrefix is the prefix used for all status elements.
+	StatusPrefix = "‣ "
+
 	_ context.Context = (*Ctx)(nil)
 )
 

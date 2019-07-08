@@ -79,8 +79,10 @@ func (mt *meta) resetMemo() {
 
 func (mt *meta) resetInfo(mode os.FileMode, mtime time.Time) {
 	now := tsNow()
-	mt.expts = now + metaMaxAge
 	mt.fmode = fmode(mode)
+	if !mtime.IsZero() || !mt.fmode.IsDir() {
+		mt.expts = now + metaMaxAge
+	}
 	switch {
 	case !mtime.IsZero():
 		mt.modts = tsTime(mtime)
