@@ -27,6 +27,12 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 - The Ariana color scheme has been tweaked to improve readability.
 
+- Add a `‣ ` prefix to status items and reduce the space between them.
+
+- Add langs `mg.GoMod` and `mg.GoSum` for `go.mod` and `go.sum` files, respectively.
+  For convenience, `goutil.Langs` now holds the list of all Go-related langs
+  and Go linters are now available in `go.mod` and `go.sum`.
+
 ## 19.06.16
   * Fix a deadlock/freeze (seen on Mac OS) when starting up with multiple windows open.
   * Fix an issue where the active window loses focus when starting up.
