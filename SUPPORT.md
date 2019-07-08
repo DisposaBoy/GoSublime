@@ -27,16 +27,23 @@ GoSublime is backed by https://margo.sh/ to which the following points apply:
 - Only the main `gc` tool-chain distributed by https://golang.org/ is supported.
 - margo should not require a cgo-enabled Go installation, but non-cgo builds i.e. `CGO_ENABLED=0` are not tested.
 
+## Go Modules
+
+At this time, Go modules are only partially supported.
+Auto-completion and other features built directly into margo should work in most cases,
+but features backed by external tools e.g. `goto definition` might work.
+
+We plan to implement most of these features internally as our (type-check) importer matures.
+
 ## Operating Systems
 
-- Testing is only done on Linux.
+- Testing is only done on Arch Linux.
 - Windows and macOS should work without issue, but no testing is done on them.
 
 ## Tools
 
 Please note:
 
-- GoSublime uses its own fork of `gocode` so any installation on your system is ignored.
 - By default `fmt` is achieved through direct use of the packages in the stdlib and not the binaries on your system.
 
 ## Sponsors & Backers
