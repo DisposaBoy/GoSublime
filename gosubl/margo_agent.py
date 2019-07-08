@@ -109,12 +109,13 @@ class MargoAgent(threading.Thread):
 
 		gs_gobin = gs.dist_path('bin')
 		mg_exe = 'margo.sh'
-		install_cmd = ['go', 'install', '-v', mg_exe]
+		install_cmd = ['go', 'install', '-v','-x', mg_exe]
 		cmd = sh.Command(install_cmd)
 		cmd.env = self._env({
 			'GOPATH': self._default_env['MARGO_AGENT_GOPATH'],
 			'GO111MODULE': self._default_env['MARGO_AGENT_GO111MODULE'],
 			'GOBIN': gs_gobin,
+			'MARGO_AGENT_GOBIN': gs_gobin,
 		})
 		cr = cmd.run()
 		for v in (cr.out, cr.err, cr.exc):
