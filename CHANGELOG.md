@@ -21,21 +21,38 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
   It's linter that does a full type-check as you type (even in unsaved files).
   It can be thought of as a replacement for the `gotype` binary of old.
 
-  warning: This is purely an experiment used primarily for testing the package importer and type-checking and will probably break randomly, if it works at all.
+  NOTE: This is purely an experiment used primarily for testing the package importer
+  and type-checking and will probably break randomly, if it works at all.
 
   With that said, the plan is to clean it up and develop it further in the future.
 
 - The Ariana color scheme has been tweaked to improve readability.
 
-- Add a `‣ ` prefix to status items and reduce the space between them.
+- Add a `‣` prefix to status items and reduce the space between them.
 
 - Add langs `mg.GoMod` and `mg.GoSum` for `go.mod` and `go.sum` files, respectively.
   For convenience, `goutil.Langs` now holds the list of all Go-related langs
   and Go linters are now available in `go.mod` and `go.sum`.
 
+- The tasks count styled has been changed to `Tasks ➊➋➌`.
+  The status animates between `Tasks ➊➋➌` and `Tasks ➀➁➂` while there are tasks less than 16s old.
+
+- The issue count styled has been changed to `Error ➊ꞏ🄋`.
+
+  NOTE: The meanings of the numbers have been reverted.
+
+  Previously, given `1/2 Errors`, there was 1 issue with tag `Error` in this view, and there was a total 2 errors in all views.
+  The new meanings `Error ➊ꞏ🄋` is: ➊ is the number issues in the current view and 🄋 is the number issues in other views.
+
+  Only first number is highlighted if there are issues in the current view.
+  Likewise, when there are issues, but none in the current view, only the second number is highlighted.
+
+- Don't show the `func` prefix in the calltip status. The parens already make it obviously a function.
+
 ## 19.06.16
-  * Fix a deadlock/freeze (seen on Mac OS) when starting up with multiple windows open.
-  * Fix an issue where the active window loses focus when starting up.
+
+- Fix a deadlock/freeze (seen on Mac OS) when starting up with multiple windows open.
+- Fix an issue where the active window loses focus when starting up.
 
 ## 18.11.28
 
@@ -52,6 +69,7 @@ This release introduces the HUD and comes with many improvements to snippets and
   It's bound to the keys `ctrl+.`,`ctrl+0`.
 
   You can manually bind it to another key. e.g. via `Preferences > Key Bindings`:
+
   ```json
     {
       "keys": ["ctrl+0"],
@@ -62,21 +80,26 @@ This release introduces the HUD and comes with many improvements to snippets and
 - Several new snippets have been added and old ones improved.
 
   - AppendSnippet: `name = |` suggests:
+
     - `name = append(name, ...)`
     - `slice = append(slice[:len(slice):len(slice)], ...)`
 
   - DeferSnippet:
+
     - `defer func() {}()`
     - `defer f()`
 
   - ReturnSnippet:
+
     - `return`
 
   - MutexSnippet: `mu.|` suggests:
+
     - `mu.Lock(); defer mu.Unlock(); |`
     - `mu.Lock(); |; mu.Unlock()`
 
   - PackageNameSnippet:
+
     - `package main; func main() { | }`
 
   - DocSnippet: suggest function names, field names, etc. inside the corresponding _documentation_ comment
