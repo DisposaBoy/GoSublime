@@ -192,8 +192,11 @@ func (gc *GocodeCalltips) funcSrc(fx *ast.FuncType, funcName string, highlight a
 	fset := token.NewFileSet()
 	buf := &bytes.Buffer{}
 
-	buf.WriteString("func ")
-	buf.WriteString(funcName)
+	if funcName == "" {
+		buf.WriteString("func")
+	} else {
+		buf.WriteString(funcName)
+	}
 
 	var params []*ast.Field
 	if p := fx.Params; p != nil {

@@ -81,7 +81,8 @@ func (tc *TypeCheck) check(mx *mg.Ctx) {
 		issues = append(issues, mg.Issue{Message: err.Error()})
 	}
 	for i, isu := range issues {
-		if v.Path == "" {
+		if isu.Path == "" {
+			isu.Path = v.Path
 			isu.Name = v.Name
 		}
 		isu.Label = "Go/TypeCheck"

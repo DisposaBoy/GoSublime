@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-var (
-	evnFrames = []rune{'🄌', '➊', '➋', '➌', '➍', '➎', '➏', '➐', '➑', '➒'}
-	oddFrames = []rune{'🄋', '➀', '➁', '➂', '➃', '➄', '➅', '➆', '➇', '➈'}
-)
-
 type Task struct {
 	Title    string
 	Cancel   func()
@@ -212,16 +207,6 @@ func (tr *taskTracker) listAll(cx *CmdCtx) {
 	cx.Output.Write(buf.Bytes())
 }
 
-func (tr *taskTracker) drawDigits(n int, f func(int)) {
-	if n < 10 {
-		f(n)
-		return
-	}
-	m := n / 10
-	tr.drawDigits(m, f)
-	f(n - m*10)
-}
-
 func (tr *taskTracker) render() string {
 	if len(tr.tickets) == 0 {
 		return ""
@@ -252,13 +237,11 @@ func (tr *taskTracker) render() string {
 	}
 	tr.buf.Reset()
 	tr.buf.WriteString("Tasks ")
-	frames := oddFrames
+	digits := mgutil.SecondaryDigits
 	if now.Second()%2 == 0 || !showAnim {
-		frames = evnFrames
+		digits = mgutil.PrimaryDigits
 	}
-	tr.drawDigits(len(tr.tickets), func(n int) {
-		tr.buf.WriteRune(frames[n])
-	})
+	digits.DrawInto(len(tr.tickets), &tr.buf)
 	if title != "" {
 		tr.buf.WriteByte(' ')
 		tr.buf.WriteString(title)
