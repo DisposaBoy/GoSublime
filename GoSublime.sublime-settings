@@ -59,6 +59,9 @@
 	// Whether or not gslint is enabled
 	"gslint_enabled": true,
 
+	// Draw an outline around lines with a lint error
+	"gslint_outline": false,
+
 	// filter the kinds of lint checks that are done. supported kinds:
 	//
 	// gs.syntax - parser/syntax errors - it makes no sense to filter this as it will simply

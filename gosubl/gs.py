@@ -70,6 +70,7 @@ _default_settings = {
 	"comp_lint_enabled": False,
 	"comp_lint_commands": [],
 	"gslint_timeout": 0,
+	"gslint_outline": False,
 	"calltips": True,
 	"autocomplete_snippets": False,
 	"autocomplete_tests": False,
