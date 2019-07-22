@@ -179,6 +179,9 @@
 	// note: this feature only comes into effect when autocomplete was triggered after a dot, e.g. `fmt.|`
 	"autocomplete_suggest_imports": false,
 
+	// if set to true, completion will not insert snippet with function arguments.
+	"autocomplete_func_name_only": false,
+
 	// whether or not to show function call tip in the status bar
 	// the same can be achieved ctrl+dot,ctrl+space using an output panel
 	"calltips": true,

@@ -139,7 +139,8 @@ class GoSublime(sublime_plugin.EventListener):
 			return ([], AC_OPTS)
 
 		nc = view.substr(sublime.Region(pos, pos+1))
-		cl = self.complete(fn, offset, src, nc.isalpha() or nc == "(")
+		func_name_only = gs.setting('autocomplete_func_name_only', False)
+		cl = self.complete(fn, offset, src, nc.isalpha() or nc == "(" or func_name_only)
 
 		pc = view.substr(sublime.Region(pos-1, pos))
 		if show_snippets and (pc.isspace() or pc.isalpha()):
