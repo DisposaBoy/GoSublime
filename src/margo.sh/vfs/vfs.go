@@ -68,6 +68,10 @@ func (fs *FS) Memo(path string) (*Node, *mgutil.Memo, error) {
 	return nd, m, err
 }
 
+func (fs *FS) ReadMemo(path string, k interface{}, new func() interface{}) interface{} {
+	return fs.Poke(path).ReadMemo(k, new)
+}
+
 func (fs *FS) Scan(path string, so ScanOptions) {
 	so.scratch = make([]byte, godirwalk.DefaultScratchBufferSize)
 	fs.Poke(path).scan(path, &so, 0)
@@ -378,6 +382,11 @@ func (nd *Node) Memo() (*mgutil.Memo, error) {
 		return nil, err
 	}
 	return mt.memo(), nil
+}
+
+func (nd *Node) ReadMemo(k interface{}, new func() interface{}) interface{} {
+	memo, _ := nd.Memo()
+	return memo.Read(k, new)
 }
 
 func (nd *Node) Invalidate() {

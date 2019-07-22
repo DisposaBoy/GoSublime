@@ -24,10 +24,6 @@ import (
 //
 // We can also optimize
 //      - IsNil
-//
-// We cannot do the same for Cap, Len if we still have to do conditional.
-
-// var zeroRTv [4]uintptr
 
 const safeMode = false
 
@@ -102,13 +98,10 @@ func isNil(v interface{}) (rv reflect.Value, isnil bool) {
 	tk := rv.Kind()
 	isnil = (tk == reflect.Interface || tk == reflect.Slice) && *(*unsafe.Pointer)(ui.word) == nil
 	return
-	// fmt.Printf(">>>> isNil: isnil: %v, TYPE: %T, word: %v, *word: %v, type: %v, nil: %v\n",
-	// 	v == nil, v, word, *((*unsafe.Pointer)(word)), ui.typ, nil)
 }
 
 func rv2ptr(urv *unsafeReflectValue) (ptr unsafe.Pointer) {
 	// true references (map, func, chan, ptr - NOT slice) may be double-referenced? as flagIndir
-	// rv := *((*reflect.Value)(unsafe.Pointer(urv)))
 	if refBitset.isset(byte(urv.flag&unsafeFlagKindMask)) && urv.flag&unsafeFlagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(urv.ptr)
 	} else {
@@ -120,20 +113,15 @@ func rv2ptr(urv *unsafeReflectValue) (ptr unsafe.Pointer) {
 func rv4i(i interface{}) (rv reflect.Value) {
 	// Unfortunately, we cannot get the "kind" of the interface directly here.
 	// We need the 'rtype', whose structure changes in different go versions.
-	// Finally, it's not clear that there is benefit to reimplementin it,
-	// as the "escapes(i)" is not clearly expensive.
-	//
-	// urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
-	// ui := (*unsafeIntf)(unsafe.Pointer(&i))
+	// Finally, it's not clear that there is benefit to reimplementing it,
+	// as the "escapes(i)" is not clearly expensive since we want i to exist on the heap.
+
 	return reflect.ValueOf(i)
 }
 
 func rv2i(rv reflect.Value) interface{} {
-	// TODO: consider a more generally-known optimization for reflect.Value ==> Interface
-	//
-	// Currently, we use this fragile method that taps into implememtation details from
+	// We tap into implememtation details from
 	// the source go stdlib reflect/value.go, and trims the implementation.
-
 	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
 	return *(*interface{})(unsafe.Pointer(&unsafeIntf{typ: urv.typ, word: rv2ptr(urv)}))
 }
@@ -151,18 +139,7 @@ func rvSetSliceLen(rv reflect.Value, length int) {
 	(*unsafeString)(urv.ptr).Len = length
 }
 
-// func rvzeroaddr(t reflect.Type) (rv reflect.Value) {
-// 	// return reflect.New(t).Elem()
-// 	var ui = (*unsafeIntf)(unsafe.Pointer(&t))
-// 	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
-// 	urv.typ = ui.word
-// 	urv.flag = uintptr(t.Kind()) | unsafeFlagIndir | unsafeFlagAddr
-// 	urv.ptr = unsafe_New(ui.word)
-// 	return
-// }
-
 func rvZeroAddrK(t reflect.Type, k reflect.Kind) (rv reflect.Value) {
-	// return reflect.New(t).Elem()
 	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
 	urv.flag = uintptr(k) | unsafeFlagIndir | unsafeFlagAddr
 	urv.typ = ((*unsafeIntf)(unsafe.Pointer(&t))).word
@@ -177,19 +154,6 @@ func rvConvert(v reflect.Value, t reflect.Type) (rv reflect.Value) {
 	urv.typ = ((*unsafeIntf)(unsafe.Pointer(&t))).word
 	return
 }
-
-// func rvisnilref(rv reflect.Value) bool {
-// 	return (*unsafeReflectValue)(unsafe.Pointer(&rv)).ptr == nil
-// }
-
-// func rvslen(rv reflect.Value) int {
-// 	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
-// 	return (*unsafeString)(urv.ptr).Len
-// }
-
-// func rv2rtid(rv reflect.Value) uintptr {
-// 	return uintptr((*unsafeReflectValue)(unsafe.Pointer(&rv)).typ)
-// }
 
 func rt2id(rt reflect.Type) uintptr {
 	return uintptr(((*unsafeIntf)(unsafe.Pointer(&rt))).word)
@@ -251,7 +215,7 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) b
 		}
 		return isnil
 	case reflect.Ptr:
-		// isnil := urv.ptr == nil (not sufficient, as a pointer value encodes the type)
+		// isnil := urv.ptr == nil // (not sufficient, as a pointer value encodes the type)
 		isnil := urv.ptr == nil || *(*unsafe.Pointer)(urv.ptr) == nil
 		if deref {
 			if isnil {
@@ -506,12 +470,19 @@ func rvSlice(rv reflect.Value, length int) (v reflect.Value) {
 	uv.ptr = unsafe.Pointer(&x)
 	*(*unsafeSlice)(uv.ptr) = *(*unsafeSlice)(urv.ptr)
 	(*unsafeSlice)(uv.ptr).Len = length
-	// xdebugf("length: %d, slice: from: %#v, to: %#v",
-	// 	length, *(*unsafeSlice)(urv.ptr), *(*unsafeSlice)(uv.ptr))
 	return
 }
 
 // ------------
+
+func rvSliceIndex(rv reflect.Value, i int, ti *typeInfo) (v reflect.Value) {
+	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
+	uv := (*unsafeReflectValue)(unsafe.Pointer(&v))
+	uv.ptr = unsafe.Pointer(uintptr(((*unsafeSlice)(urv.ptr)).Data) + (ti.elemsize * uintptr(i)))
+	uv.typ = ((*unsafeIntf)(unsafe.Pointer(&ti.elem))).word
+	uv.flag = uintptr(ti.elemkind) | unsafeFlagIndir | unsafeFlagAddr
+	return
+}
 
 func rvGetSliceLen(rv reflect.Value) int {
 	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
@@ -533,12 +504,24 @@ func rvGetArrayBytesRO(rv reflect.Value, scratch []byte) (bs []byte) {
 }
 
 func rvGetArray4Slice(rv reflect.Value) (v reflect.Value) {
-	v = rvZeroAddrK(reflectArrayOf(rvGetSliceLen(rv), rv.Type().Elem()), reflect.Array)
-	// xdebugf("rvGetArray4Slice: b4 copy: rv: %#v, v: %#v", rv, v)
-	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
+	// It is possible that this slice is based off an array with a larger
+	// len that we want (where array len == slice cap).
+	// However, it is ok to create an array type that is a subset of the full
+	// e.g. full slice is based off a *[16]byte, but we can create a *[4]byte
+	// off of it. That is ok.
+	//
+	// Consequently, we use rvGetSliceLen, not rvGetSliceCap.
+
+	t := reflectArrayOf(rvGetSliceLen(rv), rv.Type().Elem())
+	// v = rvZeroAddrK(t, reflect.Array)
+
 	uv := (*unsafeReflectValue)(unsafe.Pointer(&v))
+	uv.flag = uintptr(reflect.Array) | unsafeFlagIndir | unsafeFlagAddr
+	uv.typ = ((*unsafeIntf)(unsafe.Pointer(&t))).word
+
+	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
 	uv.ptr = *(*unsafe.Pointer)(urv.ptr) // slice rv has a ptr to the slice.
-	// xdebugf("rvGetArray4Slice: after copy: v: %#v", v)
+
 	return
 }
 
@@ -677,10 +660,9 @@ type unsafeMapHashIter struct {
 	// other fields are ignored
 }
 
-// type unsafeReflectMapIter struct {
-// 	m  unsafeReflectValue
-// 	it unsafe.Pointer
-// }
+type mapIter struct {
+	unsafeMapIter
+}
 
 type unsafeMapIter struct {
 	it *unsafeMapHashIter
@@ -690,19 +672,9 @@ type unsafeMapIter struct {
 	kisref, visref   bool
 	mapvalues        bool
 	done             bool
-
+	started          bool
 	// _ [2]uint64 // padding (cache-aligned)
 }
-
-// // pprof show that 13% of cbor encode time taken in
-// // allocation of unsafeMapIter.
-// // Options are to try to alloc on stack, or pool it.
-// // Easiest to pool it.
-// const unsafeMapIterUsePool = false
-
-// var unsafeMapIterPool = sync.Pool{
-// 	New: func() interface{} { return new(unsafeMapIter) },
-// }
 
 func (t *unsafeMapIter) ValidKV() (r bool) {
 	return false
@@ -712,11 +684,12 @@ func (t *unsafeMapIter) Next() (r bool) {
 	if t == nil || t.done {
 		return
 	}
-	if t.it == nil {
-		t.it = (*unsafeMapHashIter)(mapiterinit(t.mtyp, t.mptr))
-	} else {
+	if t.started {
 		mapiternext((unsafe.Pointer)(t.it))
+	} else {
+		t.started = true
 	}
+
 	t.done = t.it.key == nil
 	if t.done {
 		return
@@ -729,22 +702,14 @@ func (t *unsafeMapIter) Next() (r bool) {
 }
 
 func (t *unsafeMapIter) Key() (r reflect.Value) {
-	// return t.k
 	return
 }
 
 func (t *unsafeMapIter) Value() (r reflect.Value) {
-	// if t.mapvalues {
-	// 	return t.v
-	// }
 	return
 }
 
 func (t *unsafeMapIter) Done() {
-	// if unsafeMapIterUsePool && t != nil {
-	// 	*t = unsafeMapIter{}
-	// 	unsafeMapIterPool.Put(t)
-	// }
 }
 
 func unsafeMapSet(p, ptyp, p2 unsafe.Pointer, isref bool) {
@@ -762,19 +727,13 @@ func unsafeMapKVPtr(urv *unsafeReflectValue) unsafe.Pointer {
 	return urv.ptr
 }
 
-func mapRange(m, k, v reflect.Value, mapvalues bool) (t *unsafeMapIter) {
+func mapRange(t *mapIter, m, k, v reflect.Value, mapvalues bool) {
 	if rvIsNil(m) {
-		// return &unsafeMapIter{done: true}
+		t.done = true
 		return
 	}
-	// if unsafeMapIterUsePool {
-	// 	t = unsafeMapIterPool.Get().(*unsafeMapIter)
-	// } else {
-	//	t = new(unsafeMapIter)
-	// }
-	t = new(unsafeMapIter)
-	// t.k = k
-	// t.v = v
+	t.done = false
+	t.started = false
 	t.mapvalues = mapvalues
 
 	var urv *unsafeReflectValue
@@ -782,6 +741,8 @@ func mapRange(m, k, v reflect.Value, mapvalues bool) (t *unsafeMapIter) {
 	urv = (*unsafeReflectValue)(unsafe.Pointer(&m))
 	t.mtyp = urv.typ
 	t.mptr = rv2ptr(urv)
+
+	t.it = (*unsafeMapHashIter)(mapiterinit(t.mtyp, t.mptr))
 
 	urv = (*unsafeReflectValue)(unsafe.Pointer(&k))
 	t.ktyp = urv.typ
@@ -793,9 +754,10 @@ func mapRange(m, k, v reflect.Value, mapvalues bool) (t *unsafeMapIter) {
 		t.vtyp = urv.typ
 		t.vptr = urv.ptr
 		t.visref = refBitset.isset(byte(v.Kind()))
+	} else {
+		t.vtyp = nil
+		t.vptr = nil
 	}
-
-	return
 }
 
 func mapGet(m, k, v reflect.Value) (vv reflect.Value) {
@@ -825,12 +787,12 @@ func mapSet(m, k, v reflect.Value) {
 	mapassign(urv.typ, rv2ptr(urv), kptr, vptr)
 }
 
-func mapDelete(m, k reflect.Value) {
-	var urv = (*unsafeReflectValue)(unsafe.Pointer(&k))
-	var kptr = unsafeMapKVPtr(urv)
-	urv = (*unsafeReflectValue)(unsafe.Pointer(&m))
-	mapdelete(urv.typ, rv2ptr(urv), kptr)
-}
+// func mapDelete(m, k reflect.Value) {
+// 	var urv = (*unsafeReflectValue)(unsafe.Pointer(&k))
+// 	var kptr = unsafeMapKVPtr(urv)
+// 	urv = (*unsafeReflectValue)(unsafe.Pointer(&m))
+// 	mapdelete(urv.typ, rv2ptr(urv), kptr)
+// }
 
 // return an addressable reflect value that can be used in mapRange and mapGet operations.
 //
@@ -871,3 +833,35 @@ func unsafe_New(typ unsafe.Pointer) unsafe.Pointer
 //go:linkname typedslicecopy reflect.typedslicecopy
 //go:noescape
 func typedslicecopy(elemType unsafe.Pointer, dst, src unsafeSlice) int
+
+// ---------- ENCODER optimized ---------------
+
+func (e *Encoder) jsondriver() *jsonEncDriver {
+	return (*jsonEncDriver)((*unsafeIntf)(unsafe.Pointer(&e.e)).word)
+}
+
+// ---------- DECODER optimized ---------------
+
+func (d *Decoder) checkBreak() bool {
+	// jsonDecDriver.CheckBreak() CANNOT be inlined.
+	// Consequently, there's no benefit in incurring the cost of this
+	// wrapping function checkBreak.
+	//
+	// It is faster to just call the interface method directly.
+
+	// if d.js {
+	// 	return d.jsondriver().CheckBreak()
+	// }
+	// if d.cbor {
+	// 	return d.cbordriver().CheckBreak()
+	// }
+	return d.d.CheckBreak()
+}
+
+func (d *Decoder) jsondriver() *jsonDecDriver {
+	return (*jsonDecDriver)((*unsafeIntf)(unsafe.Pointer(&d.d)).word)
+}
+
+// func (d *Decoder) cbordriver() *cborDecDriver {
+// 	return (*cborDecDriver)((*unsafeIntf)(unsafe.Pointer(&d.d)).word)
+// }

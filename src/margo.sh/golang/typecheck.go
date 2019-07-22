@@ -8,6 +8,7 @@ import (
 	"go/types"
 	"margo.sh/golang/gopkg"
 	"margo.sh/golang/goutil"
+	"margo.sh/kimporter"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
 	"path/filepath"
@@ -49,6 +50,8 @@ func (tc *TypeCheck) checker() {
 }
 
 func (tc *TypeCheck) check(mx *mg.Ctx) {
+	defer mx.Begin(mg.Task{Title: "Go/TypeCheck"}).Done()
+
 	start := time.Now()
 	defer func() {
 		if d := time.Since(start); d > 200*time.Millisecond {
@@ -62,8 +65,7 @@ func (tc *TypeCheck) check(mx *mg.Ctx) {
 	if p, err := gopkg.ImportDir(mx, dir); err == nil {
 		importPath = p.ImportPath
 	}
-	gi := &gsuImporter{mx: mx, bld: BuildContext(mx)}
-	gi.res.m = map[mgcCacheKey]gsuImpRes{}
+	kp := kimporter.New(mx, nil)
 	fset, files, err := tc.parseFiles(mx)
 	issues := tc.errToIssues(err)
 	if err == nil && len(files) != 0 {
@@ -72,7 +74,7 @@ func (tc *TypeCheck) check(mx *mg.Ctx) {
 			Error: func(err error) {
 				issues = append(issues, tc.errToIssues(err)...)
 			},
-			Importer: gi,
+			Importer: kp,
 		}
 		_, err = cfg.Check(importPath, fset, files, nil)
 		issues = append(issues, tc.errToIssues(err)...)

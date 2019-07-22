@@ -34,6 +34,8 @@ func ParseFile(mx *mg.Ctx, fn string, src []byte) *ParsedFile {
 }
 
 func ParseFileWithMode(mx *mg.Ctx, fn string, src []byte, mode parser.Mode) *ParsedFile {
+	mx.Profile.Push("ParseFileWithMode").Pop()
+
 	if len(src) == 0 {
 		var err error
 		if fn != "" {

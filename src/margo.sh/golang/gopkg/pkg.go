@@ -19,6 +19,7 @@ type PkgPath struct {
 	Dir        string
 	ImportPath string
 	Goroot     bool
+	Mod        *ModPath
 }
 
 var (

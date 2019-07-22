@@ -31,7 +31,7 @@ Rich Feature Set includes:
   - Very High Performance.
     Our extensive benchmarks show us outperforming Gob, Json, Bson, etc by 2-4X.
   - Careful selected use of 'unsafe' for targeted performance gains.
-    100% mode exists where 'unsafe' is not used at all.
+  - 100% safe mode supported, where 'unsafe' is not used at all.
   - Lock-free (sans mutex) concurrency for scaling to 100's of cores
   - In-place updates during decode, with option to zero value in maps and slices prior to decode
   - Coerce types where appropriate

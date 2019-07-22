@@ -185,7 +185,7 @@ func (e *cborEncDriver) EncodeTime(t time.Time) {
 		e.EncodeNil()
 	} else if e.h.TimeRFC3339 {
 		e.encUint(0, cborBaseTag)
-		e.EncodeStringEnc(cUTF8, t.Format(time.RFC3339Nano))
+		e.encStringBytesS(cborBaseString, t.Format(time.RFC3339Nano))
 	} else {
 		e.encUint(1, cborBaseTag)
 		t = t.UTC().Round(time.Microsecond)
@@ -213,9 +213,6 @@ func (e *cborEncDriver) EncodeExt(rv interface{}, xtag uint64, ext Ext) {
 func (e *cborEncDriver) EncodeRawExt(re *RawExt) {
 	e.encUint(uint64(re.Tag), cborBaseTag)
 	// only encodes re.Value (never re.Data)
-	// if false && re.Data != nil {
-	// 	en.encode(re.Data)
-	// } else if re.Value != nil {
 	if re.Value != nil {
 		e.e.encode(re.Value)
 	} else {
@@ -251,7 +248,11 @@ func (e *cborEncDriver) WriteArrayEnd() {
 	}
 }
 
-func (e *cborEncDriver) EncodeStringEnc(c charEncoding, v string) {
+func (e *cborEncDriver) EncodeString(v string) {
+	if e.h.StringToRaw {
+		e.EncodeStringBytesRaw(bytesView(v))
+		return
+	}
 	e.encStringBytesS(cborBaseString, v)
 }
 
@@ -306,35 +307,9 @@ type cborDecDriver struct {
 	st     bool // skip tags
 	fnil   bool // found nil
 	noBuiltInTypes
-	// decNoSeparator
 	_ [6]uint64 // padding cache-aligned
 	d Decoder
 }
-
-// func (d *cborDecDriver) readNextBdSkipTags() {
-// 	d.bd = d.d.decRd.readn1()
-// 	if d.h.SkipUnexpectedTags {
-// 		for d.bd >= cborBaseTag && d.bd < cborBaseSimple {
-// 			d.decUint()
-// 			d.bd = d.d.decRd.readn1()
-// 		}
-// 	}
-// 	d.bdRead = true
-// }
-
-// func (d *cborDecDriver) readNextBd() {
-// 	d.bd = d.d.decRd.readn1()
-// 	if d.handleCborSelfDesc && d.bd == cborSelfDesrTag {
-// 		if x := d.readn1(); x == cborSelfDesrTag2 {
-// 			if x = d.readn1(); x != cborSelfDesrTag3 {
-// 				d.d.errorf("mishandled self desc: expected 0xd9d9f7, got: 0xd9d9%x", x)
-// 			}
-// 		} else {
-// 			d.unreadn1()
-// 		}
-// 	}
-// 	d.bdRead = true
-// }
 
 func (d *cborDecDriver) decoder() *Decoder {
 	return &d.d
@@ -400,9 +375,6 @@ func (d *cborDecDriver) ContainerType() (vt valueType) {
 	} else if d.bd == cborBdIndefiniteMap || (d.bd>>5 == cborMajorMap) {
 		return valueTypeMap
 	}
-	// else {
-	// d.d.errorf("isContainerType: unsupported parameter: %v", vt)
-	// }
 	return valueTypeUnset
 }
 
@@ -623,11 +595,6 @@ func (d *cborDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) {
 		}
 		return d.decAppendIndefiniteBytes(bs[:0])
 	}
-	// check if an "array" of uint8's (see ContainerType for how to infer if an array)
-	// if d.bd == cborBdIndefiniteArray || (d.bd >> 5 == cborMajorArray) {
-	// 	bsOut, _ = fastpathTV.DecSliceUint8V(bs, true, d.d)
-	// 	return
-	// }
 	if d.bd == cborBdIndefiniteArray {
 		d.bdRead = false
 		if zerocopy && len(bs) == 0 {
@@ -691,23 +658,6 @@ func (d *cborDecDriver) decodeTime(xtag uint64) (t time.Time) {
 			d.d.errorv(err)
 		}
 	case 1:
-		// if !d.bdRead {
-		// 	d.readNextBd()
-		// }
-		// // decode an int64 or a float, and infer time.Time from there.
-		// // for floats, round to microseconds, as that is what is guaranteed to fit well.
-		// switch {
-		// case d.bd == cborBdFloat16, d.bd == cborBdFloat32:
-		// 	f1, f2 := math.Modf(d.DecodeFloat64())
-		// 	t = time.Unix(int64(f1), int64(f2*1e9))
-		// case d.bd == cborBdFloat64:
-		// 	f1, f2 := math.Modf(d.DecodeFloat64())
-		// 	t = time.Unix(int64(f1), int64(f2*1e9))
-		// case d.bd >= cborBaseUint && d.bd < cborBaseBytes:
-		// 	t = time.Unix(d.DecodeInt64(), 0)
-		// default:
-		// 	d.d.errorf("time.Time can only be decoded from a number (or RFC3339 string)")
-		// }
 		f1, f2 := math.Modf(d.DecodeFloat64())
 		t = time.Unix(int64(f1), int64(f2*1e9))
 	default:
@@ -788,9 +738,6 @@ func (d *cborDecDriver) DecodeNaked() {
 			d.DecodeNaked()
 			return // return when done (as true recursive function)
 		}
-		// d.bdRead = false
-		// d.d.decode(&re.Value) // handled by decode itself.
-		// decodeFurther = true
 	case cborMajorSimpleOrFloat:
 		switch d.bd {
 		case cborBdNil, cborBdUndefined:
@@ -879,6 +826,7 @@ func (h *CborHandle) newEncDriver() encDriver {
 func (h *CborHandle) newDecDriver() decDriver {
 	d := &cborDecDriver{h: h, st: h.SkipUnexpectedTags}
 	d.d.d = d
+	d.d.cbor = true
 	d.d.init(h)
 	d.reset()
 	return d

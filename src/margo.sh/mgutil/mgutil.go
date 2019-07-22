@@ -53,3 +53,23 @@ func Clamp(lo, hi int, n int) int {
 func ClampPos(s []byte, pos int) int {
 	return Clamp(0, len(s), pos)
 }
+
+// Max returns the largest of p or q.
+func Max(p int, q ...int) int {
+	for _, q := range q {
+		if q > p {
+			p = q
+		}
+	}
+	return p
+}
+
+// Min returns the smallest of p or q.
+func Min(p int, q ...int) int {
+	for _, q := range q {
+		if q < p {
+			p = q
+		}
+	}
+	return p
+}

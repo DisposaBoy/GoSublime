@@ -95,6 +95,8 @@ func cachedCx(mx *mg.Ctx, k interface{}) *CurCtx {
 }
 
 func newCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
+	defer mx.Profile.Push("NewCurCtx").Pop()
+
 	pos = mgutil.ClampPos(src, pos)
 
 	// if we're at the end of the line, move the cursor onto the last thing on the line
@@ -319,6 +321,8 @@ func (cx *CurCtx) append(n ast.Node) {
 }
 
 func (cx *CurCtx) init(mx *mg.Ctx) {
+	defer mx.Profile.Push("CurCtx.init").Pop()
+
 	src, pos := cx.Src, cx.Pos
 	astFileIsValid := func(af *ast.File) bool {
 		return af.Package.IsValid() &&

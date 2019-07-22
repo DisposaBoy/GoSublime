@@ -105,10 +105,7 @@ type bincEncDriver struct {
 	m map[string]uint16 // symbols
 	b [8]byte           // scratch, used for encoding numbers - bigendian style
 	s uint16            // symbols sequencer
-	// c containerState
-	// encDriverTrackContainerWriter
-	// encNoSeparator
-	_ [4]uint64 // padding
+	_ [4]uint64         // padding
 	e Encoder
 }
 
@@ -219,9 +216,8 @@ func (e *bincEncDriver) encUint(bd byte, pos bool, v uint64) {
 
 func (e *bincEncDriver) EncodeExt(v interface{}, xtag uint64, ext Ext) {
 	var bs []byte
-	// var bufp bytesBufPooler
 	if ext == SelfExt {
-		bs = e.e.blist.get(1024)[:0] // bufp.get(1024)[:0]
+		bs = e.e.blist.get(1024)[:0]
 		e.e.sideEncode(v, &bs)
 	} else {
 		bs = ext.WriteExt(v)
@@ -233,7 +229,7 @@ func (e *bincEncDriver) EncodeExt(v interface{}, xtag uint64, ext Ext) {
 	e.encodeExtPreamble(uint8(xtag), len(bs))
 	e.e.encWr.writeb(bs)
 	if ext == SelfExt {
-		e.e.blist.put(bs) // bufp.end()
+		e.e.blist.put(bs)
 	}
 }
 
@@ -275,7 +271,6 @@ func (e *bincEncDriver) EncodeSymbol(v string) {
 		return
 	}
 	if e.m == nil {
-		// e.m = pool4mapStrU16.Get().(map[string]uint16)
 		e.m = make(map[string]uint16, 16)
 	}
 	ui, ok := e.m[v]
@@ -320,17 +315,26 @@ func (e *bincEncDriver) EncodeSymbol(v string) {
 	}
 }
 
+func (e *bincEncDriver) EncodeString(v string) {
+	if e.h.StringToRaw {
+		e.encLen(bincVdByteArray<<4, uint64(len(v))) // e.encBytesLen(c, l)
+		if len(v) > 0 {
+			e.e.encWr.writestr(v)
+		}
+		return
+	}
+	e.EncodeStringEnc(cUTF8, v)
+}
+
 func (e *bincEncDriver) EncodeStringEnc(c charEncoding, v string) {
-	if e.e.c == containerMapKey && c == cUTF8 && (e.h.AsSymbols == 0 || e.h.AsSymbols == 1) {
+	if e.e.c == containerMapKey && c == cUTF8 && (e.h.AsSymbols == 1) {
 		e.EncodeSymbol(v)
 		return
 	}
-	l := uint64(len(v))
-	e.encLen(bincVdString<<4, l) // e.encBytesLen(c, l)
-	if l > 0 {
+	e.encLen(bincVdString<<4, uint64(len(v))) // e.encBytesLen(c, l)
+	if len(v) > 0 {
 		e.e.encWr.writestr(v)
 	}
-
 }
 
 func (e *bincEncDriver) EncodeStringBytesRaw(v []byte) {
@@ -338,15 +342,16 @@ func (e *bincEncDriver) EncodeStringBytesRaw(v []byte) {
 		e.EncodeNil()
 		return
 	}
-	l := uint64(len(v))
-	e.encLen(bincVdByteArray<<4, l) // e.encBytesLen(c, l)
-	if l > 0 {
+	e.encLen(bincVdByteArray<<4, uint64(len(v))) // e.encBytesLen(c, l)
+	if len(v) > 0 {
 		e.e.encWr.writeb(v)
 	}
 }
 
 func (e *bincEncDriver) encBytesLen(c charEncoding, length uint64) {
-	//TODO: support bincUnicodeOther (for now, just use string or bytearray)
+	// NOTE: we currently only support UTF-8 (string) and RAW (bytearray).
+	// We should consider supporting bincUnicodeOther.
+
 	if c == cRAW {
 		e.encLen(bincVdByteArray<<4, length)
 	} else {
@@ -379,12 +384,6 @@ func (e *bincEncDriver) encLenNumber(bd byte, v uint64) {
 
 //------------------------------------
 
-// type bincDecSymbol struct {
-// 	s string
-// 	b []byte
-// 	// i uint16
-// }
-
 type bincDecDriver struct {
 	decDriverNoopContainerReader
 	noBuiltInTypes
@@ -400,9 +399,6 @@ type bincDecDriver struct {
 	// linear searching on this slice is ok,
 	// because we typically expect < 32 symbols in each stream.
 	s map[uint16][]byte // []bincDecSymbol
-
-	// noStreamingCodec
-	// decNoSeparator
 
 	b [8]byte   // scratch for decoding numbers - big endian style
 	_ [4]uint64 // padding cache-aligned
@@ -468,9 +464,6 @@ func (d *bincDecDriver) ContainerType() (vt valueType) {
 	} else if d.vd == bincVdMap {
 		return valueTypeMap
 	}
-	// else {
-	// d.d.errorf("isContainerType: unsupported parameter: %v", vt)
-	// }
 	return valueTypeUnset
 }
 
@@ -1023,8 +1016,6 @@ func (e *bincEncDriver) atEndOfEncode() {
 		for k := range e.m {
 			delete(e.m, k)
 		}
-		// pool4mapStrU16.Put(e.m)
-		// e.m = nil
 	}
 }
 
@@ -1039,8 +1030,6 @@ func (d *bincDecDriver) atEndOfDecode() {
 		for k := range d.s {
 			delete(d.s, k)
 		}
-		// pool4mapU16Bytes.Put(d.s)
-		// d.s = nil
 	}
 }
 
@@ -1096,7 +1085,7 @@ func (d *bincDecDriver) atEndOfDecode() {
 //       Bits 13..0 = timezone offset in minutes. It is a signed integer in Big Endian format.
 //
 func bincEncodeTime(t time.Time) []byte {
-	//t := rv2i(rv).(time.Time)
+	// t := rv2i(rv).(time.Time)
 	tsecs, tnsecs := t.Unix(), t.Nanosecond()
 	var (
 		bd   byte
@@ -1128,7 +1117,7 @@ func bincEncodeTime(t time.Time) []byte {
 		bd = bd | 0x20
 		// Note that Go Libs do not give access to dst flag.
 		_, zoneOffset := t.Zone()
-		//zoneName, zoneOffset := t.Zone()
+		// zoneName, zoneOffset := t.Zone()
 		zoneOffset /= 60
 		z := uint16(zoneOffset)
 		bigen.PutUint16(btmp[:2], z)
@@ -1157,10 +1146,10 @@ func bincDecodeTime(bs []byte) (tt time.Time, err error) {
 		n = ((bd >> 2) & 0x7) + 1
 		i2 = i + n
 		copy(btmp[8-n:], bs[i:i2])
-		//if first bit of bs[i] is set, then fill btmp[0..8-n] with 0xff (ie sign extend it)
+		// if first bit of bs[i] is set, then fill btmp[0..8-n] with 0xff (ie sign extend it)
 		if bs[i]&(1<<7) != 0 {
 			copy(btmp[0:8-n], bsAll0xff)
-			//for j,k := byte(0), 8-n; j < k; j++ {	btmp[j] = 0xff }
+			// for j,k := byte(0), 8-n; j < k; j++ {	btmp[j] = 0xff }
 		}
 		i = i2
 		tsec = int64(bigen.Uint64(btmp[:]))
@@ -1203,6 +1192,28 @@ func bincDecodeTime(bs []byte) (tt time.Time, err error) {
 	}
 	return
 }
+
+// func timeLocUTCName(tzint int16) string {
+// 	if tzint == 0 {
+// 		return "UTC"
+// 	}
+// 	var tzname = []byte("UTC+00:00")
+// 	//tzname := fmt.Sprintf("UTC%s%02d:%02d", tzsign, tz/60, tz%60) //perf issue using Sprintf.. inline below.
+// 	//tzhr, tzmin := tz/60, tz%60 //faster if u convert to int first
+// 	var tzhr, tzmin int16
+// 	if tzint < 0 {
+// 		tzname[3] = '-'
+// 		tzhr, tzmin = -tzint/60, (-tzint)%60
+// 	} else {
+// 		tzhr, tzmin = tzint/60, tzint%60
+// 	}
+// 	tzname[4] = timeDigits[tzhr/10]
+// 	tzname[5] = timeDigits[tzhr%10]
+// 	tzname[7] = timeDigits[tzmin/10]
+// 	tzname[8] = timeDigits[tzmin%10]
+// 	return string(tzname)
+// 	//return time.FixedZone(string(tzname), int(tzint)*60)
+// }
 
 var _ decDriver = (*bincDecDriver)(nil)
 var _ encDriver = (*bincEncDriver)(nil)

@@ -421,7 +421,7 @@ func (x *xmlParser) next() (t *xmlToken) {
 // nextTag will parses the next element and fill up toks.
 // It set done flag if/once EOF is reached.
 func (x *xmlParser) nextTag() {
-	// TODO: implement.
+	// ...
 }
 
 // ----------- ENCODER -------------------

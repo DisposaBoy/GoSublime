@@ -117,7 +117,7 @@ func FindPkg(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 		return &PkgPath{Dir: grDir, ImportPath: importPath, Goroot: true}, nil
 	}
 	if goutil.ModEnabled(mx, srcDir) {
-		return findPkgGm(mx, importPath, srcDir)
+		return findPkgGm(mx, importPath, srcDir, nil)
 	}
 	if p, err := findPkgPm(mx, importPath, srcDir); err == nil {
 		return p, nil
@@ -188,34 +188,46 @@ func findPkgPm(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 	}, nil
 }
 
-func findPkgGm(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
+func findPkgGm(mx *mg.Ctx, importPath, srcDir string, mp *ModPath) (*PkgPath, error) {
 	fileNd := goutil.ModFileNd(mx, srcDir)
 	if fileNd == nil {
 		return nil, os.ErrNotExist
 	}
-	// we depends on both go.mod and go.sum so we need to cache in the dir
-	dirNd := fileNd.Parent()
-	memo, _ := dirNd.Memo()
-	type K struct {
-		goutil.SrcDirKey
-		importPath string
+	dir := fileNd.Parent().Path()
+	if mp != nil && mp.Dir == dir {
+		return mp.FindPkg(mx, importPath, srcDir)
 	}
-	type V struct {
-		p *PkgPath
-		e error
+	return (&ModPath{Parent: mp, Dir: dir}).FindPkg(mx, importPath, srcDir)
+}
+
+type ModPath struct {
+	Parent *ModPath
+	Dir    string
+}
+
+func (mp *ModPath) FindPkg(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
+	if mp == nil {
+		return FindPkg(mx, importPath, srcDir)
 	}
-	bctx := goutil.BuildContext(mx)
-	k := K{goutil.MakeSrcDirKey(bctx, srcDir), importPath}
-	v := memo.Read(k, func() interface{} {
-		mf, err := loadModSum(mx.VFS, dirNd.Path())
-		if err != nil {
-			return V{e: err}
+	for ; mp != nil; mp = mp.Parent {
+		if p, err := mp.findPkg(mx, importPath, srcDir); err == nil {
+			return p, nil
 		}
-		v := V{}
-		v.p, v.e = mf.find(mx, bctx, importPath)
-		return v
-	}).(V)
-	return v.p, v.e
+	}
+	if p, err := findPkgPm(mx, importPath, srcDir); err == nil {
+		return p, nil
+	}
+	return findPkgGp(mx, goutil.BuildContext(mx), importPath, srcDir)
+}
+
+func (mp *ModPath) findPkg(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
+	dirNd := mx.VFS.Poke(mp.Dir)
+	bctx := goutil.BuildContext(mx)
+	mf, err := loadModSumNd(mx, dirNd)
+	if err != nil {
+		return nil, err
+	}
+	return mf.find(mx, bctx, importPath, mp)
 }
 
 type modFile struct {
@@ -253,7 +265,13 @@ func (mf *modFile) require(importPath string) (modDep, error) {
 }
 
 // TODO: support `std`. stdlib pkgs are vendored, so AFAIK, it's not used yet.
-func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string) (*PkgPath, error) {
+func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string, mp *ModPath) (pp *PkgPath, err error) {
+	defer func() {
+		if pp != nil {
+			pp.Mod = &ModPath{Dir: mf.Dir, Parent: mp}
+		}
+	}()
+
 	md, err := mf.require(importPath)
 	if err != nil {
 		return nil, err
@@ -338,7 +356,21 @@ func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string) (*Pk
 	return nil, fmt.Errorf("cannot find `%s` using `%s`", importPath, mf.Path)
 }
 
-func loadModSum(fs *vfs.FS, dir string) (*modFile, error) {
+func loadModSumNd(mx *mg.Ctx, dirNd *vfs.Node) (*modFile, error) {
+	type K struct{}
+	type V struct {
+		mf *modFile
+		e  error
+	}
+	v := dirNd.ReadMemo(K{}, func() interface{} {
+		v := V{}
+		v.mf, v.e = loadModSum(mx, dirNd.Path())
+		return v
+	}).(V)
+	return v.mf, v.e
+}
+
+func loadModSum(mx *mg.Ctx, dir string) (*modFile, error) {
 	gomod := filepath.Join(dir, "go.mod")
 	modSrc, err := ioutil.ReadFile(gomod)
 	if err != nil {
@@ -371,7 +403,7 @@ func loadModSum(fs *vfs.FS, dir string) (*modFile, error) {
 			if !filepath.IsAbs(dir) {
 				dir = filepath.Join(mf.Dir, dir)
 			}
-			nd := fs.Poke(dir)
+			nd := mx.VFS.Poke(dir)
 			// replacement isn't valid unless the go.mod file exists
 			// TODO: should we ignore this rule? I don't know what problem it solves
 			// but it makes is more annoying to just point a module at a local directory

@@ -165,6 +165,9 @@ func (tc *TestCmds) splitName(nm string) (name, pfx, sfx string, ok bool) {
 		return "", "", "", false
 	}
 	for _, pfx := range []string{"Test", "Benchmark", "Example"} {
+		if nm == pfx {
+			return nm, nm, "", true
+		}
 		sfx := strings.TrimPrefix(nm, pfx)
 		if sfx != nm {
 			r, _ := utf8.DecodeRuneInString(sfx)

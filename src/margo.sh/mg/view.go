@@ -69,7 +69,11 @@ func (v *View) Basename() string {
 }
 
 func (v *View) ShortFilename() string {
-	return mgutil.ShortFilename(v.Filename())
+	return v.ShortFn(nil)
+}
+
+func (v *View) ShortFn(env mgutil.EnvMap) string {
+	return mgutil.ShortFn(v.Filename(), env)
 }
 
 func (v *View) Filename() string {

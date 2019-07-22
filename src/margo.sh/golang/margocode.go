@@ -14,6 +14,7 @@ import (
 	"margo.sh/golang/goutil"
 	"margo.sh/golang/internal/pkglst"
 	"margo.sh/golang/internal/srcimporter"
+	"margo.sh/kimporter"
 	"margo.sh/mg"
 	"margo.sh/mgpf"
 	"margo.sh/mgutil"
@@ -39,6 +40,9 @@ const (
 
 	// BinImporterOnly tells the importer use binary packages only, with no fall-back
 	BinImporterOnly
+
+	// KimPorter tells the importer to use Kim-Porter to import packages
+	KimPorter
 )
 
 var (
@@ -73,6 +77,9 @@ func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImp
 	s := mgc.newSrcImporter
 	b := mgc.newBinImporter
 	switch mgc.cfg().ImporterMode {
+	case KimPorter:
+		// kp doesn't yet support cgo, so fall back to the binary importer
+		return mgc.newKimPorter, b, true
 	case SrcImporterWithFallback:
 		return s, b, true
 	case SrcImporterOnly:
@@ -82,6 +89,10 @@ func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImp
 	default:
 		panic("unreachable")
 	}
+}
+
+func (mgc *marGocodeCtl) newKimPorter(mx *mg.Ctx, overlay types.ImporterFrom) types.ImporterFrom {
+	return kimporter.New(mx, nil)
 }
 
 // importPathByName returns an import path whose pkg's name is pkgName
@@ -158,7 +169,8 @@ func (mgc *marGocodeCtl) processQ(mx *mg.Ctx) {
 }
 
 func (mgc *marGocodeCtl) preloadPackages(mx *mg.Ctx) {
-	if mgc.cfg().NoPreloading {
+	cfg := mgc.cfg()
+	if cfg.NoPreloading {
 		return
 	}
 
@@ -168,7 +180,7 @@ func (mgc *marGocodeCtl) preloadPackages(mx *mg.Ctx) {
 		return
 	}
 
-	defer mx.Begin(mg.Task{Title: "Preloading packages in " + v.ShortFilename()}).Done()
+	defer mx.Begin(mg.Task{Title: "Preloading packages in " + v.ShortFn(mx.Env)}).Done()
 
 	fset := token.NewFileSet()
 	af, _ := parser.ParseFile(fset, v.Filename(), src, parser.ImportsOnly)
@@ -176,20 +188,20 @@ func (mgc *marGocodeCtl) preloadPackages(mx *mg.Ctx) {
 		return
 	}
 
+	var importFrom func(string, string, types.ImportMode) (*types.Package, error)
+	if cfg.ImporterMode == KimPorter {
+		importFrom = kimporter.New(mx, nil).ImportFrom
+	} else {
+		importFrom = mgc.newGcSuggest(mx).imp.ImportFrom
+	}
+
 	dir := v.Dir()
-	gsu := mgc.newGcSuggest(mx)
 	for _, spec := range af.Imports {
-		gsu.imp.ImportFrom(unquote(spec.Path.Value), dir, 0)
+		importFrom(unquote(spec.Path.Value), dir, 0)
 	}
 }
 
 func (mgc *marGocodeCtl) autoPruneCache(mx *mg.Ctx) {
-	// TODO: do this in a goroutine?
-	// we're not directly in the QueryCompletions hot path
-	// but we *are* in a subscriber, so we're blocking the store
-	// if something like pkginfo or DebugPrune is slow,
-	// we will end up blocking the next reduction
-
 	pkgInf, err := mgc.pkgInfo(mx, ".", mx.View.Dir())
 	if err == nil {
 		for _, source := range []bool{true, false} {
@@ -280,7 +292,7 @@ func (mgc *marGocodeCtl) scanVFS(mx *mg.Ctx, rootName, rootDir string) {
 	// TODO: (eventually) move this function into plst.Scan
 	// for now, the extra scan at the end is fast enough to not be worth the complexity
 	dir := filepath.Join(rootDir, "src")
-	tsk := mg.Task{Title: "VFS.Scan " + rootName + " ( " + mgutil.ShortFilename(rootDir) + " )"}
+	tsk := mg.Task{Title: "VFS.Scan " + rootName + " ( " + mgutil.ShortFn(rootDir, mx.Env) + " )"}
 	defer mx.Begin(tsk).Done()
 
 	mu := sync.Mutex{}

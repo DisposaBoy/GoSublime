@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT license found in the LICENSE file.
 
 /*
-MSGPACK
-
 Msgpack-c implementation powers the c, c++, python, ruby, etc libraries.
 We need to maintain compatibility with it and how it encodes integer values
 without caring about the type.
@@ -199,7 +197,6 @@ var (
 type msgpackEncDriver struct {
 	noBuiltInTypes
 	encDriverNoopContainerWriter
-	// encNoSeparator
 	h *MsgpackHandle
 	x [8]byte
 	_ [6]uint64 // padding
@@ -322,9 +319,8 @@ func (e *msgpackEncDriver) EncodeTime(t time.Time) {
 
 func (e *msgpackEncDriver) EncodeExt(v interface{}, xtag uint64, ext Ext) {
 	var bs []byte
-	// var bufp bytesBufPooler
 	if ext == SelfExt {
-		bs = e.e.blist.get(1024)[:0] // bufp.get(1024)[:0]
+		bs = e.e.blist.get(1024)[:0]
 		e.e.sideEncode(v, &bs)
 	} else {
 		bs = ext.WriteExt(v)
@@ -340,7 +336,7 @@ func (e *msgpackEncDriver) EncodeExt(v interface{}, xtag uint64, ext Ext) {
 		e.EncodeStringBytesRaw(bs)
 	}
 	if ext == SelfExt {
-		e.e.blist.put(bs) // bufp.end()
+		e.e.blist.put(bs)
 	}
 }
 
@@ -382,14 +378,19 @@ func (e *msgpackEncDriver) WriteMapStart(length int) {
 	e.writeContainerLen(msgpackContainerMap, length)
 }
 
-func (e *msgpackEncDriver) EncodeStringEnc(c charEncoding, s string) {
-	slen := len(s)
+func (e *msgpackEncDriver) EncodeString(s string) {
+	var ct msgpackContainerType
 	if e.h.WriteExt {
-		e.writeContainerLen(msgpackContainerStr, slen)
+		if e.h.StringToRaw {
+			ct = msgpackContainerBin
+		} else {
+			ct = msgpackContainerStr
+		}
 	} else {
-		e.writeContainerLen(msgpackContainerRawLegacy, slen)
+		ct = msgpackContainerRawLegacy
 	}
-	if slen > 0 {
+	e.writeContainerLen(ct, len(s))
+	if len(s) > 0 {
 		e.e.encWr.writestr(s)
 	}
 }
@@ -399,13 +400,12 @@ func (e *msgpackEncDriver) EncodeStringBytesRaw(bs []byte) {
 		e.EncodeNil()
 		return
 	}
-	slen := len(bs)
 	if e.h.WriteExt {
-		e.writeContainerLen(msgpackContainerBin, slen)
+		e.writeContainerLen(msgpackContainerBin, len(bs))
 	} else {
-		e.writeContainerLen(msgpackContainerRawLegacy, slen)
+		e.writeContainerLen(msgpackContainerRawLegacy, len(bs))
 	}
-	if slen > 0 {
+	if len(bs) > 0 {
 		e.e.encWr.writeb(bs)
 	}
 }
@@ -434,8 +434,6 @@ type msgpackDecDriver struct {
 	bdRead bool
 	fnil   bool
 	noBuiltInTypes
-	// noStreamingCodec
-	// decNoSeparator
 	_ [6]uint64 // padding
 	d Decoder
 }
@@ -779,9 +777,6 @@ func (d *msgpackDecDriver) ContainerType() (vt valueType) {
 	} else if bd == mpMap16 || bd == mpMap32 || (bd >= mpFixMapMin && bd <= mpFixMapMax) {
 		return valueTypeMap
 	}
-	// else {
-	// d.d.errorf("isContainerType: unsupported parameter: %v", vt)
-	// }
 	return valueTypeUnset
 }
 
@@ -946,7 +941,6 @@ func (d *msgpackDecDriver) decodeExtV(verifyTag bool, tag byte) (xtag byte, xbs 
 //MsgpackHandle is a Handle for the Msgpack Schema-Free Encoding Format.
 type MsgpackHandle struct {
 	binaryEncodingType
-	// noElemSeparators
 	BasicHandle
 
 	// NoFixedNum says to output all signed integers as 2-bytes, never as 1-byte fixednum.
@@ -1057,11 +1051,7 @@ func (c *msgpackSpecRpcCodec) parseCustomHeader(expectTypeByte byte, msgid *uint
 	// so that the body can be decoded on its own from the stream at a later time.
 
 	const fia byte = 0x94 //four item array descriptor value
-	// Not sure why the panic of EOF is swallowed above.
-	// if bs1 := c.dec.r.readn1(); bs1 != fia {
-	// 	err = fmt.Errorf("Unexpected value for array descriptor: Expecting %v. Received %v", fia, bs1)
-	// 	return
-	// }
+
 	var ba [1]byte
 	var n int
 	for {

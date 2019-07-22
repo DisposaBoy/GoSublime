@@ -18,14 +18,6 @@
   version = "v1.10.12"
 
 [[projects]]
-  digest = "1:447ab23604df9681aabfc6e48dbded59cb933b6eb4224e64d9d037318534b1bd"
-  name = "github.com/pkg/profile"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "f6fe06335df110bcf1ed6d4e852b760bfc15beee"
-  version = "v1.3.0"
-
-[[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
   name = "github.com/rogpeppe/go-internal"
   packages = [
@@ -38,20 +30,20 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:8fa4313dcd934fec5e24438dd8cc44fc4267ca5ff439f2518eacbd12476f0c60"
+  digest = "1:5a1cf4e370bc86137b58da2ae065e76526d32b11f62a7665f36dbd5f41fa95ff"
   name = "github.com/ugorji/go"
   packages = ["codec"]
   pruneopts = "UT"
-  revision = "c9665baae204c57d393ad359a76317a806235639"
+  revision = "23ab95ef5dc3b70286760af84ce2327a2b64ed62"
+  version = "v1.1.7"
 
 [[projects]]
-  branch = "master"
-  digest = "1:8286f653bf8b8fd155a0c9c3b9ee3dbc2a95b1b51f7a1dc11fe2c66018454a0c"
+  digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"
   name = "github.com/urfave/cli"
   packages = ["."]
   pruneopts = "UT"
-  revision = "693af58b4d51b8fcc7f9d89576da170765980581"
+  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
+  version = "v1.20.0"
 
 [[projects]]
   branch = "master"
@@ -59,22 +51,38 @@
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
   pruneopts = "UT"
-  revision = "cc06ce4a13d484c0101a9e92913248488a75786d"
+  revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
 [[projects]]
   branch = "master"
-  digest = "1:dec25633dcde9d12dbb4221ca188c5dcd944b26d0f70dc18815af4628e87a860"
+  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  pruneopts = "UT"
+  revision = "da137c7871d730100384dbcf36e6f8fa493aef5b"
+
+[[projects]]
+  branch = "master"
+  digest = "1:b521f10a2d8fa85c04a8ef4e62f2d1e14d303599a55d64dabf9f5a02f84d35eb"
+  name = "golang.org/x/sync"
+  packages = ["errgroup"]
+  pruneopts = "UT"
+  revision = "112230192c580c3556b8cee6403af37a4fc5f28c"
+
+[[projects]]
+  branch = "master"
+  digest = "1:a0e4b2275e7939970d395eb6d03f409378eb586aab72e0a461d95e3435c6c5c4"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "c5567b49c5d04a5f83870795b8c0e2df43a8ce32"
+  revision = "fae7ac547cb717d141c433a2a173315e216b64c4"
 
 [[projects]]
   branch = "master"
-  digest = "1:8312fda4f9773a89580fc16da2c066e46274553ce6530cd18ef733ac00f1767b"
+  digest = "1:bced9cb3cc232146d31c9c0cc4595acfbd892c99c35b1371544fe35f4abaeca5"
   name = "golang.org/x/tools"
   packages = [
     "cmd/guru",
@@ -103,7 +111,7 @@
     "refactor/importgraph",
   ]
   pruneopts = "UT"
-  revision = "252024b8295926254bbc18903b9b7d4f0389df2f"
+  revision = "e377ae9d63860e3b8f606b92a1a7c7df5b14ca67"
 
 [[projects]]
   branch = "master"
@@ -122,13 +130,14 @@
   input-imports = [
     "github.com/coreos/bbolt",
     "github.com/karrick/godirwalk",
-    "github.com/pkg/profile",
     "github.com/rogpeppe/go-internal/modfile",
     "github.com/rogpeppe/go-internal/module",
     "github.com/rogpeppe/go-internal/semver",
     "github.com/ugorji/go/codec",
     "github.com/urfave/cli",
     "golang.org/x/crypto/blake2b",
+    "golang.org/x/net/context",
+    "golang.org/x/sync/errgroup",
     "golang.org/x/tools/cmd/guru",
     "golang.org/x/tools/go/gcexportdata",
     "kuroku.io/margocode/suggest",

@@ -10,7 +10,7 @@ package codec
 import "encoding"
 
 // GenVersion is the current version of codecgen.
-const GenVersion = 14
+const GenVersion = 16
 
 // This file is used to generate helper code for codecgen.
 // The values here i.e. genHelper(En|De)coder are not to be used directly by
@@ -268,3 +268,6 @@ func (f genHelperDecoder) DecReadMapElemValue() { f.d.mapElemValue() }
 
 // FOR USE BY CODECGEN ONLY. IT *WILL* CHANGE WITHOUT NOTICE. *DO NOT USE*
 func (f genHelperDecoder) DecDecodeFloat32() float32 { return f.d.decodeFloat32() }
+
+// FOR USE BY CODECGEN ONLY. IT *WILL* CHANGE WITHOUT NOTICE. *DO NOT USE*
+func (f genHelperDecoder) DecCheckBreak() bool { return f.d.checkBreak() }

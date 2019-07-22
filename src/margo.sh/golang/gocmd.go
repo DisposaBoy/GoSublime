@@ -224,6 +224,11 @@ func newGoCmdCtx(bx *mg.CmdCtx, label, cancelID string, tDir, tFn string) *goCmd
 }
 
 func (gx *goCmdCtx) run(origView *mg.View) error {
+	defer func() {
+		gx.VFS.Invalidate(origView.Filename())
+		gx.VFS.Invalidate(origView.Dir())
+	}()
+
 	p, err := gx.StartProc()
 	if err == nil {
 		err = p.Wait()

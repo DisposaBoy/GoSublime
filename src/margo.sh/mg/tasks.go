@@ -123,13 +123,13 @@ func (tr *taskTracker) userCmds(st *State) *State {
 	for i, t := range tr.tickets {
 		c := UserCmd{Name: ".kill"}
 		dur := mgpf.D(now.Sub(t.Start))
-		if cid := t.CancelID; cid == "" {
-			c.Title = "Task: " + t.Title
-			c.Desc = fmt.Sprintf("elapsed: %s", dur)
-		} else {
-			c.Args = []string{cid}
+		if t.Cancellable() {
+			c.Args = []string{t.CancelID}
 			c.Title = "Task: Cancel " + t.Title
 			c.Desc = fmt.Sprintf("elapsed: %s, cmd: `%s`", dur, mgutil.QuoteCmd(c.Name, c.Args...))
+		} else {
+			c.Title = "Task: " + t.Title
+			c.Desc = fmt.Sprintf("elapsed: %s", dur)
 		}
 		cl[i] = c
 	}
