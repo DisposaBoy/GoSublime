@@ -251,7 +251,8 @@
 					"text": "func http handler",
 					"title": "func(rw, req)",
 					"value": "func ${1:name}(rw http.ResponseWriter, req *http.Request) {\n\t$0\n}"
-				}
+				},
+				{"text": "foreach", "title": "for _,val:=range[array]", "value": "for _, val := range ${1:array} {\n\t$0\n}"}
 			]
 		},
 		{
