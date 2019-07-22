@@ -73,6 +73,10 @@
 		"command": "gs_fmt"
 	},
 	{
+		"caption": "GoSublime: Help you to make your imports clean",
+		"command": "gs_imports"
+	},	
+	{
 		"caption": "GoSublime: New Go File",
 		"command": "gs_new_go_file"
 	},

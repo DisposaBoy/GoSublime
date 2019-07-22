@@ -18,6 +18,36 @@ class GsStartNextLineCommentCommand(sublime_plugin.TextCommand):
 		self.view.run_command("run_macro_file", {"file": "Packages/Default/Add Line.sublime-macro"})
 		self.view.run_command("toggle_comment", {"block": False})
 
+class GsImportsCommand(sublime_plugin.TextCommand):
+	def is_enabled(self):
+		fn = self.view.file_name()
+		if fn:
+			scope_ok = fn.lower().endswith('.go')
+		else:
+			scope_ok = gs.is_go_source_view(self.view)
+
+		return scope_ok
+
+	def run(self, edit):
+		vsize = self.view.size()
+		src = self.view.substr(sublime.Region(0, vsize))
+		if not src.strip():
+			return
+
+		src, err = mg9.goimports(self.view.file_name(), src)
+		if err:
+			gs.println(DOMAIN, "cannot goimports file. error: `%s'" % err)
+			return
+
+		if not src.strip():
+			gs.println(DOMAIN, "cannot goimports file. it appears to be empty")
+			return
+
+		_, err = gspatch.merge(self.view, vsize, src, edit)
+		if err:
+			msg = 'PANIC: Cannot goimports file. Check your source for errors (and maybe undo any changes).'
+			sublime.error_message("%s: %s: Merge failure: `%s'" % (DOMAIN, msg, err))
+
 class GsFmtCommand(sublime_plugin.TextCommand):
 	def is_enabled(self):
 		fn = self.view.file_name()
@@ -75,6 +105,7 @@ class GsFmtPromptSaveAsCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command("gs_fmt")
 		sublime.set_timeout(lambda: self.view.run_command("prompt_save_as"), 0)
+
 
 class GsGotoRowColCommand(sublime_plugin.TextCommand):
 	def run(self, edit, row, col=0):
