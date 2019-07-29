@@ -1,7 +1,7 @@
 package vfs
 
 import (
-	"margo.sh/mgutil"
+	"margo.sh/memo"
 	"os"
 	"sync"
 	"time"
@@ -41,12 +41,12 @@ type meta struct {
 	fmode fmode
 	modts timestamp
 	expts timestamp
-	mo    *mgutil.Memo
+	mo    *memo.M
 }
 
-func (mt *meta) memo() *mgutil.Memo {
+func (mt *meta) memo() *memo.M {
 	if mt.mo == nil {
-		mt.mo = &mgutil.Memo{}
+		mt.mo = &memo.M{}
 	}
 	return mt.mo
 }
@@ -54,6 +54,9 @@ func (mt *meta) memo() *mgutil.Memo {
 func (mt *meta) invalidate() {
 	if mt != nil {
 		mt.expts = 0
+	}
+	if mo := mt.mo; mo != nil {
+		mo.Clear()
 	}
 }
 

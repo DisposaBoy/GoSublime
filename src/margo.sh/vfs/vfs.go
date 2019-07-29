@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"github.com/karrick/godirwalk"
 	"io"
-	"margo.sh/mgutil"
+	"margo.sh/memo"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+)
+
+const (
+	ViewNamePrefix = "view@"
 )
 
 var (
@@ -30,6 +34,10 @@ func async(f func()) {
 	default:
 		go f()
 	}
+}
+
+func IsViewPath(fn string) bool {
+	return strings.HasPrefix(fn, ViewNamePrefix)
 }
 
 // TODO: add .Trim() support to allow periodically removing unused leaf nodes to reduce memory.
@@ -62,13 +70,13 @@ func (fs *FS) IsDir(path string) bool { return fs.Poke(path).IsDir() }
 
 func (fs *FS) IsFile(path string) bool { return fs.Poke(path).IsFile() }
 
-func (fs *FS) Memo(path string) (*Node, *mgutil.Memo, error) {
+func (fs *FS) Memo(path string) (*Node, *memo.M, error) {
 	nd := fs.Poke(path)
 	m, err := nd.Memo()
 	return nd, m, err
 }
 
-func (fs *FS) ReadMemo(path string, k interface{}, new func() interface{}) interface{} {
+func (fs *FS) ReadMemo(path string, k memo.K, new func() memo.K) memo.V {
 	return fs.Poke(path).ReadMemo(k, new)
 }
 
@@ -369,13 +377,17 @@ func (nd *Node) print(w io.Writer, filter func(*Node) string, indent string) {
 	}
 }
 
-func (nd *Node) Memo() (*mgutil.Memo, error) {
+func (nd *Node) Memo() (*memo.M, error) {
 	if nd == nil {
 		return nil, os.ErrNotExist
 	}
 
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
+
+	if nd.parent.IsRoot() && IsViewPath(nd.name) {
+		return nd.meta().memo(), nil
+	}
 
 	mt, err := nd.sync()
 	if err != nil {
@@ -384,7 +396,7 @@ func (nd *Node) Memo() (*mgutil.Memo, error) {
 	return mt.memo(), nil
 }
 
-func (nd *Node) ReadMemo(k interface{}, new func() interface{}) interface{} {
+func (nd *Node) ReadMemo(k memo.K, new func() memo.V) memo.V {
 	memo, _ := nd.Memo()
 	return memo.Read(k, new)
 }
@@ -432,7 +444,7 @@ func (nd *Node) sync() (*meta, error) {
 	}
 	// if a file in a directory changed, the dir's memo is cleared as well because
 	// a dir's memo is primarily used to store pkg/dir data that depends on the file
-	if reset && !nd.isBranch() {
+	if reset && mt.fmode != 0 && (fi == nil || !fi.IsDir()) {
 		nd.resetParent()
 	}
 	if err != nil {

@@ -13,6 +13,7 @@ import (
 	"golang.org/x/tools/go/gcexportdata"
 	"margo.sh/golang/gopkg"
 	"margo.sh/golang/goutil"
+	"margo.sh/memo"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
 	"os"
@@ -21,11 +22,12 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 var (
-	sharedCache = &stateCache{m: map[stateKey]*state{}}
-	pkgC        = func() *types.Package {
+	pkgC = func() *types.Package {
 		p := types.NewPackage("C", "C")
 		p.MarkComplete()
 		return p
@@ -46,46 +48,59 @@ type stateKey struct {
 	SrcMapHash   string
 }
 
-type stateCache struct {
-	mu sync.Mutex
-	m  map[stateKey]*state
-}
-
-func (sc *stateCache) state(mx *mg.Ctx, k stateKey) *state {
-	// TODO: support vfs invalidation.
-	// we can't (currently) make use of .Memo because it deletes the data
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-
-	if v, ok := sc.m[k]; ok {
-		return v
-	}
-	v := &state{stateKey: k}
-	sc.m[k] = v
-	return v
+func globalState(mx *mg.Ctx, k stateKey) *state {
+	type K struct{ stateKey }
+	return mx.VFS.ReadMemo(k.Dir, K{k}, func() memo.V {
+		return &state{stateKey: k}
+	}).(*state)
 }
 
 type state struct {
 	stateKey
+	invalidAt int64
+	imby      struct {
+		sync.Mutex
+		l []*state
+	}
 
-	mu      sync.Mutex
-	err     error
-	pkg     *types.Package
-	checked bool
+	mu        sync.Mutex
+	err       error
+	pkg       *types.Package
+	checkedAt int64
 }
 
-func (ks *state) reset() {
-	ks.pkg = nil
-	ks.err = nil
-	ks.checked = false
+func (ks *state) invalidate(invAt int64) {
+	atomic.StoreInt64(&ks.invalidAt, invAt)
+	ks.imby.Lock()
+	l := ks.imby.l
+	ks.imby.Unlock()
+	for _, p := range l {
+		p.invalidate(invAt)
+	}
+}
+
+func (ks *state) InvalidateMemo(invAt time.Time) {
+	ks.invalidate(invAt.UnixNano())
+}
+
+func (ks *state) importedBy(p *state) {
+	ks.imby.Lock()
+	defer ks.imby.Unlock()
+
+	for _, q := range ks.imby.l {
+		if p == q {
+			return
+		}
+	}
+	ks.imby.l = append(ks.imby.l[:len(ks.imby.l):len(ks.imby.l)], p)
 }
 
 func (ks *state) result() (*types.Package, error) {
 	switch {
-	case !ks.checked:
+	case ks.checkedAt == 0:
 		return nil, fmt.Errorf("import cycle via %s", ks.ImportPath)
 	case ks.err != nil:
-		return ks.pkg, ks.err
+		return nil, ks.err
 	case !ks.pkg.Complete():
 		// Package exists but is not complete - we cannot handle this
 		// at the moment since the source importer replaces the package
@@ -125,11 +140,12 @@ func (kp *Importer) ImportFrom(ipath, srcDir string, mode types.ImportMode) (*ty
 	if mode != 0 {
 		panic("non-zero import mode")
 	}
-	if ipath == "C" {
-		return pkgC, nil
-	}
-	if ipath == "unsafe" {
-		return types.Unsafe, nil
+	return kp.importFrom(ipath, srcDir)
+}
+
+func (kp *Importer) importFrom(ipath, srcDir string) (*types.Package, error) {
+	if pkg := kp.importFakePkg(ipath); pkg != nil {
+		return pkg, nil
 	}
 	if p, err := filepath.Abs(srcDir); err == nil {
 		srcDir = p
@@ -166,7 +182,7 @@ func (kp *Importer) stateKey(pp *gopkg.PkgPath) stateKey {
 }
 
 func (kp *Importer) state(pp *gopkg.PkgPath) *state {
-	return sharedCache.state(kp.mx, kp.stateKey(pp))
+	return globalState(kp.mx, kp.stateKey(pp))
 }
 
 func (kp *Importer) detectCycle(ks *state) error {
@@ -198,12 +214,14 @@ func (kp *Importer) importPkg(pp *gopkg.PkgPath) (*types.Package, error) {
 	ks.mu.Lock()
 	defer ks.mu.Unlock()
 
-	if ks.checked {
+	start := time.Now()
+	invAt := atomic.LoadInt64(&ks.invalidAt)
+	if ks.checkedAt > invAt {
 		return ks.result()
 	}
-	ks.reset()
-	ks.checked = true
 	ks.pkg, ks.err = kx.check(ks, pp)
+	ks.checkedAt = start.UnixNano()
+	atomic.CompareAndSwapInt64(&ks.invalidAt, invAt, 0)
 	return ks.result()
 }
 
@@ -279,6 +297,16 @@ func (kp *Importer) importCgoPkg(pp *gopkg.PkgPath, imports map[string]*types.Pa
 	return pkg, nil
 }
 
+func (kp *Importer) importFakePkg(ipath string) *types.Package {
+	switch ipath {
+	case "unsafe":
+		return types.Unsafe
+	case "C":
+		return pkgC
+	}
+	return nil
+}
+
 func (kp *Importer) loadImports(ks *state, bp *build.Package) (map[string]*types.Package, error) {
 	paths := mgutil.StrSet(bp.Imports)
 	if ks.Tests {
@@ -287,13 +315,14 @@ func (kp *Importer) loadImports(ks *state, bp *build.Package) (map[string]*types
 	imports := make(map[string]*types.Package, len(paths))
 	mu := sync.Mutex{}
 	doImport := func(ipath string) error {
-		pkg, err := kp.ImportFrom(ipath, bp.Dir, 0)
-		if err == nil {
-			mu.Lock()
-			imports[ipath] = pkg
-			mu.Unlock()
+		pkg, err := kp.importFrom(ipath, bp.Dir)
+		if err != nil {
+			return err
 		}
-		return err
+		mu.Lock()
+		imports[ipath] = pkg
+		mu.Unlock()
+		return nil
 	}
 	if kp.cfg.NoConcurrency || len(paths) < 2 {
 		for _, ipath := range paths {
@@ -340,6 +369,9 @@ func (kp *Importer) branch(ks *state, pp *gopkg.PkgPath) *Importer {
 	if pp.Mod != nil {
 		kx.mp = pp.Mod
 	}
+	if kp.ks != nil {
+		ks.importedBy(kp.ks)
+	}
 	// user settings don't apply when checking deps
 	kx.cfg.CheckFuncs = false
 	kx.cfg.CheckImports = false
@@ -352,6 +384,7 @@ func (kp *Importer) branch(ks *state, pp *gopkg.PkgPath) *Importer {
 
 func New(mx *mg.Ctx, cfg *Config) *Importer {
 	bld := goutil.BuildContext(mx)
+	bld.BuildTags = append(bld.BuildTags, "netgo", "osusergo")
 	kp := &Importer{
 		mx:   mx,
 		bld:  bld,

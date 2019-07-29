@@ -77,9 +77,6 @@ func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImp
 	s := mgc.newSrcImporter
 	b := mgc.newBinImporter
 	switch mgc.cfg().ImporterMode {
-	case KimPorter:
-		// kp doesn't yet support cgo, so fall back to the binary importer
-		return mgc.newKimPorter, b, true
 	case SrcImporterWithFallback:
 		return s, b, true
 	case SrcImporterOnly:
@@ -89,10 +86,6 @@ func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImp
 	default:
 		panic("unreachable")
 	}
-}
-
-func (mgc *marGocodeCtl) newKimPorter(mx *mg.Ctx, overlay types.ImporterFrom) types.ImporterFrom {
-	return kimporter.New(mx, nil)
 }
 
 // importPathByName returns an import path whose pkg's name is pkgName

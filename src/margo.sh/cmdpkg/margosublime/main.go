@@ -32,7 +32,7 @@ func Main() {
 		if err != nil {
 			return mgcli.Error("agent creation failed:", err)
 		}
-
+		mg.SetMemoryLimit(ag.Log, mg.DefaultMemoryLimit)
 		ag.Store.SetBaseConfig(sublime.DefaultConfig)
 		if margoExt != nil {
 			margoExt(ag.Args())

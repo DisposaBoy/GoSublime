@@ -10,6 +10,7 @@ import (
 	"margo.sh/golang/goutil"
 	"margo.sh/kimporter"
 	"margo.sh/mg"
+	"margo.sh/mgpf"
 	"margo.sh/mgutil"
 	"path/filepath"
 	"strings"
@@ -52,14 +53,14 @@ func (tc *TypeCheck) checker() {
 func (tc *TypeCheck) check(mx *mg.Ctx) {
 	defer mx.Begin(mg.Task{Title: "Go/TypeCheck"}).Done()
 
+	v := mx.View
 	start := time.Now()
 	defer func() {
-		if d := time.Since(start); d > 200*time.Millisecond {
-			mx.Log.Dbg.Println("T/C")
+		if d := time.Since(start); d > 100*time.Millisecond {
+			mx.Log.Dbg.Println("T/C", v.ShortFn(mx.Env), mgpf.D(d))
 		}
 	}()
 
-	v := mx.View
 	dir := v.Dir()
 	importPath := "_"
 	if p, err := gopkg.ImportDir(mx, dir); err == nil {
