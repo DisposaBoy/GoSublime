@@ -2,8 +2,8 @@ package mg
 
 import (
 	"bytes"
-	"fmt"
 	"margo.sh/htm"
+	"margo.sh/mgutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -249,22 +249,25 @@ func (iks *issueKeySupport) Reduce(mx *Ctx) *State {
 	return mx.State.AddIssues(issues...)
 }
 
-type issueStatusSupport struct{ ReducerType }
+type issueStatusSupport struct {
+	ReducerType
+	buf bytes.Buffer
+}
 
-func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
+func (re *issueStatusSupport) Reduce(mx *Ctx) *State {
 	if len(mx.Issues) == 0 {
 		return mx.State
 	}
 
 	type Cfg struct {
-		title  string
-		inView int
-		total  int
+		title string
+		loc   int
+		rem   int
 	}
 	cfgs := map[IssueTag]*Cfg{
-		Error:   {title: "Errors"},
+		Error:   {title: "Error"},
 		Warning: {title: "Warning"},
-		Notice:  {title: "Notices"},
+		Notice:  {title: "Notice"},
 	}
 
 	msg := ""
@@ -275,11 +278,11 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 			continue
 		}
 
-		cfg.total++
 		if !isu.InView(mx.View) {
+			cfg.rem++
 			continue
 		}
-		cfg.inView++
+		cfg.loc++
 
 		if isu.Message == "" || isu.Row != mx.View.Row {
 			continue
@@ -300,10 +303,20 @@ func (_ issueStatusSupport) Reduce(mx *Ctx) *State {
 	status := make([]string, 0, len(cfgs)+1)
 	for _, k := range []IssueTag{Error, Warning, Notice} {
 		cfg := cfgs[k]
-		if cfg.total == 0 {
+		if cfg.loc == 0 && cfg.rem == 0 {
 			continue
 		}
-		status = append(status, fmt.Sprintf("%d/%d %s", cfg.inView, cfg.total, cfg.title))
+		re.buf.Reset()
+		loc, rem := mgutil.PrimaryDigits, mgutil.SecondaryDigits
+		if cfg.loc == 0 {
+			loc, rem = rem, loc
+		}
+		re.buf.WriteString(cfg.title)
+		re.buf.WriteByte(' ')
+		loc.DrawInto(cfg.loc, &re.buf)
+		re.buf.WriteRune('ꞏ')
+		rem.DrawInto(cfg.rem, &re.buf)
+		status = append(status, re.buf.String())
 	}
 	st := mx.State.AddHUD(
 		htm.Span(nil,

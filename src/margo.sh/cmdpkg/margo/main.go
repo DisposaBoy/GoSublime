@@ -80,7 +80,6 @@ func startAction(cx *cli.Context) error {
 	mc := cmdMap[cx.Command.Name]
 	app := &mgcli.NewApp().App
 	app.Name = mc.Name
-	app.ExitErrHandler = func(_ *cli.Context, _ error) {}
 	newCtx := func(args []string) *cli.Context {
 		flags := flag.NewFlagSet(mc.Name, 0)
 		flags.Usage = func() {}

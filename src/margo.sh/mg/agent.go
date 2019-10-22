@@ -123,6 +123,7 @@ func (rs agentRes) finalize() interface{} {
 			State
 			Config        interface{}
 			ClientActions []actions.ClientData
+			Status        []string
 		}
 	}{}
 
@@ -134,6 +135,11 @@ func (rs agentRes) finalize() interface{} {
 	out.State.State = *rs.State
 	inSt := &out.State.State
 	outSt := &out.State
+
+	outSt.Status = make([]string, len(inSt.Status))
+	for i, s := range inSt.Status {
+		outSt.Status[i] = StatusPrefix + s
+	}
 
 	outSt.ClientActions = inSt.clientActions
 

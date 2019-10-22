@@ -168,7 +168,7 @@ func (g *Guru) wasmTags(mx *mg.Ctx) string {
 		return ""
 	}
 
-	pf := ParseFile(mx.Store, v.Filename(), src)
+	pf := ParseFile(mx, v.Filename(), src)
 	for _, spec := range pf.AstFile.Imports {
 		p := spec.Path
 		if p == nil {

@@ -1,6 +1,6 @@
 from . import _dbg
 from . import sh, gs, gsq
-from .margo_common import TokenCounter, OutputLogger, Chan
+from .margo_common import TokenCounter, OutputLogger, Chan, Mutex
 from .margo_state import State, make_props, actions
 from datetime import datetime
 import os
@@ -18,7 +18,7 @@ ipc_silent_exceptions = (
 if ipc_codec == 'msgpack':
 	from .vendor import umsgpack
 	ipc_loads = umsgpack.loads
-	ipc_dec = umsgpack.load
+	ipc_dec = lambda fp: umsgpack.load(fp, allow_invalid_utf8=True)
 	ipc_enc = umsgpack.dump
 	ipc_silent_exceptions += (
 		umsgpack.InsufficientDataException,
@@ -40,7 +40,7 @@ class MargoAgent(threading.Thread):
 		_, self.domain = mg.agent_tokens.next()
 		self.cookies = TokenCounter('%s,request' % self.domain)
 		self.proc = None
-		self.lock = threading.Lock()
+		self.lock = Mutex(name='margo.MargoAgent.lock')
 		self.out = OutputLogger(self.domain, parent=mg.out)
 		self.global_handlers = {}
 		self.req_handlers = {}
@@ -64,7 +64,7 @@ class MargoAgent(threading.Thread):
 		}
 		gs.mkdirp(self.data_dir)
 
-		self._acts_lock = threading.Lock()
+		self._acts_lock = Mutex(name='margo.MargoAgent._acts_lock')
 		self._acts = []
 
 	def __del__(self):
@@ -109,12 +109,13 @@ class MargoAgent(threading.Thread):
 
 		gs_gobin = gs.dist_path('bin')
 		mg_exe = 'margo.sh'
-		install_cmd = ['go', 'install', '-v', mg_exe]
+		install_cmd = ['go', 'install', '-v','-x', mg_exe]
 		cmd = sh.Command(install_cmd)
 		cmd.env = self._env({
 			'GOPATH': self._default_env['MARGO_AGENT_GOPATH'],
 			'GO111MODULE': self._default_env['MARGO_AGENT_GO111MODULE'],
 			'GOBIN': gs_gobin,
+			'MARGO_AGENT_GOBIN': gs_gobin,
 		})
 		cr = cmd.run()
 		for v in (cr.out, cr.err, cr.exc):
@@ -341,7 +342,7 @@ class AgentReq(object):
 		self.cb = cb
 		self.props = make_props(view=view)
 		self.rs = DEFAULT_RESPONSE
-		self.lock = threading.Lock()
+		self.lock = Mutex(name='margo.AgentReq.lock')
 		self.ev = threading.Event()
 		self.view = view
 

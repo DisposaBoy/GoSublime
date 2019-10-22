@@ -2,6 +2,7 @@ package golang
 
 import (
 	"go/ast"
+	"margo.sh/golang/goutil"
 	"margo.sh/mg"
 	"path/filepath"
 	"sort"
@@ -23,7 +24,7 @@ type TestCmds struct {
 }
 
 func (tc *TestCmds) RCond(mx *mg.Ctx) bool {
-	return mx.LangIs(mg.Go)
+	return mx.LangIs(goutil.Langs...)
 }
 
 func (tc *TestCmds) Reduce(mx *mg.Ctx) *mg.State {
@@ -139,7 +140,7 @@ func (tc *TestCmds) testArgs(pat string) []string {
 }
 
 func (tc *TestCmds) process(mx *mg.Ctx, cmds map[string]mg.UserCmdList, fn string) {
-	for _, d := range ParseFile(mx.Store, fn, nil).AstFile.Decls {
+	for _, d := range ParseFile(mx, fn, nil).AstFile.Decls {
 		fun, ok := d.(*ast.FuncDecl)
 		if ok && fun.Name != nil {
 			tc.processIdent(cmds, fun.Name)
@@ -164,6 +165,9 @@ func (tc *TestCmds) splitName(nm string) (name, pfx, sfx string, ok bool) {
 		return "", "", "", false
 	}
 	for _, pfx := range []string{"Test", "Benchmark", "Example"} {
+		if nm == pfx {
+			return nm, nm, "", true
+		}
 		sfx := strings.TrimPrefix(nm, pfx)
 		if sfx != nm {
 			r, _ := utf8.DecodeRuneInString(sfx)

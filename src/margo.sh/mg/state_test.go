@@ -1,46 +1,10 @@
 package mg
 
 import (
-	"io"
-	"margo.sh/mgutil"
 	"reflect"
 	"testing"
 	"time"
 )
-
-// NewTestingAgent creates a new agent for testing
-//
-// The agent config used is equivalent to:
-// * Codec: DefaultCodec
-// * Stdin: stdin or &mgutil.IOWrapper{} if nil
-// * Stdout: stdout or &mgutil.IOWrapper{} if nil
-// * Stderr: &mgutil.IOWrapper{}
-func NewTestingAgent(stdout io.WriteCloser, stdin io.ReadCloser) *Agent {
-	if stdout == nil {
-		stdout = &mgutil.IOWrapper{}
-	}
-	if stdin == nil {
-		stdin = &mgutil.IOWrapper{}
-	}
-	ag, _ := NewAgent(AgentConfig{
-		Stdout: stdout,
-		Stdin:  stdin,
-		Stderr: &mgutil.IOWrapper{},
-	})
-	return ag
-}
-
-// NewTestingStore creates a new Store for testing
-// It's equivalent to NewTestingAgent().Store
-func NewTestingStore() *Store {
-	return NewTestingAgent(nil, nil).Store
-}
-
-// NewTestingCtx creates a new Ctx for testing
-// It's equivalent to NewTestingStore().NewCtx()
-func NewTestingCtx(act Action) *Ctx {
-	return NewTestingStore().NewCtx(act)
-}
 
 func checkNonNil(v interface{}, handler func(sel string)) {
 	checkNonNilVal(reflect.ValueOf(v), "", handler)
@@ -75,7 +39,7 @@ func checkNonNilVal(v reflect.Value, sel string, handler func(sel string)) {
 // TestNonNilFields checks that NewAgent() doesn't return a Agent, Store,
 // State, Ctx or View that has nil fields that are not tagged `mg.Nillable:"true"`
 func TestNewAgentNillableFields(t *testing.T) {
-	ag := NewTestingAgent(nil, nil)
+	ag := NewTestingAgent(nil, nil, nil)
 	mx := ag.Store.NewCtx(nil)
 	cases := []interface{}{
 		ag,

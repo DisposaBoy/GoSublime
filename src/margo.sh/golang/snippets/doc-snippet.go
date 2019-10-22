@@ -3,7 +3,9 @@ package snippets
 import (
 	"go/ast"
 	"margo.sh/golang/cursor"
+	"margo.sh/golang/goutil"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	yotsuba "margo.sh/why_would_you_make_yotsuba_cry"
 )
 
@@ -61,10 +63,13 @@ func DocSnippet(cx *cursor.CurCtx) []mg.Completion {
 	}
 	addNames(cx.Doc.Node)
 
-	pfx := " "
+	pfx := ""
 	// we use View.Pos because cx.Pos might have been changed
-	if i := cx.View.Pos - 1; 0 <= i && i < len(cx.Src) && (cx.Src[i] == ' ' || cx.Src[i] == '.') {
-		pfx = ""
+	if i := cx.View.Pos; 0 <= i && i < len(cx.Src) {
+		i = mgutil.RepositionLeft(cx.Src, i, goutil.IsLetter) - 1
+		if r := cx.Src[i]; r != ' ' && r != '.' {
+			pfx = " "
+		}
 	}
 	sfx := " "
 	if i := cx.View.Pos; 0 <= i && i < len(cx.Src) && cx.Src[i] == ' ' {

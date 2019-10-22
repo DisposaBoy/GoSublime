@@ -26,6 +26,7 @@ var (
 	AgentBuildEnv = map[string]string{
 		"GOPATH":      AgentBuildContext.GOPATH,
 		"GO111MODULE": os.Getenv("MARGO_AGENT_GO111MODULE"),
+		"GOBIN":       os.Getenv("MARGO_AGENT_GOBIN"),
 	}
 )
 

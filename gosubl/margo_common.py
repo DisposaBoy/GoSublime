@@ -5,6 +5,23 @@ import threading
 import sublime
 import time
 
+class Mutex(object):
+	def __init__(self, *, name=''):
+		self.name = name
+		self.lck = threading.Lock()
+
+	def __enter__(self):
+		self.lock()
+
+	def __exit__(self, type, value, traceback):
+		self.unlock()
+
+	def lock(self):
+		self.lck.acquire(True)
+
+	def unlock(self):
+		self.lck.release()
+
 class OutputLogger(object):
 	def __init__(self, domain, parent=None):
 		self.domain = domain
@@ -39,7 +56,7 @@ class TokenCounter(object):
 
 class Chan(object):
 	def __init__(self, *, zero=None, discard=None):
-		self.lock = threading.Lock()
+		self.lock = Mutex(name='margo.Chan')
 		self.ev = threading.Event()
 		self.dq = deque([], maxlen=discard)
 		self.closed = False

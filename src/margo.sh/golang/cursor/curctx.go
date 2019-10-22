@@ -48,7 +48,7 @@ type CurCtx struct {
 	Node       ast.Node
 
 	printer struct {
-		sync.Mutex
+		*sync.Mutex
 		printer.Config
 		fset *token.FileSet
 		buf  *bytes.Buffer
@@ -58,7 +58,7 @@ type CurCtx struct {
 func NewViewCurCtx(mx *mg.Ctx) *CurCtx {
 	type Key struct{ *mg.View }
 	k := Key{mx.View}
-	if cx, ok := mx.Get(k).(*CurCtx); ok {
+	if cx := cachedCx(mx, k); cx != nil {
 		return cx
 	}
 
@@ -74,7 +74,7 @@ func NewCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
 		pos  int
 	}
 	key := Key{mg.SrcHash(src), pos}
-	if cx, ok := mx.Get(key).(*CurCtx); ok {
+	if cx := cachedCx(mx, key); cx != nil {
 		return cx
 	}
 
@@ -83,7 +83,20 @@ func NewCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
 	return cx
 }
 
+func cachedCx(mx *mg.Ctx, k interface{}) *CurCtx {
+	cx, _ := mx.Get(k).(*CurCtx)
+	if cx == nil {
+		return nil
+	}
+	// make sure not to re-use old State and other fields of Ctx that might've changed
+	x := *cx
+	x.Ctx = mx
+	return &x
+}
+
 func newCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
+	defer mx.Profile.Push("NewCurCtx").Pop()
+
 	pos = mgutil.ClampPos(src, pos)
 
 	// if we're at the end of the line, move the cursor onto the last thing on the line
@@ -104,6 +117,7 @@ func newCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
 		Src:  src,
 		Pos:  pos,
 	}
+	cx.printer.Mutex = &sync.Mutex{}
 	cx.printer.fset = token.NewFileSet()
 	cx.printer.buf = &bytes.Buffer{}
 	cx.init(mx)
@@ -306,7 +320,9 @@ func (cx *CurCtx) append(n ast.Node) {
 	cx.Nodes = append(cx.Nodes, n)
 }
 
-func (cx *CurCtx) init(kvs mg.KVStore) {
+func (cx *CurCtx) init(mx *mg.Ctx) {
+	defer mx.Profile.Push("CurCtx.init").Pop()
+
 	src, pos := cx.Src, cx.Pos
 	astFileIsValid := func(af *ast.File) bool {
 		return af.Package.IsValid() &&
@@ -318,12 +334,12 @@ func (cx *CurCtx) init(kvs mg.KVStore) {
 		return bytes.Contains(src, []byte("//")) || bytes.Contains(src, []byte("/*"))
 	}
 
-	pf := goutil.ParseFile(kvs, "", src)
+	pf := goutil.ParseFile(mx, "", src)
 	if !astFileIsValid(pf.AstFile) && srcHasComments() {
 		// we don't want any declaration errors esp. about the package name `_`
 		// we don't parse with this mode by default to increase the chance of caching
 		s := append(src[:len(src):len(src)], goutil.NilPkgSrc...)
-		pf = goutil.ParseFileWithMode(kvs, "", s, parser.ParseComments)
+		pf = goutil.ParseFileWithMode(mx, "", s, parser.ParseComments)
 	}
 
 	af := pf.AstFile

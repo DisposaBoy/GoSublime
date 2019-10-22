@@ -70,11 +70,19 @@ func (rs *restartSupport) mgPkg(mx *Ctx) *build.Package {
 		return nil
 	}
 
+	src, _ := mx.View.ReadAll()
+	if bytes.Contains(src, []byte(`//margo:no-restart`)) {
+		return nil
+	}
+
 	pkg, _ := youtsuba.AgentBuildContext.ImportDir(mx.View.Dir(), 0)
 	if pkg == nil || pkg.ImportPath == "" {
 		return nil
 	}
 	imp := pkg.ImportPath + "/"
+	if strings.Contains(imp, "/cmd/") {
+		return nil
+	}
 	if !strings.HasPrefix(imp, "margo/") && !strings.HasPrefix(imp, "margo.sh/") {
 		return nil
 	}

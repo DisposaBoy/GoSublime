@@ -8,7 +8,7 @@ contexts:
   main:
     - match: '([\w.-]+://\S+)'
       scope: path.9o storage.type.class.9o
-    - match: '((?:(?:[\w.-]+:|[.]*)?[\\/]\S+?|(\S+))(?:[.][^\d][-~\w]*)+(?:[:]\d+){0,2})'
+    - match: '((?:(?:[\w.-]+:|[.]*)?[\\/][^\s"''(){}`\]]+?|([^\s"''(){}`\]]+))(?:[.][^\d\s][-~\w]*)+(?:(?:[:]\d+){1,2}|[\s]))'
       scope: path.9o storage.type.class.9o
     - match: '#'
       push:

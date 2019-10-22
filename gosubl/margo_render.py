@@ -7,9 +7,9 @@ import sublime
 
 
 STATUS_KEY = '#mg.Status'
-STATUS_PFX = '  '
-STATUS_SFX = '  '
-STATUS_SEP = '    '
+STATUS_PFX = ' '
+STATUS_SFX = ' '
+STATUS_SEP = '  '
 
 def render(*, mg, view, state, status):
 	def cb():
