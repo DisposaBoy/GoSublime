@@ -10,7 +10,7 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
-## 19..
+## 19.10.22
 
 - API BREAKAGE:
   ParseWithMode and ParseWithMode now takes a `*mg.Ctx` instead of a `mg.KVStore`.
@@ -18,7 +18,7 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 - Add experimental support for auto-completion and type-checking in go modules.
 
 - Add experimental reducer `&golang.TypeCheck{}`.
-  It's linter that does a full type-check as you type (even in unsaved files).
+  It's a linter that does a full type-check as you type (even in unsaved files).
   It can be thought of as a replacement for the `gotype` binary of old.
 
   NOTE: This is purely an experiment used primarily for testing the package importer

@@ -74,4 +74,4 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 <br>
 
-<a href="https://margo.sh/sponsors/0" target="_blank"><img src="https://margo.sh/sponsors/0.svg"></a>
+<a href="https://margo.sh/sponsors/0" target="_blank"><img src="https://margo.sh/sponsors/0.svg?2"></a>

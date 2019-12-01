@@ -11,7 +11,7 @@ contexts:
       scope: keyword.operator.pipe.gotemplate
     - match: '[.$][\w]*'
       scope: variable.other.gotemplate
-    - match: \b(if|else|range|template|with|end|nil|define)\b
+    - match: \b(if|else|range|template|with|end|nil|define|block)\b
       scope: keyword.control.gotemplate
     - match: \b(and|call|html|index|js|len|not|or|print|printf|println|urlquery|eq|ne|lt|le|gt|ge)\b
       scope: support.function.builtin.gotemplate

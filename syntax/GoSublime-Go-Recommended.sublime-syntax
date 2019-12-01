@@ -596,7 +596,7 @@ contexts:
             [,;:_]?                                     # separator character (AltiVec)
             ((-?\d+)|(\[\d+\])?\*)?                     # minimum field width
             (\.((-?\d+)|(\[\d+\])?\*)?)?                # precision
-            [diouxXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]     # conversion type
+            [diouxwXDOUeEfFgGaAcCsSpqnvtTbyYhHmMzZ%]    # conversion type
       scope: constant.other.placeholder.go
     - match: "%"
       scope: invalid.illegal.placeholder.go
