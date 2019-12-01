@@ -124,6 +124,7 @@ func (rs agentRes) finalize() interface{} {
 			Config        interface{}
 			ClientActions []actions.ClientData
 			Status        []string
+			Issues        IssueSet
 		}
 	}{}
 
@@ -135,6 +136,8 @@ func (rs agentRes) finalize() interface{} {
 	out.State.State = *rs.State
 	inSt := &out.State.State
 	outSt := &out.State
+
+	outSt.Issues = outSt.Issues.merge(outSt.View, inSt.Issues...)
 
 	outSt.Status = make([]string, len(inSt.Status))
 	for i, s := range inSt.Status {

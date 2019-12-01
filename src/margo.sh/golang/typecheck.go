@@ -102,10 +102,9 @@ func (tc *TypeCheck) check(mx *mg.Ctx) {
 
 func (tc *TypeCheck) parseFiles(mx *mg.Ctx) (*token.FileSet, []*ast.File, error) {
 	v := mx.View
-	fn := v.Filename()
 	src, _ := v.ReadAll()
 	if v.Path == "" {
-		pf := goutil.ParseFile(mx, fn, src)
+		pf := goutil.ParseFile(mx, v.Name, src)
 		files := []*ast.File{pf.AstFile}
 		if files[0] == nil {
 			files = nil
@@ -121,6 +120,7 @@ func (tc *TypeCheck) parseFiles(mx *mg.Ctx) (*token.FileSet, []*ast.File, error)
 	}
 	fset := token.NewFileSet()
 	// TODO: caching...
+	fn := v.Filename()
 	af, err := parser.ParseFile(fset, fn, src, parser.ParseComments)
 	if err != nil {
 		return nil, nil, err
