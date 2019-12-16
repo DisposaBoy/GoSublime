@@ -65,16 +65,6 @@ func (rs *restartSupport) loop() {
 }
 
 func (rs *restartSupport) mgPkg(mx *Ctx) *build.Package {
-	v := mx.View
-	if !strings.HasSuffix(v.Path, ".go") || strings.HasSuffix(v.Path, "_test.go") {
-		return nil
-	}
-
-	src, _ := mx.View.ReadAll()
-	if bytes.Contains(src, []byte(`//margo:no-restart`)) {
-		return nil
-	}
-
 	pkg, _ := youtsuba.AgentBuildContext.ImportDir(mx.View.Dir(), 0)
 	if pkg == nil || pkg.ImportPath == "" {
 		return nil
@@ -101,13 +91,23 @@ func (rs *restartSupport) onInit(mx *Ctx) {
 }
 
 func (rs *restartSupport) onSave(mx *Ctx) {
+	v := mx.View
+	if !strings.HasSuffix(v.Path, ".go") || strings.HasSuffix(v.Path, "_test.go") {
+		return
+	}
 	pkg := rs.mgPkg(mx)
 	if pkg == nil {
 		return
 	}
-
 	res := rsIssues{issues: rs.slowLint(mx, pkg)}
 	mx.Store.Dispatch(res)
+	if mx.Env.Get("MARGO_NO_RESTART", "") == "1" {
+		return
+	}
+	src, _ := mx.View.ReadAll()
+	if s := []byte(`//margo:no-restart`); bytes.Contains(src, s) {
+		return
+	}
 	if len(res.issues) == 0 {
 		mx.Log.Println(pkg.ImportPath, "saved with no issues, restarting")
 		mx.Store.Dispatch(Restart{})

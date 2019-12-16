@@ -2,6 +2,7 @@ package mg
 
 import (
 	"bytes"
+	"fmt"
 	"margo.sh/htm"
 	"margo.sh/mgutil"
 	"os"
@@ -77,6 +78,25 @@ type Issue struct {
 	Tag     IssueTag
 	Label   string
 	Message string
+}
+
+func (isu Issue) Error() string {
+	msg := isu.Message
+	pfx := ""
+	if isu.Tag != "" {
+		pfx = "[" + string(isu.Tag) + "]" + pfx
+	}
+	if isu.Label != "" {
+		pfx = "[" + isu.Label + "]" + pfx
+	}
+	if pfx != "" {
+		pfx = pfx + ": "
+	}
+	fn := isu.Path
+	if fn == "" {
+		fn = isu.Name
+	}
+	return fmt.Sprintf("%s:%d:%d: %s%s", fn, isu.Row+1, isu.Col+1, pfx, msg)
 }
 
 func (isu *Issue) finalize(view *View) Issue {

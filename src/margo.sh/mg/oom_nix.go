@@ -6,10 +6,6 @@ import (
 	"syscall"
 )
 
-const (
-	DefaultMemoryLimit = 2 << 30
-)
-
 func SetMemoryLimit(logs interface {
 	Printf(string, ...interface{})
 }, b uint64) {

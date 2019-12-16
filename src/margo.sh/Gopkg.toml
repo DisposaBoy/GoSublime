@@ -13,3 +13,7 @@ required = [
 [[constraint]]
   name = "github.com/rogpeppe/go-internal"
   version = "1.3.0"
+
+[[override]]
+  name = "github.com/russross/blackfriday"
+  version = "1.5.2"

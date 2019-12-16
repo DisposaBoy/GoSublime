@@ -12,7 +12,7 @@ var (
 	enabled = &mgutil.AtomicBool{}
 
 	DefaultPrintOpts = PrintOpts{
-		Indent: "\t",
+		Indent: "  ",
 	}
 )
 

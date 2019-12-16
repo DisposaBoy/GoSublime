@@ -2,6 +2,7 @@ package mg
 
 import (
 	"margo.sh/mg/actions"
+	"reflect"
 )
 
 var (
@@ -103,3 +104,66 @@ type ViewSaved struct{ ActionType }
 type ViewLoaded struct{ ActionType }
 
 type unmount struct{ ActionType }
+
+type ctxActs struct {
+	l []Action
+	i int
+}
+
+func (a *ctxActs) Len() int {
+	return len(a.List())
+}
+
+func (a *ctxActs) Index() int {
+	if a.Len() == 0 {
+		return -1
+	}
+	return a.i
+}
+
+func (a *ctxActs) Current() Action {
+	i := a.Index()
+	if i < 0 || i >= a.Len() {
+		return nil
+	}
+	return a.l[i]
+}
+
+func (a *ctxActs) First() bool {
+	return a.Index() == 0
+}
+
+func (a *ctxActs) Last() bool {
+	return a.Index() == a.Len()-1
+}
+
+func (a *ctxActs) List() []Action {
+	if a == nil {
+		return nil
+	}
+	return a.l
+}
+
+func (a *ctxActs) Include(actions ...Action) bool {
+	for _, p := range a.List() {
+		pt := reflect.TypeOf(p)
+		for _, q := range actions {
+			if reflect.TypeOf(q) == pt {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (a *ctxActs) Set(actPtr interface{}) bool {
+	p := reflect.ValueOf(actPtr).Elem()
+	for _, v := range a.List() {
+		q := reflect.ValueOf(v)
+		if p.Type() == q.Type() {
+			p.Set(q)
+			return true
+		}
+	}
+	return false
+}
