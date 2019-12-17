@@ -82,6 +82,10 @@ func (fs *FS) ReadMemo(path string, k memo.K, new func() memo.K) memo.V {
 	return fs.Poke(path).ReadMemo(k, new)
 }
 
+func (fs *FS) PeekMemo(path string, k memo.K) memo.V {
+	return fs.Peek(path).PeekMemo(k)
+}
+
 func (fs *FS) Scan(path string, so ScanOptions) {
 	so.scratch = make([]byte, godirwalk.DefaultScratchBufferSize)
 	fs.Poke(path).scan(path, &so, 0)
@@ -93,7 +97,7 @@ type Node struct {
 
 	mu    sync.Mutex
 	clPtr unsafe.Pointer
-	mt    *meta
+	mtPtr unsafe.Pointer
 }
 
 func (nd *Node) String() string {
@@ -157,7 +161,7 @@ func (nd *Node) IsDescendant(ancestor *Node) bool {
 
 func (nd *Node) scanEnts(so *ScanOptions, dl []*godirwalk.Dirent) (dirs []*Node) {
 	finalize := func(nd *Node, de *godirwalk.Dirent) {
-		mt := nd.meta()
+		mt := nd.meta(true)
 		mt.resetInfo(de.ModeType(), time.Time{})
 		if so.Dirs != nil && mt.fmode.IsDir() {
 			dirs = append(dirs, nd)
@@ -299,11 +303,19 @@ func (nd *Node) mkNode(name string) *Node {
 	return &Node{parent: nd, name: name}
 }
 
-func (nd *Node) meta() *meta {
-	if nd.mt == nil {
-		nd.mt = &meta{}
+func (nd *Node) meta(poke bool) *meta {
+	if nd == nil {
+		return nil
 	}
-	return nd.mt
+	mt := (*meta)(atomic.LoadPointer(&nd.mtPtr))
+	if mt != nil || !poke {
+		return mt
+	}
+	mt = &meta{}
+	if atomic.CompareAndSwapPointer(&nd.mtPtr, unsafe.Pointer(nil), unsafe.Pointer(mt)) {
+		return mt
+	}
+	return (*meta)(atomic.LoadPointer(&nd.mtPtr))
 }
 
 func (nd *Node) Ls() *NodeList {
@@ -368,6 +380,17 @@ func (nd *Node) print(w io.Writer, filter func(*Node) string, indent string) {
 	}
 }
 
+func (nd *Node) PeekMemo(k memo.K) memo.V {
+	if nd == nil {
+		return nil
+	}
+
+	nd.mu.Lock()
+	defer nd.mu.Unlock()
+
+	return nd.meta(false).memo(false).Peek(k)
+}
+
 func (nd *Node) Memo() (*memo.M, error) {
 	if nd == nil {
 		return nil, os.ErrNotExist
@@ -377,14 +400,14 @@ func (nd *Node) Memo() (*memo.M, error) {
 	defer nd.mu.Unlock()
 
 	if nd.parent.IsRoot() && IsViewPath(nd.name) {
-		return nd.meta().memo(), nil
+		return nd.meta(true).memo(true), nil
 	}
 
 	mt, err := nd.sync()
 	if err != nil {
 		return nil, err
 	}
-	return mt.memo(), nil
+	return mt.memo(true), nil
 }
 
 func (nd *Node) ReadMemo(k memo.K, new func() memo.V) memo.V {
@@ -400,7 +423,7 @@ func (nd *Node) Invalidate() {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
 
-	nd.mt.invalidate()
+	nd.meta(false).invalidate()
 }
 
 func (nd *Node) Stat() (os.FileInfo, error) {
@@ -423,7 +446,7 @@ func (nd *Node) Stat() (os.FileInfo, error) {
 }
 
 func (nd *Node) sync() (*meta, error) {
-	mt := nd.meta()
+	mt := nd.meta(true)
 	if mt.ok() {
 		return mt, nil
 	}
@@ -458,9 +481,7 @@ func (nd *Node) resetParent() {
 	}
 	ts := tsNow()
 	async(func() {
-		p.mu.Lock()
-		defer p.mu.Unlock()
-		p.mt.resetMemoAfter(ts)
+		p.meta(false).resetMemoAfter(ts)
 	})
 }
 

@@ -2,7 +2,11 @@ package memo
 
 import (
 	"sync"
-	"time"
+	"sync/atomic"
+)
+
+var (
+	invAtState int64
 )
 
 type K = interface{}
@@ -10,7 +14,11 @@ type K = interface{}
 type V = interface{}
 
 type Sticky interface {
-	InvalidateMemo(invalidatedAt time.Time)
+	InvalidateMemo(invAt int64)
+}
+
+func InvAt() int64 {
+	return atomic.AddInt64(&invAtState, 1)
 }
 
 type memo struct {
@@ -20,6 +28,9 @@ type memo struct {
 }
 
 func (m *memo) value() V {
+	if m == nil {
+		return nil
+	}
 	m.Lock()
 	defer m.Unlock()
 
@@ -50,6 +61,18 @@ func (m *M) memo(k K) *memo {
 		m.ml = append(m.ml, p)
 	}
 	return p
+}
+
+func (m *M) Peek(k K) V {
+	if m == nil {
+		return nil
+	}
+
+	m.mu.Lock()
+	_, p := m.index(k)
+	m.mu.Unlock()
+
+	return p.value()
 }
 
 func (m *M) Read(k K, new func() V) V {
@@ -94,8 +117,14 @@ func (m *M) Clear() {
 	if m == nil {
 		return
 	}
+	invAt := InvAt()
+	stkl := m.clear()
+	for _, stk := range stkl {
+		stk.InvalidateMemo(invAt)
+	}
+}
 
-	invAt := time.Now()
+func (m *M) clear() []Sticky {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -108,14 +137,7 @@ func (m *M) Clear() {
 			stkl = append(stkl, stk)
 		}
 	}
-	if len(stkl) == 0 {
-		return
-	}
-	go func() {
-		for _, stk := range stkl {
-			stk.InvalidateMemo(invAt)
-		}
-	}()
+	return stkl
 }
 
 func (m *M) Values() map[K]V {
