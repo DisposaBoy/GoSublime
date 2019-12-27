@@ -141,6 +141,14 @@ func (p *Profile) Pop() {
 	})
 }
 
+func (p *Profile) Start(name string) *Sample {
+	s := &Sample{t: time.Now(), p: p}
+	p.update(func() {
+		s.n = p.stack[len(p.stack)-1].child(name)
+	})
+	return s
+}
+
 func (p *Profile) Sample(name string, d time.Duration) {
 	p.update(func() {
 		n := p.stack[len(p.stack)-1].child(name)
@@ -188,4 +196,17 @@ func NewProfile(name string) *Profile {
 
 func Since(t time.Time) Dur {
 	return D(time.Since(t))
+}
+
+type Sample struct {
+	t time.Time
+	p *Profile
+	n *Node
+}
+
+func (s *Sample) Stop() {
+	s.p.update(func() {
+		s.n.Duration += time.Since(s.t)
+		s.n.Samples++
+	})
 }

@@ -6,7 +6,6 @@ import (
 	"go/scanner"
 	"go/token"
 	"go/types"
-	"margo.sh/golang/gopkg"
 	"margo.sh/golang/goutil"
 	"margo.sh/kimporter"
 	"margo.sh/mg"
@@ -52,36 +51,43 @@ func (tc *TypeCheck) checker() {
 
 func (tc *TypeCheck) check(mx *mg.Ctx) {
 	defer mx.Begin(mg.Task{Title: "Go/TypeCheck"}).Done()
-
-	v := mx.View
-	start := time.Now()
+	pf := mgpf.NewProfile("Go/TypeCheck")
 	defer func() {
-		if d := time.Since(start); d > 100*time.Millisecond {
-			mx.Log.Dbg.Println("T/C", v.ShortFn(mx.Env), mgpf.D(d))
+		if pf.Dur().Duration < 100*time.Millisecond {
+			return
 		}
+		mx.Profile.Fprint(mx.Log.Dbg.Writer(), &mgpf.PrintOpts{
+			MinDuration: 10 * time.Millisecond,
+		})
 	}()
+	mx = mx.Copy(func(mx *mg.Ctx) { mx.Profile = pf })
+	v := mx.View
 
-	dir := v.Dir()
-	importPath := "_"
-	if p, err := gopkg.ImportDir(mx, dir); err == nil {
-		importPath = p.ImportPath
-	}
-	kp := kimporter.New(mx, nil)
-	fset, files, err := tc.parseFiles(mx)
-	issues := tc.errToIssues(err)
-	if err == nil && len(files) != 0 {
-		cfg := types.Config{
-			FakeImportC: true,
-			Error: func(err error) {
-				issues = append(issues, tc.errToIssues(err)...)
-			},
-			Importer: kp,
+	src, _ := v.ReadAll()
+	issues := []mg.Issue{}
+	if v.Path == "" {
+		pf := goutil.ParseFile(mx, v.Name, src)
+		issues = append(issues, tc.errToIssues(v, pf.Error)...)
+		if pf.Error == nil {
+			tcfg := types.Config{
+				IgnoreFuncBodies: true,
+				FakeImportC:      true,
+				Error: func(err error) {
+					issues = append(issues, tc.errToIssues(v, err)...)
+				},
+				Importer: kimporter.New(mx, nil),
+			}
+			tcfg.Check("_", pf.Fset, []*ast.File{pf.AstFile}, nil)
 		}
-		_, err = cfg.Check(importPath, fset, files, nil)
-		issues = append(issues, tc.errToIssues(err)...)
-	}
-	if err != nil && len(issues) == 0 {
-		issues = append(issues, mg.Issue{Message: err.Error()})
+	} else {
+		kp := kimporter.New(mx, &kimporter.Config{
+			CheckFuncs:   true,
+			CheckImports: true,
+			Tests:        strings.HasSuffix(v.Filename(), "_test.go"),
+			SrcMap:       map[string][]byte{v.Filename(): src},
+		})
+		_, err := kp.ImportFrom(".", v.Dir(), 0)
+		issues = append(issues, tc.errToIssues(v, err)...)
 	}
 	for i, isu := range issues {
 		if isu.Path == "" {
@@ -144,13 +150,16 @@ func (tc *TypeCheck) parseFiles(mx *mg.Ctx) (*token.FileSet, []*ast.File, error)
 	return fset, files, nil
 }
 
-func (tc *TypeCheck) errToIssues(err error) mg.IssueSet {
+func (tc *TypeCheck) errToIssues(v *mg.View, err error) mg.IssueSet {
 	var issues mg.IssueSet
 	switch e := err.(type) {
+	case nil:
 	case scanner.ErrorList:
 		for _, err := range e {
-			issues = append(issues, tc.errToIssues(err)...)
+			issues = append(issues, tc.errToIssues(v, err)...)
 		}
+	case mg.Issue:
+		issues = append(issues, e)
 	case scanner.Error:
 		issues = append(issues, mg.Issue{
 			Row:     e.Pos.Line - 1,
@@ -164,6 +173,11 @@ func (tc *TypeCheck) errToIssues(err error) mg.IssueSet {
 			Row:     p.Line - 1,
 			Col:     p.Column - 1,
 			Message: e.Msg,
+		})
+	default:
+		issues = append(issues, mg.Issue{
+			Name:    v.Name,
+			Message: err.Error(),
 		})
 	}
 	return issues

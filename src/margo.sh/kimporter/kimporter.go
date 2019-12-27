@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"go/ast"
 	"go/build"
 	"go/token"
 	"go/types"
@@ -20,10 +21,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
-	"time"
 )
 
 var (
@@ -45,7 +45,7 @@ type stateKey struct {
 	GOOS         string
 	GOROOT       string
 	GOPATH       string
-	SrcMapHash   string
+	NoHash       bool
 }
 
 func globalState(mx *mg.Ctx, k stateKey) *state {
@@ -57,20 +57,20 @@ func globalState(mx *mg.Ctx, k stateKey) *state {
 
 type state struct {
 	stateKey
-	invalidAt int64
-	imby      struct {
+	chkAt mgutil.AtomicInt
+	invAt mgutil.AtomicInt
+	imby  struct {
 		sync.Mutex
 		l []*state
 	}
-
-	mu        sync.Mutex
-	err       error
-	pkg       *types.Package
-	checkedAt int64
+	mu   sync.Mutex
+	err  error
+	pkg  *types.Package
+	hash string
 }
 
 func (ks *state) invalidate(invAt int64) {
-	atomic.StoreInt64(&ks.invalidAt, invAt)
+	ks.invAt.Set(invAt)
 	ks.imby.Lock()
 	l := ks.imby.l
 	ks.imby.Unlock()
@@ -79,8 +79,12 @@ func (ks *state) invalidate(invAt int64) {
 	}
 }
 
-func (ks *state) InvalidateMemo(invAt time.Time) {
-	ks.invalidate(invAt.UnixNano())
+func (ks *state) InvalidateMemo(invAt int64) {
+	ks.invalidate(invAt)
+}
+
+func (ks *stateKey) targets(pp *gopkg.PkgPath) bool {
+	return ks.ImportPath == pp.ImportPath || ks.Dir == pp.Dir
 }
 
 func (ks *state) importedBy(p *state) {
@@ -95,10 +99,12 @@ func (ks *state) importedBy(p *state) {
 	ks.imby.l = append(ks.imby.l[:len(ks.imby.l):len(ks.imby.l)], p)
 }
 
+func (ks *state) valid(hash string) bool {
+	return ks.chkAt.N() > ks.invAt.N() && (ks.NoHash || ks.hash == hash)
+}
+
 func (ks *state) result() (*types.Package, error) {
 	switch {
-	case ks.checkedAt == 0:
-		return nil, fmt.Errorf("import cycle via %s", ks.ImportPath)
 	case ks.err != nil:
 		return nil, ks.err
 	case !ks.pkg.Complete():
@@ -161,7 +167,9 @@ func (kp *Importer) importFrom(ipath, srcDir string) (*types.Package, error) {
 }
 
 func (kp *Importer) findPkg(ipath, srcDir string) (*gopkg.PkgPath, error) {
-	return kp.mp.FindPkg(kp.mx, ipath, srcDir)
+	kp.mx.Profile.Push(`Kim-Porter: findPkg(` + ipath + `)`).Pop()
+	pp, err := kp.mp.FindPkg(kp.mx, ipath, srcDir)
+	return pp, err
 }
 
 func (kp *Importer) stateKey(pp *gopkg.PkgPath) stateKey {
@@ -176,8 +184,8 @@ func (kp *Importer) stateKey(pp *gopkg.PkgPath) stateKey {
 		GOOS:         kp.bld.GOOS,
 		GOARCH:       kp.bld.GOARCH,
 		GOROOT:       kp.bld.GOROOT,
-		SrcMapHash:   kp.hash,
 		GOPATH:       strings.Join(mgutil.PathList(kp.bld.GOPATH), string(filepath.ListSeparator)),
+		NoHash:       kp.hash == "",
 	}
 }
 
@@ -185,43 +193,47 @@ func (kp *Importer) state(pp *gopkg.PkgPath) *state {
 	return globalState(kp.mx, kp.stateKey(pp))
 }
 
-func (kp *Importer) detectCycle(ks *state) error {
-	l := []string{ks.ImportPath}
-	for p := kp.par; p != nil; p = p.par {
-		if p.ks == nil {
+func (kp *Importer) detectCycle(pp *gopkg.PkgPath) error {
+	defer kp.mx.Profile.Start(`Kim-Porter: detectCycle()`).Stop()
+
+	for p := kp; p != nil; p = p.par {
+		if p.ks == nil || !p.ks.targets(pp) {
 			continue
 		}
-		if p.ks.ImportPath != "" {
-			l = append(l, p.ks.ImportPath)
-		}
-		if p.ks.Dir == ks.Dir {
-			return fmt.Errorf("import cycle: %s", strings.Join(l, " <~ "))
+		l := []string{pp.ImportPath + "(" + pp.Dir + ")"}
+		for p := kp; ; p = p.par {
+			if p.ks == nil {
+				continue
+			}
+			l = append(l, p.ks.ImportPath+"("+p.ks.Dir+")")
+			if p.ks.targets(pp) {
+				return fmt.Errorf("import cycle: %s", strings.Join(l, " <~ "))
+			}
 		}
 	}
 	return nil
 }
 
-func (kp *Importer) importPkg(pp *gopkg.PkgPath) (*types.Package, error) {
-	title := "Kim-Porter: import(" + pp.Dir + ")"
+func (kp *Importer) importPkg(pp *gopkg.PkgPath) (pkg *types.Package, err error) {
+	title := `Kim-Porter: import(` + pp.ImportPath + `)`
 	defer kp.mx.Profile.Push(title).Pop()
 	defer kp.mx.Begin(mg.Task{Title: title}).Done()
 
-	ks := kp.state(pp)
-	kx := kp.branch(ks, pp)
-	if err := kx.detectCycle(ks); err != nil {
+	if err := kp.detectCycle(pp); err != nil {
 		return nil, err
 	}
+	ks := kp.state(pp)
+	kx := kp.branch(ks, pp)
 	ks.mu.Lock()
 	defer ks.mu.Unlock()
 
-	start := time.Now()
-	invAt := atomic.LoadInt64(&ks.invalidAt)
-	if ks.checkedAt > invAt {
+	if ks.valid(kp.hash) {
 		return ks.result()
 	}
+	chkAt := memo.InvAt()
 	ks.pkg, ks.err = kx.check(ks, pp)
-	ks.checkedAt = start.UnixNano()
-	atomic.CompareAndSwapInt64(&ks.invalidAt, invAt, 0)
+	ks.hash = kp.hash
+	ks.chkAt.Set(chkAt)
 	return ks.result()
 }
 
@@ -232,7 +244,7 @@ func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*types.Package, error) 
 		return nil, err
 	}
 
-	imports, err := kp.loadImports(ks, bp)
+	imports, err := kp.importDeps(ks, bp, fset, astFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -244,6 +256,7 @@ func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*types.Package, error) 
 		}
 	}
 
+	defer kp.mx.Profile.Push(`Kim-Porter: typecheck(` + ks.ImportPath + `)`).Pop()
 	var hardErr error
 	tc := types.Config{
 		FakeImportC:              true,
@@ -268,7 +281,7 @@ func (kp *Importer) importCgoPkg(pp *gopkg.PkgPath, imports map[string]*types.Pa
 	name := `go`
 	args := []string{`list`, `-e`, `-export`, `-f={{.Export}}`, pp.Dir}
 	ctx, cancel := context.WithCancel(context.Background())
-	title := mgutil.QuoteCmd(name, args...)
+	title := `Kim-Porter: importCgoPkg` + mgutil.QuoteCmd(name, args...) + `)`
 	defer kp.mx.Profile.Push(title).Pop()
 	defer kp.mx.Begin(mg.Task{Title: title, Cancel: cancel}).Done()
 
@@ -307,22 +320,41 @@ func (kp *Importer) importFakePkg(ipath string) *types.Package {
 	return nil
 }
 
-func (kp *Importer) loadImports(ks *state, bp *build.Package) (map[string]*types.Package, error) {
+func (kp *Importer) importDeps(ks *state, bp *build.Package, fset *token.FileSet, astFiles []*ast.File) (map[string]*types.Package, error) {
+	defer kp.mx.Profile.Push(`Kim-Porter: importDeps(` + ks.ImportPath + `)`).Pop()
+
 	paths := mgutil.StrSet(bp.Imports)
 	if ks.Tests {
 		paths = paths.Add(bp.TestImports...)
 	}
-	imports := make(map[string]*types.Package, len(paths))
 	mu := sync.Mutex{}
+	imports := make(map[string]*types.Package, len(paths))
 	doImport := func(ipath string) error {
 		pkg, err := kp.importFrom(ipath, bp.Dir)
-		if err != nil {
-			return err
+		if err == nil {
+			mu.Lock()
+			imports[ipath] = pkg
+			mu.Unlock()
+			return nil
 		}
-		mu.Lock()
-		imports[ipath] = pkg
-		mu.Unlock()
-		return nil
+		for _, af := range astFiles {
+			for _, spec := range af.Imports {
+				if spec.Path == nil {
+					continue
+				}
+				s, _ := strconv.Unquote(spec.Path.Value)
+				if ipath != s {
+					continue
+				}
+				tp := fset.Position(spec.Pos())
+				return mg.Issue{
+					Row:     tp.Line - 1,
+					Col:     tp.Column - 1,
+					Message: err.Error(),
+				}
+			}
+		}
+		return err
 	}
 	if kp.cfg.NoConcurrency || len(paths) < 2 {
 		for _, ipath := range paths {
@@ -346,7 +378,6 @@ func (kp *Importer) loadImports(ks *state, bp *build.Package) (map[string]*types
 				}
 			}
 			return nil
-
 		})
 	}
 	return imports, errg.Wait()
@@ -370,12 +401,14 @@ func (kp *Importer) branch(ks *state, pp *gopkg.PkgPath) *Importer {
 		kx.mp = pp.Mod
 	}
 	if kp.ks != nil {
+		// TODO: we need clear this if it's no longer true
 		ks.importedBy(kp.ks)
 	}
 	// user settings don't apply when checking deps
 	kx.cfg.CheckFuncs = false
 	kx.cfg.CheckImports = false
 	kx.cfg.Tests = false
+	kx.hash = ""
 	kx.ks = ks
 	kx.par = kp
 	kx.setupJs(pp)
