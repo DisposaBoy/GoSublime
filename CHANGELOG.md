@@ -10,6 +10,33 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 20.01.01
+
+This release mainly focuses on under-the-hood improvements for module support.
+
+- The default auto-completion import mode has been changed to `Kim-Porter`, our solution for auto-completion and package/module going forward.
+
+  One side-effect of this change is that unimported-packages support is less reliable but we feel this is a small drawback when compared to the much improved auto-completion support.
+
+  We plan to remove support for switching import modes in the future, but if you would like to revert to the previous default (bearing in mind auto-completion might stop working), configure the `MarGocodeCtl` reducer as follows:
+
+  ```go
+      &golang.MarGocodeCtl{
+        ImporterMode: golang.SrcImporterWithFallback,
+      }
+  ```
+
+- The Go/TypeCheck linter is now more complete and should be able to type-check (without failure) all packages for which auto-completion is available.
+  This linter offers typechecking (like the gotype tool) but can work on unsaved files and while you type and is faster a full `go install` lint.
+
+  To enable add the following reducer to your `margo.go` file:
+
+  ```go
+    &golang.TypeCheck{},
+  ```
+
+- Some HTTP handler snippets have been added and are offered in files that `import "net/http"`.
+
 ## 19.10.22
 
 - API BREAKAGE:
