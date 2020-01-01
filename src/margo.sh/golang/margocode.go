@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	// SrcImporterWithFallback tells the importer use source code, then fall-back to a binary package
-	SrcImporterWithFallback ImporterMode = iota
+	// KimPorter tells the importer to use Kim-Porter to import packages
+	KimPorter ImporterMode = iota
 
 	// SrcImporterOnly tells the importer use source only, with no fall-back
 	SrcImporterOnly
@@ -41,8 +41,8 @@ const (
 	// BinImporterOnly tells the importer use binary packages only, with no fall-back
 	BinImporterOnly
 
-	// KimPorter tells the importer to use Kim-Porter to import packages
-	KimPorter
+	// SrcImporterWithFallback tells the importer use source code, then fall-back to a binary package
+	SrcImporterWithFallback
 )
 
 var (
