@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	// SrcImporterWithFallback tells the importer use source code, then fall-back to a binary package
-	SrcImporterWithFallback ImporterMode = iota
+	// KimPorter tells the importer to use Kim-Porter to import packages
+	KimPorter ImporterMode = iota
 
 	// SrcImporterOnly tells the importer use source only, with no fall-back
 	SrcImporterOnly
@@ -41,8 +41,8 @@ const (
 	// BinImporterOnly tells the importer use binary packages only, with no fall-back
 	BinImporterOnly
 
-	// KimPorter tells the importer to use Kim-Porter to import packages
-	KimPorter
+	// SrcImporterWithFallback tells the importer use source code, then fall-back to a binary package
+	SrcImporterWithFallback
 )
 
 var (
@@ -77,9 +77,6 @@ func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImp
 	s := mgc.newSrcImporter
 	b := mgc.newBinImporter
 	switch mgc.cfg().ImporterMode {
-	case KimPorter:
-		// kp doesn't yet support cgo, so fall back to the binary importer
-		return mgc.newKimPorter, b, true
 	case SrcImporterWithFallback:
 		return s, b, true
 	case SrcImporterOnly:
@@ -89,10 +86,6 @@ func (mgc *marGocodeCtl) importerFactories() (newDefaultImporter, newFallbackImp
 	default:
 		panic("unreachable")
 	}
-}
-
-func (mgc *marGocodeCtl) newKimPorter(mx *mg.Ctx, overlay types.ImporterFrom) types.ImporterFrom {
-	return kimporter.New(mx, nil)
 }
 
 // importPathByName returns an import path whose pkg's name is pkgName

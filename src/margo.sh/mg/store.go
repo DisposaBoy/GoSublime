@@ -24,7 +24,7 @@ type storeReducers struct {
 	after  reducerList
 }
 
-func (sr storeReducers) Reduce(mx *Ctx) *Ctx {
+func (sr storeReducers) reduction(mx *Ctx) *Ctx {
 	mx.Profile.Do("Before", func() {
 		mx = sr.before.reduction(mx)
 	})
@@ -146,10 +146,16 @@ func (sto *Store) dispatcher() {
 	}
 }
 
-func (sto *Store) handleReduce(mx *Ctx) *Ctx {
-	defer mx.Profile.Push("action|" + ActionLabel(mx.Action)).Pop()
-
-	return sto.reducers.Reduce(mx)
+func (sto *Store) handleReduction(mx *Ctx, cookie string, pf *mgpf.Profile) *Ctx {
+	for mx.Acts.i = 0; mx.Acts.i < len(mx.Acts.l); mx.Acts.i++ {
+		st := mx.State.new()
+		st.Errors = mx.State.Errors
+		mx = newCtx(sto, st, mx.Acts, cookie, pf, mx.KVMap)
+		mx.Profile.Do("action|"+ActionLabel(mx.Action), func() {
+			mx = sto.reducers.reduction(mx)
+		})
+	}
+	return mx
 }
 
 func (sto *Store) handle(h func() *Ctx, p *mgpf.Profile) {
@@ -173,37 +179,30 @@ func (sto *Store) handleAct(act Action, p *mgpf.Profile) {
 		p = mgpf.NewProfile("")
 	}
 	sto.handle(func() *Ctx {
-		mx := newCtx(sto, nil, act, "", p)
-		return sto.handleReduce(mx)
+		mx := newCtx(sto, nil, &ctxActs{l: []Action{act}}, "", p, nil)
+		return sto.handleReduction(mx, "", p)
 	}, p)
 }
 
 func (sto *Store) handleReq(rq *agentReq) {
 	sto.handle(func() *Ctx {
-		newMx := func(st *State, act Action) *Ctx {
-			return newCtx(sto, st, act, rq.Cookie, rq.Profile)
-		}
-		mx, acts := sto.handleReqInit(rq, newMx(nil, nil))
-		for _, act := range acts {
-			st := mx.State.new()
-			st.Errors = mx.State.Errors
-			mx = newMx(st, act)
-			mx = sto.handleReduce(mx)
-		}
-		return mx
+		mx := sto.handleReqInit(rq, newCtx(sto, nil, nil, rq.Cookie, rq.Profile, nil))
+		return sto.handleReduction(mx, rq.Cookie, rq.Profile)
 	}, rq.Profile)
 }
 
-func (sto *Store) handleReqInit(rq *agentReq, mx *Ctx) (*Ctx, []Action) {
+func (sto *Store) handleReqInit(rq *agentReq, mx *Ctx) *Ctx {
 	defer mx.Profile.Push("init").Pop()
 
-	acts := make([]Action, 0, len(rq.Actions))
+	if mx.Acts == nil {
+		mx.Acts = &ctxActs{l: make([]Action, 0, len(rq.Actions))}
+	}
 	for _, ra := range rq.Actions {
 		act, err := sto.ag.createAction(ra)
 		if err != nil {
 			mx.State = mx.AddErrorf("createAction(%s): %s", ra.Name, err)
 		} else {
-			acts = append(acts, act)
+			mx.Acts.l = append(mx.Acts.l, act)
 		}
 	}
 
@@ -223,7 +222,7 @@ func (sto *Store) handleReqInit(rq *agentReq, mx *Ctx) (*Ctx, []Action) {
 		mx.Env = props.Env
 	}
 	mx.Env = sto.autoSwitchInternalGOPATH(mx)
-	return mx, acts
+	return mx
 }
 
 // autoSwitchInternalGOPATH returns mx.Env with GOPATH set to the agent's GOPATH
@@ -248,7 +247,7 @@ func (sto *Store) NewCtx(act Action) *Ctx {
 	sto.mu.Lock()
 	defer sto.mu.Unlock()
 
-	return newCtx(sto, nil, act, "", nil)
+	return newCtx(sto, nil, &ctxActs{l: []Action{act}}, "", nil, nil)
 }
 
 func newStore(ag *Agent, sub Subscriber) *Store {

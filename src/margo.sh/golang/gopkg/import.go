@@ -32,19 +32,30 @@ func ScanFilter(de *vfs.Dirent) bool {
 }
 
 func ImportDir(mx *mg.Ctx, dir string) (*Pkg, error) {
+	if !filepath.IsAbs(dir) {
+		return nil, fmt.Errorf("ImportDir: %s is not an absolute path", dir)
+	}
 	return ImportDirNd(mx, mx.VFS.Poke(dir))
 }
 
-func ImportDirNd(mx *mg.Ctx, nd *vfs.Node) (*Pkg, error) {
-	ls := nd.Ls().Filter(pkgNdFilter).Nodes()
-	if len(ls) == 0 {
-		return nil, &build.NoGoError{Dir: nd.Path()}
-	}
-	memo, err := nd.Memo()
-	if err != nil {
-		return nil, err
-	}
+func ImportDirNd(mx *mg.Ctx, dir *vfs.Node) (*Pkg, error) {
+	return importDirNd(mx, dir, true)
+}
 
+func importDirNd(mx *mg.Ctx, nd *vfs.Node, poke bool) (*Pkg, error) {
+	var cl *vfs.NodeList
+	if poke {
+		cl = nd.Ls()
+	} else {
+		cl = nd.Children()
+	}
+	ls := cl.Filter(pkgNdFilter).Nodes()
+	if len(ls) == 0 {
+		if poke {
+			return nil, &build.NoGoError{Dir: nd.Path()}
+		}
+		return nil, nil
+	}
 	bctx := goutil.BuildContext(mx)
 	type K struct{ GOROOT, GOPATH string }
 	type V struct {
@@ -52,11 +63,24 @@ func ImportDirNd(mx *mg.Ctx, nd *vfs.Node) (*Pkg, error) {
 		e error
 	}
 	k := K{GOROOT: bctx.GOROOT, GOPATH: bctx.GOPATH}
-	v := memo.Read(k, func() interface{} {
-		p, err := importDirNd(mx, nd, bctx, ls)
+	if !poke {
+		v, _ := nd.PeekMemo(k).(V)
+		return v.p, v.e
+	}
+	v := nd.ReadMemo(k, func() interface{} {
+		p, err := importDir(mx, nd, bctx, ls)
 		return V{p: p, e: err}
 	}).(V)
 	return v.p, v.e
+}
+
+func PeekDir(mx *mg.Ctx, dir string) *Pkg {
+	return PeekDirNd(mx, mx.VFS.Peek(dir))
+}
+
+func PeekDirNd(mx *mg.Ctx, dir *vfs.Node) *Pkg {
+	p, _ := importDirNd(mx, dir, false)
+	return p
 }
 
 func pkgNdFilter(nd *vfs.Node) bool {
@@ -67,7 +91,7 @@ func pkgNdFilter(nd *vfs.Node) bool {
 		!strings.HasSuffix(nm, "_test.go")
 }
 
-func importDirNd(mx *mg.Ctx, nd *vfs.Node, bctx *build.Context, ls []*vfs.Node) (*Pkg, error) {
+func importDir(mx *mg.Ctx, nd *vfs.Node, bctx *build.Context, ls []*vfs.Node) (*Pkg, error) {
 	dir := nd.Path()
 	var errNoGo error = &build.NoGoError{Dir: dir}
 	bctx.IsDir = func(p string) bool {
@@ -242,6 +266,8 @@ type modDep struct {
 	ModPath string
 	SubPkg  string
 	Version string
+
+	oldPath string
 }
 
 func (mf *modFile) requireMD(modPath string) (_ modDep, found bool) {
@@ -259,7 +285,11 @@ func (mf *modFile) require(importPath string) (modDep, error) {
 	if !found {
 		return modDep{}, fmt.Errorf("require(%s) not found in %s", importPath, mf.Path)
 	}
-	md.SubPkg = strings.TrimPrefix(importPath, md.ModPath)
+	modPath := md.ModPath
+	if md.oldPath != "" {
+		modPath = md.oldPath
+	}
+	md.SubPkg = strings.TrimPrefix(importPath, modPath)
 	md.SubPkg = strings.TrimLeft(md.SubPkg, "/")
 	return md, nil
 }
@@ -338,7 +368,7 @@ func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string, mp *
 		searchOtherVendors,
 		searchGrVendor,
 	}
-	if !strings.Contains(strings.Split(importPath, "/")[0], ".") {
+	if !strings.Contains(strings.SplitN(importPath, "/", 2)[0], ".") {
 		// apparently import paths without dots are reserved for the stdlib
 		// checking first also avoids the many misses for each stdlib pkg
 		search = []func() *PkgPath{
@@ -352,6 +382,9 @@ func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string, mp *
 		if p := f(); p != nil {
 			return p, nil
 		}
+	}
+	if md.oldPath != "" {
+		return nil, fmt.Errorf("cannot find `%s` replacement `%s` using `%s`", importPath, md.ModPath, mf.Path)
 	}
 	return nil, fmt.Errorf("cannot find `%s` using `%s`", importPath, mf.Path)
 }
@@ -395,11 +428,11 @@ func loadModSum(mx *mg.Ctx, dir string) (*modFile, error) {
 
 	for _, r := range mf.File.Replace {
 		md := modDep{
+			oldPath: r.Old.Path,
 			ModPath: r.New.Path,
 			Version: r.New.Version,
 		}
-		// if dir := r.New.Path; modfile.IsDirectoryPath(dir) {
-		if dir := r.New.Path; dir[0] == '/' || dir[0] == '.' {
+		if dir := r.New.Path; modfile.IsDirectoryPath(dir) {
 			if !filepath.IsAbs(dir) {
 				dir = filepath.Join(mf.Dir, dir)
 			}

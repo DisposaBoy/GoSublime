@@ -20,6 +20,7 @@ var (
 		DeferSnippet,
 		MutexSnippet,
 		ReturnSnippet,
+		HTTPSnippet,
 	}
 )
 

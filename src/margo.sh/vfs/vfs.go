@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"github.com/karrick/godirwalk"
 	"io"
-	"margo.sh/mgutil"
+	"margo.sh/memo"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+	"unsafe"
+)
+
+const (
+	ViewNamePrefix = "view@"
 )
 
 var (
@@ -30,6 +36,10 @@ func async(f func()) {
 	default:
 		go f()
 	}
+}
+
+func IsViewPath(fn string) bool {
+	return strings.HasPrefix(fn, ViewNamePrefix)
 }
 
 // TODO: add .Trim() support to allow periodically removing unused leaf nodes to reduce memory.
@@ -62,14 +72,18 @@ func (fs *FS) IsDir(path string) bool { return fs.Poke(path).IsDir() }
 
 func (fs *FS) IsFile(path string) bool { return fs.Poke(path).IsFile() }
 
-func (fs *FS) Memo(path string) (*Node, *mgutil.Memo, error) {
+func (fs *FS) Memo(path string) (*Node, *memo.M, error) {
 	nd := fs.Poke(path)
 	m, err := nd.Memo()
 	return nd, m, err
 }
 
-func (fs *FS) ReadMemo(path string, k interface{}, new func() interface{}) interface{} {
+func (fs *FS) ReadMemo(path string, k memo.K, new func() memo.K) memo.V {
 	return fs.Poke(path).ReadMemo(k, new)
+}
+
+func (fs *FS) PeekMemo(path string, k memo.K) memo.V {
+	return fs.Peek(path).PeekMemo(k)
 }
 
 func (fs *FS) Scan(path string, so ScanOptions) {
@@ -81,9 +95,9 @@ type Node struct {
 	parent *Node
 	name   string
 
-	mu sync.Mutex
-	cl *NodeList
-	mt *meta
+	mu    sync.Mutex
+	clPtr unsafe.Pointer
+	mtPtr unsafe.Pointer
 }
 
 func (nd *Node) String() string {
@@ -112,17 +126,19 @@ func (nd *Node) IsLeaf() bool {
 }
 
 func (nd *Node) IsBranch() bool {
-	if nd == nil {
-		return false
-	}
-
-	nd.mu.Lock()
-	defer nd.mu.Unlock()
-
-	return nd.isBranch()
+	return nd.Children().Len() != 0
 }
 
-func (nd *Node) isBranch() bool { return nd.cl.Len() != 0 }
+func (nd *Node) setCl(cl *NodeList) {
+	atomic.StorePointer(&nd.clPtr, unsafe.Pointer(cl))
+}
+
+func (nd *Node) cl() *NodeList {
+	if nd == nil {
+		return nil
+	}
+	return (*NodeList)(atomic.LoadPointer(&nd.clPtr))
+}
 
 func (nd *Node) Parent() *Node {
 	if nd == nil {
@@ -145,7 +161,7 @@ func (nd *Node) IsDescendant(ancestor *Node) bool {
 
 func (nd *Node) scanEnts(so *ScanOptions, dl []*godirwalk.Dirent) (dirs []*Node) {
 	finalize := func(nd *Node, de *godirwalk.Dirent) {
-		mt := nd.meta()
+		mt := nd.meta(true)
 		mt.resetInfo(de.ModeType(), time.Time{})
 		if so.Dirs != nil && mt.fmode.IsDir() {
 			dirs = append(dirs, nd)
@@ -153,7 +169,7 @@ func (nd *Node) scanEnts(so *ScanOptions, dl []*godirwalk.Dirent) (dirs []*Node)
 	}
 	cl := make([]*Node, 0, len(dl))
 	for _, de := range dl {
-		c := nd.cl.Node(de.Name())
+		c := nd.cl().Node(de.Name())
 		if c == nil {
 			c = nd.mkNode(de.Name())
 			finalize(c, de)
@@ -164,7 +180,7 @@ func (nd *Node) scanEnts(so *ScanOptions, dl []*godirwalk.Dirent) (dirs []*Node)
 		}
 		cl = append(cl, c)
 	}
-	nd.cl = &NodeList{l: cl}
+	nd.setCl(&NodeList{l: cl})
 	return dirs
 }
 
@@ -208,13 +224,12 @@ func (nd *Node) Branches(f func(nd *Node)) {
 		return
 	}
 
-	cl := nd.Children()
-	if cl.Len() == 0 {
+	nl := nd.Children().Nodes()
+	if len(nl) == 0 {
 		return
 	}
-
 	f(nd)
-	for _, c := range cl.Nodes() {
+	for _, c := range nl {
 		c.Branches(f)
 	}
 }
@@ -257,12 +272,7 @@ func (nd *Node) Peek(path string) *Node {
 	if name == "" {
 		return nd
 	}
-
-	nd.mu.Lock()
-	c := nd.cl.Node(name)
-	nd.mu.Unlock()
-
-	return c.Peek(path)
+	return nd.Children().Node(name).Peek(path)
 }
 
 func (nd *Node) Poke(path string) *Node {
@@ -280,12 +290,12 @@ func (nd *Node) touch(name string) *Node {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
 
-	if c := nd.cl.Node(name); c != nil {
+	if c := nd.cl().Node(name); c != nil {
 		return c
 	}
 
 	c := nd.mkNode(name)
-	nd.cl = nd.cl.Add(c)
+	nd.setCl(nd.cl().Add(c))
 	return c
 }
 
@@ -293,11 +303,19 @@ func (nd *Node) mkNode(name string) *Node {
 	return &Node{parent: nd, name: name}
 }
 
-func (nd *Node) meta() *meta {
-	if nd.mt == nil {
-		nd.mt = &meta{}
+func (nd *Node) meta(poke bool) *meta {
+	if nd == nil {
+		return nil
 	}
-	return nd.mt
+	mt := (*meta)(atomic.LoadPointer(&nd.mtPtr))
+	if mt != nil || !poke {
+		return mt
+	}
+	mt = &meta{}
+	if atomic.CompareAndSwapPointer(&nd.mtPtr, unsafe.Pointer(nil), unsafe.Pointer(mt)) {
+		return mt
+	}
+	return (*meta)(atomic.LoadPointer(&nd.mtPtr))
 }
 
 func (nd *Node) Ls() *NodeList {
@@ -309,18 +327,11 @@ func (nd *Node) Ls() *NodeList {
 	defer nd.mu.Unlock()
 
 	nd.sync()
-	return nd.cl
+	return nd.cl()
 }
 
 func (nd *Node) Children() *NodeList {
-	if nd == nil {
-		return nil
-	}
-
-	nd.mu.Lock()
-	defer nd.mu.Unlock()
-
-	return nd.cl
+	return nd.cl()
 }
 
 func (nd *Node) Print(w io.Writer) {
@@ -369,7 +380,18 @@ func (nd *Node) print(w io.Writer, filter func(*Node) string, indent string) {
 	}
 }
 
-func (nd *Node) Memo() (*mgutil.Memo, error) {
+func (nd *Node) PeekMemo(k memo.K) memo.V {
+	if nd == nil {
+		return nil
+	}
+
+	nd.mu.Lock()
+	defer nd.mu.Unlock()
+
+	return nd.meta(false).memo(false).Peek(k)
+}
+
+func (nd *Node) Memo() (*memo.M, error) {
 	if nd == nil {
 		return nil, os.ErrNotExist
 	}
@@ -377,14 +399,18 @@ func (nd *Node) Memo() (*mgutil.Memo, error) {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
 
+	if nd.parent.IsRoot() && IsViewPath(nd.name) {
+		return nd.meta(true).memo(true), nil
+	}
+
 	mt, err := nd.sync()
 	if err != nil {
 		return nil, err
 	}
-	return mt.memo(), nil
+	return mt.memo(true), nil
 }
 
-func (nd *Node) ReadMemo(k interface{}, new func() interface{}) interface{} {
+func (nd *Node) ReadMemo(k memo.K, new func() memo.V) memo.V {
 	memo, _ := nd.Memo()
 	return memo.Read(k, new)
 }
@@ -397,7 +423,7 @@ func (nd *Node) Invalidate() {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
 
-	nd.mt.invalidate()
+	nd.meta(false).invalidate()
 }
 
 func (nd *Node) Stat() (os.FileInfo, error) {
@@ -413,14 +439,14 @@ func (nd *Node) Stat() (os.FileInfo, error) {
 		return nil, err
 	}
 	fi := &FileInfo{Node: nd, fmode: mt.fmode}
-	if !fi.fmode.IsValid() && nd.cl.Len() != 0 {
+	if !fi.fmode.IsValid() && nd.cl().Len() != 0 {
 		fi.fmode = fmodeDir
 	}
 	return fi, nil
 }
 
 func (nd *Node) sync() (*meta, error) {
-	mt := nd.meta()
+	mt := nd.meta(true)
 	if mt.ok() {
 		return mt, nil
 	}
@@ -432,12 +458,12 @@ func (nd *Node) sync() (*meta, error) {
 	}
 	// if a file in a directory changed, the dir's memo is cleared as well because
 	// a dir's memo is primarily used to store pkg/dir data that depends on the file
-	if reset && !nd.isBranch() {
+	if reset && mt.fmode != 0 && (fi == nil || !fi.IsDir()) {
 		nd.resetParent()
 	}
 	if err != nil {
 		mt.invalidate()
-		nd.cl = nil
+		nd.setCl(nil)
 		return nil, err
 	}
 	mt.resetInfo(fi.Mode(), fi.ModTime())
@@ -455,9 +481,7 @@ func (nd *Node) resetParent() {
 	}
 	ts := tsNow()
 	async(func() {
-		p.mu.Lock()
-		defer p.mu.Unlock()
-		p.mt.resetMemoAfter(ts)
+		p.meta(false).resetMemoAfter(ts)
 	})
 }
 
@@ -492,7 +516,7 @@ func (nd *Node) ReadDir() ([]os.FileInfo, error) {
 
 	nd.mu.Lock()
 	_, err := nd.sync()
-	cl := nd.cl
+	cl := nd.cl()
 	nd.mu.Unlock()
 
 	if err != nil {

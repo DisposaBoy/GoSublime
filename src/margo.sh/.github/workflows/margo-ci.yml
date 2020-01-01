@@ -1,0 +1,22 @@
+on: [push, pull_request]
+name: margo-ci
+jobs:
+  margo-ci:
+    strategy:
+      matrix:
+        go-version: [1.12.x, 1.13.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - name: Setup
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        path: src/margo.sh
+    - name: CI
+      env:
+        GOPATH: ${{ github.workspace }}
+      run: go run margo.sh ci

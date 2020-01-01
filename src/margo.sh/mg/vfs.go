@@ -12,9 +12,13 @@ var (
 type vfsCmd struct{ ReducerType }
 
 func (vc *vfsCmd) Reduce(mx *Ctx) *State {
+	v := mx.View
 	switch mx.Action.(type) {
+	case ViewModified, ViewLoaded:
+		mx.VFS.Invalidate(v.Name)
 	case ViewSaved:
-		go vc.sync(mx)
+		mx.VFS.Invalidate(v.Name)
+		mx.VFS.Invalidate(v.Filename())
 	case RunCmd:
 		return mx.AddBuiltinCmds(BuiltinCmd{
 			Name: ".vfs",
@@ -34,14 +38,14 @@ func (vc *vfsCmd) cmd(cx *CmdCtx) {
 	defer cx.Output.Close()
 
 	if len(cx.Args) == 0 {
-		vFS.Print(cx.Output)
+		cx.VFS.Print(cx.Output)
 		return
 	}
 
 	for _, p := range cx.Args {
-		nd, pat := &vFS.Node, p
+		nd, pat := &cx.VFS.Node, p
 		if filepath.IsAbs(p) {
-			nd, pat = vFS.Peek(filepath.Dir(p)), filepath.Base(p)
+			nd, pat = cx.VFS.Peek(filepath.Dir(p)), filepath.Base(p)
 		}
 		nd.PrintWithFilter(cx.Output, func(nd *vfs.Node) string {
 			if nd.IsBranch() {
@@ -53,12 +57,6 @@ func (vc *vfsCmd) cmd(cx *CmdCtx) {
 			return ""
 		})
 	}
-}
-
-func (vc *vfsCmd) sync(mx *Ctx) {
-	v := mx.View
-	vFS.Invalidate(v.Filename())
-	vFS.Invalidate(v.Dir())
 }
 
 func init() {

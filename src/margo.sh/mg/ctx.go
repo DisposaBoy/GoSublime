@@ -37,6 +37,8 @@ type Ctx struct {
 	// e.g. that the view is about to be saved or that it was changed.
 	Action Action `mg.Nillable:"true"`
 
+	Acts *ctxActs
+
 	// KVMap is an in-memory cache of data with for the lifetime of the Ctx.
 	*KVMap
 
@@ -61,7 +63,7 @@ type Ctx struct {
 // newCtx creates a new Ctx
 // if st is nil, the state will be set to the equivalent of Store.state.new()
 // if p is nil a new Profile will be created with cookie as its name
-func newCtx(sto *Store, st *State, act Action, cookie string, p *mgpf.Profile) *Ctx {
+func newCtx(sto *Store, st *State, acts *ctxActs, cookie string, p *mgpf.Profile, kv *KVMap) *Ctx {
 	if st == nil {
 		st = sto.state.new()
 	}
@@ -71,10 +73,14 @@ func newCtx(sto *Store, st *State, act Action, cookie string, p *mgpf.Profile) *
 	if p == nil {
 		p = mgpf.NewProfile(cookie)
 	}
+	if kv == nil {
+		kv = &KVMap{}
+	}
 	return &Ctx{
 		State:      st,
-		Action:     act,
-		KVMap:      &KVMap{},
+		Action:     acts.Current(),
+		Acts:       acts,
+		KVMap:      kv,
 		Store:      sto,
 		Log:        sto.ag.Log,
 		Cookie:     cookie,
@@ -183,8 +189,9 @@ func (mx *Ctx) Begin(t Task) *TaskTicket {
 	return mx.Store.Begin(t)
 }
 
-func (mx *Ctx) Defer(f ReduceFn) {
+func (mx *Ctx) Defer(f ReduceFn) *State {
 	mx.defr.prepend(f)
+	return mx.State
 }
 
 type redFns struct {

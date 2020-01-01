@@ -1,7 +1,7 @@
 package vfs
 
 import (
-	"margo.sh/mgutil"
+	"margo.sh/memo"
 	"os"
 	"sync"
 	"time"
@@ -41,20 +41,25 @@ type meta struct {
 	fmode fmode
 	modts timestamp
 	expts timestamp
-	mo    *mgutil.Memo
+	mo    *memo.M
 }
 
-func (mt *meta) memo() *mgutil.Memo {
-	if mt.mo == nil {
-		mt.mo = &mgutil.Memo{}
+func (mt *meta) memo(poke bool) *memo.M {
+	if mt == nil {
+		return nil
+	}
+	if mt.mo == nil && poke {
+		mt.mo = &memo.M{}
 	}
 	return mt.mo
 }
 
 func (mt *meta) invalidate() {
-	if mt != nil {
-		mt.expts = 0
+	if mt == nil {
+		return
 	}
+	mt.expts = 0
+	mt.mo.Clear()
 }
 
 func (mt *meta) ok() bool {
@@ -68,9 +73,7 @@ func (mt *meta) resetMemoAfter(ts timestamp) {
 	if ts > 0 && mt.modts >= ts {
 		return
 	}
-	if mo := mt.mo; mo != nil {
-		mo.Clear()
-	}
+	mt.mo.Clear()
 }
 
 func (mt *meta) resetMemo() {
@@ -114,7 +117,7 @@ func (fi *FileInfo) load() {
 	fi.sys = st.Sys()
 
 	fi.Node.mu.Lock()
-	fi.Node.meta().resetInfo(st.Mode(), st.ModTime())
+	fi.Node.meta(true).resetInfo(st.Mode(), st.ModTime())
 	fi.Node.mu.Unlock()
 }
 

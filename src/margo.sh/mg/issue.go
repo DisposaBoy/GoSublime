@@ -2,6 +2,7 @@ package mg
 
 import (
 	"bytes"
+	"fmt"
 	"margo.sh/htm"
 	"margo.sh/mgutil"
 	"os"
@@ -79,10 +80,33 @@ type Issue struct {
 	Message string
 }
 
-func (isu *Issue) finalize() Issue {
+func (isu Issue) Error() string {
+	msg := isu.Message
+	pfx := ""
+	if isu.Tag != "" {
+		pfx = "[" + string(isu.Tag) + "]" + pfx
+	}
+	if isu.Label != "" {
+		pfx = "[" + isu.Label + "]" + pfx
+	}
+	if pfx != "" {
+		pfx = pfx + ": "
+	}
+	fn := isu.Path
+	if fn == "" {
+		fn = isu.Name
+	}
+	return fmt.Sprintf("%s:%d:%d: %s%s", fn, isu.Row+1, isu.Col+1, pfx, msg)
+}
+
+func (isu *Issue) finalize(view *View) Issue {
 	v := *isu
 	if v.Tag == "" {
 		v.Tag = Error
+	}
+	if isu.InView(view) {
+		v.Path = ""
+		v.Name = view.Name
 	}
 	return v
 }
@@ -111,13 +135,9 @@ func (isu *Issue) SameFile(p Issue) bool {
 }
 
 func (isu *Issue) InView(v *View) bool {
-	if isu.Path != "" && isu.Path == v.Path {
-		return true
-	}
-	if isu.Name != "" && isu.Name == v.Name {
-		return true
-	}
-	return false
+	return (isu.Name != "" && isu.Name == v.Name) ||
+		(isu.Path != "" && isu.Path == v.Path) ||
+		(isu.Path != "" && filepath.Base(isu.Path) == v.Name)
 }
 
 func (isu *Issue) Valid() bool {
@@ -139,18 +159,29 @@ func (s IssueSet) Equal(issues IssueSet) bool {
 }
 
 func (s IssueSet) Add(l ...Issue) IssueSet {
-	m := make(map[issueHash]*Issue, len(s)+len(l))
-	for _, lst := range []IssueSet{s, IssueSet(l)} {
-		for i, _ := range lst {
-			isu := &lst[i]
-			m[isu.hash()] = isu
+	return s.merge(nil, l...)
+}
+
+func (s IssueSet) merge(view *View, l ...Issue) IssueSet {
+	if len(l) == 0 {
+		return s
+	}
+	res := make(IssueSet, 0, len(s)+len(l))
+	seen := make(map[issueHash]bool, cap(res))
+	for _, isus := range [][]Issue{s, l} {
+		for _, isu := range isus {
+			if view != nil {
+				isu = isu.finalize(view)
+			}
+			ish := isu.hash()
+			if seen[ish] {
+				continue
+			}
+			seen[ish] = true
+			res = append(res, isu)
 		}
 	}
-	s = make(IssueSet, 0, len(m))
-	for _, isu := range m {
-		s = append(s, isu.finalize())
-	}
-	return s
+	return res
 }
 
 func (s IssueSet) Remove(l ...Issue) IssueSet {

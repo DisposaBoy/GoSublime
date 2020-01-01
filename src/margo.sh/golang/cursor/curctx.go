@@ -295,6 +295,25 @@ func (cx *CurCtx) Contains(typ ast.Node) bool {
 	})
 }
 
+func (cx *CurCtx) ImportsMatch(match func(importPath string) bool) bool {
+	for _, spec := range cx.AstFile.Imports {
+		p := spec.Path.Value
+		if len(p) < 3 {
+			continue
+		}
+		if c := p[0]; c == '"' || c == '`' {
+			p = p[1:]
+		}
+		if c := p[len(p)-1]; c == '"' || c == '`' {
+			p = p[:len(p)-1]
+		}
+		if match(p) {
+			return true
+		}
+	}
+	return false
+}
+
 func (cx *CurCtx) Print(x ast.Node) (string, error) {
 	p := &cx.printer
 	p.Lock()

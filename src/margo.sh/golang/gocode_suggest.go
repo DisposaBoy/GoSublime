@@ -6,6 +6,7 @@ import (
 	"go/types"
 	"kuroku.io/margocode/suggest"
 	"margo.sh/golang/gopkg"
+	"margo.sh/kimporter"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
 	"runtime/debug"
@@ -144,6 +145,10 @@ func (gi *gsuImporter) importFromName(pkgName, srcDir string) (pkg *types.Packag
 }
 
 func (gi *gsuImporter) ImportFrom(impPath, srcDir string, mode types.ImportMode) (pkg *types.Package, err error) {
+	if mctl.cfg().ImporterMode == KimPorter {
+		return kimporter.New(gi.mx, nil).ImportFrom(impPath, srcDir, mode)
+	}
+
 	// TODO: add mode to the key somehow?
 	// mode is reserved, but currently not used so it's not a problem
 	// but if it's used in the future, the importer result could depend on it

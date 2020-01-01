@@ -45,6 +45,8 @@ func (kf *kpFile) init() {
 }
 
 func parseDir(mx *mg.Ctx, bcx *build.Context, fset *token.FileSet, dir string, srcMap map[string][]byte, ks *state) (*build.Package, []*kpFile, []*ast.File, error) {
+	defer mx.Profile.Push(`Kim-Porter: parseDir(` + dir + `)`).Pop()
+
 	bp, err := bcx.ImportDir(dir, 0)
 	if err != nil {
 		return nil, nil, nil, err
