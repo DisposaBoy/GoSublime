@@ -5,7 +5,6 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"io/ioutil"
 	"margo.sh/mg"
 )
 
@@ -39,7 +38,7 @@ func ParseFileWithMode(mx *mg.Ctx, fn string, src []byte, mode parser.Mode) *Par
 	if len(src) == 0 {
 		var err error
 		if fn != "" {
-			src, err = ioutil.ReadFile(fn)
+			src, err = mx.VFS.ReadBlob(fn).ReadFile()
 		}
 		if len(src) == 0 {
 			return &ParsedFile{

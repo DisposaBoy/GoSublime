@@ -18,12 +18,20 @@
   version = "v1.0.10"
 
 [[projects]]
-  digest = "1:9b702f63b82233857933e900478bbced86c863c43f4cbec0ff76f0f94346230f"
+  digest = "1:6f9339c912bbdda81302633ad7e99a28dfa5a639c864061f1929510a9a64aa74"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:6d8b11ec5fe9d54cc042df88c3d55b27aa233b6b7487404ebcc43df610b6f6ad"
   name = "github.com/karrick/godirwalk"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c5347ca0aa3e4cee84147b4da5341df3de70af6c"
-  version = "v1.13.0"
+  revision = "df0dba013128236f02e3b293505d1eb89a6d7403"
+  version = "v1.14.0"
 
 [[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
@@ -34,8 +42,8 @@
     "semver",
   ]
   pruneopts = "UT"
-  revision = "d89504fbbf2c313df24867a5ffafcc9b847961ff"
-  version = "v1.5.0"
+  revision = "bf08ea5df4ea96c6460011b8a8ef2952494d458d"
+  version = "v1.5.1"
 
 [[projects]]
   digest = "1:b36a0ede02c4c2aef7df7f91cbbb7bb88a98b5d253509d4f997dda526e50c88c"
@@ -67,7 +75,7 @@
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
   pruneopts = "UT"
-  revision = "b544559bb6d1b5c62fba4af5e843ff542174f079"
+  revision = "61a87790db17894570dfb32dbaa0a4af9ce60cb4"
 
 [[projects]]
   branch = "master"
@@ -75,7 +83,7 @@
   name = "golang.org/x/net"
   packages = ["context"]
   pruneopts = "UT"
-  revision = "ef20fe5d793301b553005db740f730d87993f778"
+  revision = "c0dbc17a35534bf2e581d7a942408dc936316da4"
 
 [[projects]]
   branch = "master"
@@ -87,18 +95,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:607da0d7cf677985496d5911647383193cce4c67ba4554c4a54607a6a6062c79"
+  digest = "1:2390cc9215d5adf71b9d76564dd3795e692e5b4602d777190b33fda90c21f213"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "6d18c012aee9febd81bbf9806760c8c4480e870d"
+  revision = "548cf772de5052aa878ccb47cdeb7d262b75c8ec"
 
 [[projects]]
   branch = "master"
-  digest = "1:1d5cac22c44ed0228c63765477b98c87cb1ac7b7305c76ba21e754cdf60aed29"
+  digest = "1:1aeecdf82532ac97a305351fef4566be34b387d372cf73ad808e7112221be08f"
   name = "golang.org/x/tools"
   packages = [
     "cmd/guru",
@@ -124,11 +132,10 @@
     "internal/imports",
     "internal/module",
     "internal/semver",
-    "internal/span",
     "refactor/importgraph",
   ]
   pruneopts = "UT"
-  revision = "6e064ea0cf2dcfaca8da2da9f42da458bab38756"
+  revision = "eac381796e91db0acd689726cce5b78086509607"
 
 [[projects]]
   branch = "master"
@@ -146,6 +153,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/coreos/bbolt",
+    "github.com/dustin/go-humanize",
     "github.com/karrick/godirwalk",
     "github.com/rogpeppe/go-internal/modfile",
     "github.com/rogpeppe/go-internal/module",
