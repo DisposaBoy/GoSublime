@@ -80,7 +80,7 @@ func (vc *vfsCmd) cmdVfsBlobs(cx *CmdCtx) {
 			return nd.String()
 		}
 		nm := []string{}
-		for _, b := range vfs.BlobNodes(nd) {
+		for _, b := range vfs.Blobs(nd) {
 			files++
 			sz := uint64(b.Len())
 			size += sz

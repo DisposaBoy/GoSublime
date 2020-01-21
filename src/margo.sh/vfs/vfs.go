@@ -68,6 +68,8 @@ func (fs *FS) Stat(path string) (*Node, os.FileInfo, error) {
 
 func (fs *FS) ReadBlob(path string) *Blob { return fs.Poke(path).ReadBlob() }
 
+func (fs *FS) PeekBlob(path string) *Blob { return fs.Peek(path).PeekBlob() }
+
 func (fs *FS) ReadDir(path string) ([]os.FileInfo, error) { return fs.Poke(path).ReadDir() }
 
 func (fs *FS) IsDir(path string) bool { return fs.Poke(path).IsDir() }
@@ -383,10 +385,10 @@ func (nd *Node) print(w io.Writer, filter func(*Node) string, indent string) {
 }
 
 func (nd *Node) PeekMemo(k memo.K) memo.V {
-	return nd.mtMemo().Peek(k)
+	return nd.pkMemo().Peek(k)
 }
 
-func (nd *Node) mtMemo() *memo.M {
+func (nd *Node) pkMemo() *memo.M {
 	if nd == nil {
 		return nil
 	}
@@ -418,6 +420,10 @@ func (nd *Node) Memo() (*memo.M, error) {
 
 func (nd *Node) ReadBlob() *Blob {
 	return readBlob(nd)
+}
+
+func (nd *Node) PeekBlob() *Blob {
+	return peekBlob(nd)
 }
 
 func (nd *Node) ReadMemo(k memo.K, new func() memo.V) memo.V {

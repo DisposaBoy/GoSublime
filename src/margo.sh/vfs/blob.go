@@ -32,6 +32,12 @@ func (b *Blob) OpenFile() (io.ReadCloser, error) { return b.ReadCloser(), b.Erro
 func (b *Blob) Len() int { return len(b.src) }
 
 // TODO: add support for size-classed blobs
+func peekBlob(nd *Node) *Blob {
+	b, _ := nd.PeekMemo(blobNodeKey{}).(*Blob)
+	return b
+}
+
+// TODO: add support for size-classed blobs
 func readBlob(nd *Node) *Blob {
 	return nd.ReadMemo(blobNodeKey{}, func() interface{} {
 		fn := nd.Path()
@@ -43,8 +49,8 @@ func readBlob(nd *Node) *Blob {
 	}).(*Blob)
 }
 
-func BlobNodes(nd *Node) (blobs []*Blob) {
-	nd.mtMemo().Range(func(k memo.K, v memo.V) {
+func Blobs(nd *Node) (blobs []*Blob) {
+	nd.pkMemo().Range(func(k memo.K, v memo.V) {
 		if _, ok := k.(blobNodeKey); !ok {
 			return
 		}
