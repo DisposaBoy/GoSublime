@@ -5,7 +5,6 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"margo.sh/mg"
 	"path/filepath"
 	"sync"
@@ -23,7 +22,7 @@ type kpFile struct {
 
 func (kf *kpFile) init() {
 	if len(kf.Src) == 0 {
-		kf.Src, kf.Err = ioutil.ReadFile(kf.Fn)
+		kf.Src, kf.Err = kf.Mx.VFS.ReadBlob(kf.Fn).ReadFile()
 		if kf.Err != nil {
 			return
 		}

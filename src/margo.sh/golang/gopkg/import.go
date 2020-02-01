@@ -8,7 +8,6 @@ import (
 	"github.com/rogpeppe/go-internal/module"
 	"github.com/rogpeppe/go-internal/semver"
 	"go/build"
-	"io/ioutil"
 	"margo.sh/golang/goutil"
 	"margo.sh/mg"
 	"margo.sh/mgutil"
@@ -405,7 +404,7 @@ func loadModSumNd(mx *mg.Ctx, dirNd *vfs.Node) (*modFile, error) {
 
 func loadModSum(mx *mg.Ctx, dir string) (*modFile, error) {
 	gomod := filepath.Join(dir, "go.mod")
-	modSrc, err := ioutil.ReadFile(gomod)
+	modSrc, err := mx.VFS.ReadBlob(gomod).ReadFile()
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +456,7 @@ func loadModSum(mx *mg.Ctx, dir string) (*modFile, error) {
 	}
 
 	gosum := filepath.Join(dir, "go.sum")
-	sumSrc, err := ioutil.ReadFile(gosum)
+	sumSrc, err := mx.VFS.ReadBlob(gosum).ReadFile()
 	if err != nil {
 		return mf, nil
 	}

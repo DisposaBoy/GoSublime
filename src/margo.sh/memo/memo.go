@@ -141,18 +141,24 @@ func (m *M) clear() []Sticky {
 }
 
 func (m *M) Values() map[K]V {
+	vals := map[K]V{}
+	m.Range(func(k K, v V) {
+		vals[k] = v
+	})
+	return vals
+}
+
+func (m *M) Range(f func(k K, v V)) {
 	if m == nil {
-		return nil
+		return
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	vals := make(map[K]V, len(m.ml))
-	for k, p := range m.ml {
+	for _, p := range m.ml {
 		if v := p.value(); v != nil {
-			vals[k] = v
+			f(p.k, v)
 		}
 	}
-	return vals
 }

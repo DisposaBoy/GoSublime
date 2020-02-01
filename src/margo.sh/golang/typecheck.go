@@ -11,6 +11,7 @@ import (
 	"margo.sh/mg"
 	"margo.sh/mgpf"
 	"margo.sh/mgutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -56,7 +57,7 @@ func (tc *TypeCheck) check(mx *mg.Ctx) {
 		if pf.Dur().Duration < 100*time.Millisecond {
 			return
 		}
-		mx.Profile.Fprint(mx.Log.Dbg.Writer(), &mgpf.PrintOpts{
+		mx.Profile.Fprint(os.Stderr, &mgpf.PrintOpts{
 			MinDuration: 10 * time.Millisecond,
 		})
 	}()

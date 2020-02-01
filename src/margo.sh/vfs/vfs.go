@@ -66,6 +66,10 @@ func (fs *FS) Stat(path string) (*Node, os.FileInfo, error) {
 	return nd, fi, err
 }
 
+func (fs *FS) ReadBlob(path string) *Blob { return fs.Poke(path).ReadBlob() }
+
+func (fs *FS) PeekBlob(path string) *Blob { return fs.Peek(path).PeekBlob() }
+
 func (fs *FS) ReadDir(path string) ([]os.FileInfo, error) { return fs.Poke(path).ReadDir() }
 
 func (fs *FS) IsDir(path string) bool { return fs.Poke(path).IsDir() }
@@ -381,6 +385,10 @@ func (nd *Node) print(w io.Writer, filter func(*Node) string, indent string) {
 }
 
 func (nd *Node) PeekMemo(k memo.K) memo.V {
+	return nd.pkMemo().Peek(k)
+}
+
+func (nd *Node) pkMemo() *memo.M {
 	if nd == nil {
 		return nil
 	}
@@ -388,7 +396,7 @@ func (nd *Node) PeekMemo(k memo.K) memo.V {
 	nd.mu.Lock()
 	defer nd.mu.Unlock()
 
-	return nd.meta(false).memo(false).Peek(k)
+	return nd.meta(false).memo(false)
 }
 
 func (nd *Node) Memo() (*memo.M, error) {
@@ -408,6 +416,14 @@ func (nd *Node) Memo() (*memo.M, error) {
 		return nil, err
 	}
 	return mt.memo(true), nil
+}
+
+func (nd *Node) ReadBlob() *Blob {
+	return readBlob(nd)
+}
+
+func (nd *Node) PeekBlob() *Blob {
+	return peekBlob(nd)
 }
 
 func (nd *Node) ReadMemo(k memo.K, new func() memo.V) memo.V {
@@ -462,8 +478,14 @@ func (nd *Node) sync() (*meta, error) {
 		nd.resetParent()
 	}
 	if err != nil {
-		mt.invalidate()
-		nd.setCl(nil)
+		// don't reset root, it gets rid of all nodes below it...
+		// TODO: investigate how we end up statting the root node (at least on Windows)
+		// TODO: cache these stat errors for a little while;
+		//       if a file doesn't exist, it's unlikely to exist a couple seconds later.
+		if !nd.IsRoot() {
+			mt.invalidate()
+			nd.setCl(nil)
+		}
 		return nil, err
 	}
 	mt.resetInfo(fi.Mode(), fi.ModTime())

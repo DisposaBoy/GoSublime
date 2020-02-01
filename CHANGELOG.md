@@ -10,6 +10,14 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 20.02.01
+
+This release focuses on fixing a performance issue due to a failure to resetting all cached data prematurely.
+
+- Cache some files in memory to avoid re-reading from disk every time.
+
+- The `&nodejs.PackageScripts{}` reducer now uses `yarn` instead of `npm` if the `yarn.lock` file is present.
+
 ## 20.01.01
 
 This release mainly focuses on under-the-hood improvements for module support.
