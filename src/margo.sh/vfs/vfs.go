@@ -478,8 +478,14 @@ func (nd *Node) sync() (*meta, error) {
 		nd.resetParent()
 	}
 	if err != nil {
-		mt.invalidate()
-		nd.setCl(nil)
+		// don't reset root, it gets rid of all nodes below it...
+		// TODO: investigate how we end up statting the root node (at least on Windows)
+		// TODO: cache these stat errors for a little while;
+		//       if a file doesn't exist, it's unlikely to exist a couple seconds later.
+		if !nd.IsRoot() {
+			mt.invalidate()
+			nd.setCl(nil)
+		}
 		return nil, err
 	}
 	mt.resetInfo(fi.Mode(), fi.ModTime())
