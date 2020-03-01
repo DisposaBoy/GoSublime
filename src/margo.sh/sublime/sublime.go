@@ -43,7 +43,15 @@ func buildAction(c *cli.Context) error {
 	tags := "margo"
 	errs := []string{}
 
+	modWas, modSet := os.LookupEnv("GO111MODULE")
+	// guess: dotless module names are reserved,
+	// so the import fails because `margo` is not in GOROOT
+	// I <3 Go modules!
+	os.Setenv("GO111MODULE", "off")
 	pkg, err := extensionPkg()
+	if modSet {
+		os.Setenv("GO111MODULE", modWas)
+	}
 	if err == nil {
 		fixExtPkg(pkg)
 		tags = "margo margo_extension"
