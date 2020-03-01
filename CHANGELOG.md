@@ -10,6 +10,10 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 20.03.01
+
+This release fixes a margo build failure when upgrading to go1.14.
+
 ## 20.02.01
 
 This release focuses on fixing a performance issue due to a failure to resetting all cached data prematurely.
