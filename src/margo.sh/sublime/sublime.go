@@ -51,6 +51,8 @@ func buildAction(c *cli.Context) error {
 	pkg, err := extensionPkg()
 	if modSet {
 		os.Setenv("GO111MODULE", modWas)
+	} else {
+		os.Unsetenv("GO111MODULE")
 	}
 	if err == nil {
 		fixExtPkg(pkg)

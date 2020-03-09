@@ -42,7 +42,7 @@ type motdState struct {
 
 // MOTD keeps you updated about new versions and important announcements
 //
-// It adds a new command `motd.sync` available via the UserCmd palette as `Sync MOTD`
+// It adds a new command `motd.sync` available via the UserCmd palette as `Sync MOTD (check for updates)`
 //
 // Interval can be set in order to enable automatic update fetching.
 //
@@ -96,7 +96,7 @@ func (m *MOTD) Reduce(mx *Ctx) *State {
 	case RunCmd:
 		st = st.AddBuiltinCmds(BuiltinCmd{Name: "motd.sync", Run: m.motdSyncCmd})
 	case QueryUserCmds:
-		st = st.AddUserCmds(UserCmd{Title: "Sync MOTD", Name: "motd.sync"})
+		st = st.AddUserCmds(UserCmd{Title: "Sync MOTD (check for updates)", Name: "motd.sync"})
 	case motdAct:
 		m.msg = act.msg
 	}
@@ -179,14 +179,35 @@ func (m *MOTD) sync(mx *Ctx) error {
 	return nil
 }
 
+func (_ *MOTD) fmtTag(s string) (string, error) {
+	var y, m, d, n int
+	scanned, err := fmt.Sscanf(s, "%02d.%02d.%02d-%d", &y, &m, &d, &n)
+	if scanned < 4 {
+		_, err = fmt.Sscanf(s, "%02d.%02d.%02d", &y, &m, &d)
+	}
+	if err != nil {
+		return "", err
+	}
+	if n <= 0 {
+		n = 1
+	}
+	return fmt.Sprintf("%02d.%02d.%02d-%d", y, m, d, n), nil
+}
+
 func (m *MOTD) dispatchMsg(mx *Ctx, ms motdState) {
 	res := ms.Result
 	act := motdAct{}
 	ctag := mx.Editor.Client.Tag
+	srvTag, srvTagErr := m.fmtTag(res.Tag)
+	cliTag, cliTagErr := m.fmtTag(ctag)
 	switch {
 	case ctag == "":
 		mx.Log.Println("motd: client tag is undefined; you might need to restart the editor")
-	case res.Tag != ctag:
+	case srvTagErr != nil:
+		mx.Log.Println("motd: cannot parse ser`ver tag:", srvTagErr)
+	case cliTagErr != nil:
+		mx.Log.Println("motd: cannot parse client tag:", cliTagErr)
+	case cliTag < srvTag:
 		act.msg = res.Message
 	}
 	mx.Store.Dispatch(act)
