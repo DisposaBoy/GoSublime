@@ -10,6 +10,13 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 20.03.09
+
+This release fixes a couple bugs:
+
+- GO111MODULE=off is set after building, in cases where GO111MODULE wasn't already set by the user.
+- An update message is shown even when the local GoSublime version is greater than that reported by the server.
+
 ## 20.03.01
 
 This release fixes a margo build failure when upgrading to go1.14.

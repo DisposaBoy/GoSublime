@@ -17,7 +17,7 @@ func Margo(m mg.Args) {
 	m.Use(
 		// MOTD keeps you updated about new versions and important announcements
 		//
-		// It adds a new command `motd.sync` available via the UserCmd palette as `Sync MOTD`
+		// It adds a new command `motd.sync` available via the UserCmd palette as `Sync MOTD (check for updates)`
 		//
 		// Interval can be set in order to enable automatic update fetching.
 		//
