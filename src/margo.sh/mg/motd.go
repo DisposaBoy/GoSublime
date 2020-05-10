@@ -204,7 +204,7 @@ func (m *MOTD) dispatchMsg(mx *Ctx, ms motdState) {
 	case ctag == "":
 		mx.Log.Println("motd: client tag is undefined; you might need to restart the editor")
 	case srvTagErr != nil:
-		mx.Log.Println("motd: cannot parse ser`ver tag:", srvTagErr)
+		mx.Log.Println("motd: cannot parse server tag:", srvTagErr)
 	case cliTagErr != nil:
 		mx.Log.Println("motd: cannot parse client tag:", cliTagErr)
 	case cliTag < srvTag:
