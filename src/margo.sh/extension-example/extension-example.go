@@ -60,7 +60,10 @@ func Margo(m mg.Args) {
 		//   by default this command is bound to ctrl+.,ctrl+r or cmd+.,cmd+r
 		//
 		// UserCmds are also added for `Go Play` and `Go RePlay`
-		&golang.GoCmd{},
+		&golang.GoCmd{
+			// Make the output of `go test -bench...` more readable.
+			// Humanize: true,
+		},
 
 		// add the day and time to the status bar
 		&DayTimeStatus{},
@@ -141,6 +144,9 @@ func Margo(m mg.Args) {
 			BenchArgs: []string{"-benchmem"},
 		},
 
+		// GoGenerate adds a UserCmd that calls `go generate` in go packages and sub-dirs
+		&golang.GoGenerate{Args: []string{"-v", "-x"}},
+
 		// run `go install -i` on save
 		// golang.GoInstall("-i"),
 		// or
@@ -166,6 +172,26 @@ func Margo(m mg.Args) {
 		// 	"--disable=gas",
 		// 	"--fast",
 		// }},
+
+		// AsmFmt is a reducer that does code fmt'ing for `.s` files.
+		// It uses the package https://github.com/klauspost/asmfmt
+		// &golang.AsmFmt{},
+
+		// Prettier is a reducer that does code fmt'ing using https://github.com/prettier/prettier
+		// It fmt's CSS, HTML, JS, JSON, JSX, SVG, TS, TSX and XML files.
+		//
+		// NOTE: as a special-case, files with extensions starting with `.sublime-` are ignored.
+		// NOTE: you will need to install prettier separately
+		//
+		// You will need to `import "margo.sh/web"`
+		// &web.Prettier{
+		// 	Langs: web.PrettierDefaultLangs,
+		// },
+
+		// PackageScripts adds UserCmd entries for each script defined in package.json
+		//
+		// You will need to `import "margo.sh/web/nodejs"`
+		// &nodejs.PackageScripts{},
 	)
 }
 

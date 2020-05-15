@@ -94,10 +94,27 @@ func cachedCx(mx *mg.Ctx, k interface{}) *CurCtx {
 	return &x
 }
 
+func fixSrcPos(mx *mg.Ctx, src []byte, pos int) ([]byte, int) {
+	pos = mgutil.ClampPos(src, pos)
+	if len(src) == 0 {
+		return src, pos
+	}
+
+	if src[pos] == '\n' && src[pos-1] == '.' {
+		p := make([]byte, len(src)+1)
+		copy(p, src[:pos])
+		p[pos] = ';'
+		copy(p[pos+1:], src[pos:])
+		src = p
+	}
+
+	return src, pos
+}
+
 func newCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
 	defer mx.Profile.Push("NewCurCtx").Pop()
 
-	pos = mgutil.ClampPos(src, pos)
+	src, pos = fixSrcPos(mx, src, pos)
 
 	// if we're at the end of the line, move the cursor onto the last thing on the line
 	space := func(r rune) bool { return r == ' ' || r == '\t' }

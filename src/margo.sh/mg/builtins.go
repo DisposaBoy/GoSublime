@@ -3,6 +3,7 @@ package mg
 import (
 	"bytes"
 	"fmt"
+	"margo.sh/mgutil"
 	"os"
 	"sort"
 	"sync"
@@ -156,6 +157,9 @@ type CmdCtx struct {
 	// Output is the `stdout` of the command.
 	// Commands must close it when are done.
 	Output OutputStream
+
+	// Verbose if true prints the command being run (prefixed by "# ")
+	Verbose bool
 }
 
 func (cx *CmdCtx) update(updaters ...func(*CmdCtx)) *CmdCtx {
@@ -184,6 +188,10 @@ func (cx *CmdCtx) WithCmd(name string, args ...string) *CmdCtx {
 // Run runs the list of builtin commands with name CmtCtx.RunCmd.Name.
 // If no commands exist with that name, it calls Builtins.ExecCmd instead.
 func (cx *CmdCtx) Run() *State {
+	if cx.Verbose {
+		fmt.Fprintln(cx.Output, "#", mgutil.QuoteCmd(cx.Name, cx.Args...))
+	}
+
 	cmds := cx.BuiltinCmds.Filter(func(c BuiltinCmd) bool { return c.Name == cx.Name })
 	switch len(cmds) {
 	case 0:
@@ -225,6 +233,10 @@ func (cx *CmdCtx) RunProc() {
 // StartProc creates a new Proc and starts the underlying process.
 // It always returns an initialised Proc.
 func (cx *CmdCtx) StartProc() (*Proc, error) {
+	if cx.Verbose {
+		fmt.Fprintln(cx.Output, "#", mgutil.QuoteCmd(cx.Name, cx.Args...))
+	}
+
 	p := newProc(cx)
 	return p, p.start()
 }

@@ -47,17 +47,17 @@ func TestClampPos(t *testing.T) {
 
 	test(Case{1, -1, 0})
 	test(Case{1, 0, 0})
-	test(Case{1, 1, 1})
+	test(Case{1, 1, 0})
 
 	test(Case{2, -1, 0})
 	test(Case{2, 0, 0})
 	test(Case{2, 1, 1})
 
 	test(Case{3, -1, 0})
-	test(Case{3, 3, 3})
-	test(Case{3, 4, 3})
+	test(Case{3, 3, 2})
+	test(Case{3, 4, 2})
 
 	test(Case{4, -10, 0})
 	test(Case{4, 0, 0})
-	test(Case{4, 10, 4})
+	test(Case{4, 10, 3})
 }

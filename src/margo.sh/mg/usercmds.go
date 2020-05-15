@@ -38,6 +38,9 @@ type UserCmd struct {
 	// Args is a list of args to pass to the command
 	Args []string
 
+	// Dir is preferred directory in which the command should run.
+	Dir string
+
 	// Prompts is a list of titles for prompting the user for input before running the command.
 	// The user is prompted once for each entry.
 	// The inputs are assigned directly to RunCmd.Prompts for command consumption.

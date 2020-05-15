@@ -23,6 +23,7 @@ const (
 	GoSum        Lang = "go.sum"
 	Groovy       Lang = "groovy"
 	Haskell      Lang = "haskell"
+	HTML         Lang = "html"
 	Java         Lang = "java"
 	JS           Lang = "js"
 	JSON         Lang = "json"
@@ -46,9 +47,11 @@ const (
 	Scala        Lang = "scala"
 	ShellScript  Lang = "shell"
 	SQL          Lang = "sql"
+	SVG          Lang = "svg"
 	Tcl          Lang = "tcl"
 	TS           Lang = "ts"
 	TSX          Lang = "tsx"
+	XML          Lang = "xml"
 	Yaml         Lang = "yaml"
 )
 

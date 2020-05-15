@@ -1,16 +1,28 @@
 package golang
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/dustin/go-humanize"
+	"go/ast"
 	"go/build"
 	"io/ioutil"
+	"margo.sh/golang/cursor"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
-type GoCmd struct{ mg.ReducerType }
+type GoCmd struct {
+	mg.ReducerType
+
+	Humanize bool
+}
 
 func (gc *GoCmd) Reduce(mx *mg.Ctx) *mg.State {
 	switch act := mx.Action.(type) {
@@ -78,7 +90,7 @@ func (gc *GoCmd) replayBuiltin(bx *mg.CmdCtx) *mg.State {
 }
 
 func (gc *GoCmd) goTool(bx *mg.CmdCtx) {
-	gx := newGoCmdCtx(bx, "go.builtin", "", "", "")
+	gx := newGoCmdCtx(gc, bx, "go.builtin", "", "", "", bx.View)
 	defer gx.Output.Close()
 	gx.run(gx.View)
 }
@@ -86,8 +98,10 @@ func (gc *GoCmd) goTool(bx *mg.CmdCtx) {
 func (gc *GoCmd) playTool(bx *mg.CmdCtx, cancelID string) {
 	origView := bx.View
 	bx, tDir, tFn, err := gc.playTempDir(bx)
-	gx := newGoCmdCtx(bx, "go.play", cancelID, tDir, tFn)
+	gx := newGoCmdCtx(gc, bx, "go.play", cancelID, tDir, tFn, origView)
 	defer gx.Output.Close()
+
+	gx.Verbose = true
 
 	if err != nil {
 		fmt.Fprintf(gx.Output, "Error: %s\n", err)
@@ -147,7 +161,22 @@ func (gc *GoCmd) playTempDir(bx *mg.CmdCtx) (newBx *mg.CmdCtx, tDir string, tFn 
 }
 
 func (gc *GoCmd) playToolTest(gx *goCmdCtx, bld *build.Context, origView *mg.View) {
-	gx.Args = append([]string{"test"}, gx.Args...)
+	argsPfx := []string{"test", "-test.run=."}
+	cx := cursor.NewViewCurCtx(gx.Ctx)
+	for _, n := range cx.Nodes {
+		x, ok := n.(*ast.FuncDecl)
+		if !ok || x.Name == nil {
+			continue
+		}
+		nm := x.Name.String()
+		if strings.HasPrefix(nm, "Benchmark") {
+			argsPfx = append(argsPfx, "-test.bench=^"+nm+"$")
+		}
+	}
+	gx.Args = append(argsPfx, gx.Args...)
+	if origView.Path == "" {
+		gx.Args = append(gx.Args, gx.tFn)
+	}
 	gx.run(origView)
 }
 
@@ -195,12 +224,35 @@ type goCmdCtx struct {
 	tFn    string
 }
 
-func newGoCmdCtx(bx *mg.CmdCtx, label, cancelID string, tDir, tFn string) *goCmdCtx {
+func newGoCmdCtx(gc *GoCmd, bx *mg.CmdCtx, label, cancelID string, tDir, tFn string, origView *mg.View) *goCmdCtx {
 	gx := &goCmdCtx{
 		pkgDir: bx.View.Dir(),
 		tDir:   tDir,
 		tFn:    tFn,
 	}
+
+	output := bx.Output
+	if gc.Humanize && len(bx.Args) > 0 && bx.Args[0] == "test" {
+		output = &humanizeWriter{output}
+	}
+	if gx.tFn != "" {
+		dir := filepath.Dir(gx.tFn)
+		qDir := regexp.QuoteMeta(dir)
+		qDirBase := regexp.QuoteMeta(filepath.Base(dir))
+		qNm := regexp.QuoteMeta(filepath.Base(gx.tFn))
+		output = &replWriter{
+			OutputStream: output,
+			old: []*regexp.Regexp{
+				regexp.MustCompile(`(?:` + qDir + `|` + qDirBase + `)?[\\/.]+` + qNm),
+				regexp.MustCompile(qDir),
+			},
+			new: [][]byte{
+				[]byte(origView.Name),
+				[]byte(`tmp~`),
+			},
+		}
+	}
+	output = mgutil.NewSplitStream(mgutil.SplitLineOrCR, output)
 
 	type Key struct{ label string }
 	gx.key = Key{label}
@@ -215,7 +267,7 @@ func newGoCmdCtx(bx *mg.CmdCtx, label, cancelID string, tDir, tFn string) *goCmd
 		bx.Name = "go"
 		bx.CancelID = cancelID
 		bx.Output = mg.OutputStreams{
-			bx.Output,
+			output,
 			gx.iw,
 		}
 	})
@@ -236,8 +288,9 @@ func (gx *goCmdCtx) run(origView *mg.View) error {
 	gx.iw.Flush()
 
 	issues := gx.iw.Issues()
+
 	for i, isu := range issues {
-		if isu.Path == gx.tFn {
+		if isu.Path == "" || (gx.tFn != "" && filepath.Base(isu.Path) == origView.Name) {
 			isu.Name = origView.Name
 			isu.Path = origView.Path
 		}
@@ -253,4 +306,76 @@ func (gx *goCmdCtx) run(origView *mg.View) error {
 
 	gx.Store.Dispatch(mg.StoreIssues{IssueKey: ik, Issues: issues})
 	return err
+}
+
+func isWhiteSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
+}
+
+func humanizeMetric(met string) string {
+	i := 0
+	for i < len(met) && isWhiteSpace(met[i]) {
+		i++
+	}
+	j := i
+	for j < len(met) && !isWhiteSpace(met[j]) {
+		j++
+	}
+	pfx := met[:i]
+	val := met[i:j]
+	sfx := met[j:]
+	num, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return met
+	}
+	switch strings.TrimSpace(sfx) {
+	case "ns/op":
+		s := time.Duration(num).String()
+		i := 0
+		for i < len(s) {
+			c := s[i]
+			if (c >= '0' && c <= '9') || c == '.' {
+				i++
+			} else {
+				break
+			}
+		}
+		return pfx + s[:i] + " " + s[i:] + "/op"
+	case "B/op":
+		return pfx + humanize.IBytes(uint64(num)) + "/op"
+	default:
+		return pfx + humanize.Comma(num) + sfx
+	}
+}
+
+type humanizeWriter struct {
+	mg.OutputStream
+}
+
+func (w *humanizeWriter) Write(ln []byte) (int, error) {
+	s := make([]byte, 0, len(ln)+42)
+	for len(ln) != 0 {
+		i := bytes.IndexByte(ln, '\t')
+		if i < 0 {
+			s = append(s, humanizeMetric(string(ln))...)
+			break
+		}
+		i++
+		s = append(s, humanizeMetric(string(ln[:i]))...)
+		ln = ln[i:]
+	}
+	return w.OutputStream.Write(s)
+}
+
+type replWriter struct {
+	mg.OutputStream
+	old []*regexp.Regexp
+	new [][]byte
+}
+
+func (w *replWriter) Write(ln []byte) (int, error) {
+	for i, pat := range w.old {
+		ln = pat.ReplaceAll(ln, w.new[i])
+	}
+	return w.OutputStream.Write(ln)
 }

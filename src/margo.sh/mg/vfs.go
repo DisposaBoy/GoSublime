@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	vFS = vfs.New()
+	VFS = vfs.New()
 )
 
 type vfsCmd struct{ ReducerType }
