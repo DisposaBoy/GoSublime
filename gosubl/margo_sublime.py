@@ -70,6 +70,7 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 			'run': [cmd.name] + cmd.args,
 			'action_data': {
 				'Prompts': prompts,
+				'Dir': cmd.dir,
 			},
 			'save_hist': False,
 			'focus_view': False,
@@ -84,7 +85,14 @@ class MargoUserCmdsCommand(sublime_plugin.TextCommand):
 		cmds = rs.state.user_cmds
 
 		for c in cmds:
-			desc = c.desc or '`%s`' % ' '.join([c.name] + c.args)
+			desc = c.desc
+			if not desc:
+				desc = '`%s`' % ' '.join([c.name] + c.args)
+				if c.dir:
+					sim = gs.simple_fn(c.dir)
+					rel = os.path.relpath(c.dir, gs.active_wd(win=win))
+					if rel != '.':
+						desc += ' [ %s ]' % (rel if len(rel) < len(sim) else sim)
 			items.append([c.title, desc])
 
 		def on_done(i):

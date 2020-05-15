@@ -232,6 +232,7 @@ class UserCmd(object):
 		self.desc = v.get('Desc') or ''
 		self.name = v.get('Name') or ''
 		self.args = v.get('Args') or []
+		self.dir = v.get('Dir') or ''
 		self.prompts = v.get('Prompts') or []
 
 class HUD(object):
@@ -248,11 +249,11 @@ MAX_VIEW_SIZE = 8 << 20
 #       if we attempt to copy large files because it has to convert into utf*
 #       which could use up to x4 to convert into the string it gives us
 #       and then we have to re-encode that into bytes to send it
-def make_props(view=None):
+def make_props(view=None, wd=''):
 	props = {
 		'Editor': _editor_props(view),
 		'Env': sh.env(),
-		'View': _view_props(view),
+		'View': _view_props(view, wd=wd),
 	}
 
 	return props
@@ -275,7 +276,7 @@ def _editor_props(view):
 def view_is_9o(view):
 	return view is not None and view.settings().get('9o')
 
-def _view_props(view):
+def _view_props(view, wd=''):
 	was_9o = view_is_9o(view)
 	if was_9o:
 		view = gs.active_view()
@@ -287,7 +288,7 @@ def _view_props(view):
 
 	pos = gs.sel(view).begin()
 	scope, lang, fn, props = _view_header(view, pos)
-	wd = gs.getwd() or gs.basedir_or_cwd(fn)
+	wd = wd or gs.getwd() or gs.basedir_or_cwd(fn)
 	src = _view_src(view, lang)
 
 	props.update({

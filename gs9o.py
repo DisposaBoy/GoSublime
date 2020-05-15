@@ -471,7 +471,10 @@ class Gs9oExecCommand(sublime_plugin.TextCommand):
 
 				f = builtins().get(nm)
 				if f:
-					f(view, edit, args, wd, rkey)
+					try:
+						f(view, edit, args, wd, rkey, action_data=action_data)
+					except TypeError:
+						f(view, edit, args, wd, rkey)
 					return
 				else:
 					_rcmd(
@@ -622,6 +625,7 @@ def _rcmd(*, view, edit, name, args, wd, rkey, action_data={}):
 		if rs.error:
 			push_output(view, rkey, rs.error)
 
+	wd = action_data.get('Dir') or wd
 	act = actions.RunCmd.copy()
 	act['Data'] = {
 		'Fd':  _rcmd_fd(wd=wd, rkey=rkey),
@@ -693,7 +697,7 @@ def cmd_reset(view, edit, args, wd, rkey):
 def cmd_clear(view, edit, args, wd, rkey):
 	cmd_reset(view, edit, args, wd, rkey)
 
-def cmd_go(view, edit, args, wd, rkey):
+def cmd_go(view, edit, args, wd, rkey, action_data={}):
 	_save_all(view.window(), wd)
 	sublime.set_timeout_async(lambda: _rcmd(
 		view=view,
@@ -702,6 +706,7 @@ def cmd_go(view, edit, args, wd, rkey):
 		args=args,
 		wd=wd,
 		rkey=rkey,
+		action_data=action_data,
 	))
 
 def cmd_cancel_replay(view, edit, args, wd, rkey):
@@ -720,12 +725,12 @@ def cmd_cancel_replay(view, edit, args, wd, rkey):
 	mg9.acall('kill', {'cid': cid}, None)
 	push_output(view, rkey, '')
 
-def cmd_sh(view, edit, args, wd, rkey):
+def cmd_sh(view, edit, args, wd, rkey, action_data={}):
 	cid, cb = _9_begin_call('sh', view, edit, args, wd, rkey, '')
 	a = {
 		'cid': cid,
 		'env': sh.env(),
-		'cwd': wd,
+		'cwd': action_data.get('Dir') or wd,
 		'cmd': {
 			'name': args[0],
 			'args': args[1:],
