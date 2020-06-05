@@ -68,13 +68,13 @@ func (tc *TypeCheck) check(mx *mg.Ctx) {
 	issues := []mg.Issue{}
 	if v.Path == "" {
 		pf := goutil.ParseFile(mx, v.Name, src)
-		issues = append(issues, tc.errToIssues(v, pf.Error)...)
+		issues = append(issues, tc.errToIssues(mx, v, pf.Error)...)
 		if pf.Error == nil {
 			tcfg := types.Config{
 				IgnoreFuncBodies: true,
 				FakeImportC:      true,
 				Error: func(err error) {
-					issues = append(issues, tc.errToIssues(v, err)...)
+					issues = append(issues, tc.errToIssues(mx, v, err)...)
 				},
 				Importer: kimporter.New(mx, nil),
 			}
@@ -88,7 +88,7 @@ func (tc *TypeCheck) check(mx *mg.Ctx) {
 			SrcMap:       map[string][]byte{v.Filename(): src},
 		})
 		_, err := kp.ImportFrom(".", v.Dir(), 0)
-		issues = append(issues, tc.errToIssues(v, err)...)
+		issues = append(issues, tc.errToIssues(mx, v, err)...)
 	}
 	for i, isu := range issues {
 		if isu.Path == "" {
@@ -151,30 +151,41 @@ func (tc *TypeCheck) parseFiles(mx *mg.Ctx) (*token.FileSet, []*ast.File, error)
 	return fset, files, nil
 }
 
-func (tc *TypeCheck) errToIssues(v *mg.View, err error) mg.IssueSet {
+func (tc *TypeCheck) posIssue(mx *mg.Ctx, v *mg.View, msg string, p token.Position) mg.Issue {
+	is := mg.Issue{
+		Path:    p.Filename,
+		Row:     p.Line - 1,
+		Col:     p.Column - 1,
+		Message: msg,
+	}
+	if is.Path == "" {
+		is.Name = v.Name
+	}
+	return is
+}
+
+func (tc *TypeCheck) errToIssues(mx *mg.Ctx, v *mg.View, err error) mg.IssueSet {
 	var issues mg.IssueSet
 	switch e := err.(type) {
 	case nil:
 	case scanner.ErrorList:
 		for _, err := range e {
-			issues = append(issues, tc.errToIssues(v, err)...)
+			issues = append(issues, tc.errToIssues(mx, v, err)...)
 		}
 	case mg.Issue:
+		if e.Name == "" && e.Path == "" {
+			// guard against failure to set .Path
+			e.Name = v.Name
+		}
 		issues = append(issues, e)
 	case scanner.Error:
-		issues = append(issues, mg.Issue{
-			Row:     e.Pos.Line - 1,
-			Col:     e.Pos.Column - 1,
-			Message: e.Msg,
-		})
+		issues = append(issues, tc.posIssue(mx, v, e.Msg, e.Pos))
+	case *scanner.Error:
+		issues = append(issues, tc.posIssue(mx, v, e.Msg, e.Pos))
 	case types.Error:
-		p := e.Fset.Position(e.Pos)
-		issues = append(issues, mg.Issue{
-			Path:    p.Filename,
-			Row:     p.Line - 1,
-			Col:     p.Column - 1,
-			Message: e.Msg,
-		})
+		issues = append(issues, tc.posIssue(mx, v, e.Msg, e.Fset.Position(e.Pos)))
+	case *types.Error:
+		issues = append(issues, tc.posIssue(mx, v, e.Msg, e.Fset.Position(e.Pos)))
 	default:
 		issues = append(issues, mg.Issue{
 			Name:    v.Name,

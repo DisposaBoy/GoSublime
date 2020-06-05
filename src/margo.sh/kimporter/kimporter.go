@@ -348,6 +348,7 @@ func (kp *Importer) importDeps(ks *state, bp *build.Package, fset *token.FileSet
 				}
 				tp := fset.Position(spec.Pos())
 				return mg.Issue{
+					Path:    tp.Filename,
 					Row:     tp.Line - 1,
 					Col:     tp.Column - 1,
 					Message: err.Error(),
