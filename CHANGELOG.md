@@ -10,6 +10,106 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 20.06.14
+
+This release contains a number of features and bug fixes that have been worked on over the last few months.
+
+_You will need to restart Sublime Text for all changes to take effect_
+
+- Add new GoCmd{} option `Humanize` to make `go test` and `go re/play` (in test mdoe) output more readable (using https://github.com/dustin/go-humanize).
+
+  - large numbers are split up using commas
+  - 123456 ns/op is converted to µs/op, etc.
+  - 123456 B/op is converted to KiB/op, etc.
+
+  To enabled it, use:
+
+      &golang.GoCmd{
+          Humanize: true,
+      }
+
+  e.g. output:
+
+      goos: linux
+      goarch: amd64
+      pkg: margo.sh/vfs
+      BenchmarkPoke/Miss-8            388,868       2.952 µs/op
+      BenchmarkPoke/Hit-8            1,739,704         684 ns/op
+      PASS
+
+  Known bugs:
+
+  - The output fields are not aligned
+
+- Add new reducer golang.GoGenerate
+
+  It adds a UserCmd (cord `ctrl/cmd+.`,`ctrl/cmd+.c`) named `Go Generate` that calls `go generate` in the closest go package (current dir or parent dirs).
+
+  It can be enabled with:
+
+      &golang.GoGenerate{
+          Args: []string{"-v", "-x"},
+      },
+
+- Auto-completion now works when the line ends with a dot (.)
+
+- Add new reducer golang.AsmFmt
+
+  It does code fmt'ing for `.s` files using https://github.com/klauspost/asmfmt
+
+  It formats `.s` files when they are saved, or the fmt cord `ctrl+.`,`ctrl.f` is pressed.
+
+- Add new reducer &web.Prettier{}
+
+  It does code fmt'ing using https://github.com/prettier/prettier
+  By default It fmt's CSS, HTML, JS, JSON, JSX, SVG, TS, TSX and XML files.
+
+  To specify the list of langs to fmt set the `Langs` field:
+
+      &web.Prettier{
+          // Langs: []mg.Lang{mg.JS}, // only fmt .js files
+          Langs: web.PrettierDefaultLangs,
+      },
+
+  You might also need to `import "margo.sh/web"`.
+
+  You will need to install prettier separately.
+
+- Add new Lang constants: mg.HTML, mg.SVG and mg.XML
+
+- Add mgutil.SplitWriter a writer that writes to an underlying writer in split chunks e.g. lines somewhat similar to bufio.scanner
+
+- `go.play` and `go.replay` (cord `ctrl/cmd+.`,`ctrl/cmd+r`) now works in in unsaved `_test.go` files.
+
+- `go.replay` now runs the Benchmark\* func surrounding the cursor.
+
+  Compared to `ctrl/cmd+shift+left-click`, it also runs tests.
+
+  Known bugs:
+
+  - It currently ignores the TestArgs and BenchmarkArgs options of the golang.TestCmds reducer.
+
+- mg.CmdCtx supports a new option `Verbose`,
+
+  When `cx.Verbose = true`the commands that are run are printed to the output prefixed with `#`.
+
+  e.g. output:
+
+      [ `replay` | done ]
+      # go test -test.run=. -test.bench=^BenchmarkPoke$
+      goos: linux
+      [...]
+
+  It's enabled for `go.play` and `go.replay` (cord `ctrl/cmd+.`,`ctrl/cmd+r`).
+
+- Issues without a valid tag are now defaulted to `mg.Error` instead of being ignored.
+
+  This fixes some cases where the error palette shows errors, but the status and HUD doesn't.
+
+- Fix some cases where issues are reported in the wrong file or incorrectly anchored to the current file.
+
+- goutil.IsPkgDir() and other functions now use the VFS, so should touch the disk less.
+
 ## 20.03.09
 
 This release fixes a couple bugs:
