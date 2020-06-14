@@ -1,16 +1,28 @@
 package golang
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/dustin/go-humanize"
+	"go/ast"
 	"go/build"
 	"io/ioutil"
+	"margo.sh/golang/cursor"
 	"margo.sh/mg"
+	"margo.sh/mgutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
-type GoCmd struct{ mg.ReducerType }
+type GoCmd struct {
+	mg.ReducerType
+
+	Humanize bool
+}
 
 func (gc *GoCmd) Reduce(mx *mg.Ctx) *mg.State {
 	switch act := mx.Action.(type) {
@@ -78,31 +90,37 @@ func (gc *GoCmd) replayBuiltin(bx *mg.CmdCtx) *mg.State {
 }
 
 func (gc *GoCmd) goTool(bx *mg.CmdCtx) {
-	gx := newGoCmdCtx(bx, "go.builtin", "", "", "")
+	gx := newGoCmdCtx(gc, bx, "go.builtin", "", "", "", bx.View, len(bx.Args) > 0 && bx.Args[0] == "test")
 	defer gx.Output.Close()
 	gx.run(gx.View)
 }
 
 func (gc *GoCmd) playTool(bx *mg.CmdCtx, cancelID string) {
+	bld := BuildContext(bx.Ctx)
+	pkg, err := bld.ImportDir(bx.View.Dir(), 0)
+	if err != nil {
+		fmt.Fprintln(bx.Output, "Error: cannot import package:", err)
+	}
+
+	testMode := !pkg.IsCommand() ||
+		strings.HasSuffix(bx.View.Filename(), "_test.go")
+
 	origView := bx.View
 	bx, tDir, tFn, err := gc.playTempDir(bx)
-	gx := newGoCmdCtx(bx, "go.play", cancelID, tDir, tFn)
-	defer gx.Output.Close()
-
 	if err != nil {
-		fmt.Fprintf(gx.Output, "Error: %s\n", err)
+		fmt.Fprintf(bx.Output, "Error: %s\n", err)
 	}
+	defer os.RemoveAll(tDir)
 	if tDir == "" {
 		return
 	}
-	defer os.RemoveAll(tDir)
+	gx := newGoCmdCtx(gc, bx, "go.play", cancelID, tDir, tFn, origView, testMode)
+	defer gx.Output.Close()
 
-	bld := BuildContext(gx.Ctx)
-	pkg, err := bld.ImportDir(gx.pkgDir, 0)
+	gx.Verbose = true
+
 	switch {
-	case err != nil:
-		fmt.Fprintln(gx.Output, "Error: cannot import package:", err)
-	case !pkg.IsCommand() || strings.HasSuffix(bx.View.Filename(), "_test.go"):
+	case testMode:
 		gc.playToolTest(gx, bld, origView)
 	default:
 		gc.playToolRun(gx, bld, origView)
@@ -147,7 +165,22 @@ func (gc *GoCmd) playTempDir(bx *mg.CmdCtx) (newBx *mg.CmdCtx, tDir string, tFn 
 }
 
 func (gc *GoCmd) playToolTest(gx *goCmdCtx, bld *build.Context, origView *mg.View) {
-	gx.Args = append([]string{"test"}, gx.Args...)
+	argsPfx := []string{"test", "-test.run=."}
+	cx := cursor.NewViewCurCtx(gx.Ctx)
+	for _, n := range cx.Nodes {
+		x, ok := n.(*ast.FuncDecl)
+		if !ok || x.Name == nil {
+			continue
+		}
+		nm := x.Name.String()
+		if strings.HasPrefix(nm, "Benchmark") {
+			argsPfx = append(argsPfx, "-test.bench=^"+nm+"$")
+		}
+	}
+	gx.Args = append(argsPfx, gx.Args...)
+	if origView.Path == "" {
+		gx.Args = append(gx.Args, gx.tFn)
+	}
 	gx.run(origView)
 }
 
@@ -158,7 +191,7 @@ func (gc *GoCmd) playToolRun(gx *goCmdCtx, bld *build.Context, origView *mg.View
 	}
 
 	args := gx.Args
-	exe := filepath.Join(gx.tDir, "margo.play~~"+nm+".exe")
+	exe := filepath.Join(gx.tDir, nm+".exe")
 	gx.CmdCtx = gx.CmdCtx.Copy(func(bx *mg.CmdCtx) {
 		bx.Name = "go"
 		bx.Args = []string{"build", "-o", exe}
@@ -195,12 +228,35 @@ type goCmdCtx struct {
 	tFn    string
 }
 
-func newGoCmdCtx(bx *mg.CmdCtx, label, cancelID string, tDir, tFn string) *goCmdCtx {
+func newGoCmdCtx(gc *GoCmd, bx *mg.CmdCtx, label, cancelID string, tDir, tFn string, origView *mg.View, testMode bool) *goCmdCtx {
 	gx := &goCmdCtx{
 		pkgDir: bx.View.Dir(),
 		tDir:   tDir,
 		tFn:    tFn,
 	}
+
+	output := bx.Output
+	if gc.Humanize && testMode {
+		output = &humanizeWriter{output}
+	}
+	if gx.tFn != "" {
+		dir := filepath.Dir(gx.tFn)
+		qDir := regexp.QuoteMeta(dir)
+		qDirBase := regexp.QuoteMeta(filepath.Base(dir))
+		qNm := regexp.QuoteMeta(filepath.Base(gx.tFn))
+		output = &replWriter{
+			OutputStream: output,
+			old: []*regexp.Regexp{
+				regexp.MustCompile(`(?:` + qDir + `|` + qDirBase + `)?[\\/.]+` + qNm),
+				regexp.MustCompile(qDir),
+			},
+			new: [][]byte{
+				[]byte(origView.Name),
+				[]byte(`tmp~`),
+			},
+		}
+	}
+	output = mgutil.NewSplitStream(mgutil.SplitLineOrCR, output)
 
 	type Key struct{ label string }
 	gx.key = Key{label}
@@ -215,7 +271,7 @@ func newGoCmdCtx(bx *mg.CmdCtx, label, cancelID string, tDir, tFn string) *goCmd
 		bx.Name = "go"
 		bx.CancelID = cancelID
 		bx.Output = mg.OutputStreams{
-			bx.Output,
+			output,
 			gx.iw,
 		}
 	})
@@ -236,8 +292,9 @@ func (gx *goCmdCtx) run(origView *mg.View) error {
 	gx.iw.Flush()
 
 	issues := gx.iw.Issues()
+
 	for i, isu := range issues {
-		if isu.Path == gx.tFn {
+		if isu.Path == "" || (gx.tFn != "" && filepath.Base(isu.Path) == origView.Name) {
 			isu.Name = origView.Name
 			isu.Path = origView.Path
 		}
@@ -253,4 +310,82 @@ func (gx *goCmdCtx) run(origView *mg.View) error {
 
 	gx.Store.Dispatch(mg.StoreIssues{IssueKey: ik, Issues: issues})
 	return err
+}
+
+func isWhiteSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
+}
+
+func humanizeMetric(met string) string {
+	i := 0
+	for i < len(met) && isWhiteSpace(met[i]) {
+		i++
+	}
+	j := i
+	for j < len(met) && !isWhiteSpace(met[j]) {
+		j++
+	}
+	k := len(met)
+	for k > j && isWhiteSpace(met[k-1]) {
+		k--
+	}
+	pfx := met[:i]
+	val := met[i:j]
+	unit := met[j:k]
+	sfx := met[k:]
+
+	num, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return met
+	}
+	switch strings.TrimSpace(unit) {
+	case "ns/op":
+		s := time.Duration(num).String()
+		i := 0
+		for i < len(s) {
+			c := s[i]
+			if (c >= '0' && c <= '9') || c == '.' {
+				i++
+			} else {
+				break
+			}
+		}
+		return pfx + s[:i] + " " + s[i:] + "/op" + sfx
+	case "B/op":
+		return pfx + humanize.IBytes(uint64(num)) + "/op" + sfx
+	default:
+		return pfx + humanize.Comma(num) + unit + sfx
+	}
+}
+
+type humanizeWriter struct {
+	mg.OutputStream
+}
+
+func (w *humanizeWriter) Write(ln []byte) (int, error) {
+	s := make([]byte, 0, len(ln)+42)
+	for len(ln) != 0 {
+		i := bytes.IndexByte(ln, '\t')
+		if i < 0 {
+			s = append(s, humanizeMetric(string(ln))...)
+			break
+		}
+		i++
+		s = append(s, humanizeMetric(string(ln[:i]))...)
+		ln = ln[i:]
+	}
+	return w.OutputStream.Write(s)
+}
+
+type replWriter struct {
+	mg.OutputStream
+	old []*regexp.Regexp
+	new [][]byte
+}
+
+func (w *replWriter) Write(ln []byte) (int, error) {
+	for i, pat := range w.old {
+		ln = pat.ReplaceAll(ln, w.new[i])
+	}
+	return w.OutputStream.Write(ln)
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"margo.sh/mg"
 	"os"
-	"path/filepath"
 	"sort"
 )
 
@@ -26,7 +25,7 @@ func (ps *PackageScripts) cmd(mx *mg.Ctx, root string) string {
 	if ps.Cmd != "" {
 		return ps.Cmd
 	}
-	if _, err := mx.VFS.Poke(root).Poke("yarn.lock").Stat(); err == nil {
+	if _, _, err := mx.VFS.Poke(root).Locate("yarn.lock"); err == nil {
 		return "yarn"
 	}
 	return "npm"
@@ -34,7 +33,7 @@ func (ps *PackageScripts) cmd(mx *mg.Ctx, root string) string {
 
 func (ps *PackageScripts) Reduce(mx *mg.Ctx) *mg.State {
 	p := struct{ Scripts map[string]string }{}
-	root, ok := ps.scanPkgJSON(mx.View.Dir(), &p)
+	root, ok := ps.scanPkgJSON(mx, mx.View.Dir(), &p)
 	if !ok || len(p.Scripts) == 0 {
 		return mx.State
 	}
@@ -53,18 +52,16 @@ func (ps *PackageScripts) Reduce(mx *mg.Ctx) *mg.State {
 	return mx.AddUserCmds(cmds...)
 }
 
-func (ps *PackageScripts) scanPkgJSON(dir string, p interface{}) (root string, ok bool) {
-	fn := filepath.Join(dir, "package.json")
-	f, err := os.Open(fn)
-	if err == nil {
-		defer f.Close()
-		err = json.NewDecoder(f).Decode(p)
-		return dir, err == nil
-	}
-
-	d := filepath.Dir(dir)
-	if d == dir || !filepath.IsAbs(d) {
+func (ps *PackageScripts) scanPkgJSON(mx *mg.Ctx, dir string, p interface{}) (root string, ok bool) {
+	nd, _, err := mx.VFS.Poke(dir).Locate("package.json")
+	if err != nil {
 		return "", false
 	}
-	return ps.scanPkgJSON(d, p)
+	f, err := os.Open(nd.Path())
+	if err != nil {
+		return "", false
+	}
+	defer f.Close()
+	err = json.NewDecoder(f).Decode(p)
+	return nd.Parent().Path(), err == nil
 }

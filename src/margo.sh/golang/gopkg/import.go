@@ -48,7 +48,7 @@ func importDirNd(mx *mg.Ctx, nd *vfs.Node, poke bool) (*Pkg, error) {
 	} else {
 		cl = nd.Children()
 	}
-	ls := cl.Filter(pkgNdFilter).Nodes()
+	ls := cl.Filter(goutil.PkgNdFilter).Nodes()
 	if len(ls) == 0 {
 		if poke {
 			return nil, &build.NoGoError{Dir: nd.Path()}
@@ -80,14 +80,6 @@ func PeekDir(mx *mg.Ctx, dir string) *Pkg {
 func PeekDirNd(mx *mg.Ctx, dir *vfs.Node) *Pkg {
 	p, _ := importDirNd(mx, dir, false)
 	return p
-}
-
-func pkgNdFilter(nd *vfs.Node) bool {
-	nm := nd.Name()
-	return nm[0] != '.' && nm[0] != '_' &&
-		strings.HasSuffix(nm, ".go") &&
-		// there's no such thing as a ~~killer videotape~~go package with only test files
-		!strings.HasSuffix(nm, "_test.go")
 }
 
 func importDir(mx *mg.Ctx, nd *vfs.Node, bctx *build.Context, ls []*vfs.Node) (*Pkg, error) {
@@ -136,7 +128,7 @@ func FindPkg(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 	bctx := goutil.BuildContext(mx)
 	grDir := filepath.Join(bctx.GOROOT, "src", importPath)
 	grNd := mx.VFS.Poke(grDir).Ls()
-	if grNd.Some(pkgNdFilter) {
+	if grNd.Some(goutil.PkgNdFilter) {
 		return &PkgPath{Dir: grDir, ImportPath: importPath, Goroot: true}, nil
 	}
 	if goutil.ModEnabled(mx, srcDir) {
@@ -202,7 +194,7 @@ func findPkgPm(mx *mg.Ctx, importPath, srcDir string) (*PkgPath, error) {
 		return nil, errPkgPathNotFound
 	}
 	dir := filepath.Join(modDir, filepath.ToSlash(sfx))
-	if !mx.VFS.Poke(dir).Ls().Some(pkgNdFilter) {
+	if !mx.VFS.Poke(dir).Ls().Some(goutil.PkgNdFilter) {
 		return nil, errPkgPathNotFound
 	}
 	return &PkgPath{
@@ -307,7 +299,7 @@ func (mf *modFile) find(mx *mg.Ctx, bctx *build.Context, importPath string, mp *
 	}
 	lsPkg := func(pfx, sfx string) *PkgPath {
 		dir := filepath.Join(pfx, filepath.FromSlash(sfx))
-		ok := mx.VFS.Poke(dir).Ls().Some(pkgNdFilter)
+		ok := mx.VFS.Poke(dir).Ls().Some(goutil.PkgNdFilter)
 		if ok {
 			return &PkgPath{Dir: dir, ImportPath: importPath}
 		}

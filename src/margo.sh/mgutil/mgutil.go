@@ -49,9 +49,12 @@ func Clamp(lo, hi int, n int) int {
 	}
 }
 
-// ClampPos limits pos to the interval [ 0, len(s) ]
+// ClampPos limits pos to the interval [ 0, len(s)-1 ]
 func ClampPos(s []byte, pos int) int {
-	return Clamp(0, len(s), pos)
+	if len(s) == 0 {
+		return 0
+	}
+	return Clamp(0, len(s)-1, pos)
 }
 
 // Max returns the largest of p or q.

@@ -13,6 +13,12 @@ var (
 	_ io.Writer = (WriterFunc)(nil)
 )
 
+type OutputStream interface {
+	io.Writer
+	io.Closer
+	Flush() error
+}
+
 // IOWrapper implements various optional io interfaces.
 // It delegates to the interface fields that are not nil
 type IOWrapper struct {

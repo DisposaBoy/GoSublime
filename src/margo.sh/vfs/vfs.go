@@ -19,6 +19,13 @@ const (
 )
 
 var (
+	defaultScratchBufferSize = (func() int {
+		n := os.Getpagesize()
+		if n < 4<<10 {
+			n = 4 << 10
+		}
+		return 64 * n
+	})()
 	asyncC = make(chan func(), 1000)
 )
 
@@ -76,6 +83,8 @@ func (fs *FS) IsDir(path string) bool { return fs.Poke(path).IsDir() }
 
 func (fs *FS) IsFile(path string) bool { return fs.Poke(path).IsFile() }
 
+func (fs *FS) Closest(path string, f func(nd *Node) bool) *Node { return fs.Poke(path).Closest(f) }
+
 func (fs *FS) Memo(path string) (*Node, *memo.M, error) {
 	nd := fs.Poke(path)
 	m, err := nd.Memo()
@@ -91,7 +100,7 @@ func (fs *FS) PeekMemo(path string, k memo.K) memo.V {
 }
 
 func (fs *FS) Scan(path string, so ScanOptions) {
-	so.scratch = make([]byte, godirwalk.DefaultScratchBufferSize)
+	so.scratch = make([]byte, defaultScratchBufferSize)
 	fs.Poke(path).scan(path, &so, 0)
 }
 
@@ -239,6 +248,16 @@ func (nd *Node) Branches(f func(nd *Node)) {
 }
 
 func (nd *Node) Path() string {
+	if nd == nil {
+		return ""
+	}
+	if nd.IsRoot() {
+		if filepath.Separator == '/' {
+			return "/"
+		}
+		return ""
+	}
+
 	str := strings.Builder{}
 	var walk func(*Node, int)
 	walk = func(nd *Node, n int) {
@@ -253,9 +272,6 @@ func (nd *Node) Path() string {
 	walk(nd, 0)
 
 	if str.Len() == 0 {
-		if filepath.Separator == '/' {
-			return "/"
-		}
 		return ""
 	}
 
@@ -563,6 +579,15 @@ func (nd *Node) Locate(name string) (*Node, os.FileInfo, error) {
 		return nil, nil, os.ErrNotExist
 	}
 	return nd.parent.Locate(name)
+}
+
+func (nd *Node) Closest(f func(nd *Node) bool) *Node {
+	for ; nd != nil; nd = nd.parent {
+		if f(nd) {
+			return nd
+		}
+	}
+	return nil
 }
 
 func isSep(r byte) bool { return r == '/' || r == '\\' }

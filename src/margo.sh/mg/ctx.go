@@ -85,7 +85,7 @@ func newCtx(sto *Store, st *State, acts *ctxActs, cookie string, p *mgpf.Profile
 		Log:        sto.ag.Log,
 		Cookie:     cookie,
 		Profile:    p,
-		VFS:        vFS,
+		VFS:        VFS,
 		doneC:      make(chan struct{}),
 		cancelOnce: &sync.Once{},
 		handle:     sto.ag.handle,

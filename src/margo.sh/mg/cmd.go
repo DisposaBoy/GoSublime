@@ -16,6 +16,9 @@ import (
 )
 
 var (
+	// OutputStreamFlushInterval specifies how often to flush command output.
+	OutputStreamFlushInterval = 500 * time.Millisecond
+
 	_ OutputStream = (*CmdOut)(nil)
 	_ OutputStream = (*IssueOut)(nil)
 	_ OutputStream = (OutputStreams)(nil)
@@ -65,11 +68,7 @@ func (el ErrorList) Error() string {
 // An OutputSream is safe for concurrent use.
 //
 // The main implementation is CmdOut.
-type OutputStream interface {
-	io.Writer
-	io.Closer
-	Flush() error
-}
+type OutputStream = mgutil.OutputStream
 
 // OutputStreams delegates to a list of OutputStreams.
 //
@@ -265,6 +264,7 @@ type RunCmd struct {
 	Fd       string
 	Input    bool
 	Name     string
+	Dir      string
 	Args     []string
 	CancelID string
 	Prompts  []string
@@ -329,6 +329,14 @@ func (rc RunCmd) interp(data runCmdData, tpl *template.Template, buf *bytes.Buff
 	})
 }
 
+// Wd returns rc.Dir if set or v.Dir()
+func (rc RunCmd) Wd(v *View) string {
+	if rc.Dir != "" {
+		return rc.Dir
+	}
+	return v.Dir()
+}
+
 type Proc struct {
 	Title string
 
@@ -347,7 +355,7 @@ func newProc(cx *CmdCtx) *Proc {
 		s, _ := cx.View.ReadAll()
 		cmd.Stdin = bytes.NewReader(s)
 	}
-	cmd.Dir = cx.View.Wd
+	cmd.Dir = cx.Wd(cx.View)
 	cmd.Env = cx.Env.Environ()
 	cmd.Stdout = cx.Output
 	cmd.Stderr = cx.Output
@@ -407,7 +415,7 @@ func (p *Proc) dispatcher() {
 		select {
 		case <-p.done:
 			return
-		case <-time.After(1 * time.Second):
+		case <-time.After(OutputStreamFlushInterval):
 			p.cx.Output.Flush()
 		}
 	}

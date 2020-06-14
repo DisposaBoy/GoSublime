@@ -2,12 +2,12 @@
 
 
 [[projects]]
-  digest = "1:f2ac2c724fc8214bb7b9dd6d4f5b7a983152051f5133320f228557182263cb94"
+  digest = "1:c7db0d7eb0409eda9ac91b3a9d9ed49a019d0c9c82c6dd4e4bfcf97267c7d435"
   name = "github.com/coreos/bbolt"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a0458a2b35708eef59eb5f620ceb3cd1c01a824d"
-  version = "v1.3.3"
+  revision = "68cc10a767ea1c6b9e8dcb9847317ff192d6d974"
+  version = "v1.3.4"
 
 [[projects]]
   digest = "1:7cb4fdca4c251b3ef8027c90ea35f70c7b661a593b9eeae34753c65499098bb1"
@@ -26,12 +26,20 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:6d8b11ec5fe9d54cc042df88c3d55b27aa233b6b7487404ebcc43df610b6f6ad"
+  digest = "1:1561d3f382a9923816f744264e5ad200a94486328d39216c981e981ab4aba17f"
   name = "github.com/karrick/godirwalk"
   packages = ["."]
   pruneopts = "UT"
-  revision = "df0dba013128236f02e3b293505d1eb89a6d7403"
-  version = "v1.14.0"
+  revision = "99bb3743ba1bdd193cd193bcc0aeced2dd577c4d"
+  version = "v1.15.6"
+
+[[projects]]
+  digest = "1:97ef3ad8a33b72948a86ffc5fffccd713e06dda70649a9a320a21a887a242711"
+  name = "github.com/klauspost/asmfmt"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3da6afce54d96eb4f7ec7ffaa196f53152e9d456"
+  version = "v1.2.1"
 
 [[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
@@ -42,8 +50,8 @@
     "semver",
   ]
   pruneopts = "UT"
-  revision = "bf08ea5df4ea96c6460011b8a8ef2952494d458d"
-  version = "v1.5.1"
+  revision = "bc89b17ba21ce5b8a495fa55a94e3fe32ecf4ed8"
+  version = "v1.5.2"
 
 [[projects]]
   digest = "1:b36a0ede02c4c2aef7df7f91cbbb7bb88a98b5d253509d4f997dda526e50c88c"
@@ -71,11 +79,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:73f9bd0a36bd49a7a46061dd5d6370fbf7c7afcd92a31dcb18661497610672aa"
+  digest = "1:bd74b8f4f9c56983b8628a5bc94a63e1e07dfe69084d0473cfd5f577d2d033ec"
   name = "golang.org/x/crypto"
   packages = ["blake2b"]
   pruneopts = "UT"
-  revision = "61a87790db17894570dfb32dbaa0a4af9ce60cb4"
+  revision = "4bdfaf469ed5a1194e0ec57ec7b1af73991a7ee3"
+
+[[projects]]
+  digest = "1:467bb8fb8fa786448b8d486cd0bb7c1a5577dcd7310441aa02a20110cd9f727d"
+  name = "golang.org/x/mod"
+  packages = [
+    "module",
+    "semver",
+  ]
+  pruneopts = "UT"
+  revision = "ed3ec21bb8e252814c380df79a80f366440ddb2d"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -83,7 +102,7 @@
   name = "golang.org/x/net"
   packages = ["context"]
   pruneopts = "UT"
-  revision = "c0dbc17a35534bf2e581d7a942408dc936316da4"
+  revision = "e086a090c8fdb9982880f0fb6e3db47af1856533"
 
 [[projects]]
   branch = "master"
@@ -91,22 +110,22 @@
   name = "golang.org/x/sync"
   packages = ["errgroup"]
   pruneopts = "UT"
-  revision = "cd5d95a43a6e21273425c7ae415d3df9ea832eeb"
+  revision = "43a5402ce75a95522677f77c619865d66b8c57ab"
 
 [[projects]]
   branch = "master"
-  digest = "1:2390cc9215d5adf71b9d76564dd3795e692e5b4602d777190b33fda90c21f213"
+  digest = "1:c73fc47a43a9a69f82c3c708032db58320e03af3fe178ebab8e2045c47c1356a"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "548cf772de5052aa878ccb47cdeb7d262b75c8ec"
+  revision = "1957bb5e6d1f523308b49060df02171d06ddfc77"
 
 [[projects]]
   branch = "master"
-  digest = "1:1aeecdf82532ac97a305351fef4566be34b387d372cf73ad808e7112221be08f"
+  digest = "1:99e4172e8a303da9f7bc32eb7868108b03ac588768988ac788e5ed5e049e075b"
   name = "golang.org/x/tools"
   packages = [
     "cmd/guru",
@@ -127,15 +146,30 @@
     "go/ssa/ssautil",
     "go/types/typeutil",
     "imports",
+    "internal/event",
+    "internal/event/core",
+    "internal/event/keys",
+    "internal/event/label",
     "internal/fastwalk",
+    "internal/gocommand",
     "internal/gopathwalk",
     "internal/imports",
-    "internal/module",
-    "internal/semver",
+    "internal/packagesinternal",
     "refactor/importgraph",
   ]
   pruneopts = "UT"
-  revision = "eac381796e91db0acd689726cce5b78086509607"
+  revision = "8463f397d07cfd2b3f1442fb1daa5e6bc2178a6e"
+
+[[projects]]
+  branch = "master"
+  digest = "1:918a46e4a2fb83df33f668f5a6bd51b2996775d073fce1800d3ec01b0a5ddd2b"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
 
 [[projects]]
   branch = "master"
@@ -155,6 +189,7 @@
     "github.com/coreos/bbolt",
     "github.com/dustin/go-humanize",
     "github.com/karrick/godirwalk",
+    "github.com/klauspost/asmfmt",
     "github.com/rogpeppe/go-internal/modfile",
     "github.com/rogpeppe/go-internal/module",
     "github.com/rogpeppe/go-internal/semver",

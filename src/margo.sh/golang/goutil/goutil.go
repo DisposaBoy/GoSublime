@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"io"
 	"margo.sh/mg"
+	"margo.sh/vfs"
 	yotsuba "margo.sh/why_would_you_make_yotsuba_cry"
 	"os"
 	"path/filepath"
@@ -139,23 +140,28 @@ func IsLetter(ch rune) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_' || ch >= utf8.RuneSelf && unicode.IsLetter(ch)
 }
 
+func PkgNdFilter(nd *vfs.Node) bool {
+	nm := nd.Name()
+	return nm[0] != '.' && nm[0] != '_' &&
+		strings.HasSuffix(nm, ".go") &&
+		// there's no such thing as a ~~killer videotape~~go package with only test files
+		!strings.HasSuffix(nm, "_test.go")
+}
+
+func IsPkgDirNd(nd *vfs.Node) bool {
+	return nd.Ls().Some(PkgNdFilter)
+}
+
 func IsPkgDir(dir string) bool {
-	if dir == "" || dir == "." {
-		return false
-	}
+	return IsPkgDirNd(mg.VFS.Poke(dir))
+}
 
-	f, err := os.Open(dir)
-	if err != nil {
-		return false
-	}
+func ClosestPkgDirNd(nd *vfs.Node) *vfs.Node {
+	return nd.Closest(IsPkgDirNd)
+}
 
-	l, _ := f.Readdirnames(-1)
-	for _, fn := range l {
-		if strings.HasSuffix(fn, ".go") {
-			return true
-		}
-	}
-	return false
+func ClosestPkgDir(dir string) *vfs.Node {
+	return mg.VFS.Closest(dir, IsPkgDirNd)
 }
 
 // DedentCompletion Dedents s then trims preceding and succeeding empty lines.

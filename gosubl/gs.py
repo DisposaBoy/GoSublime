@@ -503,6 +503,10 @@ def active_view(win=None, view=None):
 
 	return win.active_view()
 
+def active_wd(win=None, view=None):
+	v = active_view(win=win, view=view)
+	return basedir_or_cwd(v.file_name() if v else '')
+
 def win_view(vfn=None, win=None):
 	wins = [win]
 	if win is None:

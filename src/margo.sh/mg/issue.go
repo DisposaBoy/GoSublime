@@ -306,7 +306,7 @@ func (re *issueStatusSupport) Reduce(mx *Ctx) *State {
 	for _, isu := range mx.Issues {
 		cfg, ok := cfgs[isu.Tag]
 		if !ok {
-			continue
+			cfg = cfgs[Error]
 		}
 
 		if !isu.InView(mx.View) {
