@@ -96,7 +96,7 @@ func cachedCx(mx *mg.Ctx, k interface{}) *CurCtx {
 
 func fixSrcPos(mx *mg.Ctx, src []byte, pos int) ([]byte, int) {
 	pos = mgutil.ClampPos(src, pos)
-	if len(src) == 0 {
+	if len(src) == 0 || pos == 0 {
 		return src, pos
 	}
 

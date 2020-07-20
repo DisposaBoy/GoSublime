@@ -66,6 +66,7 @@ func GoVet(args ...string) *Linter {
 		Name:  "go",
 		Args:  append([]string{"vet"}, args...),
 		Label: "Go/Vet",
+		Tag:   mg.Warning,
 	}
 }
 

@@ -195,3 +195,25 @@ func Dedent(s string) string {
 	return strings.Join(lines, "\n")
 
 }
+
+// IdentAt returns the indentifier located at pos, if one exists.
+func IdentAt(af *ast.File, pos token.Pos) *ast.Ident {
+	var id *ast.Ident
+	var sel *ast.SelectorExpr
+	ast.Inspect(af, func(n ast.Node) bool {
+		if !NodeEnclosesPos(n, pos) {
+			return true
+		}
+		switch n := n.(type) {
+		case *ast.Ident:
+			id = n
+		case *ast.SelectorExpr:
+			sel = n
+		}
+		return true
+	})
+	if id == nil && sel != nil {
+		return sel.Sel
+	}
+	return id
+}

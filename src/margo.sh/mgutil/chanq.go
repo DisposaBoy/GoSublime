@@ -1,6 +1,9 @@
 package mgutil
 
 import (
+	"fmt"
+	"os"
+	"runtime/debug"
 	"sync"
 )
 
@@ -59,4 +62,28 @@ func NewChanQ(cap int) *ChanQ {
 		panic("ChanQ cap must be greater than, or equal to, one")
 	}
 	return &ChanQ{c: make(chan interface{}, cap)}
+}
+
+// NewChanQLoop creates a new ChanQ and launches a gorotuine to handle objects received on the channel.
+// If cap is less than 1, it panics
+// If f panics, the panic is recovered and a stack traced is printed to os.Stderr.
+func NewChanQLoop(cap int, f func(v interface{})) *ChanQ {
+	q := NewChanQ(cap)
+	proc := func(v interface{}) {
+		defer func() {
+			e := recover()
+			if e == nil {
+				return
+			}
+			debug.PrintStack()
+			fmt.Fprintf(os.Stderr, "PANIC: ChanQ callback panic: %#v\n", e)
+		}()
+		f(v)
+	}
+	go func() {
+		for v := range q.C() {
+			proc(v)
+		}
+	}()
+	return q
 }

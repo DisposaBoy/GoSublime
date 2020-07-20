@@ -23,13 +23,20 @@ var (
 
 type Guru struct {
 	mg.ReducerType
+
+	disabled bool
 }
 
 func (g *Guru) RCond(mx *mg.Ctx) bool {
-	return mx.LangIs(mg.Go)
+	return mx.LangIs(mg.Go) && !g.disabled
 }
 
 func (g *Guru) RMount(mx *mg.Ctx) {
+	g.disabled = !typChkR.config().NoGotoDef
+	if g.disabled {
+		mx.Log.Println("golang.Guru: disabled by golang.TypeCheck")
+		return
+	}
 	go cmdrunner.Cmd{
 		Name:     "go",
 		Args:     []string{"install", "margo.sh/vendor/golang.org/x/tools/cmd/guru"},

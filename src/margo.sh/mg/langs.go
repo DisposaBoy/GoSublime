@@ -19,6 +19,7 @@ const (
 	Erl          Lang = "erl"
 	Erlang       Lang = "erlang"
 	Go           Lang = "go"
+	Go2          Lang = "go2"
 	GoMod        Lang = "go.mod"
 	GoSum        Lang = "go.sum"
 	Groovy       Lang = "groovy"

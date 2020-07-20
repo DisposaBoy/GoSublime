@@ -359,7 +359,7 @@ func (rf *RFunc) RLabel() string {
 	nm := ""
 	if rf.Func != nil {
 		p := runtime.FuncForPC(reflect.ValueOf(rf.Func).Pointer())
-		if p == nil {
+		if p != nil {
 			nm = p.Name()
 		}
 	}

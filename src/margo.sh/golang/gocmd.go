@@ -97,13 +97,11 @@ func (gc *GoCmd) goTool(bx *mg.CmdCtx) {
 
 func (gc *GoCmd) playTool(bx *mg.CmdCtx, cancelID string) {
 	bld := BuildContext(bx.Ctx)
-	pkg, err := bld.ImportDir(bx.View.Dir(), 0)
-	if err != nil {
-		fmt.Fprintln(bx.Output, "Error: cannot import package:", err)
+	testMode := strings.HasSuffix(bx.View.Filename(), "_test.go")
+	if !testMode && bx.View.Path != "" {
+		pkg, _ := bld.ImportDir(bx.View.Dir(), 0)
+		testMode = pkg != nil && !pkg.IsCommand()
 	}
-
-	testMode := !pkg.IsCommand() ||
-		strings.HasSuffix(bx.View.Filename(), "_test.go")
 
 	origView := bx.View
 	bx, tDir, tFn, err := gc.playTempDir(bx)

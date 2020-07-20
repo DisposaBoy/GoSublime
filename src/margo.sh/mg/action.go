@@ -7,6 +7,7 @@ import (
 
 var (
 	ActionCreators = (&actions.Registry{}).
+		Register("Activate", Activate{}).
 		Register("QueryCompletions", QueryCompletions{}).
 		Register("QueryCmdCompletions", QueryCmdCompletions{}).
 		Register("QueryIssues", QueryIssues{}).

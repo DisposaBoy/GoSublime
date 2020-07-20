@@ -15,6 +15,7 @@ type kpFile struct {
 	Mx         *mg.Ctx
 	Fset       *token.FileSet
 	Fn         string
+	Nm         string
 	Src        []byte
 	Err        error
 	*ast.File
@@ -43,7 +44,7 @@ func (kf *kpFile) init() {
 	}
 }
 
-func parseDir(mx *mg.Ctx, bcx *build.Context, fset *token.FileSet, dir string, srcMap map[string][]byte, ks *state) (*build.Package, []*kpFile, []*ast.File, error) {
+func parseDir(mx *mg.Ctx, bcx *build.Context, fset *token.FileSet, dir string, srcMap map[string][]byte, ks *state) (*build.Package, map[string]*ast.File, []*ast.File, error) {
 	defer mx.Profile.Push(`Kim-Porter: parseDir(` + dir + `)`).Pop()
 
 	bp, err := bcx.ImportDir(dir, 0)
@@ -63,6 +64,7 @@ func parseDir(mx *mg.Ctx, bcx *build.Context, fset *token.FileSet, dir string, s
 				Mx:         mx,
 				Fset:       fset,
 				Fn:         fn,
+				Nm:         nm,
 				Src:        srcMap[fn],
 				CheckFuncs: ks.CheckFuncs,
 			}
@@ -77,14 +79,16 @@ func parseDir(mx *mg.Ctx, bcx *build.Context, fset *token.FileSet, dir string, s
 	}
 	wg.Wait()
 
-	astFiles := make([]*ast.File, 0, len(kpFiles))
+	filesList := make([]*ast.File, 0, len(kpFiles))
+	filesMap := make(map[string]*ast.File, len(kpFiles))
 	for _, kf := range kpFiles {
 		if kf.File != nil {
-			astFiles = append(astFiles, kf.File)
+			filesList = append(filesList, kf.File)
+			filesMap[kf.Nm] = kf.File
 		}
 		if err == nil && kf.Err != nil {
 			err = kf.Err
 		}
 	}
-	return bp, kpFiles, astFiles, err
+	return bp, filesMap, filesList, err
 }

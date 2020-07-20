@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"golang.org/x/crypto/blake2b"
@@ -27,12 +28,107 @@ import (
 )
 
 var (
-	pkgC = func() *types.Package {
+	pkgC = func() *Package {
 		p := types.NewPackage("C", "C")
 		p.MarkComplete()
-		return p
+		return NewPackage(p, nil, nil, nil, nil)
 	}()
+	pkgUnsafe = func() *Package {
+		return NewPackage(types.Unsafe, nil, nil, nil, nil)
+	}()
+	pkgBultin = struct {
+		sync.Mutex
+		*Package
+	}{}
 )
+
+// TypesInfo specifies what, if any, types.Info to load
+type TypesInfo uint
+
+const (
+	// TypesInfoTypes loads types.Info.Types
+	TypesInfoTypes TypesInfo = 1 << iota
+	// TypesInfoDefs loads types.Info.Defs
+	TypesInfoDefs
+	// TypesInfoUses loads types.Info.Uses
+	TypesInfoUses
+	// TypesInfoImplicits loads types.Info.Implicits
+	TypesInfoImplicits
+	// TypesInfoSelections loads types.Info.Selections
+	TypesInfoSelections
+	// TypesInfoScopes loads types.Info.Scopes
+	TypesInfoScopes
+	// TypesInfoInitOrder loads types.Info.InitOrder
+	TypesInfoInitOrder
+	// TypesInfoAll loads all types.Info fields
+	TypesInfoAll = TypesInfoTypes |
+		TypesInfoDefs |
+		TypesInfoUses |
+		TypesInfoImplicits |
+		TypesInfoSelections |
+		TypesInfoScopes |
+		TypesInfoInitOrder
+)
+
+func (ti TypesInfo) New() *types.Info {
+	m := &types.Info{}
+	if ti&TypesInfoTypes != 0 {
+		m.Types = map[ast.Expr]types.TypeAndValue{}
+	}
+	if ti&TypesInfoDefs != 0 {
+		m.Defs = map[*ast.Ident]types.Object{}
+	}
+	if ti&TypesInfoUses != 0 {
+		m.Uses = map[*ast.Ident]types.Object{}
+	}
+	if ti&TypesInfoImplicits != 0 {
+		m.Implicits = map[ast.Node]types.Object{}
+	}
+	if ti&TypesInfoSelections != 0 {
+		m.Selections = map[*ast.SelectorExpr]*types.Selection{}
+	}
+	if ti&TypesInfoScopes != 0 {
+		m.Scopes = map[ast.Node]*types.Scope{}
+	}
+	if ti&TypesInfoInitOrder != 0 {
+		m.InitOrder = []*types.Initializer{}
+	}
+	return m
+}
+
+// Package holds type and package info for a type-checked package.
+// NOTE: All fields except the underlying types.Package are optional.
+type Package struct {
+	*types.Package
+
+	// Fset is the FileSet used for parsing
+	Fset *token.FileSet
+
+	// Info holds type info about the package
+	Info *types.Info
+
+	// Package holds type and package info for type-checked imports
+	Imports map[string]*Package
+
+	// Files maps the package file tbasenames to their parsed ast files
+	Files map[string]*ast.File
+}
+
+// NewPackage is equivalent to &Package{Package: pkg, Fset: fset, Types: info, Imports: imports}
+// All arguments except pkg are optional.
+// NewPackage panics if pkg is nil.
+func NewPackage(pkg *types.Package, fset *token.FileSet, files map[string]*ast.File, info *types.Info, imports map[string]*Package) *Package {
+	if pkg == nil {
+		panic("NewPackage: pkg==nil")
+	}
+	return &Package{
+		Package: pkg,
+		Fset:    fset,
+		Info:    info,
+		Files:   files,
+		Imports: imports,
+	}
+}
 
 type stateKey struct {
 	ImportPath   string
@@ -46,6 +142,7 @@ type stateKey struct {
 	GOROOT       string
 	GOPATH       string
 	NoHash       bool
+	TypesInfo    TypesInfo
 }
 
 func globalState(mx *mg.Ctx, k stateKey) *state {
@@ -65,7 +162,7 @@ type state struct {
 	}
 	mu   sync.Mutex
 	err  error
-	pkg  *types.Package
+	pkg  *Package
 	hash string
 }
 
@@ -103,7 +200,7 @@ func (ks *state) valid(hash string) bool {
 	return ks.chkAt.N() > ks.invAt.N() && (ks.NoHash || ks.hash == hash)
 }
 
-func (ks *state) result() (*types.Package, error) {
+func (ks *state) result() (*Package, error) {
 	switch {
 	case ks.err != nil:
 		return nil, ks.err
@@ -124,6 +221,12 @@ type Config struct {
 	CheckImports  bool
 	NoConcurrency bool
 	Tests         bool
+
+	// TypesInfo specifies what, if any, package info to load
+	TypesInfo TypesInfo
+
+	// ImportsTypesInfo speifies whether or not to also load type info for imported packages
+	ImportsTypesInfo bool
 }
 
 type Importer struct {
@@ -146,10 +249,16 @@ func (kp *Importer) ImportFrom(ipath, srcDir string, mode types.ImportMode) (*ty
 	if mode != 0 {
 		panic("non-zero import mode")
 	}
-	return kp.importFrom(ipath, srcDir)
+	p, err := kp.ImportPackage(ipath, srcDir)
+	if err != nil {
+		return nil, err
+	}
+	return p.Package, nil
 }
 
-func (kp *Importer) importFrom(ipath, srcDir string) (*types.Package, error) {
+// ImportPackage import package with import path ipath relative to srcDir
+// NOTE: All Package fields except the underlying types.Package are optional.
+func (kp *Importer) ImportPackage(ipath, srcDir string) (*Package, error) {
 	if pkg := kp.importFakePkg(ipath); pkg != nil {
 		return pkg, nil
 	}
@@ -186,6 +295,7 @@ func (kp *Importer) stateKey(pp *gopkg.PkgPath) stateKey {
 		GOROOT:       kp.bld.GOROOT,
 		GOPATH:       strings.Join(mgutil.PathList(kp.bld.GOPATH), string(filepath.ListSeparator)),
 		NoHash:       kp.hash == "",
+		TypesInfo:    cfg.TypesInfo,
 	}
 }
 
@@ -214,7 +324,7 @@ func (kp *Importer) detectCycle(pp *gopkg.PkgPath) error {
 	return nil
 }
 
-func (kp *Importer) importPkg(pp *gopkg.PkgPath) (pkg *types.Package, err error) {
+func (kp *Importer) importPkg(pp *gopkg.PkgPath) (pkg *Package, err error) {
 	title := `Kim-Porter: import(` + pp.ImportPath + `)`
 	defer kp.mx.Profile.Push(title).Pop()
 	defer kp.mx.Begin(mg.Task{Title: title}).Done()
@@ -222,6 +332,8 @@ func (kp *Importer) importPkg(pp *gopkg.PkgPath) (pkg *types.Package, err error)
 	if err := kp.detectCycle(pp); err != nil {
 		return nil, err
 	}
+	// TODO: maybe lookup the state w/o TypesInfo.
+	// everything should be the same except one has types.Info
 	ks := kp.state(pp)
 	kx := kp.branch(ks, pp)
 	ks.mu.Lock()
@@ -237,14 +349,14 @@ func (kp *Importer) importPkg(pp *gopkg.PkgPath) (pkg *types.Package, err error)
 	return ks.result()
 }
 
-func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*types.Package, error) {
+func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*Package, error) {
 	fset := token.NewFileSet()
-	bp, _, astFiles, err := parseDir(kp.mx, kp.bld, fset, pp.Dir, kp.cfg.SrcMap, ks)
+	bp, filesMap, filesList, err := parseDir(kp.mx, kp.bld, fset, pp.Dir, kp.cfg.SrcMap, ks)
 	if err != nil {
 		return nil, err
 	}
 
-	imports, err := kp.importDeps(ks, bp, fset, astFiles)
+	imports, err := kp.importDeps(ks, bp, fset, filesList)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +364,7 @@ func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*types.Package, error) 
 	if len(bp.CgoFiles) != 0 {
 		pkg, err := kp.importCgoPkg(pp, imports)
 		if err == nil {
-			return pkg, nil
+			return NewPackage(pkg, fset, filesMap, nil, imports), err
 		}
 	}
 
@@ -270,14 +382,25 @@ func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*types.Package, error) 
 		Importer: kp,
 		Sizes:    types.SizesFor(kp.bld.Compiler, kp.bld.GOARCH),
 	}
-	pkg, err := tc.Check(bp.ImportPath, fset, astFiles, nil)
+	var inf *types.Info
+	if ks.TypesInfo != 0 {
+		inf = ks.TypesInfo.New()
+	}
+	pkg, err := tc.Check(bp.ImportPath, fset, filesList, inf)
 	if err == nil && hardErr != nil {
 		err = hardErr
 	}
-	return pkg, err
+	switch {
+	case pkg == nil:
+		return nil, err
+	case ks.TypesInfo != 0:
+		return NewPackage(pkg, fset, filesMap, inf, imports), err
+	default:
+		return NewPackage(pkg, fset, filesMap, nil, imports), err
+	}
 }
 
-func (kp *Importer) importCgoPkg(pp *gopkg.PkgPath, imports map[string]*types.Package) (*types.Package, error) {
+func (kp *Importer) importCgoPkg(pp *gopkg.PkgPath, imports map[string]*Package) (*types.Package, error) {
 	name := `go`
 	args := []string{`list`, `-e`, `-export`, `-f={{.Export}}`, pp.Dir}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -303,24 +426,28 @@ func (kp *Importer) importCgoPkg(pp *gopkg.PkgPath, imports map[string]*types.Pa
 	if err != nil {
 		return nil, fmt.Errorf("cannot create export data reader for %s from %s: %s", pp.ImportPath, fn, err)
 	}
-	pkg, err := gcexportdata.Read(rd, token.NewFileSet(), imports, pp.ImportPath)
+	m := make(map[string]*types.Package, len(imports))
+	for k, v := range imports {
+		m[k] = v.Package
+	}
+	pkg, err := gcexportdata.Read(rd, token.NewFileSet(), m, pp.ImportPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read export data for %s from %s: %s", pp.ImportPath, fn, err)
 	}
 	return pkg, nil
 }
 
-func (kp *Importer) importFakePkg(ipath string) *types.Package {
+func (kp *Importer) importFakePkg(ipath string) *Package {
 	switch ipath {
 	case "unsafe":
-		return types.Unsafe
+		return pkgUnsafe
 	case "C":
 		return pkgC
 	}
 	return nil
 }
 
-func (kp *Importer) importDeps(ks *state, bp *build.Package, fset *token.FileSet, astFiles []*ast.File) (map[string]*types.Package, error) {
+func (kp *Importer) importDeps(ks *state, bp *build.Package, fset *token.FileSet, astFiles []*ast.File) (map[string]*Package, error) {
 	defer kp.mx.Profile.Push(`Kim-Porter: importDeps(` + ks.ImportPath + `)`).Pop()
 
 	paths := mgutil.StrSet(bp.Imports)
@@ -328,9 +455,9 @@ func (kp *Importer) importDeps(ks *state, bp *build.Package, fset *token.FileSet
 		paths = paths.Add(bp.TestImports...)
 	}
 	mu := sync.Mutex{}
-	imports := make(map[string]*types.Package, len(paths))
+	imports := make(map[string]*Package, len(paths))
 	doImport := func(ipath string) error {
-		pkg, err := kp.importFrom(ipath, bp.Dir)
+		pkg, err := kp.ImportPackage(ipath, bp.Dir)
 		if err == nil {
 			mu.Lock()
 			imports[ipath] = pkg
@@ -405,6 +532,9 @@ func (kp *Importer) branch(ks *state, pp *gopkg.PkgPath) *Importer {
 		// TODO: we need clear this if it's no longer true
 		ks.importedBy(kp.ks)
 	}
+	if !kp.cfg.ImportsTypesInfo {
+		kx.cfg.TypesInfo = 0
+	}
 	// user settings don't apply when checking deps
 	kx.cfg.CheckFuncs = false
 	kx.cfg.CheckImports = false
@@ -458,4 +588,48 @@ func tagsStr(l []string) string {
 	s := append(sort.StringSlice{}, l...)
 	s.Sort()
 	return strings.Join(s, " ")
+}
+
+type Builtin struct {
+	types.Object
+	pos token.Pos
+}
+
+func (b *Builtin) Pos() token.Pos {
+	return b.pos
+}
+
+func PkgBuiltin() *Package {
+	pkgBultin.Lock()
+	defer pkgBultin.Unlock()
+
+	if pkgBultin.Package != nil {
+		return pkgBultin.Package
+	}
+	fset := token.NewFileSet()
+	pkg := types.NewPackage("builtin", "builtin")
+	insert := func(nm string, o *ast.Object) {
+		if nm == "" || o == nil {
+			return
+		}
+		obj := types.Universe.Lookup(nm)
+		if obj == nil {
+			return
+		}
+		pkg.Scope().Insert(&Builtin{Object: obj, pos: o.Pos()})
+	}
+	dir := filepath.Join(build.Default.GOROOT, "src", "builtin")
+	m, _ := parser.ParseDir(fset, dir, nil, parser.ParseComments)
+	var files map[string]*ast.File
+	for _, p := range m {
+		files = p.Files
+		for _, f := range p.Files {
+			if f.Scope != nil {
+				for k, v := range f.Scope.Objects {
+					insert(k, v)
+				}
+			}
+		}
+	}
+	return NewPackage(pkg, fset, files, nil, nil)
 }

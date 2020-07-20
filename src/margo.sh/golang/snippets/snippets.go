@@ -21,6 +21,7 @@ var (
 		MutexSnippet,
 		ReturnSnippet,
 		HTTPSnippet,
+		GoFuncSnippet,
 	}
 )
 
