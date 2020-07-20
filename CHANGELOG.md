@@ -10,6 +10,20 @@ https://margo.sh/b/motd - Get notified when GoSublime has a new release.
 
 ## Changes
 
+## 20.\*
+
+This release adds golang.TypeCheck support for goto definition as a replacement for the `guru` tool. It re-uses the type checking we already do for autocompletion, etc. so is much faster and potentially more reliable.
+
+A future release will enable TypeCheck fully and drop support for Guru.
+
+- TypeCheck can be enabled with the reducer:
+
+      &golang.TypeCheck{
+          // NoIssues: true, // disable issue reporting as you type
+          // NoInfo: true, // don't show type info in the HUD `ctrl/cmd+.`,`ctrl/cmd+0`
+          // NoGotoDef: true, // disable goto definition support (falls back to Guru)
+      }
+
 ## 20.06.14
 
 This release contains a number of features and bug fixes that have been worked on over the last few months.
