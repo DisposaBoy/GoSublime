@@ -514,7 +514,7 @@ def win_view(vfn=None, win=None):
 
 	view = None
 	for win in wins:
-		m = VFN_ID_PAT.match(vfn or '')
+		m = VFN_ID_PAT.search(vfn or '')
 		if m:
 			try:
 				vid = int(m.group(1))
