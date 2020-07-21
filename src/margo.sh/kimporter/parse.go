@@ -5,8 +5,12 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"margo.sh/golang/gopkg"
 	"margo.sh/mg"
+	"margo.sh/vfs"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -28,7 +32,6 @@ func (kf *kpFile) init() {
 			return
 		}
 	}
-	// TODO: try to patch up some of the broken files
 	kf.File, kf.Err = parser.ParseFile(kf.Fset, kf.Fn, kf.Src, 0)
 	if kf.File == nil {
 		return
@@ -44,29 +47,85 @@ func (kf *kpFile) init() {
 	}
 }
 
-func parseDir(mx *mg.Ctx, bcx *build.Context, fset *token.FileSet, dir string, srcMap map[string][]byte, ks *state) (*build.Package, map[string]*ast.File, []*ast.File, error) {
-	defer mx.Profile.Push(`Kim-Porter: parseDir(` + dir + `)`).Pop()
+func bldImportDir(bcx *build.Context, pp *gopkg.PkgPath, pkgSrc map[string][]byte) (*build.Package, error) {
+	if len(pkgSrc) == 0 {
+		bp, err := bcx.ImportDir(pp.Dir, 0)
+		if err != nil {
+			return nil, err
+		}
+		return bp, nil
+	}
+	bp := &build.Package{
+		ImportPath: pp.ImportPath,
+		Dir:        pp.Dir,
+	}
+	for fn, _ := range pkgSrc {
+		switch {
+		case !strings.HasSuffix(fn, ".go"):
+			continue
+		case strings.HasSuffix(fn, "_test.go"):
+			bp.TestGoFiles = append(bp.TestGoFiles, fn)
+		default:
+			bp.GoFiles = append(bp.GoFiles, fn)
+		}
+	}
+	fset := token.NewFileSet()
+	importsList := func(fns []string) []string {
+		l := []string{}
+		for _, fn := range fns {
+			af, _ := parser.ParseFile(fset, fn, pkgSrc[fn], parser.ImportsOnly)
+			if af == nil {
+				continue
+			}
+			for _, imp := range af.Imports {
+				if imp.Path == nil {
+					continue
+				}
+				s, err := strconv.Unquote(imp.Path.Value)
+				if err == nil && s != "" {
+					l = append(l, s)
+				}
+			}
+		}
+		return l
+	}
+	bp.Imports = importsList(bp.GoFiles)
+	bp.TestImports = importsList(bp.TestGoFiles)
+	return bp, nil
+}
 
-	bp, err := bcx.ImportDir(dir, 0)
+func parseDir(mx *mg.Ctx, bcx *build.Context, fset *token.FileSet, pp *gopkg.PkgPath, srcMap map[string][]byte, ks *state, pkgSrc map[string][]byte) (*build.Package, map[string]*ast.File, []*ast.File, error) {
+	defer mx.Profile.Push(`Kim-Porter: parseDir(` + pp.Dir + `)`).Pop()
+
+	bp, err := bldImportDir(bcx, pp, pkgSrc)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	wg := sync.WaitGroup{}
-	testFiles := bp.TestGoFiles
 	if !ks.Tests {
-		testFiles = nil
+		bp.TestGoFiles = nil
 	}
-	kpFiles := make([]*kpFile, 0, len(bp.GoFiles)+len(bp.CgoFiles)+len(testFiles))
-	for _, l := range [][]string{bp.GoFiles, bp.CgoFiles, testFiles} {
+	kpFiles := make([]*kpFile, 0, len(bp.GoFiles)+len(bp.CgoFiles)+len(bp.TestGoFiles))
+	if cap(kpFiles) == 0 {
+		return nil, nil, nil, &build.NoGoError{Dir: pp.Dir}
+	}
+	wg := sync.WaitGroup{}
+	for _, l := range [][]string{bp.GoFiles, bp.CgoFiles, bp.TestGoFiles} {
 		for _, nm := range l {
-			fn := filepath.Join(dir, nm)
+			fn := nm
+			if !vfs.IsViewPath(fn) && !filepath.IsAbs(fn) {
+				fn = filepath.Join(pp.Dir, nm)
+			}
+			nm = filepath.Base(fn)
 			kf := &kpFile{
 				Mx:         mx,
 				Fset:       fset,
 				Fn:         fn,
 				Nm:         nm,
-				Src:        srcMap[fn],
 				CheckFuncs: ks.CheckFuncs,
+			}
+			kf.Src = pkgSrc[nm]
+			if kf.Src == nil {
+				kf.Src = srcMap[fn]
 			}
 			kpFiles = append(kpFiles, kf)
 			wg.Add(1)

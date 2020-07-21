@@ -152,9 +152,9 @@ func (tc *typChk) gotoDef(cx *mg.CmdCtx) {
 	defer cx.Output.Close()
 
 	// TODO: maybe make infProc handle this
-	ti, ok := tc.info(cx.Ctx)
-	if !ok {
-		fmt.Fprintln(cx.Output, "TypeCheck: Object type not found.")
+	ti, err := tc.info(cx.Ctx)
+	if err != nil {
+		fmt.Fprintf(cx.Output, "TypeCheck: %s\n", err)
 		return
 	}
 	tp, act, ok := tc.defAct(ti)
@@ -179,33 +179,8 @@ func (tc *typChk) isuProc(mx *mg.Ctx) {
 	}()
 	mx = mx.Copy(func(mx *mg.Ctx) { mx.Profile = pf })
 	v := mx.View
-
-	src, _ := v.ReadAll()
-	issues := []mg.Issue{}
-	if v.Path == "" {
-		pf := goutil.ParseFile(mx, v.Name, src)
-		issues = append(issues, tc.errToIssues(mx, v, pf.Error)...)
-		if pf.Error == nil {
-			tcfg := types.Config{
-				IgnoreFuncBodies: true,
-				FakeImportC:      true,
-				Error: func(err error) {
-					issues = append(issues, tc.errToIssues(mx, v, err)...)
-				},
-				Importer: kim.New(mx, nil),
-			}
-			tcfg.Check("_", pf.Fset, []*ast.File{pf.AstFile}, nil)
-		}
-	} else {
-		kp := kim.New(mx, &kim.Config{
-			CheckFuncs:   true,
-			CheckImports: true,
-			Tests:        strings.HasSuffix(v.Filename(), "_test.go"),
-			SrcMap:       map[string][]byte{v.Filename(): src},
-		})
-		_, err := kp.ImportFrom(".", v.Dir(), 0)
-		issues = append(issues, tc.errToIssues(mx, v, err)...)
-	}
+	_, err := tc.importPkg(mx)
+	issues := tc.errToIssues(mx, v, err)
 	for i, isu := range issues {
 		if isu.Path == "" {
 			isu.Path = v.Path
@@ -254,6 +229,19 @@ func (tc *typChk) errToIssues(mx *mg.Ctx, v *mg.View, err error) mg.IssueSet {
 	return issues
 }
 
+func (tc *typChk) posIssue(mx *mg.Ctx, v *mg.View, msg string, p token.Position) mg.Issue {
+	is := mg.Issue{
+		Path:    p.Filename,
+		Row:     p.Line - 1,
+		Col:     p.Column - 1,
+		Message: msg,
+	}
+	if is.Path == "" {
+		is.Name = v.Name
+	}
+	return is
+}
+
 func (tc *typChk) infProc(mx *mg.Ctx) {
 	pf := mgpf.NewProfile("Go/TypeInfo")
 	mx = mx.Copy(func(mx *mg.Ctx) { mx.Profile = pf })
@@ -268,9 +256,9 @@ func (tc *typChk) infProc(mx *mg.Ctx) {
 	}()
 	defer mx.Store.Dispatch(mg.Render)
 
-	ti, ok := tc.info(mx)
+	ti, err := tc.info(mx)
 	tc.mu.Lock()
-	if ok {
+	if err == nil {
 		tc.infEl = tc.infHUD(mx, ti)
 	} else {
 		tc.infEl = nil
@@ -278,83 +266,78 @@ func (tc *typChk) infProc(mx *mg.Ctx) {
 	tc.mu.Unlock()
 }
 
-func (tc *typChk) typesInfo() kim.TypesInfo {
-	// NOTE: to reduce memory use, we don't load everything by default
-	// so these flags need updating depending on what types.Info fields are used
-	return kim.TypesInfoDefs | kim.TypesInfoUses
-}
-
-func (tc *typChk) info(mx *mg.Ctx) (*tcInfo, bool) {
+func (tc *typChk) info(mx *mg.Ctx) (*tcInfo, error) {
 	// TODO: caching?
 	// kimporter's caching should be fast enough to allow us to do this on every ViewPosChanged
 	v := mx.View
 	src, _ := v.ReadAll()
-
-	pf := goutil.ParseFile(mx, v.Name, src)
-	if pos := pf.TokenFile.Pos(v.Pos); !pos.IsValid() || goutil.IdentAt(pf.AstFile, pos) == nil {
-		return nil, false
+	pf := goutil.ParseFile(mx, v.Filename(), src)
+	switch pos := pf.TokenFile.Pos(v.Pos); {
+	case !pos.IsValid():
+		return nil, fmt.Errorf("Invalid cursor position %d", v.Pos)
+	case goutil.IdentAt(pf.AstFile, pos) == nil:
+		return nil, fmt.Errorf("No identifier at cursor position %d", v.Pos)
 	}
 
 	ti := &tcInfo{}
-	// TODO: merge these
-	if v.Path == "" {
-		tcfg := types.Config{
-			IgnoreFuncBodies: true,
-			FakeImportC:      true,
-			Error:            func(err error) {},
-			Importer: kim.New(mx, &kim.Config{
-				TypesInfo: tc.typesInfo(),
-			}),
+	var err error
+	ti.Pkg, err = tc.importPkg(mx)
+	if ti.Pkg == nil {
+		if err != nil {
+			return nil, fmt.Errorf("Cannot type-check package: %w", err)
 		}
-		tinf := tc.typesInfo().New()
-		p, _ := tcfg.Check("_", pf.Fset, []*ast.File{pf.AstFile}, tinf)
-		ti.Pkg = kim.NewPackage(
-			p,
-			pf.Fset,
-			map[string]*ast.File{v.Filename(): pf.AstFile},
-			tinf,
-			nil,
-		)
-	} else {
-		ti.Pkg, _ = kim.New(mx, &kim.Config{
-			CheckFuncs:   true,
-			CheckImports: true,
-			Tests:        strings.HasSuffix(v.Filename(), "_test.go"),
-			SrcMap:       map[string][]byte{v.Filename(): src},
-			TypesInfo:    tc.typesInfo(),
-		}).ImportPackage(".", v.Dir())
+		return nil, fmt.Errorf("Cannot type-check package")
 	}
-	if ti.Pkg == nil || ti.Pkg.Fset == nil || ti.Pkg.Info == nil {
-		return nil, false
+	if ti.Pkg.Fset == nil {
+		return nil, fmt.Errorf("Package has no fileset")
 	}
-	af := ti.Pkg.Files[mx.View.Basename()]
+	if ti.Pkg.Info == nil {
+		return nil, fmt.Errorf("Package has no type info")
+	}
+	af := ti.Pkg.Files[v.Basename()]
 	if af == nil {
-		return nil, false
+		return nil, fmt.Errorf("Cannot find ast file: %s", v.Basename())
 	}
 	tf := ti.Pkg.Fset.File(af.Pos())
 	if tf == nil {
-		return nil, false
+		return nil, fmt.Errorf("Cannot find token file: %s", v.Basename())
 	}
-	pos := tf.Pos(mx.View.Pos)
+	pos := tf.Pos(v.Pos)
 	if !pos.IsValid() {
-		return nil, false
+		return nil, fmt.Errorf("Invalid cursor position: %d", v.Pos)
 	}
 	ti.Id = goutil.IdentAt(af, pos)
 	if ti.Id == nil {
-		return nil, false
+		return nil, fmt.Errorf("No identifer at position: %d", v.Pos)
 	}
 	ti.Obj = ti.Pkg.Info.ObjectOf(ti.Id)
 	if ti.Obj == nil {
-		return nil, false
+		return nil, fmt.Errorf("Cannot find type object id=%s, pos=%s files=%v", ti.Id, tf.Position(pos), af == pf.AstFile)
 	}
 	ti.Obj, ti.Pkg = tc.objPkg(mx, ti.Obj, ti.Pkg)
 	if ti.Pkg == nil {
-		return nil, false
+		return nil, fmt.Errorf("Cannot find object package")
 	}
 	if ti.Pkg.Fset == nil {
-		return nil, false
+		return nil, fmt.Errorf("Package has no fileset")
 	}
-	return ti, true
+	return ti, nil
+}
+
+func (tc *typChk) importPkg(mx *mg.Ctx) (*kim.Package, error) {
+	v := mx.View
+	src, _ := v.ReadAll()
+	kc := &kim.Config{
+		CheckFuncs:   true,
+		CheckImports: true,
+		Tests:        strings.HasSuffix(v.Filename(), "_test.go"),
+		SrcMap:       map[string][]byte{v.Filename(): src},
+		TypesInfo:    kim.TypesInfoDefs | kim.TypesInfoUses,
+	}
+	if v.Path == "" {
+		kc.PackageSrc = map[string][]byte{v.Basename(): src}
+	}
+	return kim.New(mx, kc).ImportPackage(".", v.Dir())
 }
 
 func (tc *typChk) infHUD(mx *mg.Ctx, ti *tcInfo) htm.Element {
@@ -372,6 +355,9 @@ func (tc *typChk) infHUD(mx *mg.Ctx, ti *tcInfo) htm.Element {
 	addEl("Sel: ", htm.Text(ti.Id.String()))
 	if t := ti.Obj.Type(); t != nil {
 		addEl("Type: ", htm.Text(t.String()))
+	}
+	if p := ti.Obj.Pkg(); p != nil {
+		addEl("Pkg: ", htm.Text(p.String()))
 	}
 	if tp, act, ok := tc.defAct(ti); ok {
 		s := mgutil.ShortFn(tp.String(), mx.Env)
@@ -407,23 +393,17 @@ func (tc *typChk) objPkg(mx *mg.Ctx, obj types.Object, pkg *kim.Package) (types.
 	if p == pkg.Package {
 		return obj, pkg
 	}
+	if p == types.Unsafe {
+		pb := kim.PkgUnsafe()
+		if obj := pb.Scope().Lookup(obj.Name()); obj != nil {
+			return obj, pb
+		}
+		return obj, nil
+	}
 	if q := pkg.Imports[p.Path()]; q != nil {
 		return obj, q
 	}
 	q, _ := kim.New(mx, nil).
 		ImportPackage(p.Path(), mx.View.Dir())
 	return obj, q
-}
-
-func (tc *typChk) posIssue(mx *mg.Ctx, v *mg.View, msg string, p token.Position) mg.Issue {
-	is := mg.Issue{
-		Path:    p.Filename,
-		Row:     p.Line - 1,
-		Col:     p.Column - 1,
-		Message: msg,
-	}
-	if is.Path == "" {
-		is.Name = v.Name
-	}
-	return is
 }

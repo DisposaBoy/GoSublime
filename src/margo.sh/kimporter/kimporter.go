@@ -36,10 +36,23 @@ var (
 	pkgUnsafe = func() *Package {
 		return NewPackage(types.Unsafe, nil, nil, nil, nil)
 	}()
-	pkgBultin = struct {
-		sync.Mutex
-		*Package
-	}{}
+	builtinPkgs = struct {
+		builtin *builtinPkg
+		unsafe  *builtinPkg
+	}{
+		builtin: &builtinPkg{
+			name:  "builtin",
+			ipath: "builtin",
+			grDir: "builtin",
+			scope: types.Universe,
+		},
+		unsafe: &builtinPkg{
+			name:  "unsafe",
+			ipath: "unsafe",
+			grDir: "unsafe",
+			scope: types.Unsafe.Scope(),
+		},
+	}
 )
 
 // TypesInfo specifies what, if any, types.Info to load
@@ -216,6 +229,8 @@ func (ks *state) result() (*Package, error) {
 }
 
 type Config struct {
+	PackageSrc map[string][]byte
+
 	SrcMap        map[string][]byte
 	CheckFuncs    bool
 	CheckImports  bool
@@ -343,15 +358,15 @@ func (kp *Importer) importPkg(pp *gopkg.PkgPath) (pkg *Package, err error) {
 		return ks.result()
 	}
 	chkAt := memo.InvAt()
-	ks.pkg, ks.err = kx.check(ks, pp)
+	ks.pkg, ks.err = kx.check(ks, pp, kp.cfg.PackageSrc)
 	ks.hash = kp.hash
 	ks.chkAt.Set(chkAt)
 	return ks.result()
 }
 
-func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*Package, error) {
+func (kp *Importer) check(ks *state, pp *gopkg.PkgPath, pkgSrc map[string][]byte) (*Package, error) {
 	fset := token.NewFileSet()
-	bp, filesMap, filesList, err := parseDir(kp.mx, kp.bld, fset, pp.Dir, kp.cfg.SrcMap, ks)
+	bp, filesMap, filesList, err := parseDir(kp.mx, kp.bld, fset, pp, kp.cfg.SrcMap, ks, pkgSrc)
 	if err != nil {
 		return nil, err
 	}
@@ -362,6 +377,7 @@ func (kp *Importer) check(ks *state, pp *gopkg.PkgPath) (*Package, error) {
 	}
 
 	if len(bp.CgoFiles) != 0 {
+		// TODO: fill in the type info. maybe we can just merge this into the pure-go check.
 		pkg, err := kp.importCgoPkg(pp, imports)
 		if err == nil {
 			return NewPackage(pkg, fset, filesMap, nil, imports), err
@@ -536,6 +552,7 @@ func (kp *Importer) branch(ks *state, pp *gopkg.PkgPath) *Importer {
 		kx.cfg.TypesInfo = 0
 	}
 	// user settings don't apply when checking deps
+	kx.cfg.PackageSrc = nil
 	kx.cfg.CheckFuncs = false
 	kx.cfg.CheckImports = false
 	kx.cfg.Tests = false
@@ -599,37 +616,58 @@ func (b *Builtin) Pos() token.Pos {
 	return b.pos
 }
 
-func PkgBuiltin() *Package {
-	pkgBultin.Lock()
-	defer pkgBultin.Unlock()
+type builtinPkg struct {
+	name  string
+	ipath string
+	grDir string
+	scope *types.Scope
 
-	if pkgBultin.Package != nil {
-		return pkgBultin.Package
+	mu  sync.Mutex
+	pkg *Package
+}
+
+func (p *builtinPkg) load() *Package {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.pkg != nil {
+		return p.pkg
 	}
-	fset := token.NewFileSet()
-	pkg := types.NewPackage("builtin", "builtin")
+	pkg := types.NewPackage(p.ipath, p.name)
+	psc := pkg.Scope()
 	insert := func(nm string, o *ast.Object) {
 		if nm == "" || o == nil {
 			return
 		}
-		obj := types.Universe.Lookup(nm)
+		obj := p.scope.Lookup(nm)
 		if obj == nil {
 			return
 		}
-		pkg.Scope().Insert(&Builtin{Object: obj, pos: o.Pos()})
+		psc.Insert(&Builtin{Object: obj, pos: o.Pos()})
 	}
-	dir := filepath.Join(build.Default.GOROOT, "src", "builtin")
+	dir := filepath.Join(build.Default.GOROOT, "src", p.grDir)
+	fset := token.NewFileSet()
 	m, _ := parser.ParseDir(fset, dir, nil, parser.ParseComments)
-	var files map[string]*ast.File
+	files := map[string]*ast.File{}
 	for _, p := range m {
-		files = p.Files
-		for _, f := range p.Files {
-			if f.Scope != nil {
-				for k, v := range f.Scope.Objects {
-					insert(k, v)
-				}
+		for fn, f := range p.Files {
+			files[fn] = f
+			if f.Scope == nil {
+				continue
+			}
+			for k, v := range f.Scope.Objects {
+				insert(k, v)
 			}
 		}
 	}
-	return NewPackage(pkg, fset, files, nil, nil)
+	p.pkg = NewPackage(pkg, fset, files, nil, nil)
+	return p.pkg
+}
+
+func PkgBuiltin() *Package {
+	return builtinPkgs.builtin.load()
+}
+
+func PkgUnsafe() *Package {
+	return builtinPkgs.unsafe.load()
 }

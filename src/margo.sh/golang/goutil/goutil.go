@@ -102,7 +102,7 @@ func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
 	if yotsuba.IsNil(node) {
 		return false
 	}
-	if np := node.Pos(); !np.IsValid() || pos <= np {
+	if np := node.Pos(); !np.IsValid() || pos < np {
 		return false
 	}
 
@@ -120,7 +120,7 @@ func NodeEnclosesPos(node ast.Node, pos token.Pos) bool {
 		// line comments' end don't include the newline
 		ne++
 	}
-	return pos < ne || !ne.IsValid()
+	return pos <= ne || !ne.IsValid()
 }
 
 type PosEnd struct {

@@ -222,16 +222,17 @@ func newCurCtx(mx *mg.Ctx, src []byte, pos int) *CurCtx {
 	}
 
 	exprOk := cx.Scope.Is(
-		AssignmentScope,
-		BlockScope,
-		ConstScope,
-		DeferScope,
-		ReturnScope,
-		VarScope,
+		AssignmentScope|
+			BlockScope|
+			ConstScope|
+			DeferScope|
+			ReturnScope|
+			VarScope,
 	) && !cx.Scope.Is(
-		SelectorScope,
-		StringScope,
-		CommentScope,
+		IdentScope|
+			SelectorScope|
+			StringScope|
+			CommentScope,
 	)
 	if x := (*ast.TypeAssertExpr)(nil); exprOk && cx.Set(&x) {
 		exprOk = false
