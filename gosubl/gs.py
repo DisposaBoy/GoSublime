@@ -99,6 +99,7 @@ _default_settings = {
 	"ipc_timeout": 1,
 	"export_env_vars": [],
 	"margo": {},
+	"show_changelog_on_update": True,
 }
 _settings = copy.copy(_default_settings)
 _mg_override_settings = {}

@@ -331,4 +331,7 @@
 	// so the env vars GS loads through your shell and project are available to other plugins
 	// e.g. "export_env_vars": ["PATH"]
 	"export_env_vars": [],
+
+	// Open CHANGELOG.md after updating GoSublime
+	"show_changelog_on_update": true,
 }

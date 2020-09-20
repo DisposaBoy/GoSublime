@@ -94,7 +94,8 @@ def _plugin_loaded_async():
 			aso.set('version', about.VERSION)
 			aso.set('ann', about.ANN)
 			gs.save_aso()
-			gs.focus(gs.dist_path('CHANGELOG.md'))
+			if gs.setting('show_changelog_on_update'):
+				gs.focus(gs.dist_path('CHANGELOG.md'))
 
 	sublime.set_timeout(cb, 0)
 
